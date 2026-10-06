@@ -39,14 +39,22 @@ const ADZ_VISITOR_TTL = DAY_IN_SECONDS * 30;
  * @return string Identity string, max 64 chars, safe for a DB column.
  */
 function adz_visitor_id() {
-	static $cached = null;
+	static $cached     = null;
+	static $cached_for = null;
 
-	if ( null !== $cached ) {
+	// Cache per login state: wp_set_current_user() can change who "the current
+	// user" is mid-request, and a plain static would then serve a stale
+	// identity -- which, behind a content gate, is the wrong person's record.
+	$current = (int) get_current_user_id();
+
+	if ( null !== $cached && $cached_for === $current ) {
 		return $cached;
 	}
 
+	$cached_for = $current;
+
 	if ( is_user_logged_in() ) {
-		$cached = 'u' . get_current_user_id();
+		$cached = 'u' . $current;
 		return $cached;
 	}
 

@@ -39,7 +39,9 @@ function adz_views_table() {
 function adz_views_install() {
 	global $wpdb;
 
-	require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+	if ( ! function_exists( 'dbDelta' ) ) {
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+	}
 
 	$table           = adz_views_table();
 	$charset_collate = $wpdb->get_charset_collate();
