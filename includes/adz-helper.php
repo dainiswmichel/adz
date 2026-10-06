@@ -10,8 +10,10 @@ function role_exists( $role ) {
 
 function adz_get_advertise($ad_visibility,$ad_visibility_interval,$repeat_times,$target_type,$target,$ad_to_serve,$rotations_id,$sequence,$display_type,$adz_template){
 	
-	if( !isset($_SESSION['first_time']) && @$_SESSION['first_time'] == '' ){
-		$_SESSION['first_time'] = time()+$ad_visibility_interval;
+	// 1.0.8 wrote $_SESSION['first_time'] here, but session_start() was never
+	// called anywhere in the plugin, so the throttle never actually throttled.
+	if ( ! adz_visitor_in_grace_period() ) {
+		adz_visitor_start_grace_period( $ad_visibility_interval );
 	}
 	
 	?>
@@ -132,9 +134,9 @@ function adz_get_advertise($ad_visibility,$ad_visibility_interval,$repeat_times,
 }
 function adz_get_advertise_popup($ad_visibility,$ad_visibility_interval,$repeat_times,$target_type,$target,$ad_to_serve,$rotations_id,$sequence,$display_type,$adz_template){
 
-	if(!isset($_SESSION['first_time']) && $_SESSION['first_time'] == ''){
-		$_SESSION['first_time'] = time()+$ad_visibility_interval;	
-
+	// See adz_get_advertise(): the original $_SESSION throttle never ran.
+	if ( ! adz_visitor_in_grace_period() ) {
+		adz_visitor_start_grace_period( $ad_visibility_interval );
 	}
 	?>
 	<div id="show_overlay" class="adz_overlay">
@@ -240,18 +242,15 @@ function adz_get_advertise_popup($ad_visibility,$ad_visibility_interval,$repeat_
 ## This Function is use to get publishers adz.
 function adz_get_publisher_adz(){
 
-	$args = array(
-		'posts_per_page'   => -1,	
-		'post_type'        => 'adz_ad',	
-		'post_status'      => 'publish',
-	);
-	$posts_array = get_posts( $args ); 
+	/*
+	 * 1.0.8 returned each ad's network_ad_id -- the ID the adz.world server
+	 * assigned. With no server that meta is empty, so this returned ",,,,"
+	 * and no ad was ever addressable. Local post IDs are the identity now.
+	 */
 	$publisher_adz_ids = '';
-	if(!empty($posts_array)){
-		foreach ($posts_array as $posts) {
 
-			$publisher_adz_ids .= get_post_meta($posts->ID,"network_ad_id",true).',';
-		}
+	foreach ( adz_get_all_ad_ids() as $ad_id ) {
+		$publisher_adz_ids .= $ad_id . ',';
 	}
 
 	return $publisher_adz_ids;
@@ -260,31 +259,34 @@ function adz_get_publisher_adz(){
 
 /* This Function Return the network adz id */
 function adz_get_network_id($adz_ids){
-	$network_ids = '';
-	if(!empty($adz_ids)){
-		foreach ($adz_ids as $adz) {
-			$network_ids .= get_post_meta($adz,"network_ad_id",true).',';
+
+	/*
+	 * Kept for call-site compatibility. Resolves each reference to a local post
+	 * ID, accepting legacy network_ad_id values from sites that were once
+	 * registered with adz.world.
+	 */
+	$ids = array();
+
+	foreach ( (array) $adz_ids as $adz ) {
+		$resolved = adz_resolve_ad_id( $adz );
+
+		if ( $resolved ) {
+			$ids[] = $resolved;
 		}
 	}
-	return rtrim($network_ids);
+
+	return implode( ',', $ids );
 
 }// End of the function get_network_id
 
 /* This Function is user check Visitor is logged in or not on adz.world */
 function adz_world_logged_in(){
-	
-	global $adz_ad_network_base_url;
-	$ad_network_url = $adz_ad_network_base_url."wp-json/adz_server/v1/ads/is_visitor_logged?visitor_ip={$_SERVER['REMOTE_ADDR']}";
-	$args = array();	
-	$response = wp_remote_get( $ad_network_url , $args );
-	$body = wp_remote_retrieve_body($response);
-	$json_repsonse = json_decode($body);
 
-	if($json_repsonse->status == 'logged_in'){
-		return $json_repsonse->user_id;
-	}else{
-		return false;
-	}
+	/*
+	 * 1.0.8 asked adz.world whether this visitor's IP belonged to a logged-in
+	 * network member. Without that network, identity is this site's own.
+	 */
+	return is_user_logged_in() ? get_current_user_id() : false;
 
 }// End of the function.
 

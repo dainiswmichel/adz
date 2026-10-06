@@ -2,8 +2,28 @@
 /* Class for Authrize the publisher from Adz.world*/
 class adz_NetworkAuthorization {
 
+	/**
+	 * Whether this site federates with a remote ad network.
+	 *
+	 * The central adz.world server these calls were written against no longer
+	 * exists. With no network configured every method below is a no-op, so the
+	 * plugin runs standalone instead of firing requests at a dead host on every
+	 * post save, settings save and admin page load.
+	 *
+	 * @return bool
+	 */
+	public static function is_enabled() {
+		global $adz_ad_network_base_url;
+
+		return ! empty( $adz_ad_network_base_url );
+	}
+
 	/*Function to check user Registration.*/
 	public static function checkRegistration() {
+		if ( ! self::is_enabled() ) {
+			return null;
+		}
+
 		global $adz_ad_network_base_url;
 		require_once( __DIR__ . '/rest-client/WP-Rest-Client.php');
 		$ad_network_url = $adz_ad_network_base_url."/wp-json/adz_server/v1/";
@@ -27,6 +47,10 @@ class adz_NetworkAuthorization {
 	/*Function to register and update user.*/
 
 	public static function updateRegistration( $adz_ad_options ) {
+		if ( ! self::is_enabled() ) {
+			return;
+		}
+
 		global $adz_ad_network_base_url;
 
 		$signature = false;
@@ -104,6 +128,10 @@ class adz_NetworkAuthorization {
 	}
 
   	public static function delete_ad( $ad_post_id ) {
+		if ( ! self::is_enabled() ) {
+			return;
+		}
+
 		global $adz_ad_network_base_url;
 		$ad_network_url = $adz_ad_network_base_url."/wp-json/adz_server/v1";
 		$network_ad_id = get_post_meta($ad_post_id,'network_ad_id', true);
@@ -124,6 +152,10 @@ class adz_NetworkAuthorization {
 	}// End of function.
 
 	public static function update_ad($post_id, $ad_post) {
+		if ( ! self::is_enabled() ) {
+			return;
+		}
+
 		if ($ad_post->post_status == 'publish') {
 			global $adz_ad_network_base_url;
 			require_once( __DIR__ . '/rest-client/WP-Rest-Client.php');
@@ -185,6 +217,10 @@ class adz_NetworkAuthorization {
 	}//End of function.
 
 	public static function get_ad_types(){
+		if ( ! self::is_enabled() ) {
+			return array();
+		}
+
 
 		global $adz_ad_network_base_url;
 		require_once( __DIR__ . '/rest-client/WP-Rest-Client.php');
@@ -198,6 +234,10 @@ class adz_NetworkAuthorization {
 	}//End of function
 
 	public static function savePremiumSettings( $premium_setting ){
+		if ( ! self::is_enabled() ) {
+			return null;
+		}
+
 
 		global $adz_ad_network_base_url;
 		require_once( __DIR__ . '/rest-client/WP-Rest-Client.php');

@@ -1,50 +1,68 @@
 <?php
-/*
-Plugin Name: adz.world
-Description: Run your website like a TV station by requiring adz views in exchange for access to content
-Version: 1.0.8
-Author: dainismichel
-Author URI: http://www.dainiswmichel.com
-*/
-global $adz_ad_network_base_url;
-$adz_ad_network_base_url = 'https://adz.world/';
-require_once(__DIR__ .'/vendor/eof/eof.php');
-require_once(__DIR__.'/vendor/eof/core/field.php');
-require_once(__DIR__.'/vendor/eof/adz-config.php');
-require_once(__DIR__.'/classes/network_authorization.class.php');
-require_once(__DIR__.'/classes/eof_fields/dynamic.php');
-require_once(__DIR__.'/classes/eof_fields/select-caps.php');
-require_once(__DIR__.'/session-handling.php');
-require_once(__DIR__.'/includes/adz-helper.php');
-require_once(__DIR__.'/includes/adz-cpt-ads.php');
-require_once(__DIR__.'/includes/adz-shortcode.php');
-define( 'ADZ_WORLD', plugin_dir_path(__FILE__ ) ); 
+/**
+ * Plugin Name: adz.world
+ * Description: Create a permission-based advertising ecosystem on your site: visitors choose to view adz in exchange for access to content, and publishers serve their own adz without surveillance or a third-party broker.
+ * Version: 2.0.0
+ * Requires at least: 5.8
+ * Requires PHP: 7.4
+ * Author: dainismichel
+ * Author URI: http://www.dainiswmichel.com
+ * License: GPLv3
+ * License URI: https://www.gnu.org/licenses/gpl-3.0.html
+ * Text Domain: adz-world
+ *
+ * @package adz.world
+ */
 
+defined( 'ABSPATH' ) || exit;
 
-function activate_adz_world(){
-	global $wpdb;
-	require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-	$table_name = $wpdb->prefix .'adz_views';
+define( 'ADZ_WORLD', plugin_dir_path( __FILE__ ) );
+define( 'ADZ_WORLD_VERSION', '2.0.0' );
 
-	$charset_collate = $wpdb->get_charset_collate();
+/**
+ * Base URL of the ad network this site federates with.
+ *
+ * Empty by default: this plugin serves the publisher's own adz and needs no
+ * remote network. The central adz.world server it was built against in 1.0.8
+ * no longer exists. Filter this to point at a node you control.
+ *
+ * @since 2.0.0
+ */
+$adz_ad_network_base_url = apply_filters( 'adz_ad_network_base_url', '' );
 
-	$sql = "CREATE TABLE $table_name (
-		id bigint(20) NOT NULL AUTO_INCREMENT,
-		visitor_ip varchar(255) NOT NULL,
-		targate_id bigint(20) NOT NULL,
-		target_type varchar(255) NOT NULL,
-		number_of_times bigint(20) NOT NULL,
-		ad_date varchar(255) NOT NULL,
-		updated varchar(255) NOT NULL,
-		UNIQUE KEY id (id)
-	) $charset_collate;";
+require_once ADZ_WORLD . 'session-handling.php';
+require_once ADZ_WORLD . 'includes/adz-visitor.php';
+require_once ADZ_WORLD . 'includes/adz-views.php';
+require_once ADZ_WORLD . 'includes/adz-ad-source.php';
+require_once ADZ_WORLD . 'vendor/eof/eof.php';
+require_once ADZ_WORLD . 'vendor/eof/core/field.php';
+require_once ADZ_WORLD . 'vendor/eof/adz-config.php';
+require_once ADZ_WORLD . 'classes/network_authorization.class.php';
+require_once ADZ_WORLD . 'classes/eof_fields/dynamic.php';
+require_once ADZ_WORLD . 'classes/eof_fields/select-caps.php';
+require_once ADZ_WORLD . 'includes/adz-helper.php';
+require_once ADZ_WORLD . 'includes/adz-cpt-ads.php';
+require_once ADZ_WORLD . 'includes/adz-shortcode.php';
 
-	
-	dbDelta( $sql );
-
-	
-	
+/**
+ * Create the views table on activation.
+ *
+ * @return void
+ */
+function activate_adz_world() {
+	adz_views_install();
 }
+register_activation_hook( __FILE__, 'activate_adz_world' );
+
+/**
+ * Upgrade the schema for sites updated in place.
+ *
+ * register_activation_hook does not fire on update, so installs that came from
+ * 1.0.8 would otherwise keep the old table.
+ *
+ * @return void
+ */
+add_action( 'init', 'adz_views_maybe_upgrade' );
 register_activation_hook( __FILE__,'activate_adz_world' );
 
 /* Function For adding scripts in the front-end */
@@ -68,276 +86,91 @@ function adz_enqueue_scripts_admin() {
 add_action( 'admin_enqueue_scripts', 'adz_enqueue_scripts_admin' );
 
 
-function adz_get_advertise_content(){
-	$nonce = $_REQUEST['adz_nonce'];
-	if ( ! wp_verify_nonce( $nonce, 'adzdotworld' ) ) { 
-		echo "continue";
+/**
+ * AJAX endpoint: decide whether to serve an ad, and serve it.
+ *
+ * Rewritten for the standalone plugin. The 1.0.8 version fetched every ad from
+ * adz.world over HTTP, returned early unless the site was registered with that
+ * network, and repeated the same rotation-advance block four times. Ads now
+ * come from local adz_ad posts and the rotation is handled in one place.
+ *
+ * Echoes "continue" to let the visitor through, or renders the ad template.
+ *
+ * @return void
+ */
+function adz_get_advertise_content() {
+	$nonce = isset( $_POST['adz_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['adz_nonce'] ) ) : '';
+
+	if ( ! wp_verify_nonce( $nonce, 'adzdotworld' ) ) {
+		echo 'continue';
 		exit;
 	}
-	if( !is_numeric( $_POST['ad_visibility_interval'] ) ){
-		echo "continue";
+
+	$interval = isset( $_POST['ad_visibility_interval'] ) ? $_POST['ad_visibility_interval'] : '';
+
+	if ( ! is_numeric( $interval ) ) {
+		echo 'continue';
 		exit;
 	}
-	global $wpdb;
-	$adz_ad_options = get_option('adz_ad_options');
-	$adz_publisher_options = get_option('adz_publisher_options');
-	$reg = false;
-	if (isset($adz_publisher_options['adz_registered'])) {
-		$reg = $adz_publisher_options['adz_registered'];
-	}	
-	if (! $reg) {
-		return;
-	}
-	global $adz_ad_network_base_url;
-	$next_adz_pool = get_option('next_adz_pool');
-	$rotation_adz_pool = get_option( sanitize_text_field( $_POST['rotations_id'] ) );
-	$publisher_user_id = $adz_publisher_options['adz_registered']['publisher_user_id'];
-	$ad_to_serve_val = sanitize_text_field( $_POST['ad_to_serve'] );
-	if($next_adz_pool == 'publisher'  || !$next_adz_pool){
 
-		$ad_network_url = $adz_ad_network_base_url."wp-json/adz_server/v1/ads?id={$reg['ID']}&token={$reg['post_token']}&nettoken={$reg['network_token']}&referral_code={$adz_ad_options['referral_code']}&publisher_ad={$ad_to_serve_val}&ad_from=publisher";	
+	$interval     = max( 0, (int) $interval );
+	$target       = isset( $_POST['target'] ) ? (int) $_POST['target'] : 0;
+	$target_type  = isset( $_POST['target_type'] ) ? sanitize_key( wp_unslash( $_POST['target_type'] ) ) : '';
+	$display_type = isset( $_POST['display_type'] ) ? sanitize_key( wp_unslash( $_POST['display_type'] ) ) : 'popup';
+	$repeat_times = isset( $_POST['repeat_times'] ) ? sanitize_text_field( wp_unslash( $_POST['repeat_times'] ) ) : 'infinite';
+	$rotation_id  = isset( $_POST['rotations_id'] ) ? sanitize_key( wp_unslash( $_POST['rotations_id'] ) ) : '';
+	$template     = isset( $_POST['adz_template'] ) ? adz_safe_template( wp_unslash( $_POST['adz_template'] ) ) : '';
+	$closing      = isset( $_POST['close_adz'] ) && 'true' === $_POST['close_adz'];
 
-	}elseif($next_adz_pool == 'network'){		
-		$ad_network_url = $adz_ad_network_base_url."wp-json/adz_server/v1/ads?id={$reg['ID']}&token={$reg['post_token']}&nettoken={$reg['network_token']}&referral_code={$adz_ad_options['referral_code']}&publisher_ad={$ad_to_serve_val}&ad_from=network";
-		
-	}elseif($next_adz_pool == 'visitor'){
-		$is_visitor_logged_in = adz_world_logged_in();
-		if($is_visitor_logged_in){		
-
-			$ad_network_url = $adz_ad_network_base_url."wp-json/adz_server/v1/ads?id={$reg['ID']}&token={$reg['post_token']}&nettoken={$reg['network_token']}&referral_code={$adz_ad_options['referral_code']}&publisher_ad={$ad_to_serve_val}&ad_from=visitor&publisher_user_id=$publisher_user_id&visitor_user_id=$is_visitor_logged_in&publisher_affiliate_id={$adz_ad_options['amazon_affiliate_id']}";
-		}
-		
-	}//End of else
-
-	
-	global $adz_ad_network_base_url;
-	if(isset($_POST['target_type'])){
-		$target_type = sanitize_text_field( $_POST['target_type'] );
-		$cond = "AND `target_type` = '".$target_type."'";
-	}else{
-		$target_type = '';
-		$cond = "";
+	if ( ! $target || ! $template ) {
+		echo 'continue';
+		exit;
 	}
 
-	$visitor_ip = $_SERVER['REMOTE_ADDR'];
+	// The visitor finished watching: record the view, open the browsing window.
+	if ( $closing ) {
+		adz_record_view( $target, $target_type );
+		adz_visitor_start_grace_period( $interval );
 
-	$adz_views = $wpdb->get_row("SELECT *  FROM ".$wpdb->prefix .'adz_views'." WHERE visitor_ip = '".$visitor_ip."' AND `targate_id` = '".sanitize_text_field( $_POST['target'] )."' ".$cond."  AND ad_date='".date('Y-m-d')."'",OBJECT);	
-	
-	if(empty($adz_views)){
-		if(isset($_POST['close_adz']) && $_POST['close_adz'] == 'true'){
-			$wpdb->insert($wpdb->prefix .'adz_views', 
-					array(
-				    'visitor_ip' => $visitor_ip,
-				    'targate_id' => sanitize_text_field( $_POST['target'] ),	
-				     'target_type' => $target_type,						    
-				    'number_of_times' => 1,
-				    'ad_date' => date('Y-m-d'),
-				    'updated' => date('Y-m-d H:i:s'),
-				)
-			);
-			echo "close";
-			exit;
-		}
-	}else{
-		if(isset($_POST['close_adz']) && $_POST['close_adz'] == 'true'){
-			
-			$last_update = strtotime($adz_views->updated);
-			$current_time = time();
-			$seconds = $current_time-$last_update;
-			$interval_in_sec = sanitize_text_field( $_POST['ad_visibility_interval'] );
-			$display_type = sanitize_text_field( $_POST['display_type'] );
-			
-			$wpdb->update($wpdb->prefix .'adz_views', 
-				array(
-				    'visitor_ip' => $visitor_ip,
-				    'targate_id' => sanitize_text_field( $_POST['target'] ),
-				    'target_type' => $target_type,
-				    'number_of_times' => $adz_views->number_of_times+1,
-				    'ad_date' => date('Y-m-d'),
-				    'updated' => date('Y-m-d H:i:s'),
-				),
-				array(
-					'visitor_ip' => $visitor_ip,
-					'targate_id' => sanitize_text_field( $_POST['target'] ),
-				)
-			);
-			
-			echo "close";
-			exit;
-			
-		}	
+		echo 'close';
+		exit;
 	}
-	
-	$ad_text = '';
-	$args = array(); // Will hold authetntication tokens
-	$response = wp_remote_get( $ad_network_url , $args );
-	if( is_array($response) ) {
-	  $header = $response['headers']; // array of http header lines
-	  $body = $response['body']; // use the content
-		$ad_info = json_decode($body);
-		if (is_array($ad_info) && !empty($ad_info)) {
 
-			$ad = $ad_info[0];
-			$ad_text = $ad->content;
-			
-			$visitor_ip = $_SERVER['REMOTE_ADDR'];
-
-			$adz_views = $wpdb->get_row("SELECT *  FROM ".$wpdb->prefix .'adz_views'." WHERE visitor_ip = '".$visitor_ip."' AND `targate_id` = '".sanitize_text_field( $_POST['target'] )."' ".$cond."  AND ad_date='".date('Y-m-d')."'",OBJECT);
-
-			$display_type = sanitize_text_field( $_POST['display_type'] );
-			
-			if(empty($adz_views)){
-				if($_SESSION['first_time'] >= time()){
-					echo "continue";
-					exit;
-				}else{
-					$_SESSION['first_time'] = time()+sanitize_text_field( $_POST['ad_visibility_interval'] );
-				}
-				
-				require_once(__DIR__.'/adz-templates/'.sanitize_text_field( $_POST['adz_template'] ));
-				if($next_adz_pool == 'publisher'  || !$next_adz_pool){
-					if($_POST['target_type'] == 'shortcode'){
-						$publisher_rotations_stats = get_post_meta(sanitize_text_field( $_POST['target'] ),'adz_rotation_shortcode',true);
-						if(empty($publisher_rotations_stats['served']) || !$publisher_rotations_stats){
-
-							$un_serverd = explode(',', sanitize_text_field( $_POST['sequence']));
-							$ad_to_serve = array_shift($un_serverd);
-							$roatation_stats['served'][] = sanitize_text_field( $_POST['ad_to_serve'] );
-							$roatation_stats['un_served'] = $un_serverd;
-							update_post_meta(sanitize_text_field( $_POST['target'] ),'adz_rotation_shortcode',$roatation_stats);
-
-						}else{
-							array_shift($publisher_rotations_stats['un_served']);
-							$roatation_stats['served'] = array_merge($publisher_rotations_stats['served'],array(sanitize_text_field( $_POST['ad_to_serve']) ));
-							$roatation_stats['un_served'] = $publisher_rotations_stats['un_served'];
-							update_post_meta(sanitize_text_field( $_POST['target'] ),'adz_rotation_shortcode',$roatation_stats);
-						}
-						
-					}else{
-						if(empty($rotation_adz_pool['served']) || !$rotation_adz_pool){
-							$un_serverd = explode(',', sanitize_text_field( $_POST['sequence'] ));
-							array_shift($un_serverd);
-							$roatation_stats['served'][] = sanitize_text_field( $_POST['ad_to_serve'] );
-							$roatation_stats['un_served'] = $un_serverd;
-							update_option(sanitize_text_field( $_POST['rotations_id'] ),$roatation_stats);
-							
-						}else{
-							array_shift($rotation_adz_pool['un_served']);
-							$roatation_stats['served'] = array_merge($rotation_adz_pool['served'],array(sanitize_text_field( $_POST['ad_to_serve'] )));
-							$roatation_stats['un_served'] = $rotation_adz_pool['un_served'];
-							update_option(sanitize_text_field( $_POST['rotations_id'] ),$roatation_stats);
-						}//End of if else.
-					}
-					update_option('next_adz_pool','network');
-
-				}elseif($next_adz_pool == 'network'){
-
-					if(adz_world_logged_in()){
-						update_option('next_adz_pool','visitor');
-					}else{
-						update_option('next_adz_pool','publisher');	
-					}
-					
-
-				}elseif($next_adz_pool == 'visitor'){
-					
-					update_option('next_adz_pool','publisher');				
-					
-				}
-				exit;
-				
-				
-			}else{
-				
-				$last_update = strtotime($adz_views->updated);
-				$current_time = time();
-				$seconds = $current_time-$last_update;
-				$interval_in_sec = sanitize_text_field( $_POST['ad_visibility_interval'] );
-				$display_type = sanitize_text_field( $_POST['display_type'] );
-				
-				if($seconds >= $interval_in_sec && ($adz_views->number_of_times < $_POST['repeat_times'] || $_POST['repeat_times'] == 'infinite') ){
-					
-					if($_SESSION['first_time'] >= time()){
-						echo "continue";
-						exit;
-					}else{
-						$_SESSION['first_time'] = time()+intval( $_POST['ad_visibility_interval'] );
-					}				
-
-					require_once(__DIR__.'/adz-templates/'.sanitize_text_field( $_POST['adz_template'] ));
-
-					if($next_adz_pool == 'publisher'  || !$next_adz_pool){
-
-						if( $_POST['target_type'] == 'shortcode' ){
-							$publisher_rotations_stats = get_post_meta(sanitize_text_field( $_POST['target'] ),'adz_rotation_shortcode',true);
-							if( empty($publisher_rotations_stats['served'] ) || !$publisher_rotations_stats ){
-
-								$un_serverd = explode(',', sanitize_text_field( $_POST['sequence'] ));
-								$ad_to_serve = array_shift($un_serverd);
-								$roatation_stats['served'][] = sanitize_text_field( $_POST['ad_to_serve'] );
-								$roatation_stats['un_served'] = $un_serverd;
-								update_post_meta(sanitize_text_field( $_POST['target'] ),'adz_rotation_shortcode',$roatation_stats);								
-
-							}else{
-								array_shift( $publisher_rotations_stats['un_served'] );
-								$roatation_stats['served'] = array_merge( $publisher_rotations_stats['served'],array( sanitize_text_field ($_POST['ad_to_serve'] ) ) );
-								if($publisher_rotations_stats['un_served'][0] == ''){
-									$publisher_rotations_stats['un_served'] = array();
-								}
-								$roatation_stats['un_served'] = $publisher_rotations_stats['un_served'];
-								update_post_meta(sanitize_text_field( $_POST['target'] ),'adz_rotation_shortcode',$roatation_stats);
-								
-							}
-							
-						}else{
-
-							if( empty($rotation_adz_pool['served']) || !$rotation_adz_pool ){
-								$un_serverd = explode(',', sanitize_text_field( $_POST['sequence'] ) );
-								array_shift($un_serverd);
-								$roatation_stats['served'][] = sanitize_text_field( $_POST['ad_to_serve'] );
-								$roatation_stats['un_served'] = $un_serverd;
-								update_option(sanitize_text_field( $_POST['rotations_id'] ),$roatation_stats);
-								
-							}else{
-								array_shift( $rotation_adz_pool['un_served'] );
-								$roatation_stats['served'] = array_merge( $rotation_adz_pool['served'],array( sanitize_text_field( $_POST['ad_to_serve'] ) ) );
-								if($rotation_adz_pool['un_served'][0] == ''){
-									$rotation_adz_pool['un_served'] = array();
-								}
-								$roatation_stats['un_served'] = $rotation_adz_pool['un_served'];
-								update_option(sanitize_text_field( $_POST['rotations_id'] ),$roatation_stats);
-								
-							}//End of if else.
-						}
-						
-						update_option('next_adz_pool','network');
-						
-					}elseif($next_adz_pool == 'network'){
-
-					if( adz_world_logged_in() ){
-						
-						update_option('next_adz_pool','visitor');
-					}else{
-						
-						update_option('next_adz_pool','publisher');	
-					}
-					
-
-					}elseif( $next_adz_pool == 'visitor' ){
-						
-						update_option('next_adz_pool','publisher');						
-					}
-					exit;
-				}else{
-					echo "continue";
-					exit;
-				}
-				
-			}
-		}
+	// Inside the window a previous view bought them: no ad.
+	if ( adz_visitor_in_grace_period() ) {
+		echo 'continue';
+		exit;
 	}
-	
-}// End of the function.
+
+	if ( ! adz_view_required( $target, $target_type, $repeat_times ) ) {
+		echo 'continue';
+		exit;
+	}
+
+	// Choose the ad.
+	$sequence = isset( $_POST['sequence'] ) ? wp_unslash( $_POST['sequence'] ) : '';
+	$sequence = array_filter( array_map( 'trim', explode( ',', (string) $sequence ) ) );
+
+	if ( empty( $sequence ) ) {
+		$sequence = adz_get_all_ad_ids();
+	}
+
+	$state_key   = $rotation_id ? $rotation_id : 'adz_rotation_' . $target . '_' . $target_type;
+	$ad_to_serve = adz_next_ad_in_sequence( $sequence, $state_key );
+	$ad_text     = adz_get_ad_content( $ad_to_serve );
+
+	// No usable ad on this site means nothing to require: let the visitor read.
+	if ( '' === $ad_text ) {
+		echo 'continue';
+		exit;
+	}
+
+	$ad_visibility          = isset( $_POST['ad_visibility'] ) ? max( 0, (int) $_POST['ad_visibility'] ) : 10;
+	$ad_visibility_interval = $interval;
+
+	require __DIR__ . '/adz-templates/' . $template;
+	exit;
+}
 add_action('wp_ajax_adz_get_advertise_content', 'adz_get_advertise_content');
 add_action('wp_ajax_nopriv_adz_get_advertise_content', 'adz_get_advertise_content');
 
@@ -541,157 +374,73 @@ add_action('wp_head','adz_display_adz');
 
 ## This function is use to Show Advertise when a throw Page display is set in the adz rotation ##
 
-function adz_show_advertise( $roatations, $ad_to_serve, $repeat_times ){
+/**
+ * Render the full-page ad that stands in front of gated content.
+ *
+ * Called from adz_check_thru_page_adz() on the 'wp' hook, before the post is
+ * rendered. When an ad is due this loads the template and exits, so the post
+ * itself never reaches the browser; the visitor continues once the timer runs
+ * out and the AJAX handler records their view.
+ *
+ * In 1.0.8 this fetched the ad from adz.world and returned early unless the
+ * site was registered there, which is why the gate stopped engaging when the
+ * network went away.
+ *
+ * @param array  $roatations   Rotation settings for the matched rule.
+ * @param mixed  $ad_to_serve  Ad reference chosen by the caller.
+ * @param mixed  $repeat_times Maximum ads per day, or 'infinite'.
+ * @return void
+ */
+function adz_show_advertise( $roatations, $ad_to_serve, $repeat_times ) {
+	$target      = (int) get_the_ID();
+	$target_type = 'thru_page';
 
-	global $wpdb;
-	$rotation_adz_pool = get_option($roatations['rotation_id']);
-	$next_adz_pool = get_option('next_adz_pool');
-	$adz_ad_options = get_option('adz_ad_options');
-
-	$adz_publisher_options = get_option('adz_publisher_options');
-	$publisher_user_id = $adz_publisher_options['adz_registered']['publisher_user_id'];
-	$reg = false;
-	if ( isset($adz_publisher_options['adz_registered']) ) {
-		$reg = $adz_publisher_options['adz_registered'];
-	}	
-	if (! $reg) {
+	if ( ! $target ) {
 		return;
 	}
 
-	global $adz_ad_network_base_url;
-	if( $next_adz_pool == 'publisher'  || !$next_adz_pool ){
+	$template = adz_safe_template( isset( $roatations['adz_template'] ) ? $roatations['adz_template'] : '' );
 
-		$ad_network_url = $adz_ad_network_base_url."wp-json/adz_server/v1/ads?id={$reg['ID']}&token={$reg['post_token']}&nettoken={$reg['network_token']}&referral_code={$adz_ad_options['referral_code']}&publisher_ad={$ad_to_serve}&ad_from=publisher";	
+	if ( '' === $template ) {
+		return;
+	}
 
-	}elseif($next_adz_pool == 'network'){
-		
-		$ad_network_url = $adz_ad_network_base_url."wp-json/adz_server/v1/ads?id={$reg['ID']}&token={$reg['post_token']}&nettoken={$reg['network_token']}&referral_code={$adz_ad_options['referral_code']}&publisher_ad={$ad_to_serve}&ad_from=network";
-		
-	}elseif($next_adz_pool == 'visitor'){
-		
-		
-		$is_visitor_logged_in = adz_world_logged_in();
-		if($is_visitor_logged_in){		
+	if ( ! adz_view_required( $target, $target_type, $repeat_times ) ) {
+		return;
+	}
 
-			$ad_network_url = $adz_ad_network_base_url."wp-json/adz_server/v1/ads?id={$reg['ID']}&token={$reg['post_token']}&nettoken={$reg['network_token']}&referral_code={$adz_ad_options['referral_code']}&publisher_ad={$ad_to_serve}&ad_from=visitor&publisher_user_id=$publisher_user_id&visitor_user_id=$is_visitor_logged_in&publisher_affiliate_id={$adz_ad_options['amazon_affiliate_id']}";
+	if ( adz_visitor_in_grace_period() ) {
+		return;
+	}
+
+	// Choose the ad: the caller's pick, else the next one in this rotation.
+	$ad_text = adz_get_ad_content( $ad_to_serve );
+
+	if ( '' === $ad_text ) {
+		$sequence = isset( $roatations['sequence'] ) ? $roatations['sequence'] : '';
+		$sequence = array_filter( array_map( 'trim', explode( ',', (string) $sequence ) ) );
+
+		if ( empty( $sequence ) ) {
+			$sequence = adz_get_all_ad_ids();
 		}
-		
-		
-	}//End of else
-	
-	$ad_text = '';
-	$args = array();
-	$response = wp_remote_get( $ad_network_url , $args );
-	if( is_array($response) ) {	  
-		$body = $response['body'];
-		$ad_info = json_decode( $body );
-		if ( is_array($ad_info) && !empty($ad_info) ) {
-			
-			$visitor_ip = $_SERVER['REMOTE_ADDR'];
-			$ad = $ad_info[0];
-			$ad_text = $ad->content;
-			$adz_views = $wpdb->get_row("SELECT *  FROM ".$wpdb->prefix .'adz_views'." WHERE visitor_ip = '".$visitor_ip."' AND ad_date='".date('Y-m-d')."'",OBJECT);
-			
-			if( empty($adz_views) ){
-				$ad_visibility_interval = $roatations['browse_seconds'];
-				$ad_visibility = $roatations['ad_seconds'];
-				$target = get_the_ID();
-				$target_type = '';
-				$display_type = $roatations['popup_or_page'];
-				require_once(__DIR__.'/adz-templates/'.$roatations['adz_template']);
-				if( $next_adz_pool == 'publisher'  || !$next_adz_pool ){
 
-					if( empty($rotation_adz_pool['served']) || !$rotation_adz_pool ){
-						$un_serverd = explode(',', $roatations['sequence']);
-						array_shift($un_serverd);
-						$roatation_stats['served'][] = $ad_to_serve;
-						$roatation_stats['un_served'] = $un_serverd;
-						update_option($roatations['rotation_id'],$roatation_stats);
-						
-					}else{
-						array_shift($rotation_adz_pool['un_served']);
-						$roatation_stats['served'] = array_merge($rotation_adz_pool['served'],array($ad_to_serve));
-						if($rotation_adz_pool['un_served'][0] == ''){
-							$rotation_adz_pool['un_served'] = array();
-						}
-						$roatation_stats['un_served'] = $rotation_adz_pool['un_served'];
-						update_option($roatations['rotation_id'],$roatation_stats);
-						
-					}//End of if else.
-					update_option('next_adz_pool','network');
+		$state_key   = ! empty( $roatations['rotation_id'] ) ? $roatations['rotation_id'] : 'adz_rotation_' . $target;
+		$ad_to_serve = adz_next_ad_in_sequence( $sequence, $state_key );
+		$ad_text     = adz_get_ad_content( $ad_to_serve );
+	}
 
-				}elseif($next_adz_pool == 'network'){
+	// Nothing to show means nothing to require: let the visitor read the post.
+	if ( '' === $ad_text ) {
+		return;
+	}
 
-					if(adz_world_logged_in()){
-						update_option('next_adz_pool','visitor');
-					}else{
-						update_option('next_adz_pool','publisher');	
-					}
-					
+	// Variables consumed by the template.
+	$ad_visibility          = isset( $roatations['ad_seconds'] ) ? max( 0, (int) $roatations['ad_seconds'] ) : 10;
+	$ad_visibility_interval = isset( $roatations['browse_seconds'] ) ? max( 0, (int) $roatations['browse_seconds'] ) : 0;
+	$display_type           = isset( $roatations['popup_or_page'] ) ? $roatations['popup_or_page'] : 'thru_page';
 
-				}elseif($next_adz_pool == 'visitor'){
-
-					update_option('next_adz_pool','publisher');
-					
-				}				
-				exit;
-
-			}else{
-				$last_update = strtotime($adz_views->updated);
-				$current_time = time();
-				$seconds = $current_time-$last_update;
-				$ad_visibility_interval = $roatations['browse_seconds'];
-				$ad_visibility = $roatations['ad_seconds'];
-				$target = get_the_ID();
-				$target_type = '';
-				$display_type = $roatations['popup_or_page'];
-
-
-				if( $seconds >= $roatations['browse_seconds'] && ($adz_views->number_of_times < $repeat_times || $repeat_times == 'infinite') ){
-				
-					require_once(__DIR__.'/adz-templates/'.$roatations['adz_template']);
-					if( $next_adz_pool == 'publisher'  || !$next_adz_pool ){
-
-						if( empty($rotation_adz_pool['served']) || !$rotation_adz_pool ){
-							$un_serverd = explode(',', $roatations['sequence']);
-							array_shift($un_serverd);
-							$roatation_stats['served'][] = $ad_to_serve;
-							$roatation_stats['un_served'] = $un_serverd;
-							update_option($roatations['rotation_id'],$roatation_stats);
-							
-						}else{
-							array_shift($rotation_adz_pool['un_served']);
-							$roatation_stats['served'] = array_merge($rotation_adz_pool['served'],array($ad_to_serve));
-							if($rotation_adz_pool['un_served'][0] == ''){
-								$rotation_adz_pool['un_served'] = array();
-							}
-							$roatation_stats['un_served'] = $rotation_adz_pool['un_served'];
-							update_option($roatations['rotation_id'],$roatation_stats);
-							
-						}//End of if else.
-
-						update_option('next_adz_pool','network');
-
-					}elseif($next_adz_pool == 'network'){
-
-					if(adz_world_logged_in()){
-						update_option('next_adz_pool','visitor');
-					}else{
-						update_option('next_adz_pool','publisher');	
-					}
-					
-
-					}elseif($next_adz_pool == 'visitor'){
-						update_option('next_adz_pool','publisher');
-						
-					}
-					exit;
-				}// End of if
-
-			}//End of if else
-		}//End of if to check adz_content
-	}// End of if to check $response
-}//End of function
+	require ADZ_WORLD . 'adz-templates/' . $template;
+	exit;
+}
 
 add_action('wp','adz_check_thru_page_adz');
-?>
