@@ -1,4 +1,6 @@
 <?php
+
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly.
 // If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
 	die;
@@ -111,9 +113,9 @@ class EOF {
 			// Show the sections below the admin menu item or not
 			'allow_sub_menu'	=> false,
 			// Specify admin menu title
-			'menu_title' 		=> __('EOF', 'eof'),
+			'menu_title' 		=> __('EOF', 'adz-world' ),
 			// Specify admin page title
-			'page_title' 		=> __('EOF', 'eof'),
+			'page_title' 		=> __('EOF', 'adz-world' ),
 			// For a full list of options, visit: http://codex.wordpress.org/Function_Reference/add_submenu_page#Parameters
 			'page_parent'       => 'themes.php',
 			// Order where the menu appears in the admin area. If there is any conflict, something will not show. Warning.

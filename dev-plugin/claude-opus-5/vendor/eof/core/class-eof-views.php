@@ -88,7 +88,7 @@ class EOF_Views {
 					<?php $link = add_query_arg(array( 'tab' => $active_tab,'action'=>'reset', 'reset_nonce' => wp_create_nonce('eof_reset')), $base_url); ?>
 						
 					<?php 
-						submit_button( __('Save Changes', 'eof'), 'primary', 'eof-save', false ); 
+						submit_button( __('Save Changes', 'adz-world' ), 'primary', 'eof-save', false ); 
 					?>
 					</p>
 				</form>

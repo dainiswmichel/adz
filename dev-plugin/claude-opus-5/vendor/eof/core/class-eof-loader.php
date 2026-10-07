@@ -1,4 +1,6 @@
 <?php
+
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly.
 // If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
 	die;
@@ -84,7 +86,7 @@ if( !class_exists('EOF_Loader') ) :
 				$plugin_meta[] = sprintf(
 					'<a href="%s" target="_blank">%s</a>',
 					'https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=mr%2emoyus%40gmail%2ecom&lc=US&item_name=20Theme&no_note=0&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donate_SM%2egif%3aNonHostedGuest',
-					__( 'Donate', 'eof' )
+					__( 'Donate', 'adz-world' )
 				);
 			}
 			return $plugin_meta;

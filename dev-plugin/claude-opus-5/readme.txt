@@ -1,10 +1,10 @@
 === adz.world allows you to create a wholesome consent-based advertising ecosystem for your audience ===
 Contributors: dainismichel
 Donate link: http://www.dainiswmichel.com/donate/
-Tags: advertising, age of accordance, consent-based advertising, permission-based advertising, not surveillance-based advertising, serve adz, serve ads, earn affiliate income, create promotions, restrict access to content, require ad views
-Requires at least: 4.9.6
-Tested up to: 4.9.6
-Requires PHP: 5.6
+Tags: advertising, consent, privacy, ads, ad management
+Requires at least: 6.2
+Tested up to: 7.1
+Requires PHP: 7.4
 Stable tag: 1.0.9
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -45,6 +45,31 @@ you can make your own adz or serve adz from external ad networks, so the adz the
 * trash adz rotation
 
 
+
+== External services ==
+
+By default this plugin connects to no external service. Your site serves only
+the adz you create on it, and no visitor data leaves your server.
+
+The plugin can optionally be connected to the adz-world.com advertising
+network. This is off unless you switch it on, under Adz Settings, by ticking
+"Connect to the adz-world.com network".
+
+With it switched on:
+
+* **What the service is.** adz-world.com is a permission-based advertising
+  network. It supplies adz to display on your site, and makes the adz you
+  publish available to other sites in the network.
+* **What is sent, and when.** When a visitor is shown an adz, your site sends
+  adz-world.com your publisher ID and access tokens, your referral code, and
+  the visitor's IP address, so the network can return an adz and avoid
+  repeating one the visitor has already seen. When you publish or delete an
+  adz, its title, content and categories are sent. When you register, your site
+  URL, site title and administrator email address are sent.
+* **Terms and privacy.** Terms of Service: https://adz-world.com/terms/ ,
+  Privacy Policy: https://adz-world.com/privacy/
+
+Switching the setting off stops all of it. Nothing is contacted again.
 
 == Installation ==
 

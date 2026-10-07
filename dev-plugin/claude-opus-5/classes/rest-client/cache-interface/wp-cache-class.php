@@ -1,4 +1,6 @@
 <?php
+
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly.
 require_once __DIR__ . '/cache-interface.php';
 /**
  * WP Cacheing functins wrapped in a standardized interface

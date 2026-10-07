@@ -1,4 +1,6 @@
 <?php
+
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly.
 /**
  * Provides "Session Support" for wordpress.	In normal PHP, this is handled with
  * native session variables.

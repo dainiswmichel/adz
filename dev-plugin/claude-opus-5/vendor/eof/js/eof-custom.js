@@ -1,3 +1,12 @@
+/*
+ * The chosen library was removed: wordpress.org no longer permits bundling
+ * libraries that are not maintained. Without it these calls become no-ops and
+ * the fields stay as the browser's own multi-selects.
+ */
+if ( typeof jQuery !== 'undefined' && typeof jQuery.fn.chosen === 'undefined' ) {
+	jQuery.fn.chosen = function () { return this; };
+}
+
 jQuery(document).ready(function ($) {
 
 	$("select[name*='rotation_pages']").chosen({

@@ -135,7 +135,7 @@ class EOF_Settings {
 				$render = new $field_class($field, $value, $this->parent);
 				$render->render_field();
 			} else {
-				_e('This field type does not exisits, please check your code.', 'eof');
+				_e('This field type does not exisits, please check your code.', 'adz-world' );
 			}
 
 		}
@@ -183,7 +183,7 @@ class EOF_Settings {
 		$old_options = (array) $this->parent->options;
 
 		$output = array_merge( $old_options, $sanitizied_options );
-		add_settings_error( "eof-". $this->parent->configs['opt_name'] ."-notices", '', __( 'Settings updated!', 'eof' ), 'updated' );
+		add_settings_error( "eof-". $this->parent->configs['opt_name'] ."-notices", '', __( 'Settings updated!', 'adz-world' ), 'updated' );
 
 		return $output;
 
@@ -215,7 +215,7 @@ class EOF_Settings {
 
 			update_option( $this->parent->configs['opt_name'], $new_options );
 
-			add_settings_error( "eof-". $this->parent->configs['opt_name'] ."-notices", '', __( 'Section Defaults Restored!', 'eof' ), 'updated' );
+			add_settings_error( "eof-". $this->parent->configs['opt_name'] ."-notices", '', __( 'Section Defaults Restored!', 'adz-world' ), 'updated' );
 
 			$this->parent->refresh();
 		}

@@ -87,7 +87,7 @@ class EOF_field_repeat extends EOF_field {
 							);
 						}
 					?>
-						<th scope="col" class="item-action"><?php _e('Action', 'eof'); ?></th>
+						<th scope="col" class="item-action"><?php _e('Action', 'adz-world' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -109,7 +109,7 @@ class EOF_field_repeat extends EOF_field {
 									$render = new $field_class( $sub_field, $sub_field['default'], $this->parent);
 									$render->render_field();
 								} else {
-									_e('The field type does not exisits, please check your code.', 'eof');
+									_e('The field type does not exisits, please check your code.', 'adz-world' );
 								}
 
 							}
@@ -143,7 +143,7 @@ class EOF_field_repeat extends EOF_field {
 									$render = new $field_class($sub_field, $field_value, $this->parent);
 									$render->render_field();
 								} else {
-									_e('The field type does not exisits, please check your code.', 'eof');
+									_e('The field type does not exisits, please check your code.', 'adz-world' );
 								}
 
 							}
@@ -158,7 +158,7 @@ class EOF_field_repeat extends EOF_field {
 				</tbody>
 			</table>
 			<p class="description"><?php echo $this->field['desc']; ?></p>
-			<p><input class="button add-row" type="button" data-count="<?php echo $count; ?>" value="<?php _e('Add', 'eof') ?>" /></p>
+			<p><input class="button add-row" type="button" data-count="<?php echo $count; ?>" value="<?php _e('Add', 'adz-world' ) ?>" /></p>
 		</div>
 	<?php
 	}

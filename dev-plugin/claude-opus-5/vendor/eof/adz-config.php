@@ -1,4 +1,6 @@
 <?php
+
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly.
 add_action('init', 'adz_check_post_function');
 function adz_check_post_function(){
 
@@ -55,6 +57,12 @@ function adz_setings_setup() {
 				'desc'	=> '',
 				'type' => 'checkbox',
 				'default' => '0' //1 = on | 0 = off
+			),
+			'connect_to_network' => array(
+				'title' => 'Connect to the adz-world.com network',
+				'type' => 'checkbox',
+				'default' => '0', //1 = on | 0 = off
+				'desc' => 'Off by default. Your site serves only the adz you create here, and contacts no outside server. Switching this on connects the site to the adz-world.com network: your site will send your site URL, admin email and visitor IP addresses to adz-world.com in order to fetch adz, and the adz you publish will be shared with the network. See <a href="https://adz-world.com/terms/">Terms of Service</a> and <a href="https://adz-world.com/privacy/">Privacy Policy</a>.'
 			),
 			'paypal_email' => array(
 				'type'	=> 'email',

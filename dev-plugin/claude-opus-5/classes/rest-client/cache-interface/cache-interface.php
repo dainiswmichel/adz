@@ -1,4 +1,6 @@
 <?php
+
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly.
 /**
  * Cache Interface - Provides consistent interface for WP and Non WP Cache
  */

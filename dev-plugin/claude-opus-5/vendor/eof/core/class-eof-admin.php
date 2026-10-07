@@ -137,7 +137,7 @@ class EOF_Admin {
 		$screen = get_current_screen();
 
 		if($screen->id == $this->options_page_id) {
-			$rate_text = sprintf( __( 'Thank you for using <a href="%1$s" target="_blank">Easy Options Framework</a>!', 'eof' ),
+			$rate_text = sprintf( __( 'Thank you for using <a href="%1$s" target="_blank">Easy Options Framework</a>!', 'adz-world' ),
 				'http://www.20theme.com/plugins/easy-options-framework'
 			);
 			return str_replace( '</span>', '', $footer_text ) . ' | ' . $rate_text . '</span>';

@@ -1,4 +1,6 @@
 <?php
+
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly.
 /*
 Plugin Name: adz.world
 Description: Run your website like a TV station by requiring adz views in exchange for access to content
@@ -7,7 +9,7 @@ Author: dainismichel
 Author URI: http://www.dainiswmichel.com
 */
 global $adz_ad_network_base_url;
-$adz_ad_network_base_url = 'https://adz.world/';
+$adz_ad_network_base_url = 'https://adz-world.com/';
 require_once(__DIR__ .'/vendor/eof/eof.php');
 require_once(__DIR__.'/vendor/eof/core/field.php');
 require_once(__DIR__.'/vendor/eof/adz-config.php');
@@ -59,9 +61,7 @@ add_action( 'wp_enqueue_scripts', 'adz_enqueue_scripts' );
 /* Function For adding scripts in the backend */
 function adz_enqueue_scripts_admin() {
 	
-	wp_enqueue_style( 'adz_dropdown_css',plugin_dir_url( __FILE__ ).'css/chosen.css' );
 	wp_enqueue_script( 'adz_admin_script',plugin_dir_url( __FILE__ ).'js/plugin.js',array('jquery') );
-	wp_enqueue_script( 'adz_dropdown',plugin_dir_url( __FILE__ ).'js/chosen.jquery.js' );
 }// End of thr function.
 
 
@@ -90,7 +90,7 @@ function adz_get_advertise_content(){
 	}
 	global $adz_ad_network_base_url;
 	$next_adz_pool = get_option('next_adz_pool');
-	$rotation_adz_pool = get_option( sanitize_text_field( $_POST['rotations_id'] ) );
+	$rotation_adz_pool = get_option( adz_validate_rotation_id( wp_unslash( $_POST['rotations_id'] ) ) );
 	$publisher_user_id = $adz_publisher_options['adz_registered']['publisher_user_id'];
 	$ad_to_serve_val = sanitize_text_field( $_POST['ad_to_serve'] );
 	if($next_adz_pool == 'publisher'  || !$next_adz_pool){
@@ -170,7 +170,8 @@ function adz_get_advertise_content(){
 	
 	$ad_text = '';
 	$args = array(); // Will hold authetntication tokens
-	$response = wp_remote_get( $ad_network_url , $args );
+	// Nothing leaves this site unless the owner opted in.
+	$response = adz_network_enabled() ? wp_remote_get( $ad_network_url, $args ) : false;
 	if( is_array($response) ) {
 	  $header = $response['headers']; // array of http header lines
 	  $body = $response['body']; // use the content
@@ -219,13 +220,13 @@ function adz_get_advertise_content(){
 							array_shift($un_serverd);
 							$roatation_stats['served'][] = sanitize_text_field( $_POST['ad_to_serve'] );
 							$roatation_stats['un_served'] = $un_serverd;
-							update_option(sanitize_text_field( $_POST['rotations_id'] ),$roatation_stats);
+							adz_update_rotation_state( wp_unslash( $_POST['rotations_id'] ), $roatation_stats );
 							
 						}else{
 							array_shift($rotation_adz_pool['un_served']);
 							$roatation_stats['served'] = array_merge($rotation_adz_pool['served'],array(sanitize_text_field( $_POST['ad_to_serve'] )));
 							$roatation_stats['un_served'] = $rotation_adz_pool['un_served'];
-							update_option(sanitize_text_field( $_POST['rotations_id'] ),$roatation_stats);
+							adz_update_rotation_state( wp_unslash( $_POST['rotations_id'] ), $roatation_stats );
 						}//End of if else.
 					}
 					update_option('next_adz_pool','network');
@@ -296,7 +297,7 @@ function adz_get_advertise_content(){
 								array_shift($un_serverd);
 								$roatation_stats['served'][] = sanitize_text_field( $_POST['ad_to_serve'] );
 								$roatation_stats['un_served'] = $un_serverd;
-								update_option(sanitize_text_field( $_POST['rotations_id'] ),$roatation_stats);
+								adz_update_rotation_state( wp_unslash( $_POST['rotations_id'] ), $roatation_stats );
 								
 							}else{
 								array_shift( $rotation_adz_pool['un_served'] );
@@ -305,7 +306,7 @@ function adz_get_advertise_content(){
 									$rotation_adz_pool['un_served'] = array();
 								}
 								$roatation_stats['un_served'] = $rotation_adz_pool['un_served'];
-								update_option(sanitize_text_field( $_POST['rotations_id'] ),$roatation_stats);
+								adz_update_rotation_state( wp_unslash( $_POST['rotations_id'] ), $roatation_stats );
 								
 							}//End of if else.
 						}
@@ -581,7 +582,8 @@ function adz_show_advertise( $roatations, $ad_to_serve, $repeat_times ){
 	
 	$ad_text = '';
 	$args = array();
-	$response = wp_remote_get( $ad_network_url , $args );
+	// Nothing leaves this site unless the owner opted in.
+	$response = adz_network_enabled() ? wp_remote_get( $ad_network_url, $args ) : false;
 	if( is_array($response) ) {	  
 		$body = $response['body'];
 		$ad_info = json_decode( $body );

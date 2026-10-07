@@ -1,17 +1,30 @@
 <?php
 
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly.
+
 
 add_shortcode( 'adzworld_iframe', 'adz_iframe_shortcode' );
 function adz_iframe_shortcode( $atts, $content = null ) {
 
 	$attributes = shortcode_atts( array(
-		'adz_url' => 'http://adz.world',
+		'adz_url' => 'https://adz-world.com',
 		'height' => 600,
 		'width' => '100%',
 	), $atts );
-	$output  = '<iframe src="'.$attributes['adz_url'].'" height="'.$attributes['height'].'" width="'.$attributes['width'].'"></iframe>';
+	/*
+	 * WordPress echoes whatever a shortcode returns, so everything in it is
+	 * escaped here rather than trusted. 1.0.8 concatenated the raw attributes
+	 * straight into the markup.
+	 */
+	$width = trim( (string) $attributes['width'] );
+	$width = preg_match( '/^[0-9]+%?$/', $width ) ? $width : '100%';
 
-	return $output;
+	return sprintf(
+		'<iframe src="%s" height="%d" width="%s"></iframe>',
+		esc_url( $attributes['adz_url'] ),
+		absint( $attributes['height'] ),
+		esc_attr( $width )
+	);
 }
 
 add_shortcode( 'Adzworld', 'adz_shortcode' );
@@ -49,7 +62,7 @@ function adz_shortcode( $atts, $content = null ) {
 	if($adz_to_serve){
 		if(empty($adz_views)){	
 			
-			$output  = '<div id="content_after_ad"><a id="show_adz" href="javascript:void(0)">' . $more_text . '</a><div>';
+			$output  = '<div id="content_after_ad"><a id="show_adz" href="javascript:void(0)">' . esc_html( $more_text ) . '</a></div>';
 			if($adz_display == 'page'){
 				adz_in_page($adz_interval_sec,$adz_duration);
 			}else{
@@ -64,7 +77,7 @@ function adz_shortcode( $atts, $content = null ) {
 			$interval_in_sec = $adz_interval_sec;
 
 			if($seconds >= $interval_in_sec){
-				$output  = '<div id="content_after_ad"><a id="show_adz" href="javascript:void(0)">' . $more_text . '</a><div>';
+				$output  = '<div id="content_after_ad"><a id="show_adz" href="javascript:void(0)">' . esc_html( $more_text ) . '</a></div>';
 				if($adz_display == 'page'){
 					adz_in_page($adz_interval_min,$adz_duration);
 				}elseif($adz_display == 'popup'){
@@ -88,7 +101,7 @@ function adz_in_page($adz_interval_min,$adz_duration){
 
 		jQuery('#show_adz').click(function(){
 			jQuery.ajax({
-		        url: "<?php echo site_url();?>/wp-admin/admin-ajax.php",
+		        url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
 		        type : 'post',
 		        data: {
 		            action :'adz_get_advertise_content',
@@ -130,7 +143,7 @@ function adz_in_page($adz_interval_min,$adz_duration){
 
 		jQuery(document).on('click','.close_adz_button',function(){
 			jQuery.ajax({
-		        url: "<?php echo site_url();?>/wp-admin/admin-ajax.php",
+		        url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
 		        type : 'post',
 		        data: {
 		            action :'adz_get_advertise_content',
@@ -175,7 +188,7 @@ function adz_in_popup($adz_interval_min,$adz_duration,$adz_sequence,$adz_templat
 		jQuery('#show_adz').click(function(){
 			jQuery('.adz_popup .close_adz').hide();
 			jQuery.ajax({
-		        url: "<?php echo site_url();?>/wp-admin/admin-ajax.php",
+		        url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
 		        type : 'post',
 		        data: {
 		            action :'adz_get_advertise_content',
@@ -220,7 +233,7 @@ function adz_in_popup($adz_interval_min,$adz_duration,$adz_sequence,$adz_templat
 
 		jQuery(document).on('click','.close_adz',function(){
 			jQuery.ajax({
-		        url: "<?php echo site_url();?>/wp-admin/admin-ajax.php",
+		        url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
 		        type : 'post',
 		        data: {
 		            action :'adz_get_advertise_content',

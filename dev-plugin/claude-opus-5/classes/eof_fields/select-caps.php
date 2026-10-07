@@ -36,7 +36,7 @@ class EOF_field_select_caps extends EOF_field {
 			'title'			=> '',
 			'desc'			=> '',
 			'default' 		=> '',
-			'holder'		=> __('Select', 'eof'),
+			'holder'		=> __('Select', 'adz-world' ),
 			'sizes'			=> 'regular',
 			'readonly'		=> false,
 			'options'		=> null
@@ -84,7 +84,7 @@ class EOF_field_select_caps extends EOF_field {
 			if( empty($this->value) && !empty($options) ) {
 				//echo '<option value="" disabled selected>'. esc_html( $this->field['holder'] ) .'</option>';
 			} elseif ( empty($options) ) {
-				echo '<option value="" disabled selected>'. __('Nothing found.', 'eof') .'</option>';
+				echo '<option value="" disabled selected>'. __('Nothing found.', 'adz-world' ) .'</option>';
 			}
 			$options['guest'] = 'Guest';
 			foreach ($options as $val => $label) {

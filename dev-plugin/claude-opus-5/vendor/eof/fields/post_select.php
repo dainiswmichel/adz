@@ -35,7 +35,7 @@ class EOF_field_post_select extends EOF_field {
 			'title'			=> '',
 			'desc'			=> '',
 			'default' 		=> '',
-			'holder'		=> __('Select', 'eof'),
+			'holder'		=> __('Select', 'adz-world' ),
 			'sizes'			=> 'regular',
 			'readonly'		=> false,
 			'data'			=> array('post_type' => 'page')
@@ -65,7 +65,7 @@ class EOF_field_post_select extends EOF_field {
 
 		// Checks if post type exists
 		/*if( !post_type_exists( $this->field['data']['post_type'] ) ) {
-			echo '<p class="description>' . __("Post type does not exist!", 'eof') . '</p>';
+			echo '<p class="description>' . __("Post type does not exist!", 'adz-world' ) . '</p>';
 			return ;
 		} */
 
@@ -103,7 +103,7 @@ class EOF_field_post_select extends EOF_field {
 			if( empty($this->value) && !empty($options) ) {
 				echo '<option value="" disabled selected>'. esc_html($this->field['holder']) .'</option>';
 			} elseif ( empty($options) ) {
-				echo '<option value="" disabled selected>'. __('Nothing found.', 'eof') .'</option>';
+				echo '<option value="" disabled selected>'. __('Nothing found.', 'adz-world' ) .'</option>';
 			}
 
 			foreach ($options as $val => $label) {
