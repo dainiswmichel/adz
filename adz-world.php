@@ -2,7 +2,7 @@
 /*
 Plugin Name: adz.world
 Description: Run your website like a TV station by requiring adz views in exchange for access to content
-Version: 1.0.8
+Version: 1.0.9
 Author: dainismichel
 Author URI: http://www.dainiswmichel.com
 */

@@ -5,7 +5,7 @@ Tags: advertising, age of accordance, consent-based advertising, permission-base
 Requires at least: 4.9.6
 Tested up to: 4.9.6
 Requires PHP: 5.6
-Stable tag: 1.0.8
+Stable tag: 1.0.9
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
