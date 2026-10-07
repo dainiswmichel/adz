@@ -9,7 +9,7 @@ publishers serve adz that match, without surveillance or a third-party broker.
 |---|---|---|
 | `ancestor/` | the 2018 code, frozen — plugin, network server, premium build | no |
 | `live-plugin/` | exactly what is live on wordpress.org right now | **yes** |
-| `dev-plugin/` | where development happens | not until promoted |
+| `dev-plugin/` | one candidate per agent, each a full copy | not until promoted |
 
 Three directories for the three real states: what shipped in 2018, what is
 live today, what is being built.
@@ -18,13 +18,22 @@ live today, what is being built.
 at all times, so `diff -r live-plugin dev-plugin` always shows exactly what a
 release would change. Nothing is edited there directly.
 
-Promotion, when an iteration is ready:
+Each candidate under `dev-plugin/` is a complete copy of the plugin, named for
+the agent that produced it, so candidates can be compared against what is live
+and against each other:
 
 ```bash
-rsync -a --delete dev-plugin/ live-plugin/
+diff -r live-plugin dev-plugin/claude-opus-5
 ```
 
-Then a release, which deploys `live-plugin/`.
+Promotion, when one is chosen:
+
+```bash
+rsync -a --delete dev-plugin/<agent>/ live-plugin/
+```
+
+Then a release, which deploys `live-plugin/`. No agent deploys anything; only
+a promotion into `live-plugin/` can reach wordpress.org.
 
 
 
@@ -65,4 +74,5 @@ notice dated 29 September 2026, with 60 days to pass a code review.
 Branch `claude/vigilant-brown-3i4cds` carries work against that notice. It has
 never run inside WordPress and is not merged here.
 
-`dev-plugin/` currently holds a version bump to 1.0.9 and nothing else.
+`dev-plugin/claude-opus-5/` currently holds a version bump to 1.0.9 and
+nothing else.
