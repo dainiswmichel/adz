@@ -1,8 +1,12 @@
 # ancestor
 
-The original code, preserved untouched. Nothing here is deployed, built, or
-loaded by anything. It exists so there is always a pristine reference to
-compare against.
+The original code, preserved untouched. This is what shipped: `plugin/` here
+was the live release on wordpress.org in 2018, and it worked. It is kept frozen
+so there is always a pristine reference to compare against.
+
+Nothing is deployed *from* this directory now -- releases are built from
+`/plugin` at the repository root -- but that is a fact about the current
+pipeline, not about this code.
 
 | Directory | What it is | Version | Source |
 |---|---|---|---|

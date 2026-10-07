@@ -7,12 +7,13 @@ publishers serve adz that match, without surveillance or a third-party broker.
 
 | Directory | What it is | Ships? |
 |---|---|---|
-| `plugin/` | the WordPress plugin | **yes** — deployed to wordpress.org |
+| `plugin/` | the WordPress plugin | **yes** — released to wordpress.org |
 | `network/` | Ad Network Control 1.0.1, the adz.world server | no |
 | `pro/` | Adz.world Premium 1.0.1 | no |
 
-Only `plugin/` is deployed. The other two are preserved baselines, imported
-verbatim from the original archives.
+Releases are built from `plugin/` only. `ancestor/` holds the original 2018
+code, frozen: the publisher plugin that was live on wordpress.org, the server
+it talked to, and the premium build. It is a reference point, not dead code.
 
 ## Releasing
 
