@@ -9,9 +9,15 @@ holds a complete candidate copy of the plugin.
 | Directory | Produced by | Version | State |
 |---|---|---|---|
 | `claude-opus-5/` | Claude Opus 5 | 1.0.9 | version bump only |
+| `codex-gpt5/` | Codex / GPT-5 | — | empty |
+| `dwm-local/` | Dainis, locally | — | empty |
+| `github-copilot/` | GitHub Copilot | — | empty |
+| `gpt-5-6-sol/` | GPT-5.6 Sol | — | empty |
+| `grok-4-6/` | Grok 4.6 | — | empty |
+| `opencode-big-pickle/` | OpenCode Big Pickle | — | empty |
 
-Directories for other agents go alongside, named the same way — `codex-gpt5`,
-`github-copilot`, `grok-4-6`, `dwm-local`, and so on.
+Same roster as flosc. An empty directory holds a `.gitkeep` only, since git
+does not track directories on their own.
 
 ## How a candidate becomes a release
 
