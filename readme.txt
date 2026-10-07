@@ -1,11 +1,11 @@
 === adz.world allows you to create a wholesome consent-based advertising ecosystem for your audience ===
 Contributors: dainismichel
 Donate link: http://www.dainiswmichel.com/donate/
-Tags: advertising, age of accordance, consent-based advertising, permission-based advertising, not surveillance-based advertising, serve adz, serve ads, earn affiliate income, create promotions, restrict access to content, require ad views
-Requires at least: 4.9.6
-Tested up to: 4.9.6
-Requires PHP: 5.6
-Stable tag: 1.0.8
+Tags: advertising, consent, privacy, ad management, ads
+Requires at least: 6.2
+Tested up to: 7.1
+Requires PHP: 7.4
+Stable tag: 2.0.0
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -45,6 +45,20 @@ you can make your own adz or serve adz from external ad networks, so the adz the
 * trash adz rotation
 
 
+
+== External services ==
+
+This plugin does not connect to any external service by default. It serves adz
+stored on your own site, and no visitor data leaves your server.
+
+Earlier versions (1.0.8 and before) sent data to the adz.world ad network,
+including visitor IP addresses, in order to fetch adz to display. That network
+no longer exists and all calls to it have been removed.
+
+A site owner who wants to join an ad network can point the plugin at one using
+the `adz_ad_network_base_url` filter. Nothing is contacted unless that filter is
+set, and the operator of whichever network is chosen is responsible for its own
+terms and privacy policy.
 
 == Installation ==
 

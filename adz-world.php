@@ -77,9 +77,7 @@ add_action( 'wp_enqueue_scripts', 'adz_enqueue_scripts' );
 /* Function For adding scripts in the backend */
 function adz_enqueue_scripts_admin() {
 	
-	wp_enqueue_style( 'adz_dropdown_css',plugin_dir_url( __FILE__ ).'css/chosen.css' );
 	wp_enqueue_script( 'adz_admin_script',plugin_dir_url( __FILE__ ).'js/plugin.js',array('jquery') );
-	wp_enqueue_script( 'adz_dropdown',plugin_dir_url( __FILE__ ).'js/chosen.jquery.js' );
 }// End of thr function.
 
 

@@ -1,4 +1,6 @@
 <?php
+
+defined( 'ABSPATH' ) || exit; // Exit if accessed directly.
 /**
 * REST Client Interface
 *

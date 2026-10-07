@@ -166,6 +166,23 @@ t( 'an empty sequence serves nothing', 0 === $empty );
 $gone = adz_next_ad_in_sequence( array( 99999 ), 'adz_test_gone' );
 t( 'a sequence of deleted ads serves nothing', 0 === $gone );
 
+echo "\nOption-name injection (was: \$_POST['rotations_id'] used as an option name)\n";
+
+// A public AJAX endpoint let a visitor name any option in the database.
+$attacks = array( 'siteurl', 'admin_email', 'users_can_register', '../../siteurl', '' );
+$escaped = false;
+foreach ( $attacks as $attack ) {
+	if ( 0 !== strpos( adz_rotation_option_name( $attack ), 'adz_rot_' ) ) {
+		$escaped = true;
+		echo "        leaked: {$attack} -> " . adz_rotation_option_name( $attack ) . "\n";
+	}
+}
+t( 'no crafted rotation id can address an option outside adz_rot_', ! $escaped );
+
+adz_next_ad_in_sequence( array( 500 ), 'siteurl' );
+t( 'serving a rotation never writes to the named core option', ! array_key_exists( 'siteurl', $GLOBALS['adz_test_options'] ) );
+t( 'it writes to the namespaced option instead', array_key_exists( 'adz_rot_siteurl', $GLOBALS['adz_test_options'] ) );
+
 echo "\nGate decision\n";
 
 $GLOBALS['adz_test_user'] = 301;

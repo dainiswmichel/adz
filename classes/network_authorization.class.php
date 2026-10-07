@@ -1,4 +1,6 @@
 <?php
+
+defined( 'ABSPATH' ) || exit; // Exit if accessed directly.
 /* Class for Authrize the publisher from Adz.world*/
 class adz_NetworkAuthorization {
 

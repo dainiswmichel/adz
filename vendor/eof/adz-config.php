@@ -1,4 +1,6 @@
 <?php
+
+defined( 'ABSPATH' ) || exit; // Exit if accessed directly.
 add_action('init', 'adz_check_post_function');
 function adz_check_post_function(){
 

@@ -1,12 +1,17 @@
 <?php
-function role_exists( $role ) {
+/**
+ * Helper functions for serving adz.
+ *
+ * @package adz.world
+ */
 
-  if( ! empty( $role ) ) {
-    return $GLOBALS['wp_roles']->is_role( $role );
-  }
-  
-  return false;
-}
+defined( 'ABSPATH' ) || exit;
+
+/*
+ * role_exists() used to be defined here. WordPress core now ships its own,
+ * so redeclaring it is a fatal error on activation. Nothing in this plugin
+ * called it, so it is simply gone.
+ */
 
 function adz_get_advertise($ad_visibility,$ad_visibility_interval,$repeat_times,$target_type,$target,$ad_to_serve,$rotations_id,$sequence,$display_type,$adz_template){
 	
@@ -32,7 +37,7 @@ function adz_get_advertise($ad_visibility,$ad_visibility_interval,$repeat_times,
 
 							
 				jQuery.ajax({
-			        url: "<?php echo site_url();?>/wp-admin/admin-ajax.php",
+			        url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
 			        type : 'post',
 			        data: {
 			            action :'adz_get_advertise_content',
@@ -101,7 +106,7 @@ function adz_get_advertise($ad_visibility,$ad_visibility_interval,$repeat_times,
 
 			jQuery(document).on('click','.close_adz',function(){
 				jQuery.ajax({
-			        url: "<?php echo site_url();?>/wp-admin/admin-ajax.php",
+			        url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
 			        type : 'post',
 			        data: {
 			            action :'adz_get_advertise_content',
@@ -159,7 +164,7 @@ function adz_get_advertise_popup($ad_visibility,$ad_visibility_interval,$repeat_
 		function browsing_advertise(){
 			
 			jQuery.ajax({
-		        url: "<?php echo site_url();?>/wp-admin/admin-ajax.php",
+		        url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
 		        type : 'post',
 		        data: {
 		            action :'adz_get_advertise_content',
@@ -208,7 +213,7 @@ function adz_get_advertise_popup($ad_visibility,$ad_visibility_interval,$repeat_
 		
 		jQuery(document).on('click','.close_adz',function(){
 			jQuery.ajax({
-		        url: "<?php echo site_url();?>/wp-admin/admin-ajax.php",
+		        url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
 		        type : 'post',
 		        data: {
 		            action :'adz_get_advertise_content',

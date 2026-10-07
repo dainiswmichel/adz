@@ -1,4 +1,6 @@
 <?php 
+
+defined( 'ABSPATH' ) || exit; // Exit if accessed directly.
 /*Dynamic template for displaying adz.*/
 $template_name = basename(__FILE__);
 $setting_data = get_option('template_'.$template_name);
@@ -41,7 +43,7 @@ if($display_type == 'thru_page'){
 
 			jQuery(document).on('click','.close_adz',function(){
 				jQuery.ajax({
-			        url: "<?php echo site_url();?>/wp-admin/admin-ajax.php",
+			        url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
 			        type : 'post',
 			        data: {
 			            action :'adz_get_advertise_content',

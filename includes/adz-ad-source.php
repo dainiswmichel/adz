@@ -139,10 +139,14 @@ function adz_get_all_ad_ids() {
  * others go unseen.
  *
  * @param int[]  $sequence  Candidate ad IDs, in order.
- * @param string $state_key Option key holding this sequence's rotation state.
+ * @param string $state_key Rotation identifier. Namespaced before use as an
+ *                          option name, so a request-supplied value can never
+ *                          address an option outside this plugin's own.
  * @return int Ad ID to serve, or 0 when the sequence holds no usable ad.
  */
 function adz_next_ad_in_sequence( $sequence, $state_key ) {
+	$state_key = adz_rotation_option_name( $state_key );
+
 	$sequence = array_values( array_filter( array_map( 'adz_resolve_ad_id', (array) $sequence ) ) );
 
 	if ( empty( $sequence ) ) {
@@ -216,4 +220,34 @@ function adz_available_templates() {
 	$templates = $found ? array_map( 'basename', $found ) : array();
 
 	return $templates;
+}
+
+/**
+ * Build the option name holding a rotation's state.
+ *
+ * The AJAX endpoint is public (wp_ajax_nopriv), and 1.0.8 passed
+ * $_POST['rotations_id'] straight into get_option() and update_option() as the
+ * option NAME. Any visitor could therefore read or overwrite any option in the
+ * site -- siteurl, admin_email, stored keys. Sanitising the value does not help,
+ * because the problem is which option is addressed, not what it contains.
+ *
+ * Every rotation key is now forced inside the adz_rot_ namespace, so a crafted
+ * value can only ever touch this plugin's own rotation state.
+ *
+ * @param string $state_key Caller-supplied rotation identifier.
+ * @return string Safe option name.
+ */
+function adz_rotation_option_name( $state_key ) {
+	$state_key = sanitize_key( (string) $state_key );
+
+	if ( '' === $state_key ) {
+		$state_key = 'default';
+	}
+
+	// Keep the option name within the 191-char index limit.
+	if ( strlen( $state_key ) > 150 ) {
+		$state_key = substr( $state_key, 0, 100 ) . md5( $state_key );
+	}
+
+	return 'adz_rot_' . $state_key;
 }

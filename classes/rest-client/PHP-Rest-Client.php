@@ -1,5 +1,7 @@
 <?php
 
+defined( 'ABSPATH' ) || exit; // Exit if accessed directly.
+
 require_once( 'RestClient.interface.php' );
 
 /**
