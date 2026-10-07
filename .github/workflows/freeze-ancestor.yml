@@ -1,0 +1,61 @@
+# ancestor/ is frozen. It holds the original 2018 code as a reference point,
+# and nothing should ever modify it.
+#
+# Git has no way to mark a directory read-only, so this fails any push or pull
+# request that touches it. Should the freeze ever need lifting deliberately,
+# putting [thaw-ancestor] in the commit message allows that commit through.
+
+name: Freeze ancestor
+
+on:
+  push:
+    paths:
+      - 'ancestor/**'
+  pull_request:
+    paths:
+      - 'ancestor/**'
+
+jobs:
+  check:
+    name: ancestor/ must not change
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Look for changes under ancestor/
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+            HEAD="${{ github.event.pull_request.head.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+            HEAD="${{ github.sha }}"
+          fi
+
+          # A new branch reports an all-zero "before"; nothing to compare against.
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            echo "No base commit to compare against. Skipping."
+            exit 0
+          fi
+
+          CHANGED=$(git diff --name-only "$BASE" "$HEAD" -- ancestor/ || true)
+
+          if [ -z "$CHANGED" ]; then
+            echo "ancestor/ untouched."
+            exit 0
+          fi
+
+          if git log --format=%B "$BASE..$HEAD" | grep -qF '[thaw-ancestor]'; then
+            echo "Changes under ancestor/, allowed by [thaw-ancestor]:"
+            echo "$CHANGED"
+            exit 0
+          fi
+
+          echo "::error::ancestor/ is frozen, but these files changed:"
+          echo "$CHANGED" | sed 's/^/  /'
+          echo "::error::It holds the original 2018 code as a reference point. New work belongs in plugin/."
+          exit 1
