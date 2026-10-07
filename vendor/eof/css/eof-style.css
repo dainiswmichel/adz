@@ -1,0 +1,81 @@
+select.eof-small-select {
+  min-width: 130px;
+}
+select.eof-regular-select {
+  min-width: 210px;
+}
+select.eof-large-select {
+  min-width: 350px;
+}
+
+.wp-picker-container {
+  vertical-align: middle;
+}
+
+.eof-image-preview img {
+  max-width: 480px;
+  height: auto;
+}
+
+.radio-img-item {
+  padding: 2px;
+}
+
+.eof-form-table > tbody > tr > th {
+  width: 150px;
+}
+
+.eof-repeat-table thead th {
+  width: auto;
+  padding: 15px 10px;
+}
+.eof-repeat-table .item-action {
+  text-align: center;
+  width: 100px;
+}
+
+.small-table {
+  width: 380px !important;
+}
+
+.regular-table {
+  width: 620px !important;
+}
+.chosen-container {
+    width: 500px !important;
+}
+
+
+
+  /*  Define the background color for all the ODD table columns  */
+  #ad_settings tr td:nth-child(odd), #ad_settings th:nth-child(odd){ 
+    background: #FFFFFF;
+  }
+  /*  Define the background color for all the EVEN table columns  */
+  #ad_settings tr td:nth-child(even),  #ad_settings th:nth-child(even){
+    background: #F4F4F4;
+  }
+  input.large-text{
+    width:270px !important;
+  }
+  input[type="number"].small-text{
+    width:90px !important;
+  }
+  .chosen-container-multi .chosen-choices{
+    height: 320px !important;
+    overflow-y: scroll !important;
+  }
+  #ad_settings .description {
+    width: 150px;
+ }
+ .eof-repeat-table thead th {
+
+    text-align: center;
+    vertical-align: middle;
+    padding-top: 5px;
+}
+.eof-repeat-table td {
+  vertical-align: top !important;
+  border-bottom: 0.5px solid #DDDDDD;
+}
+
