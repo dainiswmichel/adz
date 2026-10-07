@@ -1,0 +1,58 @@
+# Deploys the plugin to the WordPress.org directory.
+#
+# Publishing a GitHub release commits plugin/ to SVN trunk and creates the
+# matching SVN tag. Nothing is deployed on an ordinary push.
+#
+# Requires two repository secrets, under Settings > Secrets and variables >
+# Actions:
+#   SVN_USERNAME  your WordPress.org username
+#   SVN_PASSWORD  the dedicated SVN password from your WordPress.org profile
+#                 (Account & Security > SVN credentials). The normal login
+#                 password does not work for SVN.
+
+name: Deploy to WordPress.org
+
+on:
+  release:
+    types: [released]
+
+  # Lets a deploy be rehearsed by hand without publishing a release.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Version to rehearse, e.g. 1.0.9"
+        required: true
+      dry_run:
+        description: "Skip the SVN commit"
+        type: boolean
+        default: true
+
+jobs:
+  deploy:
+    name: Deploy to WP.org
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check the version agrees everywhere
+        run: ./.github/scripts/check-version.sh "${{ github.event.release.tag_name || inputs.tag }}"
+
+      - name: Lint every PHP file
+        run: |
+          find plugin -name '*.php' -print0 \
+            | xargs -0 -n1 php -l > /dev/null
+
+      - name: WordPress Plugin Deploy
+        uses: 10up/action-wordpress-plugin-deploy@stable
+        with:
+          dry-run: ${{ inputs.dry_run || false }}
+        env:
+          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
+          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
+          # The repository is named "adz"; the directory slug is "adz-world".
+          SLUG: adz-world
+          # Only this directory is deployed. network/ and pro/ never ship.
+          BUILD_DIR: plugin
+          VERSION: ${{ github.event.release.tag_name || inputs.tag }}
