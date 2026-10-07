@@ -1,6 +1,6 @@
 # Deploys the plugin to the WordPress.org directory.
 #
-# Publishing a GitHub release commits plugin/ to SVN trunk and creates the
+# Publishing a GitHub release commits live-plugin/ to SVN trunk and creates the
 # matching SVN tag. Nothing is deployed on an ordinary push.
 #
 # Requires two repository secrets, under Settings > Secrets and variables >
@@ -41,7 +41,7 @@ jobs:
 
       - name: Lint every PHP file
         run: |
-          find plugin -name '*.php' -print0 \
+          find live-plugin dev-plugin -name '*.php' -print0 \
             | xargs -0 -n1 php -l > /dev/null
 
       - name: WordPress Plugin Deploy
@@ -53,6 +53,6 @@ jobs:
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
           # The repository is named "adz"; the directory slug is "adz-world".
           SLUG: adz-world
-          # Only this directory is deployed. network/ and pro/ never ship.
-          BUILD_DIR: plugin
+          # Only live-plugin/ is deployed. dev-plugin/ and ancestor/ never ship.
+          BUILD_DIR: live-plugin
           VERSION: ${{ github.event.release.tag_name || inputs.tag }}

@@ -1,0 +1,27 @@
+==== adz.world development team ====
+    Product Manager: dainis w michel
+    Location: Vienna, Austria
+    URL: www.dainiswmichel.com
+
+        Developer1: FirstName LastName
+        D1Location: City, Country
+        D1URL: www.domain.com
+
+        Developer2: FirstName LastName
+        D2Location: City, Country
+        D2URL: www.domain.com
+
+	Developer: Rajha Rajesuwari S
+        Location: Bangalore , India
+        URL: https://www.codementor.io/rajharajesuwari
+
+    Company: CIS
+    Location: City, Country
+    URL: www.domain.com
+    Team1:
+    Team2:
+    Team3:
+
+    Role: Firstname Lastname
+    Location: City, Country
+

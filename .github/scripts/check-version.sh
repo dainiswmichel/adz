@@ -12,8 +12,8 @@
 set -euo pipefail
 
 TAG="${1:-}"
-PLUGIN_FILE="plugin/adz-world.php"
-README="plugin/readme.txt"
+PLUGIN_FILE="live-plugin/adz-world.php"
+README="live-plugin/readme.txt"
 
 if [[ -z "$TAG" ]]; then
 	echo "::error::No release tag supplied."
