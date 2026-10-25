@@ -1,0 +1,91 @@
+=== adz.world plugin changelog ===
+
+
+== adz.world plugin basic information ==
+Plugin Name: adz.world
+Author: www.dainiswmichel.com
+Tested starting with: WordPress 6.2
+Tested up to (declared): WordPress 7.1
+
+
+
+== Version Number Format (Notation: A.B.C.D) ==
+
+* "A" releases are "Major Releases" - new features, optimizations
+
+* "B" releases are "Minor Releases" - optimizations, fixes
+
+* "C" releases are “Housekeeping Releases" - fixes, bugfixes, coding enhancements
+
+* "D" releases are “Premium Version Releases” in which all features of the latest free version are incorporated into the premium version
+
+
+
+
+== Change Log ==
+
+= 1.1.0 =
+* Candidate only. Not a WordPress.org release and not an activation claim.
+* Outbound network calls require the existing network switch and a separate monetization acceptance. Activation does not call out.
+* Rotation option names from requests must match adz_rotation_<digits> before they are read, updated, or deleted.
+* Registration reset is an authenticated admin action with its own nonce. The public hook is removed. Unknown template names on the ad request return continue.
+* Template includes stay inside adz-templates. Template chrome is escaped. Template settings use one option.
+* Ad-view selects use prepared queries. The unused concatenated condition string is removed.
+* Admin Ajax URLs in js/plugin.js and vendor/eof/js/eof-custom.js come from wp_localize_script.
+* Earnings screen lists statement buckets and shows them as unconfigured. It does not rewrite ad links or replace a publisher referral code.
+* Visitor preferences use a session cookie. Logged-in guests store category ids in user meta. No member privilege is implemented.   
+
+
+== Coming Soon ==
+
+1.2.1 | 2018-06m-11d-01 | Free
+-------------------------------------
+Upcoming Tasks:
+
+New:
+Core: 
+Bugs: 
+
+
+1.2.1.1 | 2018-06m-11d-01 | Premium
+-------------------------------------
+Upcoming Tasks:
+- same as free
+
+
+
+
+
+== Current Release ==
+The top version is the latest, most up-to-date software release. 
+
+= 1.0.1 =
+
+1.0.1 | 2018-06m-11d-01 | Free
+-------------------------------------
+- initial release
+
+
+= 1.0.1.1 =
+
+1.0.1.1 | 2018-06m-11d-01 | Premium
+-------------------------------------
+- same as free 
+
+
+
+
+=== Appendix ===
+
+Formatting Key
+=== H1 ===
+== H2 ==
+= H3 =
+
+* list item
+
+date format example: 2018-06m-11d-01 
+date format explanation: yyyy-mm(+letter “m” to indicate month)-dd(+letter “d” to indicate day)-incremental integer
+
+Free: Free version available at wordpress.org
+Premium: Premium version available at www.adz.world 

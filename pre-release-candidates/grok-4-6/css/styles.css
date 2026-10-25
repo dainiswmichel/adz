@@ -1,0 +1,144 @@
+
+
+.adz_content_wrapper {
+    text-align: center;
+    height: 600px;
+    overflow: scroll;
+}
+
+#adz_footer #info-bar {
+  background-color: #3cb5f9; padding: 0px 15px; }
+  #adz_footer #info-bar a {
+    color: white;
+    font-size: 14px;
+    text-transform: uppercase;
+    display: inline-block;
+    margin: 0;
+    padding: 10px; }
+    #adz_footer #info-bar a:hover {
+      background-color: #0793e2; }
+  #adz_footer #info-bar span.all-tutorials,
+  #adz_footer #info-bar span.back-to-tutorial {
+    display: block;
+    width: 50%; }
+  #adz_footer #info-bar span.all-tutorials {
+    float: left;
+    text-align: left; }
+  #adz_footer #info-bar span.back-to-tutorial {
+    float: right;
+    text-align: right; }
+
+/* =header#adz_header
+-------------------------------------------------------------- */
+header#adz_header {
+  width: 100%;
+  height: 50px;
+  overflow: hidden;
+  /*position: fixed;*/
+  top: 0;
+  left: 0;
+  z-index: 999;
+  background-color: #0683c9;
+  -webkit-transition: height 0.3s;
+  -moz-transition: height 0.3s;
+  -ms-transition: height 0.3s;
+  -o-transition: height 0.3s;
+  transition: height 0.3s;
+  padding: 0px 15px; }
+  header#adz_header #logo {
+    display: inline-block;
+    height: 50px;
+    line-height: 50px;
+    float: left;
+    font-family: "Oswald", sans-serif;
+    font-size: 25px;
+    color: white;
+    font-weight: bold;
+    -webkit-transition: all 0.3s;
+    -moz-transition: all 0.3s;
+    -ms-transition: all 0.3s;
+    -o-transition: all 0.3s;
+    transition: all 0.3s; }
+  header#adz_header nav {
+    display: inline-block;
+    float: right; }
+    header#adz_header nav a {
+      line-height: 50px;
+      margin-left: 20px;
+      color: #9fdbfc;
+      font-weight: 700;
+      font-size: 18px;
+      -webkit-transition: all 0.3s;
+      -moz-transition: all 0.3s;
+      -ms-transition: all 0.3s;
+      -o-transition: all 0.3s;
+      transition: all 0.3s; }
+      header#adz_header nav a:hover {
+        color: white; }
+  header#adz_header.smaller {
+    height: 75px; }
+    header#adz_header.smaller h1#logo {
+      width: 150px;
+      height: 75px;
+      line-height: 75px;
+      font-size: 30px; }
+    header#adz_header.smaller nav a {
+      line-height: 75px; }
+
+/* =Footer
+-------------------------------------------------------------- */
+/* =Extras
+-------------------------------------------------------------- */
+.clearfix:after {
+  visibility: hidden;
+  display: block;
+  content: "";
+  clear: both;
+  height: 0; }
+
+/* =Media Queries
+-------------------------------------------------------------- */
+@media all and (max-width: 660px) {
+  /* =header#adz_header
+  -------------------------------------------------------------- */
+  header#adz_header h1#logo {
+    display: block;
+    float: none;
+    margin: 0 auto;
+    height: 100px;
+    line-height: 100px;
+    text-align: center; }
+  header#adz_header nav {
+    display: block;
+    float: none;
+    height: 50px;
+    text-align: center;
+    margin: 0 auto; }
+    header#adz_header nav a {
+      line-height: 50px;
+      margin: 0 10px; }
+  header#adz_header.smaller {
+    height: 75px; }
+    header#adz_header.smaller h1#logo {
+      height: 40px;
+      line-height: 40px;
+      font-size: 30px; }
+    header#adz_header.smaller nav {
+      height: 35px; }
+      header#adz_header.smaller nav a {
+        line-height: 35px; } }
+@media all and (max-width: 600px) {
+  .container {
+    width: 100%; }
+
+  #adz_footer #info-bar a {
+    display: block; }
+  #adz_footer #info-bar span.all-tutorials,
+  #adz_footer #info-bar span.back-to-tutorial {
+    width: 100%; }
+  #adz_footer #info-bar span.all-tutorials,
+  #adz_footer #info-bar span.back-to-tutorial {
+    float: none;
+    text-align: center; }
+  #adz_footer #info-bar span.all-tutorials {
+    border-bottom: solid 1px #0793e2; } }

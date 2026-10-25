@@ -1,0 +1,61 @@
+
+
+.adz_overlay {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.7);
+  transition: opacity 500ms;
+  visibility: hidden;
+  opacity: 0;
+z-index: 99;
+
+}
+.adz_overlay:target {
+  visibility: visible;
+  opacity: 1;
+}
+
+.adz_popup {
+  background: #fff none repeat scroll 0 0;
+    border-radius: 5px;
+    height: 90%;
+    margin: 70px auto;
+    overflow: hidden;
+    padding: 20px;
+    position: relative;
+    transition: all 1.5s ease-in-out 0s;
+    -webkit-transition: all 1.5s ease-in-out 0s;
+    width: 50%;
+}
+
+.adz_popup h2 {
+  margin-top: 0;
+  color: #333;
+  font-family: Tahoma, Arial, sans-serif;
+}
+.adz_popup .close {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  transition: all 200ms;
+  font-size: 30px;
+  font-weight: bold;
+  text-decoration: none;
+  color: #333;
+}
+.adz_popup .close:hover {
+  color: #06D85F;
+}
+.adz_popup .content {
+  /*max-height: 30%;
+  overflow: auto;*/
+}
+
+@media screen and (max-width: 700px){
+  .adz_popup{
+    width: 70%;
+  }
+}
