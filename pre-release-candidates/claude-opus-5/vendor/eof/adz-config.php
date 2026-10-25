@@ -1,34 +1,83 @@
 <?php
 
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly.
-add_action('init', 'adz_check_post_function');
-function adz_check_post_function(){
+add_action( 'init', 'adz_check_post_function' );
+/**
+ * Clear the stored rotation state for rotations submitted on the settings page.
+ *
+ * SECURITY. Before this was repaired, the function ran on every request --
+ * 'init' fires for logged-out visitors too -- and passed a submitted value
+ * straight to delete_option() as the option NAME, with no capability check and
+ * no nonce. A single unauthenticated POST to any URL on the site could delete
+ * siteurl, home, active_plugins or admin_email. Sanitising an arbitrary option
+ * name does not make that option safe to delete.
+ *
+ * Three independent conditions now have to hold: the request is an authorised
+ * administrator saving this plugin's own settings form, and the rotation id is
+ * one this plugin generates (adz_rotation_<n>, see vendor/eof/fields/repeat.php).
+ *
+ * @return void
+ */
+function adz_check_post_function() {
 
-	if(isset($_POST['adz_ad_options'])){
-		if(!empty($_POST['adz_ad_options'])){
-			
-			foreach ($_POST['adz_ad_options']['ad_settings'] as $value) {
-				
-				delete_option( sanitize_text_field( $value['rotation_id'] ) );
-				
-			}	
+	if ( ! is_admin() || ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+
+	$nonce = isset( $_POST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ) : '';
+
+	if ( ! wp_verify_nonce( $nonce, 'adz_ad_options-options' ) ) {
+		return;
+	}
+
+	if ( empty( $_POST['adz_ad_options']['ad_settings'] ) || ! is_array( $_POST['adz_ad_options']['ad_settings'] ) ) {
+		return;
+	}
+
+	// phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- each id is validated below.
+	$submitted = wp_unslash( $_POST['adz_ad_options']['ad_settings'] );
+
+	foreach ( $submitted as $value ) {
+
+		if ( ! is_array( $value ) || ! isset( $value['rotation_id'] ) ) {
+			continue;
 		}
+
+		$rotation_id = adz_validate_rotation_id( $value['rotation_id'] );
+
+		if ( '' === $rotation_id ) {
+			continue;
+		}
+
+		delete_option( $rotation_id );
 	}
-	
 }
-function adz_reset_registration(){
-	$nonce = $_REQUEST['adz_nonce'];
-	if ( ! wp_verify_nonce( $nonce, 'adzdotworld' ) ) { 
-		echo "error";
-		exit;
+/**
+ * Delete this site's network registration and tokens.
+ *
+ * SECURITY. This was registered for unauthenticated AJAX and guarded only by
+ * the 'adzdotworld' nonce, which the plugin prints into public page source for
+ * logged-out visitors. Any visitor could read that nonce from a public page and
+ * then wipe the site's registration. A nonce is not authorisation.
+ *
+ * It now requires an administrator and its own nonce, created only on the
+ * settings screen, and is no longer reachable without logging in.
+ *
+ * @return void
+ */
+function adz_reset_registration() {
+
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( 'forbidden', 403 );
 	}
-	delete_option('adz_publisher_options');
-	echo "continue";
-	exit;
-		
+
+	check_ajax_referer( 'adz_reset_registration', 'adz_nonce' );
+
+	delete_option( 'adz_publisher_options' );
+
+	wp_send_json_success( 'continue' );
 }
 add_action('wp_ajax_adz_reset_registration', 'adz_reset_registration');
-add_action('wp_ajax_nopriv_adz_reset_registration', 'adz_reset_registration');
 
 function adz_get_data_from_file($file){
 	
@@ -381,7 +430,8 @@ function adz_registration_status() {
 			
 			if (isset($reg['date'])) {
 				$reg = "Registered Since: ".$reg['date'];
-				$reg .= " <a href='javascript:void()' onclick='reset_registration()'>Reset the linked account.</a> <input type='hidden' value='".wp_create_nonce( 'adzdotworld' )."' id='adz_nonce'>";
+				$reg .= ' <a href="#" class="adz-reset-registration">' . esc_html__( 'Reset the linked account.', 'adz-world' ) . '</a>'
+					. '<input type="hidden" value="' . esc_attr( wp_create_nonce( 'adz_reset_registration' ) ) . '" id="adz_nonce">';
 			} else {
 				$reg = "Not Registered";
 			}

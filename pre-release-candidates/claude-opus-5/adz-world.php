@@ -121,7 +121,7 @@ function adz_get_advertise_content(){
 
 	$visitor_ip = $_SERVER['REMOTE_ADDR'];
 
-	$adz_views = $wpdb->get_row("SELECT *  FROM ".$wpdb->prefix .'adz_views'." WHERE visitor_ip = '".$visitor_ip."' AND `targate_id` = '".sanitize_text_field( $_POST['target'] )."' ".$cond."  AND ad_date='".date('Y-m-d')."'",OBJECT);	
+	$adz_views = adz_get_view_row( $visitor_ip, isset( $_POST['target'] ) ? (int) $_POST['target'] : 0, $target_type );	
 	
 	if(empty($adz_views)){
 		if(isset($_POST['close_adz']) && $_POST['close_adz'] == 'true'){
@@ -183,7 +183,7 @@ function adz_get_advertise_content(){
 			
 			$visitor_ip = $_SERVER['REMOTE_ADDR'];
 
-			$adz_views = $wpdb->get_row("SELECT *  FROM ".$wpdb->prefix .'adz_views'." WHERE visitor_ip = '".$visitor_ip."' AND `targate_id` = '".sanitize_text_field( $_POST['target'] )."' ".$cond."  AND ad_date='".date('Y-m-d')."'",OBJECT);
+			$adz_views = adz_get_view_row( $visitor_ip, isset( $_POST['target'] ) ? (int) $_POST['target'] : 0, $target_type );
 
 			$display_type = sanitize_text_field( $_POST['display_type'] );
 			
@@ -195,7 +195,12 @@ function adz_get_advertise_content(){
 					$_SESSION['first_time'] = time()+sanitize_text_field( $_POST['ad_visibility_interval'] );
 				}
 				
-				require_once(__DIR__.'/adz-templates/'.sanitize_text_field( $_POST['adz_template'] ));
+				$adz_template_file = adz_resolve_template( isset( $_POST['adz_template'] ) ? wp_unslash( $_POST['adz_template'] ) : '' );
+				if ( '' === $adz_template_file ) {
+					echo 'continue';
+					exit;
+				}
+				require $adz_template_file;
 				if($next_adz_pool == 'publisher'  || !$next_adz_pool){
 					if($_POST['target_type'] == 'shortcode'){
 						$publisher_rotations_stats = get_post_meta(sanitize_text_field( $_POST['target'] ),'adz_rotation_shortcode',true);
@@ -265,7 +270,12 @@ function adz_get_advertise_content(){
 						$_SESSION['first_time'] = time()+intval( $_POST['ad_visibility_interval'] );
 					}				
 
-					require_once(__DIR__.'/adz-templates/'.sanitize_text_field( $_POST['adz_template'] ));
+					$adz_template_file = adz_resolve_template( isset( $_POST['adz_template'] ) ? wp_unslash( $_POST['adz_template'] ) : '' );
+				if ( '' === $adz_template_file ) {
+					echo 'continue';
+					exit;
+				}
+				require $adz_template_file;
 
 					if($next_adz_pool == 'publisher'  || !$next_adz_pool){
 
@@ -592,7 +602,7 @@ function adz_show_advertise( $roatations, $ad_to_serve, $repeat_times ){
 			$visitor_ip = $_SERVER['REMOTE_ADDR'];
 			$ad = $ad_info[0];
 			$ad_text = $ad->content;
-			$adz_views = $wpdb->get_row("SELECT *  FROM ".$wpdb->prefix .'adz_views'." WHERE visitor_ip = '".$visitor_ip."' AND ad_date='".date('Y-m-d')."'",OBJECT);
+			$adz_views = adz_get_view_row_any( $visitor_ip );
 			
 			if( empty($adz_views) ){
 				$ad_visibility_interval = $roatations['browse_seconds'];
@@ -600,7 +610,11 @@ function adz_show_advertise( $roatations, $ad_to_serve, $repeat_times ){
 				$target = get_the_ID();
 				$target_type = '';
 				$display_type = $roatations['popup_or_page'];
-				require_once(__DIR__.'/adz-templates/'.$roatations['adz_template']);
+				$adz_template_file = adz_resolve_template( isset( $roatations['adz_template'] ) ? $roatations['adz_template'] : '' );
+				if ( '' === $adz_template_file ) {
+					return;
+				}
+				require $adz_template_file;
 				if( $next_adz_pool == 'publisher'  || !$next_adz_pool ){
 
 					if( empty($rotation_adz_pool['served']) || !$rotation_adz_pool ){
@@ -651,7 +665,11 @@ function adz_show_advertise( $roatations, $ad_to_serve, $repeat_times ){
 
 				if( $seconds >= $roatations['browse_seconds'] && ($adz_views->number_of_times < $repeat_times || $repeat_times == 'infinite') ){
 				
-					require_once(__DIR__.'/adz-templates/'.$roatations['adz_template']);
+					$adz_template_file = adz_resolve_template( isset( $roatations['adz_template'] ) ? $roatations['adz_template'] : '' );
+				if ( '' === $adz_template_file ) {
+					return;
+				}
+				require $adz_template_file;
 					if( $next_adz_pool == 'publisher'  || !$next_adz_pool ){
 
 						if( empty($rotation_adz_pool['served']) || !$rotation_adz_pool ){

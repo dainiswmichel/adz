@@ -399,3 +399,120 @@ function adz_network_base_url() {
 
 	return $url ? trailingslashit( esc_url_raw( $url ) ) : '';
 }
+
+/**
+ * Resolve an adz template filename to a real file inside adz-templates/.
+ *
+ * SECURITY. 1.0.8 built an include path by concatenating $_POST['adz_template']
+ * onto the templates directory and passing it to require_once(), on an endpoint
+ * registered for unauthenticated AJAX. sanitize_text_field() does not strip
+ * "../", so a crafted value escaped the directory and executed any PHP file the
+ * web user could read. The nonce guarding that endpoint is printed into public
+ * page source, so it stopped nobody.
+ *
+ * The name is now matched against the files that actually exist in
+ * adz-templates/. Nothing outside that directory is reachable, whatever the
+ * input contains.
+ *
+ * @param mixed $template Requested template filename.
+ * @return string Absolute path to a real template, or '' when there is no match.
+ */
+function adz_resolve_template( $template ) {
+	$template = basename( trim( (string) $template ) );
+
+	if ( '' === $template || '.php' !== substr( $template, -4 ) ) {
+		return '';
+	}
+
+	if ( ! in_array( $template, adz_available_templates(), true ) ) {
+		return '';
+	}
+
+	return ADZ_WORLD . 'adz-templates/' . $template;
+}
+
+/**
+ * The template files shipped in adz-templates/.
+ *
+ * @return string[] Filenames.
+ */
+function adz_available_templates() {
+	static $templates = null;
+
+	if ( null !== $templates ) {
+		return $templates;
+	}
+
+	$found     = glob( ADZ_WORLD . 'adz-templates/*.php' );
+	$templates = $found ? array_map( 'basename', $found ) : array();
+
+	return $templates;
+}
+
+/**
+ * Look up today's view record for a visitor against one target.
+ *
+ * SECURITY. The four queries this replaces were built by string concatenation,
+ * with $_POST values passed through sanitize_text_field() on the way in.
+ * sanitize_text_field() strips tags and control characters; it does not escape
+ * quotes and is not a SQL escaping function, so those queries were injectable.
+ * $wpdb->prepare() was used nowhere in the plugin.
+ *
+ * @param string $visitor_ip  Visitor address.
+ * @param int    $target_id   Post the adz was shown against.
+ * @param string $target_type Context, or '' to match any.
+ * @return object|null Row object, or null when there is no view today.
+ */
+function adz_get_view_row( $visitor_ip, $target_id, $target_type = '' ) {
+	global $wpdb;
+
+	$table = $wpdb->prefix . 'adz_views';
+	$today = current_time( 'Y-m-d' );
+
+	if ( '' !== $target_type ) {
+		// phpcs:ignore WordPress.DB -- plugin-owned table; values are prepared.
+		return $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT * FROM {$table} WHERE visitor_ip = %s AND `targate_id` = %d AND `target_type` = %s AND ad_date = %s",
+				$visitor_ip,
+				(int) $target_id,
+				$target_type,
+				$today
+			),
+			OBJECT
+		);
+	}
+
+	// phpcs:ignore WordPress.DB -- plugin-owned table; values are prepared.
+	return $wpdb->get_row(
+		$wpdb->prepare(
+			"SELECT * FROM {$table} WHERE visitor_ip = %s AND `targate_id` = %d AND ad_date = %s",
+			$visitor_ip,
+			(int) $target_id,
+			$today
+		),
+		OBJECT
+	);
+}
+
+/**
+ * Today's view record for a visitor, with no target filter.
+ *
+ * @param string $visitor_ip Visitor address.
+ * @return object|null
+ */
+function adz_get_view_row_any( $visitor_ip ) {
+	global $wpdb;
+
+	$table = $wpdb->prefix . 'adz_views';
+
+	// phpcs:ignore WordPress.DB -- plugin-owned table; values are prepared.
+	return $wpdb->get_row(
+		$wpdb->prepare(
+			"SELECT * FROM {$table} WHERE visitor_ip = %s AND ad_date = %s",
+			$visitor_ip,
+			current_time( 'Y-m-d' )
+		),
+		OBJECT
+	);
+}

@@ -260,6 +260,11 @@ jQuery(document).ready(function ($) {
 	EOF_settings.init();
 });
 
+jQuery( document ).on( 'click', '.adz-reset-registration', function ( e ) {
+	e.preventDefault();
+	reset_registration();
+} );
+
 function reset_registration(){
 	var conf = confirm('Are you sure ?');
 	var adz_nonce_value = jQuery('#adz_nonce').val();

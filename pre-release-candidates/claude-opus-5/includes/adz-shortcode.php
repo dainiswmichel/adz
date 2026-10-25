@@ -55,7 +55,7 @@ function adz_shortcode( $atts, $content = null ) {
 
 	$visitor_ip = $_SERVER['REMOTE_ADDR'];
 
-	$adz_views = $wpdb->get_row("SELECT *  FROM ".$wpdb->prefix .'adz_views'." WHERE visitor_ip = '".$visitor_ip."' AND `targate_id` = '".get_the_ID()."' AND target_type = 'shortcode' AND ad_date='".date('Y-m-d')."'",OBJECT);
+	$adz_views = adz_get_view_row( $visitor_ip, (int) get_the_ID(), 'shortcode' );
 
 	$adz_to_serve = adz_check_shortcode_roatation_completed_or_not($adz_sequence);
 	
