@@ -4,7 +4,7 @@ jQuery(document).ready(function(){
 		var selected_template = jQuery(this).val();
 		jQuery('.loading_data').show();
 		jQuery.ajax({
-	        url: "/wp-admin/admin-ajax.php",
+	        url: ( window.adzWorldAdmin && adzWorldAdmin.ajaxUrl ) ? adzWorldAdmin.ajaxUrl : ajaxurl,
 	        type : 'post',
 	        data: {
 	            action :'get_template_settings',

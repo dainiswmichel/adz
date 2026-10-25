@@ -271,7 +271,7 @@ function reset_registration(){
 	if(conf === true){
 		var current_url = window.location.href;
 		jQuery.ajax({
-	        url: "/wp-admin/admin-ajax.php",
+	        url: ( window.adzWorldAdmin && adzWorldAdmin.ajaxUrl ) ? adzWorldAdmin.ajaxUrl : ajaxurl,
 	        type : 'post',
 	        data: {
 	            action :'adz_reset_registration',

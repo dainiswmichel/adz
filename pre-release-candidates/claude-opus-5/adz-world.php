@@ -18,9 +18,16 @@ require_once(__DIR__.'/classes/eof_fields/dynamic.php');
 require_once(__DIR__.'/classes/eof_fields/select-caps.php');
 require_once(__DIR__.'/session-handling.php');
 require_once(__DIR__.'/includes/adz-helper.php');
+require_once(__DIR__.'/includes/adz-money.php');
+require_once(__DIR__.'/includes/adz-ledger.php');
+require_once(__DIR__.'/includes/adz-monetization.php');
+require_once(__DIR__.'/includes/adz-service.php');
+require_once(__DIR__.'/includes/adz-payouts.php');
+require_once(__DIR__.'/includes/adz-dashboard.php');
 require_once(__DIR__.'/includes/adz-cpt-ads.php');
 require_once(__DIR__.'/includes/adz-shortcode.php');
-define( 'ADZ_WORLD', plugin_dir_path(__FILE__ ) ); 
+define( 'ADZ_WORLD', plugin_dir_path( __FILE__ ) );
+define( 'ADZ_WORLD_VERSION', '1.0.9' );
 
 
 function activate_adz_world(){
@@ -44,10 +51,18 @@ function activate_adz_world(){
 	
 	dbDelta( $sql );
 
+	adz_ledger_install();
+
 	
 	
 }
 register_activation_hook( __FILE__,'activate_adz_world' );
+
+/*
+ * register_activation_hook does not fire on plugin update, so installs coming
+ * from an earlier version create the ledger tables here instead.
+ */
+add_action( 'init', 'adz_ledger_maybe_upgrade' );
 
 /* Function For adding scripts in the front-end */
 
@@ -61,7 +76,20 @@ add_action( 'wp_enqueue_scripts', 'adz_enqueue_scripts' );
 /* Function For adding scripts in the backend */
 function adz_enqueue_scripts_admin() {
 	
-	wp_enqueue_script( 'adz_admin_script',plugin_dir_url( __FILE__ ).'js/plugin.js',array('jquery') );
+	wp_enqueue_script( 'adz_admin_script', plugin_dir_url( __FILE__ ) . 'js/plugin.js', array( 'jquery' ), ADZ_WORLD_VERSION, true );
+
+	/*
+	 * wp-admin is not always at /wp-admin. The endpoint is resolved in PHP and
+	 * handed to the script, with a nonce, rather than hardcoded in the JS.
+	 */
+	wp_localize_script(
+		'adz_admin_script',
+		'adzWorldAdmin',
+		array(
+			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+			'nonce'   => wp_create_nonce( 'adz_admin' ),
+		)
+	);
 }// End of thr function.
 
 

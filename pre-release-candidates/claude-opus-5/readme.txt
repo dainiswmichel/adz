@@ -48,28 +48,49 @@ you can make your own adz or serve adz from external ad networks, so the adz the
 
 == External services ==
 
-By default this plugin connects to no external service. Your site serves only
-the adz you create on it, and no visitor data leaves your server.
+This plugin contacts no external service unless you switch monetization on.
+Monetization is off when the plugin is installed and activated. Installing the
+plugin is not consent.
 
-The plugin can optionally be connected to the adz-world.com advertising
-network. This is off unless you switch it on, under Adz Settings, by ticking
-"Connect to the adz-world.com network".
+= With monetization off =
 
-With it switched on:
+Nothing leaves your server. The plugin serves only the adz you create on this
+site, and no visitor data is sent anywhere.
 
-* **What the service is.** adz-world.com is a permission-based advertising
-  network. It supplies adz to display on your site, and makes the adz you
-  publish available to other sites in the network.
-* **What is sent, and when.** When a visitor is shown an adz, your site sends
-  adz-world.com your publisher ID and access tokens, your referral code, and
-  the visitor's IP address, so the network can return an adz and avoid
-  repeating one the visitor has already seen. When you publish or delete an
-  adz, its title, content and categories are sent. When you register, your site
-  URL, site title and administrator email address are sent.
-* **Terms and privacy.** Terms of Service: https://adz-world.com/terms/ ,
-  Privacy Policy: https://adz-world.com/privacy/
+= With monetization on =
 
-Switching the setting off stops all of it. Nothing is contacted again.
+Switching monetization on, under Adz > Earnings, connects this site to the
+adz-world settlement service at https://adz-world.com.
+
+What the service is: adz-world is a permission-based advertising service. It
+places its own affiliate codes on adz served through it, collects the resulting
+commission from merchants, keeps 10% of commission it actually receives, and
+settles the remaining 90% to you. The 10% is taken from commission received, not
+from sales, clicks, impressions or estimated earnings.
+
+What is sent, and when:
+
+* When you switch monetization on: your site URL, the WordPress user ID of the
+  administrator who agreed, the date, and the version of the terms agreed to.
+* When a visitor clicks a monetized adz: the visitor is sent to
+  https://adz-world.com/go/ carrying the publisher identifier for this site, the
+  destination URL, and the ID of the post the adz appeared on. No visitor
+  identifier, IP address or profile is attached.
+* When your dashboard refreshes: a request for this site's own statement,
+  authenticated with this site's token.
+* When you request a payout: the currency, amount and payout method you chose.
+
+What is never sent: visitor IP addresses, visitor preferences, post content, or
+any data about your readers.
+
+Links on your adz that already carry your own affiliate identifier are never
+rewritten. Your existing arrangements are left alone.
+
+Terms of Service: https://adz-world.com/terms/
+Privacy Policy: https://adz-world.com/privacy/
+
+Switching monetization off stops all of it immediately. Commission already
+settled remains owed to you.
 
 == Installation ==
 
