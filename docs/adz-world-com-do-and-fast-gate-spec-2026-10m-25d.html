@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>adz-world.com on DigitalOcean, and the fast gate — 2026-10m-25d</title>
+<style>
+  :root { --ink:#172033; --muted:#5e6879; --paper:#f7f9fc; --line:#d8e0ea; --blue:#185a96; --blue-soft:#eaf4ff; --amber:#805300; --amber-soft:#fff5d9; --code:#171d29; --code-ink:#edf3fa; }
+  * { box-sizing:border-box; }
+  body { margin:0; color:var(--ink); background:var(--paper); font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; }
+  .wrap { max-width:980px; margin:0 auto; padding:36px 22px 80px; }
+  h1 { margin:8px 0 12px; font-size:clamp(28px,4vw,40px); line-height:1.1; letter-spacing:-.02em; }
+  h2 { margin:40px 0 10px; padding-bottom:6px; border-bottom:1px solid var(--line); font-size:24px; }
+  h3 { margin:22px 0 8px; font-size:18px; }
+  p { margin:0 0 12px; }
+  code, .path { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.92em; }
+  .path { background:var(--blue-soft); padding:0 .25em; border-radius:4px; }
+  table { width:100%; border-collapse:collapse; margin:12px 0 18px; background:#fff; }
+  th, td { text-align:left; vertical-align:top; padding:8px 10px; border-bottom:1px solid var(--line); }
+  th { font-size:13px; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }
+  .note, .warn { border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin:14px 0; }
+  .note { background:var(--blue-soft); border-color:#c5daf3; }
+  .warn { background:var(--amber-soft); border-color:#ead7a2; }
+  pre { margin:10px 0 18px; padding:14px 16px; overflow:auto; background:var(--code); color:var(--code-ink); border-radius:10px; font:13px/1.45 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; white-space:pre; }
+  .eyebrow { color:var(--blue); font-size:12px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; }
+  ul, ol { margin:8px 0 14px; padding-left:1.3em; }
+  li { margin:4px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<p class="eyebrow">Michel Time Stamp 2026y-10m-25d-UTC-12h-05m-20s</p>
+<h1>adz-world.com on DigitalOcean, and the fast gate</h1>
+<div class="note"><p>This is a point-in-time setup specification, not the current remediation status. The agreed workflow in <span class="path">README.md</span> supersedes the single-candidate and whole-tree promotion instructions below: agents work independently in <span class="path">pre-release-candidates/</span>, reviewed repairs are integrated into <span class="path">adz-world-wordpress-codebase/</span>, and one gate and one release ZIP use that integrated source. The sibling <span class="path">../adz-world-com/</span> is the website project. The gate is not implemented yet; align the source and promotion commands below before executing them.</p></div>
+<p>Flagship site <span class="path">https://adz-world.com/</span> runs one compiled copy of the wordpress.org plugin <span class="path">adz-world</span>. Agents write repairs in separate slots. The compiled tree is what the site installs and what the release ships. One local gate covers the FLOSC verification blocks that apply. There is no Internal Iteration counter. The review window ends 28 November 2026.</p>
+
+<h2>Checked facts</h2>
+<table>
+  <tr><th>Item</th><th>State at this stamp</th></tr>
+  <tr><td>Repo</td><td><span class="path">https://github.com/dainiswmichel/adz.git</span>, local <span class="path">/Users/dainismichel/2026/adz-project-folder/adz</span>, branch <span class="path">main</span> tracking <span class="path">origin/main</span></td></tr>
+  <tr><td>WordPress.org</td><td>Plugin closed 29 September 2026. Review ID <span class="path">GUIDELINES adz-world/dainismichel/29Sep26/T1 29Sep26/4.3</span>. Sixtieth day is 28 November 2026. The closure email does not name the guideline. Scope file: <span class="path">adz/docs/remediation-scope.md</span></td></tr>
+  <tr><td>Tree that deploys</td><td><span class="path">adz-world-wordpress-codebase/</span> only, via <span class="path">.github/workflows/deploy.yml</span> on a GitHub release. <span class="path">BUILD_DIR: adz-world-wordpress-codebase</span>, <span class="path">SLUG: adz-world</span>. Ordinary push does not deploy. <span class="path">check-version.sh</span> requires the release tag, <span class="path">Version:</span> in <span class="path">adz-world.php</span>, and <span class="path">Stable tag:</span> in <span class="path">readme.txt</span> to be the same string. A mismatch makes wordpress.org keep the previous zip.</td></tr>
+  <tr><td>Live mirror</td><td><span class="path">adz-world-wordpress-codebase/</span> header Version 1.0.9. readme.txt still says Requires at least 4.9.6, Tested up to 4.9.6, Requires PHP 5.6. Chosen 1.8.2 is still in that tree.</td></tr>
+  <tr><td>Working tree</td><td><span class="path">pre-release-candidates/claude-opus-5/</span>. 56 files, 41 PHP. Version 1.0.9, Requires at least 6.2, Tested up to 7.1, Requires PHP 7.4, five tags, <span class="path">== External services ==</span> present. Chosen files are absent. <span class="path">diff -rq adz-world-wordpress-codebase pre-release-candidates/claude-opus-5</span> is the remediation, not a version-only bump. <span class="path">adz/README.md</span> still says this directory is a version bump and nothing else. That sentence is stale.</td></tr>
+  <tr><td>Ajax</td><td>The nine PHP sites named in the review call <span class="path">admin_url( 'admin-ajax.php' )</span>. Two shipped scripts still use the literal <span class="path">/wp-admin/admin-ajax.php</span>: <span class="path">js/plugin.js:7</span> and <span class="path">vendor/eof/js/eof-custom.js:269</span>.</td></tr>
+  <tr><td>Network base</td><td><span class="path">$adz_ad_network_base_url = 'https://adz-world.com/'</span> in the candidate <span class="path">adz-world.php</span>. Client calls <span class="path">{base}/wp-json/adz_server/v1/</span>. The switch "Connect to the adz-world.com network" is off unless an administrator ticks it.</td></tr>
+  <tr><td>Ancestor network</td><td><span class="path">ancestor/network/</span>, plugin name Ad Network Control, version 1.0.1. Namespace string is <span class="path">/adz_server/v1</span> with a leading slash. <span class="path">permission_callback</span> is an empty string on visitor-login. <span class="path">screen_icon()</span> is called from the settings page. This tree is frozen and is not the flagship install.</td></tr>
+  <tr><td>Agent slots</td><td><span class="path">pre-release-candidates/&lt;agent&gt;/</span>. Each agent writes a full copy there. <span class="path">claude-opus-5</span> currently holds the 29 September repairs. The other slots start empty. An agent slot is never the tree on adz-world.com and never the tree the GitHub release deploys.</td></tr>
+  <tr><td>adz-world.com DNS</td><td>Nameservers <span class="path">dns1.registrar-servers.com</span> and <span class="path">dns2.registrar-servers.com</span> (Namecheap). Apex A is <span class="path">192.64.119.131</span>. <span class="path">www</span> CNAMEs to <span class="path">parkingpage.namecheap.com</span>. The hostname is a parking page. Terms and privacy URLs in the readme do not exist yet.</td></tr>
+  <tr><td>Existing droplets</td><td><span class="path">ssh digitalocean</span> is <span class="path">159.65.170.10</span>, hostname <span class="path">lesaep-ipa-api</span>, with <span class="path">/var/www/html</span>. <span class="path">ssh da1ni5-profit</span> is <span class="path">167.172.241.113</span>, compose <span class="path">/opt/flosc-wp-v111</span> published on port 8094. Neither host is adz-world.com.</td></tr>
+  <tr><td>Old site files</td><td><span class="path">adz-project-folder/adzdotworld/wp-config.php</span> and <span class="path">boss-child/</span> are historical. They are not the flagship config.</td></tr>
+</table>
+
+<h2>Two sites</h2>
+<table>
+  <tr><th>Site</th><th>Job</th><th>Lifetime</th></tr>
+  <tr><td>Flagship <span class="path">https://adz-world.com/</span></td><td>The live site. It runs the compiled plugin from <span class="path">adz-world-wordpress-codebase/</span>, network switch off, plus <span class="path">/terms/</span> and <span class="path">/privacy/</span>. Those two URLs are what the next wordpress.org review fetches. An agent directory is not installed here.</td><td>Persistent. A new compiled zip replaces the plugin directory. Volumes stay.</td></tr>
+  <tr><td>Burner on <span class="path">da1ni5-profit</span>, port 8095</td><td>Clean WordPress from wordpress.org, the candidate zip, Plugin Check from wordpress.org, <span class="path">WP_DEBUG</span> true. Same role as the FLOSC burner on port 8094.</td><td>Disposable. <span class="path">docker compose down -v</span> inside <span class="path">/opt/adz-wp</span> only.</td></tr>
+</table>
+<div class="note">
+  <p>The flagship is a new droplet in <span class="path">nyc3</span>, Ubuntu 24.04, 2 GB, name <span class="path">adz-world</span>, SSH key <span class="path">~/.ssh/id_rsa.pub</span>. After it exists, <span class="path">~/.ssh/config</span> gains <span class="path">Host adz-world</span> with that address, user <span class="path">root</span>, and that identity file. Firewall on that droplet is 22, 80, and 443.</p>
+</div>
+<div class="warn">
+  <p><span class="path">159.65.170.10</span> stays the lesaep host. <span class="path">167.172.241.113</span> keeps FLOSC on 8094. ChemiCloud and <span class="path">dainis.net</span> are not this install. <span class="path">ancestor/</span>, <span class="path">adz-world-pro/</span>, <span class="path">adz_ad_network/</span>, and <span class="path">adzdotworld/</span> are not copied onto either site.</p>
+</div>
+
+<h2>Flagship install</h2>
+<p>Files live only on the droplet, under <span class="path">/opt/adz-flagship/</span>. They are not committed to the plugin repo. Secrets are generated on the droplet into <span class="path">.env</span> and <span class="path">credentials.txt</span>, mode <span class="path">600</span>.</p>
+
+<h3>Unit files</h3>
+<pre>ssh adz-world 'install -d -m 700 /opt/adz-flagship
+umask 077
+cat > /opt/adz-flagship/.env << EOF
+MYSQL_DATABASE=wordpress
+MYSQL_USER=wordpress
+MYSQL_PASSWORD=$(openssl rand -hex 24)
+MYSQL_ROOT_PASSWORD=$(openssl rand -hex 24)
+ADZ_ADMIN_PASSWORD=$(openssl rand -hex 18)
+EOF
+cp /opt/adz-flagship/.env /opt/adz-flagship/credentials.txt
+chmod 600 /opt/adz-flagship/.env /opt/adz-flagship/credentials.txt'</pre>
+<p>The admin email is written into <span class="path">credentials.txt</span> by hand as <span class="path">ADZ_ADMIN_EMAIL=</span> a real mailbox. The install command reads it from that file. It is not a committed address.</p>
+
+<pre># /opt/adz-flagship/compose.yml
+services:
+  db:
+    image: mariadb:11.4
+    env_file: .env
+    volumes:
+      - db:/var/lib/mysql
+    restart: unless-stopped
+  wp:
+    image: wordpress:php8.3-apache
+    env_file: .env
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_CONFIG_EXTRA: |
+        define('FORCE_SSL_ADMIN', true);
+        if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') { $_SERVER['HTTPS'] = 'on'; }
+    volumes:
+      - wp:/var/www/html
+      - ./install-wordpress-org.sh:/usr/local/bin/install-wordpress-org.sh:ro
+      - ./adz-world.zip:/tmp/adz-world.zip:ro
+    entrypoint: ["bash", "/usr/local/bin/install-wordpress-org.sh"]
+    depends_on:
+      - db
+    restart: unless-stopped
+  caddy:
+    image: caddy:2
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy:/data
+      - caddy-config:/config
+    depends_on:
+      - wp
+    restart: unless-stopped
+  cli:
+    image: wordpress:cli-php8.3
+    env_file: .env
+    user: "33:33"
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+      WORDPRESS_DB_NAME: wordpress
+    volumes:
+      - wp:/var/www/html
+      - ./adz-world.zip:/tmp/adz-world.zip:ro
+    profiles: ["cli"]
+    depends_on:
+      - wp
+volumes:
+  db:
+  wp:
+  caddy:
+  caddy-config:</pre>
+
+<pre># /opt/adz-flagship/Caddyfile
+adz-world.com, www.adz-world.com {
+  reverse_proxy wp:80
+}</pre>
+
+<pre>#!/bin/bash
+# /opt/adz-flagship/install-wordpress-org.sh
+# This file is the image entrypoint. The image CMD is not used.
+set -euo pipefail
+if [ ! -f /var/www/html/wp-includes/version.php ]; then
+  ver="$(php -r '
+    $j = json_decode(file_get_contents("https://api.wordpress.org/core/version-check/1.7/"), true);
+    echo $j["offers"][0]["current"];
+  ')"
+  curl -fsSL -o /tmp/wordpress.tar.gz "https://wordpress.org/wordpress-${ver}.tar.gz"
+  curl -fsSL -o /tmp/wordpress.tar.gz.sha1 "https://wordpress.org/wordpress-${ver}.tar.gz.sha1"
+  echo "$(awk "{print \$1}" /tmp/wordpress.tar.gz.sha1)  /tmp/wordpress.tar.gz" | sha1sum -c -
+  tar -xzf /tmp/wordpress.tar.gz -C /var/www/html --strip-components=1
+  rm -rf /usr/src/wordpress /tmp/wordpress.tar.gz /tmp/wordpress.tar.gz.sha1
+  chown -R www-data:www-data /var/www/html
+fi
+exec docker-entrypoint.sh apache2-foreground</pre>
+<p><span class="path">wordpress:php8.3-apache</span> supplies PHP 8.3 and Apache. Replacing only <span class="path">command</span> leaves the image entrypoint, and that entrypoint copies <span class="path">/usr/src/wordpress</span> into an empty volume before any later script runs. The script above is the entrypoint, so the wordpress.org tarball is the core. It then execs <span class="path">docker-entrypoint.sh</span>, which writes <span class="path">wp-config.php</span> from the <span class="path">WORDPRESS_DB_*</span> variables and does not copy core, because <span class="path">version.php</span> is already present. An existing volume is left as installed. The CLI image runs as uid 33, the same user as Apache, so a later dashboard update can write <span class="path">wp-content/upgrade</span>.</p>
+
+<h3>DNS, then the first boot</h3>
+<p>At Namecheap, the apex A and the www record both become the new droplet address. Parking records come off. Caddy obtains the certificate after those records answer with the droplet address.</p>
+<pre>SOURCE="/Users/dainismichel/2026/adz-project-folder/adz/adz-world-wordpress-codebase"
+STAGE="$(mktemp -d /tmp/adz-stage.XXXXXX)"
+rsync -a --delete --exclude .git --exclude .gitkeep "$SOURCE/" "$STAGE/adz-world/"
+( cd "$STAGE" && zip -r -X /Users/dainismichel/2026/adz-project-folder/zip-files/adz-world.zip adz-world )
+shasum -a 256 /Users/dainismichel/2026/adz-project-folder/zip-files/adz-world.zip
+scp /Users/dainismichel/2026/adz-project-folder/zip-files/adz-world.zip adz-world:/opt/adz-flagship/adz-world.zip
+ssh adz-world 'cd /opt/adz-flagship && docker compose up -d'
+# wait until wp-includes/version.php exists inside the wp volume, then:
+ssh adz-world 'set -a; . /opt/adz-flagship/.env; set +a
+cd /opt/adz-flagship
+docker compose --profile cli run --rm cli core install \
+  --path=/var/www/html \
+  --url=https://adz-world.com \
+  --title="adz-world" \
+  --admin_user=adz_admin \
+  --admin_password="$ADZ_ADMIN_PASSWORD" \
+  --admin_email="$ADZ_ADMIN_EMAIL" \
+  --skip-email
+docker compose --profile cli run --rm cli plugin install /tmp/adz-world.zip --force --activate --path=/var/www/html
+docker compose --profile cli run --rm cli rewrite structure "/%postname%/" --hard --path=/var/www/html
+docker compose --profile cli run --rm cli option get permalink_structure --path=/var/www/html
+docker compose exec -T wp grep -E "Version:|Requires at least:|Requires PHP:" /var/www/html/wp-content/plugins/adz-world/adz-world.php'</pre>
+<p><span class="path">wp rewrite structure --hard</span> does not write <span class="path">.htaccess</span> from the CLI container. A nested remote heredoc also corrupts that file. The file is written on the Mac, copied to the droplet, and copied into the wp container as www-data. Without it, Apache returns its own 404 for <span class="path">/terms/</span> and <span class="path">/privacy/</span>.</p>
+<pre>cat > /tmp/adz-htaccess << 'EOF'
+# BEGIN WordPress
+&lt;IfModule mod_rewrite.c&gt;
+RewriteEngine On
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+RewriteBase /
+RewriteRule ^index\.php$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.php [L]
+&lt;/IfModule&gt;
+# END WordPress
+EOF
+scp /tmp/adz-htaccess adz-world:/tmp/adz-htaccess
+ssh adz-world 'cd /opt/adz-flagship && docker compose cp /tmp/adz-htaccess wp:/tmp/adz-htaccess && docker compose exec -T -u root wp cp /tmp/adz-htaccess /var/www/html/.htaccess && docker compose exec -T -u root wp chown www-data:www-data /var/www/html/.htaccess'</pre>
+
+<h3>Pages</h3>
+<table>
+  <tr><th>Path</th><th>Content</th></tr>
+  <tr><td><span class="path">/</span></td><td>The publisher plugin is active. The network switch is off. Ads on this site are the ones created in wp-admin. One published post uses the in-page template so a visitor can see a local ad.</td></tr>
+  <tr><td><span class="path">/terms/</span></td><td>Terms for the optional network named in <span class="path">readme.txt</span>. Names the operator. States what a connected site sends: publisher id, access tokens, referral code, visitor IP, ad title, ad content, ad categories, site URL, site title, administrator email.</td></tr>
+  <tr><td><span class="path">/privacy/</span></td><td>The same data items, why the IP is sent, and how a publisher turns the connection off.</td></tr>
+</table>
+<p>Page bodies are published with <span class="path">wp post create --post_type=page --post_status=publish --post_name=terms</span> and <span class="path">--post_name=privacy</span>. The network option stays off. No publisher registration is stored. Plugin Check is not part of the flagship. The flagship is the public site the review links are checked against.</p>
+<p>A later plugin update is <span class="path">scp</span> of a new zip, sha256 match, then <span class="path">wp plugin install /tmp/adz-world.zip --force --activate</span>. <span class="path">docker compose down -v</span> is not a flagship update.</p>
+
+<h3>Network phase</h3>
+<p>The publisher, with the switch off, does not call adz-world.com. The flagship is complete for the review links and for a local-ad demonstration without Ad Network Control. A later phase adds a current network plugin whose routes match the client strings <span class="path">wp-json/adz_server/v1/register</span>, <span class="path">wp-json/adz_server/v1/register/{id}</span>, and <span class="path">wp-json/adz_server/v1/ads/is_visitor_logged</span>, with callable <span class="path">permission_callback</span> values. That phase is a separate spec. The 2018 network tree is not activated on WordPress 7.</p>
+
+<h2>Burner</h2>
+<p>Directory <span class="path">/opt/adz-wp</span> on <span class="path">da1ni5-profit</span>. Compose project name <span class="path">adz-wp</span>. Published port <span class="path">8095:80</span>. Same images and the same wordpress.org download script as the flagship, without Caddy. URL <span class="path">http://167.172.241.113:8095/</span>. Admin user <span class="path">adz_admin</span>. Password generated into <span class="path">/opt/adz-wp/credentials.txt</span> on each burn. Blog title <span class="path">adz-world burner</span>.</p>
+<pre>SOURCE="/Users/dainismichel/2026/adz-project-folder/adz/adz-world-wordpress-codebase"
+STAGE="$(mktemp -d /tmp/adz-stage.XXXXXX)"
+rsync -a --delete --exclude .git "$SOURCE/" "$STAGE/adz-world/"
+( cd "$STAGE" && zip -r -X /tmp/adz-world.zip adz-world )
+scp /tmp/adz-world.zip da1ni5-profit:/opt/adz-wp/adz-world.zip
+ssh da1ni5-profit 'cd /opt/adz-wp && docker compose down -v && docker compose up -d'
+# after version.php exists:
+ssh da1ni5-profit 'cd /opt/adz-wp && docker compose --profile cli run --rm cli core install \
+  --path=/var/www/html \
+  --url=http://167.172.241.113:8095 \
+  --title="adz-world burner" \
+  --admin_user=adz_admin \
+  --admin_password="$ADZ_ADMIN_PASSWORD" \
+  --admin_email=adz_admin@example.test \
+  --skip-email \
+&& docker compose --profile cli run --rm cli plugin install /tmp/adz-world.zip --force --activate --path=/var/www/html \
+&& docker compose --profile cli run --rm cli plugin install plugin-check --activate --path=/var/www/html \
+&& docker compose --profile cli run --rm cli config set WP_DEBUG true --raw --type=constant --path=/var/www/html \
+&& docker compose --profile cli run --rm cli rewrite structure "/%postname%/" --hard --path=/var/www/html'
+# then the same local-file .htaccess copy as the flagship, with host da1ni5-profit and directory /opt/adz-wp</pre>
+<p><span class="path">docker compose down -v</span> in <span class="path">/opt/adz-wp</span> removes the adz volumes only. <span class="path">/opt/flosc-wp-v111</span> is a different compose project and stays up. A burn that stops at <span class="path">wp core install</span> is incomplete: the zip, Plugin Check, <span class="path">WP_DEBUG</span>, the permalink structure, and <span class="path">.htaccess</span> are part of the burn. Plugin Check in the browser is <span class="path">/wp-admin/tools.php?page=plugin-check</span>. The human reads that screen. The gate stores the CLI transcript when <span class="path">--docker</span> is passed. A missing transcript is a failed block, not a pass.</p>
+
+<h2>One gate</h2>
+<p>Script path, once written: <span class="path">/Users/dainismichel/2026/adz-project-folder/adz/tools/verify-adz.sh</span>. It does not exist yet. This page is the spec for it. Default source is the compiled tree <span class="path">adz-world-wordpress-codebase</span>. A path argument checks one agent slot. The zip is <span class="path">/Users/dainismichel/2026/adz-project-folder/zip-files/adz-world.zip</span> with a single top-level directory <span class="path">adz-world/</span>, built from the compiled tree. Reports go to <span class="path">/Users/dainismichel/2026/adz-project-folder/testing-logs/adz/&lt;7-char sha&gt;-&lt;MTS&gt;/</span>. A rerun creates a new directory. The last line is <span class="path">REPORTS=</span> that directory. The process exit is 1 when any blocking block exits non-zero. Today's <span class="path">adz-world-wordpress-codebase</span> is still the closed 1.0.9 tree, so the first zip waits until the first compile.</p>
+<p>FLOSC <span class="path">verify-flosc.sh</span> is 21 blocks, builds a zip first, and writes <span class="path">00-summary.txt</span>. Its wrapper now counts failed blocks and exits 1. Block 19 is hard-coded <span class="path">NOT RUN</span> and exit 1. Block 21 runs Playground and, on the FLOSC tree, dies inside Plugin Check's own <span class="path">Config.php:466</span> on <span class="path">fclose(false)</span>. The adz gate keeps the useful blocks, drops Playground, and has two modes.</p>
+<table>
+  <tr><th>Mode</th><th>Command</th><th>What it runs</th></tr>
+  <tr><td>Fast</td><td><span class="path">bash adz/tools/verify-adz.sh</span></td><td>Blocks 01–13 and 16. No Docker, no PHPStan, no Semgrep. This is the loop after one finding. On 41 PHP files it is a phpcs run plus greps.</td></tr>
+  <tr><td>Full</td><td><span class="path">bash adz/tools/verify-adz.sh --full</span></td><td>Fast blocks, then PHPStan and Semgrep as recorded diagnostics, then the manual sheet.</td></tr>
+  <tr><td>Docker</td><td><span class="path">bash adz/tools/verify-adz.sh --full --docker</span></td><td>Full, plus wp-env on port 8899 and the burner Plugin Check CLI. Colima down prints <span class="path">NORUN</span> and exits 1.</td></tr>
+</table>
+<p>Each block is a function. Its exit is the exit of the tool, taken from <span class="path">PIPESTATUS[0]</span> when the block is piped to <span class="path">tee</span>. The summary is a list of those exits. Echo is not the last command of a block.</p>
+
+<h3>Block map</h3>
+<table>
+  <tr><th>FLOSC block</th><th>adz block</th><th>Blocking</th></tr>
+  <tr><td>01 identity</td><td>git sha of <span class="path">adz</span>, Version, Stable tag, Requires at least, Tested up to, Requires PHP, zip sha256, file count. No Internal Iteration line.</td><td>yes, when Version and Stable tag disagree</td></tr>
+  <tr><td>02 PHP syntax</td><td><span class="path">php -l</span> on every PHP file under the source</td><td>yes</td></tr>
+  <tr><td>03 PHP gates</td><td><span class="path">adz/tools/gates/*.php</span> when those files exist. Until they exist, the static bans in block 13 cover the 29 September findings. A missing gate file is not a pass and not a fail.</td><td>yes, when a gate file exits non-zero</td></tr>
+  <tr><td>04 JS gates</td><td><span class="path">node --check</span> on every shipped <span class="path">.js</span>. FLOSC companion, personality, and output-buffer scripts have no counterpart here.</td><td>yes</td></tr>
+  <tr><td>05 project phpcs</td><td><span class="path">~/.composer/vendor/bin/phpcs</span> with <span class="path">adz/tools/phpcs.xml.dist</span>: WordPress, WordPress-Docs, WordPress-Extra, PHPCompatibilityWP <span class="path">testVersion</span> 7.4-, text domain <span class="path">adz-world</span>, prefixes <span class="path">adz</span> and <span class="path">ADZ</span></td><td>errors yes, warnings printed</td></tr>
+  <tr><td>06 security sniffs</td><td>NonceVerification, ValidatedSanitizedInput, EscapeOutput, SafeRedirect, PluginMenuSlug, PreparedSQL, DirectDatabaseQuery, GlobalVariablesOverride, NoSilencedErrors</td><td>errors yes</td></tr>
+  <tr><td>07 nonce report</td><td>same sniff, full report, so warning rows are visible</td><td>no</td></tr>
+  <tr><td>08 suppressions renamed</td><td>copy source to <span class="path">/tmp/adz-verify-nosuppress</span>, rename <span class="path">phpcs:ignore</span>, <span class="path">phpcs:disable</span>, and <span class="path">phpcs:enable</span>, rerun the nine sniffs</td><td>errors yes</td></tr>
+  <tr><td>09 PHP 7.4</td><td>PHPCompatibilityWP at 7.4, because the candidate header says Requires PHP 7.4. The flagship and the burner run PHP 8.3.</td><td>errors yes</td></tr>
+  <tr><td>10 headers</td><td>Requires at least is a major version, Tested up to is a major version, tag count is 5 or fewer, text domain in <span class="path">__()</span> and <span class="path">_e()</span> calls is <span class="path">adz-world</span>. The strings <span class="path">4.9.6</span> and <span class="path">Requires PHP: 5.6</span> fail this block when they are header lines. The library file header <span class="path">Text Domain: eof</span> inside <span class="path">vendor/eof/eof.php</span> is not an i18n call. WordPress does not load that file as a second plugin, because it is two directories down.</td><td>yes</td></tr>
+  <tr><td>11 slurps and raw tags</td><td>search shipped PHP and JS for <span class="path">eval(</span>, <span class="path">assert(</span>, <span class="path">shell_exec</span>, <span class="path">passthru</span>, <span class="path">system(</span>, <span class="path">base64_decode</span>, <span class="path">FILTER_UNSAFE_RAW</span>, raw <span class="path">&lt;script</span>, raw <span class="path">&lt;style</span></td><td>yes on a hit in shipped code</td></tr>
+  <tr><td>12 external services</td><td>readme contains <span class="path">== External services ==</span>, <span class="path">https://adz-world.com/terms/</span>, and <span class="path">https://adz-world.com/privacy/</span>. <span class="path">curl -fsS</span> both URLs. HTTP 200, and the body does not contain <span class="path">parkingpage</span> or <span class="path">namecheap</span>.</td><td>yes</td></tr>
+  <tr><td>13 review surfaces</td><td>The FLOSC grep families: user creation, REST permission callbacks, <span class="path">register_setting</span>, redirects, filesystem writes, nonces and capabilities, request superglobals, direct core loads, inline markup, and unique http URLs. Plus the adz bans: <span class="path">screen_icon(</span>, <span class="path">chosen.jquery</span>, <span class="path">role_exists(</span>, and the literal <span class="path">/wp-admin/admin-ajax.php</span> in PHP and JS.</td><td>yes on an adz ban. The other greps are the inventory and exit 0.</td></tr>
+  <tr><td>14 PHPStan</td><td><span class="path">~/.composer/vendor/bin/phpstan</span> level 0 with the WordPress extension, source only. <span class="path">--full</span> only.</td><td>no. The count is printed. It does not decide the zip.</td></tr>
+  <tr><td>15 Semgrep</td><td><span class="path">~/.venvs/semgrep/bin/semgrep</span> rulesets <span class="path">p/php</span> and <span class="path">p/security-audit</span>. <span class="path">--full</span> only.</td><td>no. Findings are printed.</td></tr>
+  <tr><td>16 zip</td><td><span class="path">unzip -t</span>, one top-level <span class="path">adz-world/</span>, no <span class="path">.git</span>, no <span class="path">tests/</span>, no chosen files, sha256 printed</td><td>yes</td></tr>
+  <tr><td>17 wp-env</td><td><span class="path">--docker</span>. wp-env from <span class="path">adz/tools/wp-env</span>, PHP 8.3, port 8899 so it does not take FLOSC's 8888. Plugin from the zip. <span class="path">WP_DEBUG</span> true. Colima socket <span class="path">/Users/dainismichel/.colima/default/docker.sock</span>.</td><td>yes when the flag is set. Colima down is NORUN exit 1.</td></tr>
+  <tr><td>18 URL status</td><td>HEAD every unique https host from block 13, and the two policy URLs</td><td>policy URLs yes. Other hosts are printed.</td></tr>
+  <tr><td>19 manual</td><td>File <span class="path">adz/tools/manual-ok.txt</span>. Six keys: <span class="path">activate-clean-wp-debug</span>, <span class="path">create-ad</span>, <span class="path">rotation</span>, <span class="path">shortcode-page</span>, <span class="path">network-off-no-outbound</span>, <span class="path">network-on-reaches-flagship</span>. The first five are <span class="path">ok</span> or the block fails. The sixth may be <span class="path">skip</span> until the network phase exists. A missing file fails the block.</td><td>yes on <span class="path">--full</span></td></tr>
+  <tr><td>20 Plugin Check</td><td><span class="path">--docker</span>. <span class="path">wp plugin check adz-world</span> in wp-env, JSON saved in the report directory. The burner install is the same zip. The human still opens Plugin Check on the burner.</td><td>yes when the flag is set and the JSON reports errors</td></tr>
+  <tr><td>21 Playground</td><td>Not ported.</td><td>absent</td></tr>
+</table>
+<p>The ship scan root is <span class="path">adz-world-wordpress-codebase/</span>. A slot check scans that one <span class="path">pre-release-candidates/&lt;agent&gt;/</span> directory. <span class="path">ancestor/</span> stays out of both.</p>
+<p>A <span class="path">phpcs:ignore</span> is not how a ban goes green. The two Ajax literals go green when those scripts receive the localized admin-ajax URL from PHP, the same way the nine PHP sites already call <span class="path">admin_url()</span>.</p>
+
+<h3>First fast run, expected red rows</h3>
+<ul>
+  <li><span class="path">js/plugin.js:7</span> and <span class="path">vendor/eof/js/eof-custom.js:269</span> match the admin-ajax ban.</li>
+  <li><span class="path">https://adz-world.com/terms/</span> and <span class="path">/privacy/</span> are the Namecheap parking page until DNS and the flagship pages exist.</li>
+  <li>The guideline that closed the plugin is still unnamed in the 29 September email. A green gate does not answer that. The reply to plugins@wordpress.org is still open in the scope file, section 0.</li>
+  <li>Tested up to 7.1 is a header. The clean install with <span class="path">WP_DEBUG</span> is the burner, and it is still outstanding in scope section 14.</li>
+</ul>
+
+<h2>Compile</h2>
+<p>The review window ends 28 November 2026. Agents write repairs into their own slot under <span class="path">pre-release-candidates/</span>. Those copies will disagree. The live site and the wordpress.org zip are the compiled tree in <span class="path">adz-world-wordpress-codebase/</span>, assembled per file from whichever slot got that file right.</p>
+<p>A whole-slot <span class="path">rsync --delete</span> onto the codebase is rejected. On FLOSC that copy put one agent's untouched files back over another agent's good files, and the tree was then restamped for months. Here a bad file stays in its slot.</p>
+<table>
+  <tr><th>Step</th><th>Rule</th></tr>
+  <tr><td>Agent delivery</td><td>The agent writes only <span class="path">pre-release-candidates/&lt;agent&gt;/</span>. The slot is a complete plugin copy. It is not installed on adz-world.com.</td></tr>
+  <tr><td>Winner list</td><td><span class="path">docs/compile-winners.txt</span>, one line <span class="path">path&lt;TAB&gt;agent</span>. The human and the compiling agent add a line when that slot's copy of the file passes <span class="path">php -l</span>, the file-scoped security sniffs, and the bans: literal <span class="path">/wp-admin/admin-ajax.php</span>, <span class="path">screen_icon(</span>, <span class="path">chosen.jquery</span>, <span class="path">role_exists(</span>. Two passing copies of one path: the human picks the line. Zero passing copies: the codebase file stays, and the finding stays open in <span class="path">docs/remediation-scope.md</span>.</td></tr>
+  <tr><td>Compile</td><td>Copy each listed path from that slot into <span class="path">adz-world-wordpress-codebase/</span>. Files absent from the list stay as they are. Then <span class="path">verify-adz.sh</span> once on the codebase. One report directory.</td></tr>
+  <tr><td>Ship</td><td>The green zip is the flagship plugin update and, when a release is requested, the GitHub release of <span class="path">adz-world-wordpress-codebase/</span>. Version and Stable tag change together at that release. <span class="path">check-version.sh</span> is the agreement check. No Internal Iteration, no per-agent zip, no second essay.</td></tr>
+</table>
+<p>Right now the only slot with the 29 September repairs is <span class="path">claude-opus-5</span>. Its repaired files are the first winner-list entries after each of those files passes. <span class="path">js/plugin.js</span> and <span class="path">vendor/eof/js/eof-custom.js</span> still contain the Ajax literal, so they are not winners until a slot removes it. The codebase stays the closed 1.0.9 tree until those winner lines are copied.</p>
+
+<h2>Order</h2>
+<ol>
+  <li>Agents repair into <span class="path">pre-release-candidates/&lt;agent&gt;/</span>.</li>
+  <li>Winning paths are listed in <span class="path">docs/compile-winners.txt</span> and copied into <span class="path">adz-world-wordpress-codebase/</span>. <span class="path">verify-adz.sh</span> runs once on that tree.</li>
+  <li>The green zip is the plugin on <span class="path">https://adz-world.com/</span>, with <span class="path">/terms/</span> and <span class="path">/privacy/</span> published, and the same zip on the port 8095 burner for Plugin Check.</li>
+  <li>A GitHub release of that codebase is the wordpress.org upload. The unnamed guideline in scope section 0 is the reply to plugins@wordpress.org. Both are inside the 28 November 2026 window.</li>
+</ol>
+</div>
+</body>
+</html>

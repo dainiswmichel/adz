@@ -1,78 +1,85 @@
 # adz
 
-Permission-based advertising for WordPress. Visitors say what they want to see;
-publishers serve adz that match, without surveillance or a third-party broker.
+WordPress plugin remediation workspace for `adz-world`.
 
-## Layout
+## Directory layout
 
-| Directory | What it is | Ships? |
+| Directory | Purpose | Deploys? |
 |---|---|---|
-| `ancestor/` | the 2018 code, frozen — plugin, network server, premium build | no |
-| `live-plugin/` | exactly what is live on wordpress.org right now | **yes** |
-| `dev-plugin/` | one candidate per agent, each a full copy | not until promoted |
+| `ancestor/` | Frozen 2018 plugin, network server, and premium plugin reference | No |
+| `adz-world-wordpress-codebase/` | Integrated plugin source assembled from reviewed repairs | Yes, on approved release |
+| `pre-release-candidates/<agent>/` | Independent agent repair candidates | No |
+| `../adz-world-com/` | Website project: server/WordPress setup, site-specific code, and deployment configuration | Separately, to adz-world.com |
 
-Three directories for the three real states: what shipped in 2018, what is
-live today, what is being built.
+`adz-world-wordpress-codebase/` is the production release source, not a running
+WordPress site. It is not yet a claim of WordPress.org compliance. Never modify
+`ancestor/`.
 
-`live-plugin/` is a mirror, not a workspace. It is byte-identical to SVN trunk
-at all times, so `diff -r live-plugin dev-plugin` always shows exactly what a
-release would change. Nothing is edited there directly.
+## Remediation workflow
 
-Each candidate under `dev-plugin/` is a complete copy of the plugin, named for
-the agent that produced it, so candidates can be compared against what is live
-and against each other:
-
-```bash
-diff -r live-plugin dev-plugin/claude-opus-5
-```
-
-Promotion, when one is chosen:
+Agents work on bounded repairs in their own candidates against an identified
+baseline. Each repair must identify changed behavior and tests actually run.
+No agent's candidate is authoritative. Compare a candidate with the integrated
+source to review its proposed changes:
 
 ```bash
-rsync -a --delete dev-plugin/<agent>/ live-plugin/
+diff -qr adz-world-wordpress-codebase pre-release-candidates/claude-opus-5
 ```
 
-Then a release, which deploys `live-plugin/`. No agent deploys anything; only
-a promotion into `live-plugin/` can reach wordpress.org.
+Human and AI review selects individual repairs for integration into
+`adz-world-wordpress-codebase/`; do not replace the integrated source wholesale
+with an agent's candidate. Run one shared verification gate against the
+integrated plugin, including regression tests, PHP lint, PHPCS/WPCS, Plugin
+Check, and real WordPress activation with `WP_DEBUG` and `WP_DEBUG_LOG`.
 
+Build one release ZIP from the integrated source and test that exact ZIP on
+clean WordPress. Only approved, tested code goes to the demonstration website
+or WordPress.org. Nothing in `pre-release-candidates/` deploys directly.
 
+The shared gate is not implemented yet. The existing
+[setup specsheet](docs/adz-world-com-do-and-fast-gate-spec-2026-10m-25d.html)
+describes the proposed gate; its single-candidate source assumptions must be
+aligned with this integration workflow before implementation.
+
+## Website and Git boundaries
+
+The sibling `../adz-world-com/` directory is the website project, not another
+plugin source. It runs the approved integrated plugin. Its setup and
+site-specific source should be versioned; it is currently empty and is outside
+this Git repository.
+
+Git records source, setup scripts, test definitions, dependency manifests and
+lockfiles, and reviewed status summaries. Local WordPress runs that source;
+the ZIP packages it; the live website runs the approved build.
+
+Do not commit local WordPress core, `wp-config.php`, databases, uploads,
+credentials, generated ZIPs, raw test logs, caches, or installed tool
+dependencies. Runtime data needs separate backups, not source commits.
 
 ## Releasing
 
-Publishing a GitHub release deploys `live-plugin/` to the wordpress.org SVN
-repository — trunk, plus a matching tag. Nothing deploys on an ordinary push.
+Publishing a GitHub release deploys `adz-world-wordpress-codebase/` to the
+WordPress.org SVN repository — trunk, plus a matching tag. Nothing deploys on
+an ordinary push.
 
-Before a release, the version has to agree in three places:
+Before a release, the version must agree in three places:
 
 | Where | Field |
 |---|---|
-| `live-plugin/adz-world.php` | `Version:` |
-| `live-plugin/readme.txt` | `Stable tag:` |
-| the GitHub release | tag name |
+| `adz-world-wordpress-codebase/adz-world.php` | `Version:` |
+| `adz-world-wordpress-codebase/readme.txt` | `Stable tag:` |
+| The GitHub release | Tag name |
 
-A mismatch does not error during deploy — WordPress.org simply keeps serving
-the previous version, silently. `.github/scripts/check-version.sh` runs first
-and fails the workflow instead.
-
-A deploy can be rehearsed without releasing: Actions → Deploy to WordPress.org →
+`.github/scripts/check-version.sh` checks these values before deployment. A
+deploy can be rehearsed without releasing: Actions → Deploy to WordPress.org →
 Run workflow, with the dry-run box ticked.
 
-### One-time setup
+The workflow needs two repository secrets under Settings → Secrets and
+variables → Actions:
 
-Two repository secrets, under Settings → Secrets and variables → Actions:
+- `SVN_USERNAME` — your WordPress.org username
+- `SVN_PASSWORD` — the dedicated SVN password from your WordPress.org profile
 
-- `SVN_USERNAME` — your wordpress.org username
-- `SVN_PASSWORD` — the dedicated SVN password from your wordpress.org profile,
-  under Account & Security → SVN credentials. The ordinary login password does
-  not work for SVN, since two-factor authentication became mandatory.
-
-## Status
-
-The plugin is currently **closed** on wordpress.org — a guideline violation
-notice dated 29 September 2026, with 60 days to pass a code review.
-
-Branch `claude/vigilant-brown-3i4cds` carries work against that notice. It has
-never run inside WordPress and is not merged here.
-
-`dev-plugin/claude-opus-5/` currently holds a version bump to 1.0.9 and
-nothing else.
+The plugin is closed on WordPress.org pending a guideline review. The
+remediation scope and unresolved questions are tracked in
+[`docs/remediation-scope.md`](docs/remediation-scope.md).

@@ -1,0 +1,10 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+wp-config.php
+/zip-files/
+/testing-logs/
+/tools/vendor/
+/tools/node_modules/
+/tools/wp-env/node_modules/
