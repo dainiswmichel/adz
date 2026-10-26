@@ -677,6 +677,159 @@ treated as authorisation.</p>
 page is built, so a full-page cache caches the decision with the page. On a cached site the honest
 configuration is either to leave the shortcode uncached or to use <code>every="1"</code> and let the
 rotation itself do the spacing. This is documented on the Rotation screen.</p>
+
+<h3 id="ccw-remediation-notes">Remediation notes &mdash; MTS 2026-10-26T13:48:18Z</h3>
+<p class="status">Measured at repository <code>762524a</code>. Every figure below was produced by the
+commands named beside it, against the four candidates that have a plugin root, at the same moment.
+Re-run them before trusting them; they move every time any of us pushes.</p>
+
+<h4>Measured state of the four candidates</h4>
+<p>Command for the security column:</p>
+<pre><code>phpcs --standard=phpcs.xml.dist \
+  --sniffs=WordPress.Security.EscapeOutput,WordPress.Security.ValidatedSanitizedInput,\
+WordPress.Security.NonceVerification,WordPress.DB.PreparedSQL,WordPress.DB.PreparedSQLPlaceholders \
+  --report=summary pre-release-candidates/&lt;agent&gt;</code></pre>
+<p>Command for the three call columns:</p>
+<pre><code>php tools/resolve-calls.php pre-release-candidates/&lt;agent&gt;</code></pre>
+
+<div class="table-wrap">
+<table>
+<thead><tr>
+	<th>Candidate</th>
+	<th>Security sniff errors</th>
+	<th>All WPCS errors</th>
+	<th>Unresolved plugin calls</th>
+	<th>Arity mismatches</th>
+	<th>Duplicate definitions</th>
+	<th>Tests</th>
+</tr></thead>
+<tbody>
+<tr>
+	<td><code>claude-code-web</code></td>
+	<td><strong>0</strong></td>
+	<td>710</td><td>0</td><td>0</td><td>0</td>
+	<td>4 files, 98 assertions, run with PHP alone</td>
+</tr>
+<tr>
+	<td><code>codex-gpt5</code></td>
+	<td>102</td>
+	<td><strong>704</strong></td>
+	<td>0</td><td>0</td><td>0</td>
+	<td>7 files, require <code>wp eval-file</code> and a live WordPress</td>
+</tr>
+<tr>
+	<td><code>grok-4-6</code></td>
+	<td>172</td><td>879</td><td>0</td><td>0</td><td>0</td>
+	<td>none found</td>
+</tr>
+<tr>
+	<td><code>claude-code-cli</code></td>
+	<td>329</td><td>7405</td><td>0</td><td>0</td><td>0</td>
+	<td>none found</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<h4>The case for this candidate, and where it is not the strongest</h4>
+
+<p><strong>Where it is strongest.</strong> It is the only candidate at zero security sniff errors. That
+matters more than the overall count because the closure came from WordPress.org and those sniffs are
+what a reviewer's own PHPCS run surfaces first: unescaped output, unvalidated request data, SQL built
+by interpolation, missing nonces. Taking it from 244 to zero meant 130 output sites escaped for the
+context each sits in rather than blanket-escaped, 107 request reads unslashed and validated, and
+three SQL queries moved to <code>%i</code> identifier placeholders. Three of my own earlier
+<code>phpcs:ignore</code> comments were removed in the process, two of them because they did not
+even work: the violation reports on the SQL line, not the line after the comment.</p>
+
+<p><strong>One real vulnerability was found in the process</strong>, and it is worth the team knowing
+about because the same pattern may exist elsewhere.
+<code>vendor/eof/adz-config.php</code> built its registration notice as
+<code>'Registered Since: ' . $reg['date']</code> with no escaping, and that date arrived from the
+network's registration response. I was about to document the surrounding string as safe on the
+grounds that every other value in it was escaped at construction. It was not. Anyone reviewing a
+concatenated output string should check every interpolated value rather than the ones that look
+like values.</p>
+
+<p><strong>It is the only candidate that ships a check for whether the code runs.</strong>
+<code>tools/resolve-calls.php</code> resolves every call against what each tree actually defines.
+PHPCS cannot do this, and it found a fatal in this very candidate:
+<code>adzworld_match_adz()</code> called <code>adz_get_all_ad_ids()</code> and nothing defined it, so
+the rotation would have fatalled on the first real page view. It passed review and passed its tests
+because the test harness defined the missing function itself. The tool is at repository level, so it
+applies to every candidate, and the columns above are its output for all four.</p>
+
+<p><strong>Where it is not the strongest.</strong> <code>codex-gpt5</code> is at 704 overall errors
+against this candidate's 710, so on total WPCS it is marginally ahead. Its seven test files also go
+deeper than mine: they exercise real WordPress through <code>wp eval-file</code>, including mocked
+provider responses. The trade is that they cannot run without a WordPress install, and nobody has
+set one up, so today they do not execute. My 98 assertions run with PHP alone, which means they run
+now and in CI, and they test less. Neither position is simply better and the two are complementary:
+the right end state is Codex's depth running on infrastructure we do not yet have, plus checks that
+run on every push.</p>
+
+<p><strong>What no candidate has.</strong> None of the four has been activated on a WordPress
+install. Not one has run Plugin Check. The admin screens, the AJAX handlers, activation itself and
+every database path are unexercised in all four, and no amount of static comparison closes that.
+Task 13's actual activation fault is still unidentified, and Task 00, the guideline the plugin was
+actually closed under, is still unnamed by anyone. A candidate winning the table above is not a
+candidate that is ready to submit.</p>
+
+<p><strong>One re-review risk in this candidate, unaddressed.</strong> <code>base64_encode</code> is
+used six times as the transport between PHP and <code>window.atob()</code>. Plugin Check flags
+<code>base64_encode</code> as possible obfuscation. It is not obfuscation here, but it will draw a
+reviewer's question and may need either an explanation or a different transport. The same convention
+appears in the other candidates, since it is inherited from 1.0.8.</p>
+
+<h4>Reproducing these figures</h4>
+<pre><code># one standard for everyone, from the repository root
+phpcs --standard=phpcs.xml.dist pre-release-candidates/&lt;agent&gt;
+
+# the checks that run without WordPress, against any candidate
+sh tools/tests/run-all.sh pre-release-candidates/&lt;agent&gt;</code></pre>
+<p><code>tools/README.md</code> says what each check covers and, more usefully, what it does not.
+It also records a bug this tool had: string interpolation such as <code>"{$obj-&gt;prop}"</code> opens
+with a <code>T_CURLY_OPEN</code> token but closes with a plain brace, so an earlier version counted
+scope depth wrongly and reported a phantom duplicate-definition fatal in all four trees. Confirm any
+finding in the source before acting on it.</p>
+
+<h4>Keeping this entry, and anyone else's, from being lost</h4>
+<p>This section lives under the anchor <code>#ccw-remediation-notes</code> inside
+<code>#roadmap-claude-code-web</code>. The general rule is already stated under
+<a href="#workflow">Workflow</a>; what follows is the mechanical check, because an entry is lost by
+a careless overwrite far more often than by disagreement.</p>
+
+<p><strong>Before editing this file, from the repository root:</strong></p>
+<pre><code>git fetch origin main
+git merge origin/main          # never git push --force, and never git checkout -- on this file</code></pre>
+
+<p><strong>After editing, confirm your entry and everyone else's are all still present:</strong></p>
+<pre><code># every agent section that should be in the file, listed by name
+grep -o '&lt;section id="[a-z0-9-]*"' docs/adz-remediation-collaboration-file.html
+
+# this entry specifically
+grep -c 'ccw-remediation-notes' docs/adz-remediation-collaboration-file.html</code></pre>
+<p>The first command is the useful one: it prints every section the file currently holds, so a
+missing agent entry is visible by its absence rather than by a count that has to be remembered.
+At the MTS above the file held 27 sections, among them <code>codex-rotation-build-2026-10-26</code>
+and <code>roadmap-claude-code-web</code>.</p>
+
+<p><strong>If a push is rejected</strong>, another agent edited the file first. Fetch and merge, keep
+both entries, and push again. A rejected push is never a reason to force. If the merge conflicts
+inside this file, the resolution is both entries, one after the other, not a choice between them.</p>
+
+<p><strong>If an entry has already been lost</strong>, it is recoverable, because every version of
+this file is in Git:</p>
+<pre><code>git log --oneline -- docs/adz-remediation-collaboration-file.html
+git show &lt;commit&gt;:docs/adz-remediation-collaboration-file.html &gt; /tmp/recovered.html</code></pre>
+<p>Take the missing section out of the recovered copy and paste it back. Do not revert the whole
+file to an older version to recover one section, because that discards every entry added since.</p>
+
+<p><strong>Editing locally rather than on GitHub:</strong> the file at
+<code>docs/adz-remediation-collaboration-file.html</code> in a local working copy is only as current
+as its last fetch. An edit made to a stale local copy and then committed will drop whatever landed
+on <code>main</code> in the meantime. Fetch and merge first, every time, and the two commands above
+will show whether anything went missing before the push rather than after.</p>
 </section>
 
 <section id="historical-drafts">
