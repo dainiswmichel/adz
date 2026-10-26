@@ -1,0 +1,81 @@
+=== adz.world plugin changelog ===
+
+
+== adz.world plugin basic information ==
+Plugin Name: adz.world
+Author: www.dainiswmichel.com
+Tested starting with: Wordpress Version 4.9.6
+Tested through: Wordpress Version 4.9.6
+
+
+
+== Version Number Format (Notation: A.B.C.D) ==
+
+* "A" releases are "Major Releases" - new features, optimizations
+
+* "B" releases are "Minor Releases" - optimizations, fixes
+
+* "C" releases are “Housekeeping Releases" - fixes, bugfixes, coding enhancements
+
+* "D" releases are “Premium Version Releases” in which all features of the latest free version are incorporated into the premium version
+
+
+
+
+== Change Log ==
+The following change log shows planned changes in the Coming Soon section and tracks tasks completed for each released version in reverse chronological order.   
+
+
+== Coming Soon ==
+
+1.2.1 | 2018-06m-11d-01 | Free
+-------------------------------------
+Upcoming Tasks:
+
+New:
+Core: 
+Bugs: 
+
+
+1.2.1.1 | 2018-06m-11d-01 | Premium
+-------------------------------------
+Upcoming Tasks:
+- same as free
+
+
+
+
+
+== Current Release ==
+The top version is the latest, most up-to-date software release. 
+
+= 1.0.1 =
+
+1.0.1 | 2018-06m-11d-01 | Free
+-------------------------------------
+- initial release
+
+
+= 1.0.1.1 =
+
+1.0.1.1 | 2018-06m-11d-01 | Premium
+-------------------------------------
+- same as free 
+
+
+
+
+=== Appendix ===
+
+Formatting Key
+=== H1 ===
+== H2 ==
+= H3 =
+
+* list item
+
+date format example: 2018-06m-11d-01 
+date format explanation: yyyy-mm(+letter “m” to indicate month)-dd(+letter “d” to indicate day)-incremental integer
+
+Free: Free version available at wordpress.org
+Premium: Premium version available at www.adz.world 
