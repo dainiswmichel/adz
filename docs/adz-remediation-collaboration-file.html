@@ -408,6 +408,131 @@
   <a href="https://github.com/WordPress/WordPress-Coding-Standards">WPCS</a>.
   The attached closure email is the source for Issues 01-13 and the submission checklist; its historical line numbers are leads, not current code coordinates.</p>
 </section>
+<section id="roadmap-claude-opus-5">
+<h2>claude-opus-5 — roadmap to a fully remediated plugin</h2>
+<p class="status">Comment, not an assignment claim. No task in the index above is claimed by this entry.</p>
+
+<p><strong>Candidate:</strong> <code>pre-release-candidates/claude-opus-5/</code>.
+Baseline <code>ancestor/plugin</code> (1.0.8 as released).
+Repair commits <code>e954a87</code> and <code>7edc5d1</code>.
+The candidate differs from the baseline in 31 files, deletes 3, and adds 6.</p>
+
+<h3>1. The structural finding: twenty tasks, five files</h3>
+<p>The register treats the twenty tasks as separable, and for assignment they are.
+For <em>integration</em> they are not, because they land on the same small set of files.
+Mapping every task to the files it must touch in the 1.0.8 baseline gives this:</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>File</th><th>Tasks that must change it</th><th>Count</th></tr></thead>
+<tbody>
+<tr><td><code>adz-world.php</code></td><td>01, 06, 07, 10/11, 12, 13, 16, 17</td><td><strong>8</strong></td></tr>
+<tr><td><code>includes/adz-helper.php</code></td><td>01, 07, 10/11, 12, 13, 16, 17</td><td><strong>7</strong></td></tr>
+<tr><td><code>includes/adz-cpt-ads.php</code></td><td>05, 08, 09, 12, 15</td><td>5</td></tr>
+<tr><td><code>includes/adz-shortcode.php</code></td><td>01, 08, 12, 17</td><td>4</td></tr>
+<tr><td><code>vendor/eof/adz-config.php</code></td><td>07, 12, 14, 15</td><td>4</td></tr>
+<tr><td><code>readme.txt</code></td><td>02, 03, 04, 07</td><td>4</td></tr>
+<tr><td><code>adz-templates/template1.php</code></td><td>01, 08, 12, 16</td><td>4</td></tr>
+<tr><td><code>vendor/eof/js/eof-custom.js</code></td><td>01, 06, 15</td><td>3</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>Consequence for <code>compile-winners.txt</code>:</strong> for these eight files,
+selecting one agent's version is not integration — it silently discards the other seven tasks'
+repairs to that file. The workflow section already says this
+("When two tasks change one file, merge both repairs before accepting that file"); this table
+identifies exactly where that rule binds. The remaining ~23 changed files are single-task and
+can be selected whole.</p>
+
+<p><strong>A practical consequence:</strong> a per-file winner manifest is the right mechanism
+but an insufficient record for these eight. Each needs a per-<em>hunk</em> note saying which
+tasks' repairs the accepted version contains, or a later reviewer cannot tell whether a merge
+happened or a repair was lost.</p>
+
+<h3>2. Dependency order, and why</h3>
+<p>The register's execution order (unauthorized mutation first) is right. Three dependencies
+within it are worth naming because getting them backwards wastes a cycle:</p>
+<ul>
+<li><strong>16 before 01.</strong> Template inclusion and the AJAX handlers sit in the same
+functions in <code>adz-world.php</code>. Repairing the include path first means the AJAX work
+edits already-safe code rather than re-touching an unsafe include.</li>
+<li><strong>09 before 08.</strong> The text-domain change touches 49 gettext calls across
+<code>adz-cpt-ads.php</code>; the escaping work touches the same lines. Doing the domain sweep
+first leaves escaping as a readable diff instead of hiding it inside a 49-line rename.</li>
+<li><strong>12 last among the mechanical tasks, not first.</strong> Adding guards to 16 files
+touches every file any other task will also touch. Done early it collides with everything; done
+after the substantive repairs it is a one-line addition per file with no merge cost.</li>
+</ul>
+<p>Task 13 cannot be verified by any agent working only in this environment. It requires a real
+WordPress with <code>WP_DEBUG</code> and <code>WP_DEBUG_LOG</code>, which is also the only way
+tasks 14-17 can be shown to be genuinely closed rather than statically plausible.</p>
+
+<h3>3. What this candidate actually contains, per task</h3>
+<p>Status words below describe this candidate only. None is a claim about the integrated source.
+<em>Static</em> means inspected and reasoned, not executed against a running WordPress.</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Task</th><th>In this candidate</th><th>Evidence level</th></tr></thead>
+<tbody>
+<tr><td>00</td><td>Nothing. The guideline is still unnamed in the email.</td><td>—</td></tr>
+<tr><td>01</td><td>All 9 PHP sites and both JS files resolve through <code>admin_url()</code>; JS reads <code>adzWorldAdmin.ajaxUrl</code> via <code>wp_localize_script</code>, with <code>ajaxurl</code> as admin fallback. 11 references remain, 0 hardcoded.</td><td>static + grep</td></tr>
+<tr><td>02</td><td><code>Requires at least: 6.2</code>. Chosen as a defensible floor, <strong>not tested against 6.2</strong>.</td><td>unverified claim</td></tr>
+<tr><td>03</td><td><code>Tested up to: 7.1</code>. <strong>Not tested.</strong> This is the register's point exactly: an executed claim is required and this is not one.</td><td>unverified claim</td></tr>
+<tr><td>04</td><td>11 tags reduced to 5.</td><td>static</td></tr>
+<tr><td>05</td><td><code>screen_icon()</code> removed.</td><td>static</td></tr>
+<tr><td>06</td><td>Chosen js/css/sprite deleted; <code>eof-custom.js</code> no-ops <code>.chosen()</code> when absent, so multi-selects fall back to native controls. <strong>Settings UI not exercised.</strong></td><td>static</td></tr>
+<tr><td>07</td><td>Opt-in, off by default, versioned to the terms. With it off, every outbound path returns before sending. <code>readme.txt</code> has the required section.</td><td>static + 12 unit checks</td></tr>
+<tr><td>08</td><td>Both shortcode callbacks escaped. <strong>Template output in <code>template1.php</code> is not yet escaped</strong> — the <code>$setting_array</code> style/text sinks and <code>$ad_text</code> remain open in this candidate.</td><td>partial</td></tr>
+<tr><td>09</td><td>51 strings moved to <code>adz-world</code>. Plugin header still lacks <code>Text Domain:</code> and <code>Domain Path:</code>.</td><td>partial</td></tr>
+<tr><td>10/11</td><td>Request rotation ids validated against <code>adz_rotation_&lt;n&gt;</code>; a refused id writes nothing.</td><td>static</td></tr>
+<tr><td>12</td><td>Guard added to every shipped PHP file lacking one.</td><td>static</td></tr>
+<tr><td>13</td><td><strong>Not addressed.</strong> The <code>role_exists()</code> claim is withdrawn (see §5). The actual activation fault is unidentified.</td><td>none</td></tr>
+<tr><td>14</td><td><code>is_admin()</code> + <code>manage_options</code> + <code>adz_ad_options-options</code> nonce + id allowlist. Non-matching ids skipped, not sanitized-and-accepted.</td><td>static</td></tr>
+<tr><td>15</td><td><code>nopriv</code> registration removed; <code>manage_options</code> + dedicated nonce; inline <code>onclick</code> replaced by a delegated handler. <strong>The <code>get_template_settings</code> handler and the unverified <code>meta-box-nonce</code> are not yet repaired.</strong></td><td>partial</td></tr>
+<tr><td>16</td><td>All 4 include sites resolve through an allowlist built from the real directory listing. 6 traversal payloads executed and rejected; <code>template1.php</code> accepted.</td><td>executed (unit)</td></tr>
+<tr><td>17</td><td>4 concatenated queries replaced; <code>prepare()</code> now used where it was used nowhere. 0 concatenated queries remain.</td><td>static</td></tr>
+<tr><td>18</td><td>PHP lint clean, 47 files, PHP 8.3.6. <strong>PHPCS/WPCS not installed in this environment — not run.</strong></td><td>partial</td></tr>
+<tr><td>19</td><td>Nothing. No artifact built, nothing deployed, no release.</td><td>—</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>4. What is in this candidate beyond the register</h3>
+<p>Six new files under <code>includes/</code> implementing the publisher earnings layer, authorized
+separately from remediation: integer-minor-unit money arithmetic with the 10/90 split and an
+exactness invariant, an append-only statement mirror unique on the service's own reference, consent
+versioned to the terms, a settlement client, a payout state machine with plugin-generated
+idempotency keys, and the Earnings screen.</p>
+<p>The settlement service does not exist. The contract is marked proposed and not built, every call
+returns <code>WP_Error</code>, and the dashboard renders no figures at all rather than a zero a
+publisher owed money could misread. This is stated here so a reviewer does not mistake the presence
+of an earnings screen for a working one.</p>
+<p>These files are new and collide with nothing, so they are selectable whole if wanted and
+droppable entirely if not. They are not remediation and should not be allowed to delay it.</p>
+
+<h3>5. A claim this agent withdraws</h3>
+<p>In <code>docs/remediation-scope.md</code> I recorded Issue 13 as a fatal caused by
+<code>role_exists()</code> colliding with WordPress core, and marked it fixed. That was the closure
+email's assertion, repeated by me as if verified. It does not hold: core Trac ticket #31304 proposed
+adding <code>role_exists()</code> and was closed as invalid, so core does not ship it, and Codex did
+not reproduce a fatal on WordPress 7.1.3 / PHP 8.4.7. Removing the function is still correct — it is
+an unprefixed global — but the stated reason was wrong and the real activation fault remains
+unidentified. The historical DONE labels in that document should not be inherited.</p>
+
+<h3>6. Blockers that no agent can clear</h3>
+<ul>
+<li><strong>Task 00.</strong> The email states its findings are not the guideline violation and never
+names it. Every task below can close with the plugin still closed.</li>
+<li><strong>Task 07.</strong> The Plugins Team stated they will check the Terms and Privacy links on
+re-review. Those pages must exist with real content; the legal drafts in this file carry ten
+placeholders and cannot be published as they stand.</li>
+<li><strong>Tasks 03, 13, 18, and runtime proof for 14-17.</strong> All require a real WordPress with
+debug logging. No static inspection substitutes.</li>
+</ul>
+</section>
+
 <section id="historical-drafts">
 <h2>Historical Claude proposals - preserved sources, not approved policy</h2>
 <p>These existing drafts have been consolidated from the former agent-specific documentation directory. Their full text is preserved below for review; no proposal or factual claim is adopted merely by moving it here. They are not separate active task registers.</p>
