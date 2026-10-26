@@ -151,7 +151,7 @@ add_action( 'admin_post_nopriv_adzworld_save_preferences', 'adzworld_save_prefer
  * @return string
  */
 function adzworld_preferences_shortcode() {
-	$terms = get_terms(
+	$terms  = get_terms(
 		array(
 			'taxonomy'   => 'ad_taxonomy',
 			'hide_empty' => false,
@@ -195,7 +195,7 @@ add_shortcode( 'adzworld_preferences', 'adzworld_preferences_shortcode' );
  * @return array<string,array<string,bool>>
  */
 function adzworld_ad_allowed_html() {
-	$allowed            = wp_kses_allowed_html( 'post' );
+	$allowed           = wp_kses_allowed_html( 'post' );
 	$allowed['iframe'] = array(
 		'src'             => true,
 		'width'           => true,

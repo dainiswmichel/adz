@@ -31,10 +31,10 @@ $interval     = isset( $ad_visibility_interval ) ? (int) $ad_visibility_interval
 $repeats      = isset( $repeat_times ) ? (int) $repeat_times : 0;
 $target_attr  = isset( $target ) ? (string) $target : '';
 $type_attr    = isset( $target_type ) ? (string) $target_type : '';
-$ad_markup   = isset( $ad_text ) ? (string) $ad_text : '';
-$uses_iframe = false !== strpos( $ad_markup, 'adzworld_iframe' );
-$ad_body     = $uses_iframe ? do_shortcode( $ad_markup ) : $ad_markup;
-$ad_allowed  = function_exists( 'adzworld_ad_allowed_html' ) ? adzworld_ad_allowed_html() : array();
+$ad_markup    = isset( $ad_text ) ? (string) $ad_text : '';
+$uses_iframe  = false !== strpos( $ad_markup, 'adzworld_iframe' );
+$ad_body      = $uses_iframe ? do_shortcode( $ad_markup ) : $ad_markup;
+$ad_allowed   = function_exists( 'adzworld_ad_allowed_html' ) ? adzworld_ad_allowed_html() : array();
 
 $style = '<style>
 #adz_header_container { background:#4A7354; border:1px solid #104A1F; left:0; position:fixed; width:100%; top:0; }

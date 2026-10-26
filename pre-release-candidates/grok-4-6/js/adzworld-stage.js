@@ -33,7 +33,8 @@
 		try {
 			( window.adsbygoogle = window.adsbygoogle || [] ).push( {} );
 		} catch ( error ) {
-			ins.setAttribute( 'data-adzworld-error', '1' );
+			var reason = error && error.message ? String( error.message ).slice( 0, 180 ) : '1';
+			ins.setAttribute( 'data-adzworld-error', reason );
 		}
 	}
 

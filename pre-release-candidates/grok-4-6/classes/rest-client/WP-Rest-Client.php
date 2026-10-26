@@ -1,13 +1,15 @@
 <?php
 
-if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly.
-require_once( 'RestClient.interface.php' );
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+require_once 'RestClient.interface.php';
 
 /**
-* WPRestClinent implements a REST client useing WordPress HTTP library
-*/
+ * WPRestClinent implements a REST client useing WordPress HTTP library
+ */
 
-class WPRestClient implements iRestClient{
+class WPRestClient implements iRestClient {
 
 	protected $authentication_scheme;
 	protected $authentication_parameters;
@@ -22,19 +24,19 @@ class WPRestClient implements iRestClient{
 		$this->update_connection( $base_url, $authentication_scheme, $authentication_parameters );
 		$this->cache = null;
 		if ( function_exists( 'wp_cache_set' ) ) {
-			require_once( __DIR__ . '/cache-interface/wp-cache-class.php' );
+			require_once __DIR__ . '/cache-interface/wp-cache-class.php';
 			$this->cache = new WPCacheImpl( 'aretex-forte-api-cache' );
 		}
 	}
 
 	public function update_connection( $base_url, $authentication_scheme = 'Basic', $authentication_parameters = array() ) {
-		$this->authentication_scheme = $authentication_scheme;
+		$this->authentication_scheme     = $authentication_scheme;
 		$this->authentication_parameters = $authentication_parameters;
-		$this->base_url = $base_url;
+		$this->base_url                  = $base_url;
 	}
 
 	public function update_authentication( $authentication_scheme = 'Basic', $authentication_parameters = array() ) {
-		$this->auhtentication_scheme = $authentication_scheme;
+		$this->auhtentication_scheme     = $authentication_scheme;
 		$this->authentication_parameters = $authentication_parameters;
 	}
 
@@ -44,32 +46,32 @@ class WPRestClient implements iRestClient{
 
 	public function rest_put( $path, $body ) {
 
-		$api_url = rtrim( $this->base_url,'/' ).'/'.ltrim( $path,'/' );
+		$api_url = rtrim( $this->base_url, '/' ) . '/' . ltrim( $path, '/' );
 		$headers = $this->autentication_headers( 'PUT' );
 
 		$req_args = array(
-			'method' => 'PUT',
-			'body' => $body,
-			'headers' => $headers,
+			'method'    => 'PUT',
+			'body'      => $body,
+			'headers'   => $headers,
 			'sslverify' => ! $this->accept_self_signed,
 		);
 
 		$req_args = apply_filters( 'rest_put_args', $req_args );
 
 		// make the remote request
-		$result = wp_remote_request( $api_url , $req_args );
+		$result = wp_remote_request( $api_url, $req_args );
 
 		return $result;
 	}
 
-	public function rest_delete( $path, $body=array() ) {
-		$api_url = $this->authentication_query( rtrim( $this->base_url,'/' ).'/'.ltrim( $path,'/' ) );
+	public function rest_delete( $path, $body = array() ) {
+		$api_url = $this->authentication_query( rtrim( $this->base_url, '/' ) . '/' . ltrim( $path, '/' ) );
 		$headers = $this->authentication_headers( 'DELETE' );
 
 		$req_args = array(
-			'method' => 'DELETE',
-			'body' => $body,
-			'headers' => $headers,
+			'method'    => 'DELETE',
+			'body'      => $body,
+			'headers'   => $headers,
 			'sslverify' => ! $this->accept_self_signed,
 		);
 
@@ -81,12 +83,12 @@ class WPRestClient implements iRestClient{
 	}
 
 	public function rest_post( $path, $body ) {
-		$api_url = $this->authentication_query( rtrim( $this->base_url,'/' ).'/'.ltrim( $path,'/' ) );
+		$api_url = $this->authentication_query( rtrim( $this->base_url, '/' ) . '/' . ltrim( $path, '/' ) );
 		$headers = $this->authentication_headers( 'POST' );
 
 		$args = array(
-			'headers' => $headers,
-			'body' => $body,
+			'headers'   => $headers,
+			'body'      => $body,
 			'sslverify' => ! $this->accept_self_signed,
 
 		);
@@ -98,13 +100,13 @@ class WPRestClient implements iRestClient{
 		return $results;
 	}
 
-	public  function rest_get( $path, $params ) {
+	public function rest_get( $path, $params ) {
 
-		$api_url = rtrim( $this->base_url,'/' ).'/'.ltrim( $path,'/' );
-		$cache_key = md5( $api_url . serialize( $params ) );
+		$api_url      = rtrim( $this->base_url, '/' ) . '/' . ltrim( $path, '/' );
+		$cache_key    = md5( $api_url . serialize( $params ) );
 		$cached_value = $this->cache->get( $cache_key );
 		if ( $cached_value ) {
-	
+
 			return $cached_value;
 
 		}
@@ -116,13 +118,13 @@ class WPRestClient implements iRestClient{
 
 		$args = apply_filters( 'rest_get_args', $args );
 		if ( ! empty( $params ) ) {
-			$q = http_build_query( $params );
-			$api_url = $api_url.'?'.$q;
+			$q       = http_build_query( $params );
+			$api_url = $api_url . '?' . $q;
 		}
 
 		$api_url = $this->authentication_query( $api_url );
 
-		$results = wp_remote_get( $api_url,$args );
+		$results = wp_remote_get( $api_url, $args );
 
 		if ( is_object( $this->cache ) && method_exists( $this->cache, 'set' ) ) {
 			$this->cache->set( $cache_key, $results, 300 );
@@ -134,10 +136,10 @@ class WPRestClient implements iRestClient{
 	protected function authentication_query( $url ) {
 		if ( is_array( $this->authentication_parameters ) && 'query' == strtolower( $this->authentication_scheme ) ) {
 			$query_string = http_build_query( $this->authentication_parameters );
-			if ( strstr( $url,'?' ) ) {
-				$url .= '&'.$query_string;
+			if ( strstr( $url, '?' ) ) {
+				$url .= '&' . $query_string;
 			} else {
-				$url .= '?'.$query_string;
+				$url .= '?' . $query_string;
 			}
 		}
 		return $url;
@@ -147,16 +149,16 @@ class WPRestClient implements iRestClient{
 		$headers = array();
 		switch ( strtolower( $this->authentication_scheme ) ) {
 			case 'basic':
-				$username = $this->authentication_parameters['username'];
-				$password = $this->authentication_parameters['password'];
-				$headers['Authorization'] = 'Basic '.base64_encode( "$username:$password" );
-			break;
+				$username                 = $this->authentication_parameters['username'];
+				$password                 = $this->authentication_parameters['password'];
+				$headers['Authorization'] = 'Basic ' . base64_encode( "$username:$password" );
+				break;
 			case 'header':
 				$headers = $this->authentication_parameters;
-			break;
+				break;
 			case 'digest':
 				$headers = $this->digest_authenticate( $method );
-			break;
+				break;
 		}
 
 		if ( is_array( $this->headers ) ) {
@@ -173,13 +175,13 @@ class WPRestClient implements iRestClient{
 		// If already pre-built:
 		if ( isset( $this->authentication_parameters['digest_header'] ) ) {
 			$headers['Authorization'] = 'Digest ' . $this->authentication_parameters['digest_header'];
-		} else if ( is_array( $this->authentication_parameters['digest_parameters'] ) ) {
+		} elseif ( is_array( $this->authentication_parameters['digest_parameters'] ) ) {
 			$args = array();
-			$uri = isset( $this->authentication_parameters['digest_parameters']['url'] ) ?
+			$uri  = isset( $this->authentication_parameters['digest_parameters']['url'] ) ?
 			$this->authentication_parameters['digest_parameters']['url'] : $this->base_url;
 
 			$req_args = array(
-				'method' => $method,
+				'method'    => $method,
 				'sslverify' => ! $this->accept_self_signed,
 			);
 
@@ -188,26 +190,26 @@ class WPRestClient implements iRestClient{
 			$response = wp_remote_request( $uri, $req_args );
 			if ( ! is_array( $response ) ) {
 				return false;
-			} else if ( 401 == $response['response']['code'] ) {
+			} elseif ( 401 == $response['response']['code'] ) {
 				$username = $this->authentication_parameters['digest_parameters']['username'];
 				$username = $this->authentication_parameters['digest_parameters']['password'];
-				$headers = $response['headers'];
+				$headers  = $response['headers'];
 				if ( isset( $headers['WWW-Authenticate'] ) ) {
 					$auth_resp_header = $headers['WWW-Authenticate'];
 					$auth_resp_header = explode( ',', preg_replace( '/^Digest/i', '', $auth_resp_header ) );
-					$auth_pieces = array();
+					$auth_pieces      = array();
 					foreach ( $auth_resp_header as &$piece ) {
-						$piece = trim( $piece );
-						$piece = explode( '=', $piece );
+						$piece                    = trim( $piece );
+						$piece                    = explode( '=', $piece );
 						$auth_pieces[ $piece[0] ] = trim( $piece[1], '"' );
 					}
 					// build response digest
-					$nc = str_pad( '1', 8, '0', STR_PAD_LEFT );
-					$A1 = md5( "{$username}:{$auth_pieces['realm']}:{$password}" );
-					$A2 = md5( "{$method}:{$uri}" );
-					$cnonce = uniqid();
-					$auth_pieces['response'] = md5( "{$A1}:{$auth_pieces['nonce']}:{$nc}:{$cnonce}:{$auth_pieces['qop']}:${A2}" );
-					$digest_header = "Digest username=\"{$username}\", realm=\"{$auth_pieces['realm']}\", nonce=\"{$auth_pieces['nonce']}\", uri=\"{$uri}\", cnonce=\"{$cnonce}\", nc={$nc}, qop=\"{$auth_pieces['qop']}\", response=\"{$auth_pieces['response']}\", opaque=\"{$auth_pieces['opaque']}\", algorithm=\"{$auth_pieces['algorithm']}\"";
+					$nc                       = str_pad( '1', 8, '0', STR_PAD_LEFT );
+					$A1                       = md5( "{$username}:{$auth_pieces['realm']}:{$password}" );
+					$A2                       = md5( "{$method}:{$uri}" );
+					$cnonce                   = uniqid();
+					$auth_pieces['response']  = md5( "{$A1}:{$auth_pieces['nonce']}:{$nc}:{$cnonce}:{$auth_pieces['qop']}:${A2}" );
+					$digest_header            = "Digest username=\"{$username}\", realm=\"{$auth_pieces['realm']}\", nonce=\"{$auth_pieces['nonce']}\", uri=\"{$uri}\", cnonce=\"{$cnonce}\", nc={$nc}, qop=\"{$auth_pieces['qop']}\", response=\"{$auth_pieces['response']}\", opaque=\"{$auth_pieces['opaque']}\", algorithm=\"{$auth_pieces['algorithm']}\"";
 					$headers['Authorization'] = $digest_header;
 				} else {
 					return false;

@@ -49,7 +49,7 @@ function adzworld_currency_exponents() {
  * @return int|null
  */
 function adzworld_currency_exponent( $currency ) {
-	$map = adzworld_currency_exponents();
+	$map  = adzworld_currency_exponents();
 	$code = strtoupper( (string) $currency );
 
 	return isset( $map[ $code ] ) ? $map[ $code ] : null;
