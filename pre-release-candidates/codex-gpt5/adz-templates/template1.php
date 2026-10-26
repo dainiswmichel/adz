@@ -1,12 +1,16 @@
 <?php
+/**
+ * Legacy full-page and AJAX advertising template.
+ *
+ * @package adz-world
+ */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
-/*Dynamic template for displaying adz.*/
 $template_name = basename( __FILE__ );
 $setting_data  = get_option( 'template_' . $template_name );
-$setting_array = is_string( $setting_data ) ? unserialize( $setting_data, array( 'allowed_classes' => false ) ) : array();
+$setting_array = is_array( $setting_data ) ? $setting_data : ( is_string( $setting_data ) ? unserialize( $setting_data, array( 'allowed_classes' => false ) ) : array() );
 $setting_array = wp_parse_args(
 	is_array( $setting_array ) ? $setting_array : array(),
 	array(
@@ -16,14 +20,10 @@ $setting_array = wp_parse_args(
 		'footer_style' => 'center',
 	)
 );
-foreach ( array( 'header_text', 'footer_text' ) as $adzworld_text_key ) {
-	$setting_array[ $adzworld_text_key ] = esc_html( $setting_array[ $adzworld_text_key ] );
-}
 foreach ( array( 'header_style', 'footer_style' ) as $adzworld_style_key ) {
 	$setting_array[ $adzworld_style_key ] = in_array( $setting_array[ $adzworld_style_key ], array( 'left', 'right', 'center' ), true )
 		? $setting_array[ $adzworld_style_key ] : 'center';
 }
-// print_r($setting_array);
 
 $style = '<style>		
 			#adz_header_container { background:#4A7354; border:1px solid #104A1F;  left:0; position:fixed; width:100%; top:0; }		
@@ -38,15 +38,18 @@ $style = '<style>
 			.adz_popup #adz_container { max-height: 600px;overflow-y: scroll; } 
 	    </style>';
 
-if ( $display_type == 'thru_page' ) {
+if ( 'thru_page' === $display_type ) {
 
 	?>
 	<head>
-	<script type="text/javascript" src="<?php echo site_url(); ?>/wp-includes/js/jquery/jquery.js"></script>
+	<?php
+	wp_enqueue_script( 'jquery' );
+	wp_print_scripts( 'jquery' );
+	?>
 	<script type="text/javascript">
 		jQuery(document).ready(function(){
 
-			var i = <?php echo $ad_visibility; ?>;
+			var i = <?php echo absint( $ad_visibility ); ?>;
 			var adz_interval = setInterval(function () {
 				if (i >= 0) {
 					jQuery('.adz_timer').text(" "+i+" ");
@@ -65,11 +68,14 @@ if ( $display_type == 'thru_page' ) {
 					type : 'post',
 					data: {
 						action :'adz_get_advertise_content',
-						target_type : '<?php echo $target_type; ?>',
-						target : '<?php echo $target; ?>',
-						ad_visibility_interval : '<?php echo $ad_visibility_interval; ?>',
-						repeat_times : '<?php echo $repeat_times; ?>',
+						target_type : '<?php echo esc_js( $target_type ); ?>',
+						target : '<?php echo esc_js( $target ); ?>',
+						ad_visibility_interval : '<?php echo esc_js( $ad_visibility_interval ); ?>',
+						repeat_times : '<?php echo esc_js( $repeat_times ); ?>',
 						close_adz : 'true',
+						rotations_id: '<?php echo esc_js( $rotation_id ); ?>',
+						adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>',
+						adzworld_context: '<?php echo esc_js( adzworld_ad_request_token( $target_type, $target, $ad_visibility_interval, $repeat_times, '', $rotation_id, '', '', '', 'true' ) ); ?>',
 
 					},
 					success:function(data) {
@@ -85,12 +91,12 @@ if ( $display_type == 'thru_page' ) {
 		});
 
 	</script>
-	<?php echo $style; ?>
+	<?php echo wp_kses( $style, array( 'style' => array() ) ); ?>
 	</head>
 	<!-- BEGIN: Sticky Header -->
 	<div id="adz_header_container">
-		<div id="adz_header_content" style="text-align: <?php echo $setting_array['header_style']; ?>" >
-			<a href="javascript:void()" class="adz_header_text"><div class="continue_reading"><?php echo $setting_array['header_text']; ?> <div> <span class="adz_timer" > </span> seconds</div></div></a>
+		<div id="adz_header_content" style="text-align: <?php echo esc_attr( $setting_array['header_style'] ); ?>" >
+			<a href="#" class="adz_header_text"><div class="continue_reading"><?php echo esc_html( $setting_array['header_text'] ); ?> <div> <span class="adz_timer" > </span> seconds</div></div></a>
 		</div>
 	</div>
 	<!-- END: Sticky Header -->
@@ -100,13 +106,7 @@ if ( $display_type == 'thru_page' ) {
 		<div id="content">
 			<?php
 
-			if ( strpos( $ad_text, 'adzworld_iframe' ) !== false ) {
-
-				echo do_shortcode( $ad_text );
-			} else {
-
-				echo $ad_text;
-			}
+			echo wp_kses( adzworld_ad_content( $ad_text ), adzworld_ad_allowed_html() );
 			?>
 		</div>
 	</div>
@@ -114,8 +114,8 @@ if ( $display_type == 'thru_page' ) {
 
 	<!-- BEGIN: Sticky Footer -->
 	<div id="adz_footer_container">
-		<div id="adz_footer_content" style="text-align: <?php echo $setting_array['footer_style']; ?>">
-			<a href="javascript:void()" class="adz_footer_text"><p class="continue_reading"><?php echo $setting_array['footer_text']; ?> <span class="adz_timer"> </span> seconds.</p></a>
+		<div id="adz_footer_content" style="text-align: <?php echo esc_attr( $setting_array['footer_style'] ); ?>">
+			<a href="#" class="adz_footer_text"><p class="continue_reading"><?php echo esc_html( $setting_array['footer_text'] ); ?> <span class="adz_timer"> </span> seconds.</p></a>
 		</div>
 	</div>
 
@@ -124,11 +124,12 @@ if ( $display_type == 'thru_page' ) {
 } elseif ( strpos( $ad_text, 'adzworld_iframe' ) !== false ) {
 
 
-		echo base64_encode(
-			'<!-- BEGIN: Sticky Header -->
+		echo esc_html(
+			base64_encode(
+				'<!-- BEGIN: Sticky Header -->
 		<div id="adz_header_container">
-		    <div id="adz_header_content" style="text-align: ' . $setting_array['header_style'] . '">
-		        <a href="javascript:void()" class="adz_header_text"><div class="continue_reading">' . $setting_array['header_text'] . ' <div><span class="adz_timer" > </span> seconds</div></div></a>
+		    <div id="adz_header_content" style="text-align: ' . esc_attr( $setting_array['header_style'] ) . '">
+		        <a href="#" class="adz_header_text"><div class="continue_reading">' . esc_html( $setting_array['header_text'] ) . ' <div><span class="adz_timer" > </span> seconds</div></div></a>
 		    </div>
 		</div>
 		<!-- END: Sticky Header -->
@@ -136,27 +137,29 @@ if ( $display_type == 'thru_page' ) {
 		<!-- BEGIN: Page Content -->
 		<div id="adz_container">
 		    <div id="content">
-		        ' . do_shortcode( $ad_text ) . '
+		        ' . adzworld_ad_content( $ad_text ) . '
 		    </div>
 		</div>
 		<!-- END: Page Content -->
 
 		<!-- BEGIN: Sticky Footer -->
 		<div id="adz_footer_container">
-		    <div id="adz_footer_content" style="text-align: ' . $setting_array['footer_style'] . '">
-		       <a href="javascript:void()" class="adz_footer_text"><p class="continue_reading">' . $setting_array['footer_text'] . ' <span class="adz_timer"> </span> seconds.</p></a>
+		    <div id="adz_footer_content" style="text-align: ' . esc_attr( $setting_array['footer_style'] ) . '">
+		       <a href="#" class="adz_footer_text"><p class="continue_reading">' . esc_html( $setting_array['footer_text'] ) . ' <span class="adz_timer"> </span> seconds.</p></a>
 		    </div>
 		</div>
 		' . $style
+			)
 		);
 
 } else {
 
-	echo base64_encode(
-		'<!-- BEGIN: Sticky Header -->
+	echo esc_html(
+		base64_encode(
+			'<!-- BEGIN: Sticky Header -->
 		<div id="adz_header_container">
-		    <div id="adz_header_content" style="text-align: ' . $setting_array['header_style'] . '">
-		        <a href="javascript:void()" class="adz_header_text"><div class="continue_reading">' . $setting_array['header_text'] . ' <div> <span class="adz_timer" > </span> seconds</div></div></a>
+		    <div id="adz_header_content" style="text-align: ' . esc_attr( $setting_array['header_style'] ) . '">
+		        <a href="#" class="adz_header_text"><div class="continue_reading">' . esc_html( $setting_array['header_text'] ) . ' <div> <span class="adz_timer" > </span> seconds</div></div></a>
 		    </div>
 		</div>
 		<!-- END: Sticky Header -->
@@ -164,18 +167,18 @@ if ( $display_type == 'thru_page' ) {
 		<!-- BEGIN: Page Content -->
 		<div id="adz_container">
 		    <div id="content">
-		        ' . $ad_text . '
+		        ' . adzworld_ad_content( $ad_text ) . '
 		    </div>
 		</div>
 		<!-- END: Page Content -->
 
 		<!-- BEGIN: Sticky Footer -->
 		<div id="adz_footer_container">
-		    <div id="adz_footer_content" style="text-align: ' . $setting_array['footer_style'] . '>
-		        <a href="javascript:void()" class="adz_footer_text"><p class="continue_reading">' . $setting_array['footer_text'] . '  <span class="adz_timer"> </span> seconds.</p></a>
+		    <div id="adz_footer_content" style="text-align: ' . esc_attr( $setting_array['footer_style'] ) . '">
+		        <a href="#" class="adz_footer_text"><p class="continue_reading">' . esc_html( $setting_array['footer_text'] ) . '  <span class="adz_timer"> </span> seconds.</p></a>
 		    </div>
 		</div>
 		' . $style
+		)
 	);
 }
-?>

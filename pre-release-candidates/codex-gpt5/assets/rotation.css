@@ -1,0 +1,96 @@
+.adzworld-rotation {
+	--adzworld-accent: #174b69;
+	margin-block: 1.5rem;
+	padding: 1rem;
+	border: 1px solid #c7d7df;
+	border-radius: 1rem;
+	background: #f5fafc;
+	color: #163042;
+}
+
+.adzworld-rotation [hidden] {
+	display: none !important;
+}
+
+.adzworld-rotation .adzworld-slide {
+	padding: 1rem;
+	background: #fff;
+	border-radius: 0.75rem;
+}
+
+.adzworld-rotation--3d.adzworld-enhanced .adzworld-slides {
+	position: relative;
+	perspective: 1000px;
+	margin-inline: 1rem;
+	transform-style: preserve-3d;
+}
+
+.adzworld-rotation--3d.adzworld-enhanced .adzworld-slide {
+	position: absolute;
+	inset: 0;
+	opacity: 0;
+	transform: translateX(calc(var(--adzworld-offset) * 12%)) rotateY(calc(var(--adzworld-offset) * -25deg)) scale(0.85);
+	pointer-events: none;
+	transition: transform 250ms ease, opacity 250ms ease;
+}
+
+.adzworld-rotation--3d.adzworld-enhanced .adzworld-active {
+	position: relative;
+	z-index: 1;
+	opacity: 1;
+	transform: translateX(0) rotateY(0) scale(1);
+	pointer-events: auto;
+	box-shadow: 0 8px 24px #16304226;
+}
+
+.adzworld-rotation .adzworld-navigation,
+.adzworld-rotation .adzworld-dots {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	margin-block-start: 1rem;
+}
+
+.adzworld-rotation button {
+	min-width: 44px;
+	min-height: 44px;
+	padding: 0.5rem 0.75rem;
+	border: 1px solid var(--adzworld-accent);
+	border-radius: 0.5rem;
+	background: #fff;
+	color: var(--adzworld-accent);
+	cursor: pointer;
+}
+
+.adzworld-rotation .adzworld-dots button {
+	border-radius: 50%;
+}
+
+.adzworld-rotation button[aria-pressed="true"] {
+	background: var(--adzworld-accent);
+	color: #fff;
+}
+
+.adzworld-rotation textarea {
+	display: block;
+	width: 100%;
+	min-height: 6rem;
+	margin-block: 0.75rem;
+	padding: 0.75rem;
+	color: inherit;
+	background: #fff;
+	border: 1px solid #647e8c;
+	border-radius: 0.5rem;
+}
+
+.adzworld-rotation :focus-visible {
+	outline: 3px solid #ad4d00;
+	outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.adzworld-rotation--3d.adzworld-enhanced .adzworld-slide {
+		transform: none;
+		transition: none;
+	}
+}

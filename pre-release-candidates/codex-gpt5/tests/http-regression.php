@@ -14,6 +14,21 @@ if ( ! defined( 'WP_CLI' ) || ! WP_CLI ) {
 
 require __DIR__ . '/regression.php';
 
+/**
+ * Sign an explicitly constructed public test request.
+ *
+ * @param array $body Request fields.
+ * @return array Signed fields.
+ */
+function adzworld_test_signed_body( $body ) {
+	$action = adzworld_ad_request_action( $body );
+	adzworld_test_assert( ! is_wp_error( $action ), 'Test configuration can be signed' );
+	$body['adzworld_context'] = wp_create_nonce( $action );
+	return $body;
+}
+
+global $wpdb;
+
 adzworld_test_assert( '127.0.0.1' === wp_parse_url( home_url(), PHP_URL_HOST ), 'HTTP checks are confined to the local test WordPress' );
 $probe         = 'adzworld_http_probe_' . wp_generate_password( 10, false );
 $previous_pool = get_option( 'next_adz_pool' );
@@ -44,14 +59,20 @@ try {
 	$response = wp_remote_post(
 		admin_url( 'admin-ajax.php' ),
 		array(
-			'body' => array(
-				'action'                 => 'adz_get_advertise_content',
-				'adz_nonce'              => wp_create_nonce( 'adzdotworld' ),
-				'ad_visibility_interval' => 60,
-				'ad_to_serve'            => $local_ad,
-				'target_type'            => 'page',
-				'target'                 => $local_ad,
-				'rotations_id'           => 'adz_rotation_99999999999999999999',
+			'body' => adzworld_test_signed_body(
+				array(
+					'action'                 => 'adz_get_advertise_content',
+					'adz_nonce'              => wp_create_nonce( 'adzdotworld' ),
+					'ad_visibility_interval' => 60,
+					'ad_to_serve'            => $local_ad,
+					'target_type'            => 'page',
+					'target'                 => $local_ad,
+					'rotations_id'           => 'adz_rotation_99999999999999999999',
+					'sequence'               => (string) $local_ad,
+					'repeat_times'           => 1,
+					'display_type'           => 'popup',
+					'adz_template'           => 'template1.php',
+				)
 			),
 		)
 	);
@@ -91,22 +112,120 @@ try {
 	$response = wp_remote_post(
 		admin_url( 'admin-ajax.php' ),
 		array(
-			'body' => array(
-				'action'                 => 'adz_get_advertise_content',
-				'adz_nonce'              => wp_create_nonce( 'adzdotworld' ),
-				'ad_visibility_interval' => 60,
-				'ad_to_serve'            => $local_ad,
-				'target'                 => $local_ad,
-				'target_type'            => 'shortcode',
-				'display_type'           => 'popup',
-				'adz_template'           => 'template1.php',
-				'sequence'               => (string) $local_ad,
-				'repeat_times'           => 1,
+			'body' => adzworld_test_signed_body(
+				array(
+					'action'                 => 'adz_get_advertise_content',
+					'adz_nonce'              => wp_create_nonce( 'adzdotworld' ),
+					'ad_visibility_interval' => 60,
+					'ad_to_serve'            => $local_ad,
+					'target'                 => $local_ad,
+					'target_type'            => 'shortcode',
+					'display_type'           => 'popup',
+					'adz_template'           => 'template1.php',
+					'sequence'               => (string) $local_ad,
+					'repeat_times'           => 1,
+				)
 			),
 		)
 	);
 	$rendered = is_wp_error( $response ) ? '' : base64_decode( wp_remote_retrieve_body( $response ), true );
 	adzworld_test_assert( is_string( $rendered ) && false !== strpos( $rendered, 'adzworld-local-ad-regression-marker' ), 'Published local ad renders over HTTP without a service registration' );
+	$adzworld_valid_body = adzworld_test_signed_body(
+		array(
+			'action'                 => 'adz_get_advertise_content',
+			'adz_nonce'              => wp_create_nonce( 'adzdotworld' ),
+			'ad_visibility_interval' => 60,
+			'ad_to_serve'            => $local_ad,
+			'target'                 => $local_ad,
+			'target_type'            => 'shortcode',
+			'display_type'           => 'popup',
+			'adz_template'           => 'template1.php',
+			'sequence'               => (string) $local_ad,
+			'repeat_times'           => 1,
+		)
+	);
+	foreach ( array(
+		'target'                 => $local_ad + 1,
+		'target_type'            => 'page',
+		'rotations_id'           => 'adz_rotation_99999999999999999999',
+		'sequence'               => '999999',
+		'repeat_times'           => 'infinite',
+		'adz_template'           => '../adz-world.php',
+		'ad_to_serve'            => array( $local_ad ),
+		'ad_visibility_interval' => str_repeat( '1', 8193 ),
+		'close_adz'              => 'true',
+		'adzworld_context'       => '',
+	) as $adzworld_field => $adzworld_tampered_value ) {
+		$adzworld_body                    = $adzworld_valid_body;
+		$adzworld_body[ $adzworld_field ] = $adzworld_tampered_value;
+		$response                         = wp_remote_post( admin_url( 'admin-ajax.php' ), array( 'body' => $adzworld_body ) );
+		adzworld_test_assert( ! is_wp_error( $response ) && 403 === wp_remote_retrieve_response_code( $response ), 'Configuration signature rejects a changed field: ' . $adzworld_field );
+	}
+	adzworld_test_assert( ! adz_get_view_row( '127.0.0.1', $local_ad, 'shortcode' ), 'Rejected close mutation did not create a view record' );
+	$adzworld_preserved_rows = array();
+	foreach ( array(
+		array(
+			'type'  => 'shortcode',
+			'date'  => '2000-01-01',
+			'count' => 7,
+		),
+		array(
+			'type'  => 'page',
+			'date'  => current_time( 'Y-m-d' ),
+			'count' => 11,
+		),
+	) as $adzworld_other_view ) {
+		$adzworld_inserted = $wpdb->insert(
+			$wpdb->prefix . 'adz_views',
+			array(
+				'visitor_ip'      => '127.0.0.1',
+				'targate_id'      => $local_ad,
+				'target_type'     => $adzworld_other_view['type'],
+				'number_of_times' => $adzworld_other_view['count'],
+				'ad_date'         => $adzworld_other_view['date'],
+				'updated'         => $adzworld_other_view['date'] . ' 00:00:00',
+			)
+		);
+		adzworld_test_assert( 1 === $adzworld_inserted, 'An unrelated view-history fixture is created' );
+		$adzworld_preserved_rows[ $wpdb->insert_id ] = $adzworld_other_view;
+	}
+	for ( $adzworld_close_count = 1; $adzworld_close_count <= 2; ++$adzworld_close_count ) {
+		$response = wp_remote_post(
+			admin_url( 'admin-ajax.php' ),
+			array(
+				'body' => adzworld_test_signed_body(
+					array(
+						'action'                 => 'adz_get_advertise_content',
+						'adz_nonce'              => wp_create_nonce( 'adzdotworld' ),
+						'ad_visibility_interval' => 60,
+						'target'                 => $local_ad,
+						'target_type'            => 'shortcode',
+						'close_adz'              => 'true',
+					)
+				),
+			)
+		);
+		adzworld_test_assert( ! is_wp_error( $response ) && 'close' === wp_remote_retrieve_body( $response ), 'Close action works without unused ad-rendering fields' );
+	}
+	$adzworld_recorded_views = $wpdb->get_var(
+		$wpdb->prepare(
+			"SELECT number_of_times FROM {$wpdb->prefix}adz_views WHERE targate_id = %d AND target_type = %s AND ad_date = %s",
+			$local_ad,
+			'shortcode',
+			current_time( 'Y-m-d' )
+		)
+	);
+	adzworld_test_assert( 2 === (int) $adzworld_recorded_views, 'First close inserts and second close increments the view record' );
+	foreach ( $adzworld_preserved_rows as $adzworld_row_id => $adzworld_expected_view ) {
+		$adzworld_preserved_view = $wpdb->get_row(
+			$wpdb->prepare( "SELECT number_of_times, ad_date FROM {$wpdb->prefix}adz_views WHERE id = %d", $adzworld_row_id )
+		);
+		adzworld_test_assert(
+			$adzworld_preserved_view && $adzworld_expected_view['count'] === (int) $adzworld_preserved_view->number_of_times
+			&& $adzworld_expected_view['date'] === $adzworld_preserved_view->ad_date,
+			'Closing this ad preserves other target types and historical days'
+		);
+	}
 	$administrators = get_users(
 		array(
 			'role'   => 'administrator',
@@ -155,6 +274,7 @@ try {
 } finally {
 	delete_option( $probe );
 	wp_delete_post( $local_ad, true );
+	$wpdb->delete( $wpdb->prefix . 'adz_views', array( 'targate_id' => $local_ad ), array( '%d' ) );
 	if ( false === $previous_pool ) {
 		delete_option( 'next_adz_pool' );
 	} else {

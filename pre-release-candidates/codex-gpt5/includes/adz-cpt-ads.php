@@ -1,9 +1,16 @@
 <?php
+/**
+ * Advertising post types, metadata, and template administration.
+ *
+ * @package adz-world
+ */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
-// Register Custom Post Type
+/**
+ * Register publisher advertisements.
+ */
 function adz_ad_post_type_pub() {
 
 	$labels = array(
@@ -63,6 +70,11 @@ add_action( 'init', 'adz_ad_post_type_pub', 0 );
 
 
 
+/**
+ * Render escaped affiliate metadata for an advertisement.
+ *
+ * @param WP_Post $post Advertisement being edited.
+ */
 function ad_network_meta_box_markup_pub( $post ) {
 
 	wp_nonce_field( basename( __FILE__ ), 'meta-box-nonce' );
@@ -76,7 +88,7 @@ function ad_network_meta_box_markup_pub( $post ) {
 				<label><b>Affiliation Network Name: </b> </label>		
 			</td>
 			<td>
-				<input type="text" name="affiliation_network_name" value="<?php echo $affiliation_network_name; ?>">
+				<input type="text" name="affiliation_network_name" value="<?php echo esc_attr( $affiliation_network_name ); ?>">
 			</td>
 		</tr>
 		<tr>
@@ -84,7 +96,7 @@ function ad_network_meta_box_markup_pub( $post ) {
 				<label><b>Affiliation Network URL: </b> </label>		
 			</td>
 			<td>
-				<input type="text" name="affiliation_network_url" value="<?php echo $affiliation_network_url; ?>">
+				<input type="text" name="affiliation_network_url" value="<?php echo esc_attr( $affiliation_network_url ); ?>">
 			</td>
 		</tr>
 		<tr>
@@ -92,7 +104,7 @@ function ad_network_meta_box_markup_pub( $post ) {
 				<label><b>Affiliation id: </b></label>		
 			</td>
 			<td>
-				<input type="text" name="affiliation_id" value="<?php echo $affiliation_id; ?>">
+				<input type="text" name="affiliation_id" value="<?php echo esc_attr( $affiliation_id ); ?>">
 			</td>
 
 		</tr>
@@ -102,6 +114,9 @@ function ad_network_meta_box_markup_pub( $post ) {
 }
 
 
+/**
+ * Register the advertisement's metadata editor.
+ */
 function add_ad_network_meta_box_pub() {
 	add_meta_box( 'ad-network-meta-box', 'Settings for This Ad', 'ad_network_meta_box_markup_pub', 'adz_ad', 'normal', 'high', null );
 }
@@ -109,6 +124,12 @@ function add_ad_network_meta_box_pub() {
 add_action( 'add_meta_boxes', 'add_ad_network_meta_box_pub' );
 
 
+/**
+ * Add the network identifier to the advertisement listing.
+ *
+ * @param array $columns Existing columns.
+ * @return array Modified columns.
+ */
 function set_network_adz_id_column( $columns ) {
 	unset( $columns['author'] );
 	$columns['network_ad_id'] = 'Advertise Id';
@@ -117,13 +138,19 @@ function set_network_adz_id_column( $columns ) {
 }
 add_filter( 'manage_adz_ad_posts_columns', 'set_network_adz_id_column' );
 
+/**
+ * Render the escaped network identifier.
+ *
+ * @param string $column Column key.
+ * @param int    $post_id Advertisement identifier.
+ */
 function network_adz_id_column( $column, $post_id ) {
 	switch ( $column ) {
 
 		case 'network_ad_id':
-			$Id = get_post_meta( $post_id, 'network_ad_id', true );
+			$network_ad_id = get_post_meta( $post_id, 'network_ad_id', true );
 
-				echo $Id;
+				echo esc_html( $network_ad_id );
 			break;
 
 	}
@@ -131,17 +158,24 @@ function network_adz_id_column( $column, $post_id ) {
 
 add_action( 'manage_adz_ad_posts_custom_column', 'network_adz_id_column', 10, 2 );
 
+/**
+ * Position the network identifier before the date column.
+ *
+ * @param array $defaults Existing columns.
+ * @return array Ordered columns.
+ */
 function adz_ad_columns_head( $defaults ) {
-	if ( isset( $_GET['post_type'] ) && $_GET['post_type'] == 'adz_ad' ) {
+	$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+	if ( $screen && 'adz_ad' === $screen->post_type && isset( $defaults['network_ad_id'] ) ) {
 
 		$new           = array();
-		$network_ad_id = $defaults['network_ad_id'];  // save the tags column
-		unset( $defaults['network_ad_id'] );   // remove it from the columns list
+		$network_ad_id = $defaults['network_ad_id'];
+		unset( $defaults['network_ad_id'] );
 
 		foreach ( $defaults as $key => $value ) {
 
-			if ( $key == 'date' ) {  // when we find the date column
-				$new['network_ad_id'] = $network_ad_id;  // put the tags column before it
+			if ( 'date' === $key ) {
+				$new['network_ad_id'] = $network_ad_id;
 			}
 			$new[ $key ] = $value;
 		}
@@ -151,7 +185,9 @@ function adz_ad_columns_head( $defaults ) {
 	}
 }
 add_filter( 'manage_posts_columns', 'adz_ad_columns_head' );
-// Register Custom Taxonomy
+/**
+ * Register advertisement categories.
+ */
 function ad_taxonomy_pub() {
 
 	$labels = array(
@@ -192,35 +228,48 @@ function ad_taxonomy_pub() {
 add_action( 'init', 'ad_taxonomy_pub', 0 );
 
 /* Sync with Server */
-function adz_sync_network_ads( $post_id, $post_after, $post_before ) {
-	if ( $post_after->post_type == 'adz_ad' ) {
+/**
+ * Synchronize an updated advertisement when the network is enabled.
+ *
+ * @param int     $post_id Advertisement identifier.
+ * @param WP_Post $post_after Updated advertisement.
+ */
+function adz_sync_network_ads( $post_id, $post_after ) {
+	if ( 'adz_ad' === $post_after->post_type ) {
 		adz_NetworkAuthorization::update_ad( $post_id, $post_after );
 	}
 }
 
-add_action( 'post_updated', 'adz_sync_network_ads', 10, 3 );
+add_action( 'post_updated', 'adz_sync_network_ads', 10, 2 );
 
 
 
+/**
+ * Synchronize deletion of an advertisement when the network is enabled.
+ *
+ * @param int $post_id Advertisement identifier.
+ */
 function adz_sync_network_ads_delete( $post_id ) {
-
-	// We check if the global post type isn't ours and just return
-	global $post_type;
-	if ( $post_type != 'adz_ad' ) {
+	if ( 'adz_ad' !== get_post_type( $post_id ) ) {
 			return;
 	}
 		adz_NetworkAuthorization::delete_ad( $post_id );
-	// My custom stuff for deleting my custom post type here
 }
 
 add_action( 'before_delete_post', 'adz_sync_network_ads_delete' );
 
+/**
+ * Render the legacy iframe-insertion button.
+ */
 function adz_ifram_button() {
 	echo '<a title="Insert Adz.world iFrame" class="button insert-media add_media" id="insert-adz-iframe-button" href="#">Adz.world iFrame</a>';
 }
 
 add_action( 'media_buttons', 'adz_ifram_button', 11 );
 
+/**
+ * Attach the legacy editor's iframe insertion behavior.
+ */
 function adz_button_js() {
 		echo '<script type="text/javascript">
 	jQuery(document).ready(function(){
@@ -234,27 +283,65 @@ function adz_button_js() {
 add_action( 'admin_print_footer_scripts', 'adz_button_js', 199 );
 
 
-// function to add new submenu for Adz template setting.
+/**
+ * Register the template settings screen.
+ */
 function adz_templates_setting_menu() {
 	add_submenu_page( 'edit.php?post_type=adz_ad', 'Adz Template Settings', 'Adz Template Settings', 'manage_options', 'adz-template-setting', 'adz_template_setting' );
 }
 add_action( 'admin_menu', 'adz_templates_setting_menu', 11 );
 
 
-// Function to add Adz template setting form in backend.
+/**
+ * Save one shipped template's administrator-controlled text and alignment.
+ *
+ * @return true|WP_Error Whether the save succeeded.
+ */
+function adzworld_save_template_settings() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return new WP_Error( 'adzworld_template_forbidden', __( 'Administrator permission is required.', 'adz-world' ) );
+	}
+	$nonce = isset( $_POST['adzworld_template_nonce'] ) && is_string( $_POST['adzworld_template_nonce'] )
+		? sanitize_text_field( wp_unslash( $_POST['adzworld_template_nonce'] ) ) : '';
+	if ( ! wp_verify_nonce( $nonce, 'adzworld_template_save' ) ) {
+		return new WP_Error( 'adzworld_template_nonce', __( 'The template save request could not be verified.', 'adz-world' ) );
+	}
+	$template = isset( $_POST['adz_template'] ) && is_string( $_POST['adz_template'] )
+		? sanitize_text_field( wp_unslash( $_POST['adz_template'] ) ) : '';
+	if ( '' === adz_resolve_template( $template ) ) {
+		return new WP_Error( 'adzworld_template_unknown', __( 'A shipped advertising template must be selected.', 'adz-world' ) );
+	}
+	$settings = array(
+		'header_text'  => isset( $_POST['header_text'] ) && is_string( $_POST['header_text'] ) ? sanitize_textarea_field( wp_unslash( $_POST['header_text'] ) ) : '',
+		'footer_text'  => isset( $_POST['footer_text'] ) && is_string( $_POST['footer_text'] ) ? sanitize_textarea_field( wp_unslash( $_POST['footer_text'] ) ) : '',
+		'header_style' => isset( $_POST['header_style'] ) && is_string( $_POST['header_style'] ) ? sanitize_key( wp_unslash( $_POST['header_style'] ) ) : '',
+		'footer_style' => isset( $_POST['footer_style'] ) && is_string( $_POST['footer_style'] ) ? sanitize_key( wp_unslash( $_POST['footer_style'] ) ) : '',
+	);
+	if ( ! in_array( $settings['header_style'], array( 'left', 'right', 'center' ), true )
+		|| ! in_array( $settings['footer_style'], array( 'left', 'right', 'center' ), true ) ) {
+		return new WP_Error( 'adzworld_template_alignment', __( 'Template alignment must be left, right or center.', 'adz-world' ) );
+	}
+	if ( get_option( 'template_' . $template ) !== $settings && ! update_option( 'template_' . $template, $settings, false ) ) {
+		return new WP_Error( 'adzworld_template_storage', __( 'The template settings could not be saved.', 'adz-world' ) );
+	}
+	return true;
+}
+
+/**
+ * Render the advertising template settings form and explicit save result.
+ */
 function adz_template_setting() {
-	if ( isset( $_POST['adz_template'] ) && $_POST['adz_template'] != '' ) {
-
-		$template_settings = array(
-			'header_text'  => $_POST['header_text'],
-			'header_style' => $_POST['header_style'],
-			'footer_text'  => $_POST['footer_text'],
-			'footer_style' => $_POST['footer_style'],
-		);
-
-		update_option( 'template_' . $_POST['adz_template'], serialize( $template_settings ), true );
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( esc_html__( 'Administrator permission is required.', 'adz-world' ), '', array( 'response' => 403 ) );
+	}
+	if ( isset( $_POST['adz_template'] ) ) {
+		check_admin_referer( 'adzworld_template_save', 'adzworld_template_nonce' );
+		$result = adzworld_save_template_settings();
+		echo '<div class="notice ' . ( is_wp_error( $result ) ? 'notice-error' : 'notice-success' ) . '"><p>'
+			. esc_html( is_wp_error( $result ) ? $result->get_error_message() : __( 'Template settings saved.', 'adz-world' ) ) . '</p></div>';
 	}
 	echo '<form method="post" action="">';
+	wp_nonce_field( 'adzworld_template_save', 'adzworld_template_nonce' );
 	echo ' <h3>Edit your Adz template header and footer text here.</h3>';
 	echo '<label>Select Adz Template</label><br>';
 
@@ -265,8 +352,8 @@ function adz_template_setting() {
 	if ( ! empty( $templates ) ) {
 		foreach ( $templates as $template ) {
 			$ext = pathinfo( $template, PATHINFO_EXTENSION );
-			if ( $ext == 'php' ) {
-				echo "<option value='" . $template . "'>" . $template . '</option>';
+			if ( 'php' === $ext ) {
+				echo "<option value='" . esc_attr( $template ) . "'>" . esc_html( $template ) . '</option>';
 			}
 		}
 	}
@@ -275,15 +362,18 @@ function adz_template_setting() {
 	echo '<br><label>Enter Header Text here.</label><br>';
 	echo '<textarea name="header_text" id="header_text"></textarea>';
 	echo '<br><label>Select Text Alignment For Header.</label><br>';
-	echo '<input type="radio" name="header_style" value="right" id="header_right"> Right  <input type="radio" name="header_style" value="left" id="header_left"> Left  <input type="radio" name="header_style" value="center" id="header_center"> Center';
+	echo '<input type="radio" name="header_style" value="right" id="header_right"> Right  <input type="radio" name="header_style" value="left" id="header_left"> Left  <input type="radio" name="header_style" value="center" id="header_center" checked> Center';
 	echo '<br><label>Enter Footer Text here.</label><br>';
 	echo '<textarea name="footer_text" id="footer_text"></textarea>';
 	echo '<br><label>Select Text Alignment For Footer.</label><br>';
-	echo '<input type="radio" name="footer_style" value="right" id="footer_right"> Right  <input type="radio" name="footer_style" value="left" id="footer_left"> Left  <input type="radio" name="footer_style" value="center" id="footer_center"> Center';
+	echo '<input type="radio" name="footer_style" value="right" id="footer_right"> Right  <input type="radio" name="footer_style" value="left" id="footer_left"> Left  <input type="radio" name="footer_style" value="center" id="footer_center" checked> Center';
 	submit_button();
 	echo '</form>';
 }
 
+/**
+ * Return a shipped template's settings to an authorized administrator.
+ */
 function get_template_settings() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_send_json_error( array( 'message' => __( 'Administrator access is required.', 'adz-world' ) ), 403 );
@@ -295,7 +385,7 @@ function get_template_settings() {
 		wp_send_json_error( array( 'message' => __( 'Unknown ad template.', 'adz-world' ) ), 400 );
 	}
 	$template_data = get_option( 'template_' . $template_name );
-	$settings      = is_string( $template_data ) ? unserialize( $template_data, array( 'allowed_classes' => false ) ) : array();
+	$settings      = is_array( $template_data ) ? $template_data : ( is_string( $template_data ) ? unserialize( $template_data, array( 'allowed_classes' => false ) ) : array() );
 	if ( ! is_array( $settings ) ) {
 		$settings = array();
 	}

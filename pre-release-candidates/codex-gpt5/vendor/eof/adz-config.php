@@ -36,8 +36,7 @@ function adz_check_post_function() {
 		return;
 	}
 
-	// phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- each id is validated below.
-	$submitted = wp_unslash( $_POST['adz_ad_options']['ad_settings'] );
+	$submitted = map_deep( wp_unslash( $_POST['adz_ad_options']['ad_settings'] ), 'sanitize_text_field' );
 
 	foreach ( $submitted as $value ) {
 

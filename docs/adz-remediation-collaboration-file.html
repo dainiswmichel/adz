@@ -418,6 +418,81 @@
   <a href="https://github.com/WordPress/WordPress-Coding-Standards">WPCS</a>.
   The attached closure email is the source for Issues 01-13 and the submission checklist; its historical line numbers are leads, not current code coordinates.</p>
 </section>
+<section id="codex-rotation-build-2026-10-26">
+<h2>Codex candidate: explicit rotations and verified legacy request repair</h2>
+<p class="status">IN PROGRESS - candidate only; full standards and Plugin Check gates still fail. No integration or release claim.</p>
+<p><strong>Source:</strong> <code>pre-release-candidates/codex-gpt5/</code>, in the commit containing this entry.
+The independent baseline was the earlier Codex candidate; the available candidates were inspected and measured,
+not treated as approved integration sources. Neither <code>ancestor/</code> nor
+<code>adz-world-wordpress-codebase/</code> was edited by this work.</p>
+<h3>Implemented behavior</h3>
+<ul>
+<li><code>[adz_rotation]</code> accepts explicitly selected local ads, administrator-registered existing-provider
+shortcodes, and optional introduction panels. A provider-only rotation inserts no local ad or introduction.
+Single mode makes a weighted random choice per uncached server render; flat and 3D modes provide manual arrows,
+dots and keyboard navigation. A nine-to-one weight is not a guaranteed one-in-ten access quota; page caching also caches the choice.</li>
+<li>Provider-source configuration requires administrator and unfiltered-HTML permissions plus its action nonce.
+This does not create accounts or certify compatibility with every advertising network. Providers that prohibit
+hidden placements must not be placed in a carousel. Navigation does not refresh provider tags.</li>
+<li>Optional introduction forms hold up to ten plain-text refinements only in the current page's memory.
+There is no account persistence, semantic interpretation, matching engine or preference transmission.
+Those limitations are visible in the interface and readme.</li>
+<li>Legacy page, popup, shortcode and through-page requests now bind their target, rotation, sequence, ad,
+template, interval, repeat setting and operation to a server-generated configuration nonce.
+This protects configuration integrity, not administrator authorization or proof of an ad view.
+Public tokens remain replayable for the same configuration until expiry.</li>
+<li>Close requests no longer require unused rendering fields. View updates address the exact selected row,
+preserving other target types and historical days, and storage failures return explicit errors.
+Through-page view lookups now use the actual page and target type rather than an unrelated page's view record. JavaScript dependencies are enqueued,
+UTF-8 ad text is decoded correctly, and inline request values are escaped.</li>
+<li>Template saves now require capability and action-nonce checks, a shipped template and permitted alignment.
+New saves use native WordPress option arrays; historical double-serialized options still render.
+Ad responses retain safe HTML and the plugin's iframe shortcode but cannot execute unrelated site shortcodes.
+No feature was removed to silence a diagnostic.</li>
+</ul>
+<h3>Executed evidence, 26 October 2026</h3>
+<p>The existing <code>../adz-world-test-site-by-codex/</code> installation uses a symlink to this candidate,
+WordPress 7.1.3 and PHP 8.4.7. Both debug flags are enabled. No new test installation was created.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Check</th><th>Actual result</th></tr></thead>
+<tbody>
+<tr><td>PHP and JavaScript syntax</td><td>PASS: all 52 candidate PHP files linted;
+<code>node --check</code> passed for both new JavaScript assets.</td></tr>
+<tr><td>Shared call-resolution checker</td><td>Zero internal arity mismatches and zero duplicate file-scope definitions.
+Its 135 unresolved call targets include WordPress APIs and optional WooCommerce Memberships calls;
+this static result is not proof of every external integration or runtime method.</td></tr>
+<tr><td>Full WordPress-standard PHPCS, annotations ignored, entire candidate</td><td><strong>FAIL: 711 errors / 139 warnings.</strong>
+No exclusions or suppression annotations were added. The remaining inherited suppression was removed.
+The new rotation module, request-context module and frontend assets each report zero errors and zero warnings.
+The repaired main, shortcode, helper, custom-post-type administration and template report zero errors;
+explicit warnings remain for custom-table access, legacy serialization and base64 transport.</td></tr>
+<tr><td>Official Plugin Check against the installed candidate</td><td><strong>FAIL: 23 errors / 135 warnings.</strong>
+The remaining errors identify the legacy dynamic/select-capability output and PHP REST client's cURL calls.
+Exit status zero was not interpreted as a pass.</td></tr>
+<tr><td>Accumulated WP-CLI runtime suites</td><td>PASS:
+<code>configured-rotations.php</code>, <code>rotation-display.php</code>,
+<code>provider-contracts.php</code>, <code>template-settings.php</code>,
+<code>through-page.php</code> and <code>http-regression.php</code>.
+These also execute the earlier arithmetic, statement and sandbox regressions.
+Provider contracts are mocked; no live payment account or money was contacted.</td></tr>
+<tr><td>Exact behavior checks</td><td>PASS: all ten possible integer draws give nine provider choices and one local-ad choice;
+unsigned or altered public configurations are rejected with HTTP 403; rejected close mutations leave no view record;
+valid closes insert then increment without changing other target types or prior-day records;
+actual through-page output supplies an accepted close payload and restores the article;
+unauthorized template saves fail and old/new option storage produces identical rendered content.</td></tr>
+<tr><td>Real WordPress deactivation/reactivation under debug</td><td>PASS; zero fresh debug-log bytes during activation.
+Historical failed-test diagnostics were retained, not erased.</td></tr>
+<tr><td>Browser execution</td><td>PASS via DOM-dispatched events: legacy inline ad and popup rendering,
+countdown controls, close and article restoration; two independent flat/3D rotations, arrows, keyboard Home,
+position state, text refinement and clearing. UTF-8 decoding was exercised.
+The integrated tab's hidden state prevented reliable physical-click/visual acceptance testing; none is claimed.</td></tr>
+</tbody></table></div>
+<p><strong>Still outstanding:</strong> the full WPCS and Plugin Check failures, minimum-version compatibility matrix,
+provider-specific policy and live-account validation, persistent preferences and real matching,
+the authoritative settlement service, and the still-unidentified original closure guideline.
+Dainis is not being asked to test this as a finished or standards-clean plugin.</p>
+</section>
+
 <section id="roadmap-claude-code-web">
 <h2>claude-code-web — roadmap to a fully remediated plugin</h2>
 <p class="status">Comment, not an assignment claim. No task in the index above is claimed by this entry.</p>

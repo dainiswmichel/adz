@@ -1,4 +1,4 @@
-=== adz.world allows you to create a wholesome consent-based advertising ecosystem for your audience ===
+=== adz.world ===
 Contributors: dainismichel
 Donate link: http://www.dainiswmichel.com/donate/
 Tags: advertising, consent, privacy, ads, ad management
@@ -12,6 +12,53 @@ License URI: https://www.gnu.org/licenses/gpl-3.0.html
 Run your website like a TV station. Use the adz.world plugin to create an enjoyable, profitable, wholesome advertising ecosystem for your audience! 
 
 == Description ==
+
+= Configurable rotation shortcode (Codex candidate) =
+
+[adz_rotation slots="ad:123,ad:456,intro" display="flat" controls="both"]
+
+Only explicitly selected slots appear. ad:123 means a published, unprotected
+local ad post; intro means the optional permission introduction. No adz or
+introduction is inserted automatically. Replace example IDs with your own.
+display accepts single, flat or 3d. controls accepts arrows, dots, both or none.
+Without JavaScript, configured slides remain readable.
+
+Adz > Rotation sources registers a shortcode supplied by an advertising plugin
+already installed on your site. Saving or removing a source requires an
+administrator with unfiltered HTML permission and a valid nonce. This uses
+the existing plugin's rendering; it does not create network accounts, issue
+credentials, or certify any provider's approval of a placement.
+
+[adz_rotation slots="source:existing:9,ad:123:1" display="single"]
+
+This example makes a weighted random choice per uncached page render: nine
+parts existing source, one part local ad. It is not a guaranteed count per
+ten accesses. A page cache also caches that choice. Carousel modes contain
+each selected slot in order; weights apply only to single mode. Provider
+units are not refreshed by navigation. Provider rules and existing consent
+configuration still apply; no claim of universal network compatibility is made.
+Carousel slides other than the active slide become hidden or inert. Providers
+that prohibit hidden placements must use single mode, not a carousel. No provider
+tag is automatically refreshed or re-requested as a slide changes.
+
+The introduction accepts up to ten refinements as plain text held in this
+page's memory only. It does not send them, persist a profile, interpret natural
+language, or change ad matching. Clearing or leaving the page discards them.
+Account-backed preferences and semantic product matching are not implemented
+by this display feature.
+
+Legacy page, popup, and gated-content requests now carry a configuration-bound
+nonce as well as the public advertising nonce. Changing the target, rotation,
+sequence, template, interval, repeat count, or operation invalidates the request.
+This is request-integrity protection, not administrator authorization or proof
+that an ad was viewed. Public tokens can be replayed for their original
+configuration until WordPress expires them. Cached pages containing expired
+tokens require a cache refresh. Each signed field is limited to 8192 bytes.
+
+The legacy ad renderer permits ordinary safe post HTML and the plugin's
+adzworld_iframe shortcode. Advertising responses cannot execute unrelated site
+shortcodes or inject scripts. Existing administrator-registered provider sources
+use their installed provider plugin's renderer instead.
 
 <strong>adz.world is the ultimate advertising plugin for creating an enjoyable and profitable advertising ecosystem, serving adz to your audience in a healthy way, generating advertising revenue from freelines, and requiring advertising views in exchange for access to content. Facilitate the dawning of a true Age of Accordance for humanity, where all agreements are made in the spirit of enjoyable mutual consent. Join us and help us become the most wholesome advertising community in the world.</strong>
 
