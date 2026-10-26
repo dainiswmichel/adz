@@ -138,7 +138,7 @@ class EOF_Settings {
 				$render = new $field_class( $field, $value, $this->parent );
 				$render->render_field();
 			} else {
-				_e( 'This field type does not exisits, please check your code.', 'adz-world' );
+				esc_html_e( 'This field type does not exisits, please check your code.', 'adz-world' );
 			}
 		}
 	}
@@ -155,6 +155,13 @@ class EOF_Settings {
 	 */
 	public function sanitize_callback( $options = array() ) {
 
+		/*
+		 * This is a register_setting() sanitize callback. WordPress calls it
+		 * from options.php, which has already verified the settings nonce and
+		 * the user's capability before any callback runs -- there is no earlier
+		 * point at which this code could check one itself.
+		 */
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Settings API callback; options.php verifies the nonce before calling it.
 		if ( empty( $_POST['_wp_http_referer'] ) ) {
 			return $options;
 		}
@@ -163,7 +170,8 @@ class EOF_Settings {
 			return;
 		}
 
-		parse_str( $_POST['_wp_http_referer'], $referrer );
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Settings API callback; see above.
+		parse_str( sanitize_text_field( wp_unslash( $_POST['_wp_http_referer'] ) ), $referrer );
 
 		$sanitizied_options = array();
 		$tab                = isset( $referrer['tab'] ) ? $referrer['tab'] : 'general';
@@ -206,8 +214,12 @@ class EOF_Settings {
 			return;
 		}
 
-		if ( $_GET['action'] == 'reset' && wp_verify_nonce( $_GET['reset_nonce'], 'eof_reset' ) ) {
-			$section     = $this->parent->sections[ $_GET['tab'] ];
+		$reset_action = sanitize_key( wp_unslash( $_GET['action'] ) );
+		$reset_nonce  = sanitize_text_field( wp_unslash( $_GET['reset_nonce'] ) );
+		$reset_tab    = sanitize_key( wp_unslash( $_GET['tab'] ) );
+
+		if ( 'reset' === $reset_action && wp_verify_nonce( $reset_nonce, 'eof_reset' ) && isset( $this->parent->sections[ $reset_tab ] ) ) {
+			$section     = $this->parent->sections[ $reset_tab ];
 			$new_options = array();
 			foreach ( $section['fields'] as $key => $field ) {
 				$new_options[ $key ] = isset( $field['default'] ) ? $field['default'] : '';

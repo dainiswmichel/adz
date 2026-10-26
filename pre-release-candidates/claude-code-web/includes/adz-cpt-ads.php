@@ -121,9 +121,9 @@ function network_adz_id_column( $column, $post_id ) {
 	switch ( $column ) {
 
 		case 'network_ad_id':
-			$Id = get_post_meta( $post_id, 'network_ad_id', true );
+			$network_ad_id = get_post_meta( $post_id, 'network_ad_id', true );
 
-				echo $Id;
+			echo esc_html( $network_ad_id );
 			break;
 
 	}
@@ -132,7 +132,14 @@ function network_adz_id_column( $column, $post_id ) {
 add_action( 'manage_adz_ad_posts_custom_column', 'network_adz_id_column', 10, 2 );
 
 function adz_ad_columns_head( $defaults ) {
-	if ( isset( $_GET['post_type'] ) && $_GET['post_type'] == 'adz_ad' ) {
+	/*
+	 * This filter runs on the list table, so the current screen already knows
+	 * which post type is being listed. Reading it from WordPress rather than
+	 * from the query string means there is no request data here to validate.
+	 */
+	$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+
+	if ( $screen instanceof WP_Screen && 'adz_ad' === $screen->post_type ) {
 
 		$new           = array();
 		$network_ad_id = $defaults['network_ad_id'];  // save the tags column
@@ -258,14 +265,16 @@ function adz_template_setting() {
 
 		check_admin_referer( 'adz_template_settings' );
 
-		$template = adz_resolve_template( wp_unslash( $_POST['adz_template'] ) );
+		$template = adz_resolve_template(
+			isset( $_POST['adz_template'] ) ? sanitize_text_field( wp_unslash( $_POST['adz_template'] ) ) : ''
+		);
 
 		if ( '' !== $template ) {
 			$template_settings = array(
 				'header_text'  => isset( $_POST['header_text'] ) ? wp_kses_post( wp_unslash( $_POST['header_text'] ) ) : '',
-				'header_style' => adz_sanitize_alignment( isset( $_POST['header_style'] ) ? wp_unslash( $_POST['header_style'] ) : '' ),
+				'header_style' => adz_sanitize_alignment( isset( $_POST['header_style'] ) ? sanitize_text_field( wp_unslash( $_POST['header_style'] ) ) : '' ),
 				'footer_text'  => isset( $_POST['footer_text'] ) ? wp_kses_post( wp_unslash( $_POST['footer_text'] ) ) : '',
-				'footer_style' => adz_sanitize_alignment( isset( $_POST['footer_style'] ) ? wp_unslash( $_POST['footer_style'] ) : '' ),
+				'footer_style' => adz_sanitize_alignment( isset( $_POST['footer_style'] ) ? sanitize_text_field( wp_unslash( $_POST['footer_style'] ) ) : '' ),
 			);
 
 			// Stored as an array. update_option() serializes it; we do not.
@@ -285,7 +294,11 @@ function adz_template_setting() {
 		foreach ( $templates as $template ) {
 			$ext = pathinfo( $template, PATHINFO_EXTENSION );
 			if ( $ext == 'php' ) {
-				echo "<option value='" . $template . "'>" . $template . '</option>';
+				printf(
+					'<option value="%1$s">%2$s</option>',
+					esc_attr( $template ),
+					esc_html( $template )
+				);
 			}
 		}
 	}
@@ -322,7 +335,7 @@ function adzworld_ajax_get_template_settings() {
 
 	check_ajax_referer( 'adz_admin', 'nonce' );
 
-	$template = isset( $_POST['selected_template'] ) ? wp_unslash( $_POST['selected_template'] ) : '';
+	$template = isset( $_POST['selected_template'] ) ? sanitize_text_field( wp_unslash( $_POST['selected_template'] ) ) : '';
 
 	if ( '' === adz_resolve_template( $template ) ) {
 		wp_send_json_error( array( 'message' => __( 'Unknown template.', 'adz-world' ) ), 400 );
@@ -372,17 +385,27 @@ function adzworld_save_ad_meta( $post_id, $post ) {
 		return;
 	}
 
-	$fields = array(
-		'affiliation_network_name' => 'sanitize_text_field',
-		'affiliation_network_url'  => 'esc_url_raw',
-		'affiliation_id'           => 'sanitize_text_field',
-	);
+	if ( isset( $_POST['affiliation_network_name'] ) ) {
+		update_post_meta(
+			$post_id,
+			'affiliation_network_name',
+			sanitize_text_field( wp_unslash( $_POST['affiliation_network_name'] ) )
+		);
+	}
 
-	foreach ( $fields as $field => $sanitizer ) {
-		if ( ! isset( $_POST[ $field ] ) ) {
-			continue;
-		}
+	if ( isset( $_POST['affiliation_network_url'] ) ) {
+		update_post_meta(
+			$post_id,
+			'affiliation_network_url',
+			esc_url_raw( wp_unslash( $_POST['affiliation_network_url'] ) )
+		);
+	}
 
-		update_post_meta( $post_id, $field, call_user_func( $sanitizer, wp_unslash( $_POST[ $field ] ) ) );
+	if ( isset( $_POST['affiliation_id'] ) ) {
+		update_post_meta(
+			$post_id,
+			'affiliation_id',
+			sanitize_text_field( wp_unslash( $_POST['affiliation_id'] ) )
+		);
 	}
 }

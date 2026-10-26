@@ -69,7 +69,11 @@ if ( ! class_exists( 'EOF_field_dynamic' ) ) :
 		public function render_field() {
 
 			$html = do_shortcode( apply_filters( 'dyanmic_field_' . $this->option_id, $this->field['content'] ) );
-			echo $html;
+
+			// Field content is markup by design, so it is filtered rather than
+			// escaped: wp_kses_post allows what a post may contain and strips
+			// script, which no settings field has any business emitting.
+			echo wp_kses_post( $html );
 		}
 	}
 

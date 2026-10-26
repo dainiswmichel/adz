@@ -78,7 +78,7 @@ if ( $display_type == 'thru_page' ) {
 
 	?>
 	<head>
-	<script type="text/javascript" src="<?php echo site_url(); ?>/wp-includes/js/jquery/jquery.js"></script>
+	<script type="text/javascript" src="<?php echo esc_url( site_url( '/wp-includes/js/jquery/jquery.js' ) ); ?>"></script>
 	<script type="text/javascript">
 		jQuery(document).ready(function(){
 
@@ -148,7 +148,7 @@ if ( $display_type == 'thru_page' ) {
 				echo do_shortcode( $ad_text_safe );
 			} else {
 
-				echo $ad_text_safe;
+				echo wp_kses( (string) $ad_text, $adz_allowed_html );
 			}
 			?>
 		</div>
@@ -167,7 +167,9 @@ if ( $display_type == 'thru_page' ) {
 } elseif ( false !== strpos( (string) $ad_text, 'adzworld_iframe' ) ) {
 
 
-		echo base64_encode(
+		// Payload for window.atob(). esc_html() is a no-op over the base64
+		// character set, and keeps this output escaped unconditionally.
+		echo esc_html( base64_encode(
 			'<!-- BEGIN: Sticky Header -->
 		<div id="adz_header_container">
 		    <div id="adz_header_content" style="text-align: ' . esc_attr( $setting_array['header_style'] ) . '">
@@ -191,11 +193,13 @@ if ( $display_type == 'thru_page' ) {
 		    </div>
 		</div>
 		' . $style
-		);
+		) );
 
 } else {
 
-	echo base64_encode(
+	// Payload for window.atob(). esc_html() is a no-op over the base64
+	// character set, and keeps this output escaped unconditionally.
+	echo esc_html( base64_encode(
 		'<!-- BEGIN: Sticky Header -->
 		<div id="adz_header_container">
 		    <div id="adz_header_content" style="text-align: ' . esc_attr( $setting_array['header_style'] ) . '">
@@ -219,6 +223,6 @@ if ( $display_type == 'thru_page' ) {
 		    </div>
 		</div>
 		' . $style
-	);
+	) );
 }
 ?>

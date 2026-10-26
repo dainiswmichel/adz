@@ -36,7 +36,16 @@ if ( ! class_exists( 'EOF_Views' ) ) :
 		public function admin_options_page() {
 
 			$section_ids = array_keys( $this->parent->sections );
-			$active_tab  = isset( $_GET['tab'] ) ? $_GET['tab'] : $section_ids[0];
+			/*
+			 * Which tab to display, from a navigation link on a screen already
+			 * gated by capability. It changes nothing and is validated against
+			 * the sections that exist, so a nonce would only break bookmarking
+			 * and the back button. PHPCS rates this one "recommended" rather
+			 * than required for that reason.
+			 */
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only tab selection, validated against the existing sections below.
+			$requested   = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : '';
+			$active_tab  = in_array( $requested, $section_ids, true ) ? $requested : $section_ids[0];
 			$base_url    = menu_page_url( $this->parent->configs['page_slug'], false );
 
 			ob_start();
@@ -49,25 +58,25 @@ if ( ! class_exists( 'EOF_Views' ) ) :
 					if ( isset( $section['type'] ) && $section['type'] == 'url' ) {
 						printf(
 							'<a href="%1$s" title="%2$s" class="nav-tab %3$s">%4$s</a>',
-							$section['url'],
-							$section['title'],
-							$actived,
-							$section['title']
+							esc_url( $section['url'] ),
+							esc_attr( $section['title'] ),
+							esc_attr( $actived ),
+							esc_html( $section['title'] )
 						);
 					} else {
-						$domain = $_SERVER['HTTP_HOST'];
+						$domain = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
 						// find out the path to the current file:
-						$path = $_SERVER['SCRIPT_NAME'];
+						$path = isset( $_SERVER['SCRIPT_NAME'] ) ? sanitize_text_field( wp_unslash( $_SERVER['SCRIPT_NAME'] ) ) : '';
 						// find out the QueryString:
-						$queryString = $_SERVER['QUERY_STRING'];
+						$queryString = isset( $_SERVER['QUERY_STRING'] ) ? sanitize_text_field( wp_unslash( $_SERVER['QUERY_STRING'] ) ) : '';
 						// put it all together:
 						$url = 'http://' . $domain . $path . '?' . $queryString;
 						printf(
 							'<a href="%1$s" title="%2$s" class="nav-tab %3$s">%4$s</a>',
-							add_query_arg( array( 'tab' => $section['id'] ), $url ),
-							$section['title'],
-							$actived,
-							$section['title']
+							esc_url( add_query_arg( array( 'tab' => $section['id'] ), $url ) ),
+							esc_attr( $section['title'] ),
+							esc_attr( $actived ),
+							esc_html( $section['title'] )
 						);
 					}
 				}
@@ -114,6 +123,15 @@ if ( ! class_exists( 'EOF_Views' ) ) :
 			$outup = ob_get_contents();
 			ob_end_clean();
 
+			/*
+			 * The buffered settings page, assembled by the field classes above.
+			 * It contains the form controls a settings screen must emit --
+			 * input, select, textarea, button -- none of which survive
+			 * wp_kses_post, so filtering here would leave an unusable screen.
+			 * Each field escapes its own values at render time, which is where
+			 * the escaping belongs; this is only the aggregation point.
+			 */
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- buffered settings form; each field escapes its own output and kses would strip the form controls.
 			echo $outup;
 		}
 	}

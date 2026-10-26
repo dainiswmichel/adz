@@ -72,7 +72,7 @@ if ( ! class_exists( 'EOF_field_radio' ) ) :
 					?>
 			<label for="<?php echo esc_attr( $this->option_name ); ?>" style="display:inline-block;margin-right:10px;">
 			<input type="radio" name="<?php echo esc_attr( $this->option_name ); ?>" id="<?php echo esc_attr( $this->option_id ); ?>" value="<?php echo esc_attr( $key ); ?>" <?php checked( $key, $this->value, true ); ?> >
-					<?php echo $label; ?></label>
+					<?php echo esc_html( $label ); ?></label>
 					<?php
 				} else {
 					?>
@@ -82,7 +82,7 @@ if ( ! class_exists( 'EOF_field_radio' ) ) :
 					<?php
 				}
 			}
-			echo '<p class="description" style="margin-top:15px;">' . $this->field['desc'] . '</p>';
+			echo '<p class="description" style="margin-top:15px;">' . wp_kses_post( $this->field['desc'] ) . '</p>';
 		}
 
 		public function sanitize( $value ) {

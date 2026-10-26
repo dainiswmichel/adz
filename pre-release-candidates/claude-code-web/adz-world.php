@@ -106,12 +106,33 @@ add_action( 'admin_enqueue_scripts', 'adz_enqueue_scripts_admin' );
 
 
 function adz_get_advertise_content() {
-	$nonce = $_REQUEST['adz_nonce'];
+	$nonce = isset( $_REQUEST['adz_nonce'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['adz_nonce'] ) ) : '';
+
 	if ( ! wp_verify_nonce( $nonce, 'adzdotworld' ) ) {
 		echo 'continue';
 		exit;
 	}
-	if ( ! is_numeric( $_POST['ad_visibility_interval'] ) ) {
+
+	/*
+	 * Every request field this handler uses, read once, unslashed and
+	 * sanitised here rather than at each of the fifty-odd places they were read
+	 * before. 1.0.8 read them repeatedly, unslashed none of them, and checked
+	 * isset() on only some, so a request omitting a field raised a notice and a
+	 * slashed value was stored with its slashes. Reading them once also means
+	 * the validation below cannot be bypassed by a later re-read.
+	 */
+	$adz_in_target                 = isset( $_POST['target'] ) ? sanitize_text_field( wp_unslash( $_POST['target'] ) ) : '';
+	$adz_in_target_type            = isset( $_POST['target_type'] ) ? sanitize_text_field( wp_unslash( $_POST['target_type'] ) ) : '';
+	$adz_in_ad_to_serve            = isset( $_POST['ad_to_serve'] ) ? sanitize_text_field( wp_unslash( $_POST['ad_to_serve'] ) ) : '';
+	$adz_in_rotations_id           = isset( $_POST['rotations_id'] ) ? sanitize_text_field( wp_unslash( $_POST['rotations_id'] ) ) : '';
+	$adz_in_ad_visibility_interval = isset( $_POST['ad_visibility_interval'] ) ? sanitize_text_field( wp_unslash( $_POST['ad_visibility_interval'] ) ) : '';
+	$adz_in_sequence               = isset( $_POST['sequence'] ) ? sanitize_text_field( wp_unslash( $_POST['sequence'] ) ) : '';
+	$adz_in_close_adz              = isset( $_POST['close_adz'] ) ? sanitize_text_field( wp_unslash( $_POST['close_adz'] ) ) : '';
+	$adz_in_adz_template           = isset( $_POST['adz_template'] ) ? sanitize_text_field( wp_unslash( $_POST['adz_template'] ) ) : '';
+	$adz_in_display_type           = isset( $_POST['display_type'] ) ? sanitize_text_field( wp_unslash( $_POST['display_type'] ) ) : '';
+	$adz_in_repeat_times           = isset( $_POST['repeat_times'] ) ? sanitize_text_field( wp_unslash( $_POST['repeat_times'] ) ) : '';
+
+	if ( ! is_numeric( $adz_in_ad_visibility_interval ) ) {
 		echo 'continue';
 		exit;
 	}
@@ -127,9 +148,9 @@ function adz_get_advertise_content() {
 	}
 	global $adz_ad_network_base_url;
 	$next_adz_pool     = get_option( 'next_adz_pool' );
-	$rotation_adz_pool = get_option( adz_validate_rotation_id( wp_unslash( $_POST['rotations_id'] ) ) );
+	$rotation_adz_pool = get_option( adz_validate_rotation_id( $adz_in_rotations_id ) );
 	$publisher_user_id = $adz_publisher_options['adz_registered']['publisher_user_id'];
-	$ad_to_serve_val   = sanitize_text_field( $_POST['ad_to_serve'] );
+	$ad_to_serve_val   = sanitize_text_field( $adz_in_ad_to_serve );
 	if ( $next_adz_pool == 'publisher' || ! $next_adz_pool ) {
 
 		$ad_network_url = $adz_ad_network_base_url . "wp-json/adz_server/v1/ads?id={$reg['ID']}&token={$reg['post_token']}&nettoken={$reg['network_token']}&referral_code={$adz_ad_options['referral_code']}&publisher_ad={$ad_to_serve_val}&ad_from=publisher";
@@ -146,25 +167,25 @@ function adz_get_advertise_content() {
 	}//End of else
 
 	global $adz_ad_network_base_url;
-	if ( isset( $_POST['target_type'] ) ) {
-		$target_type = sanitize_text_field( $_POST['target_type'] );
+	if ( isset( $adz_in_target_type ) ) {
+		$target_type = sanitize_text_field( $adz_in_target_type );
 		$cond        = "AND `target_type` = '" . $target_type . "'";
 	} else {
 		$target_type = '';
 		$cond        = '';
 	}
 
-	$visitor_ip = $_SERVER['REMOTE_ADDR'];
+	$visitor_ip = adzworld_visitor_ip();
 
-	$adz_views = adz_get_view_row( $visitor_ip, isset( $_POST['target'] ) ? (int) $_POST['target'] : 0, $target_type );
+	$adz_views = adz_get_view_row( $visitor_ip, isset( $adz_in_target ) ? (int) $adz_in_target : 0, $target_type );
 
 	if ( empty( $adz_views ) ) {
-		if ( isset( $_POST['close_adz'] ) && $_POST['close_adz'] == 'true' ) {
+		if ( isset( $adz_in_close_adz ) && $adz_in_close_adz == 'true' ) {
 			$wpdb->insert(
 				$wpdb->prefix . 'adz_views',
 				array(
 					'visitor_ip'      => $visitor_ip,
-					'targate_id'      => sanitize_text_field( $_POST['target'] ),
+					'targate_id'      => sanitize_text_field( $adz_in_target ),
 					'target_type'     => $target_type,
 					'number_of_times' => 1,
 					'ad_date'         => date( 'Y-m-d' ),
@@ -174,19 +195,19 @@ function adz_get_advertise_content() {
 			echo 'close';
 			exit;
 		}
-	} elseif ( isset( $_POST['close_adz'] ) && $_POST['close_adz'] == 'true' ) {
+	} elseif ( isset( $adz_in_close_adz ) && $adz_in_close_adz == 'true' ) {
 
 			$last_update     = strtotime( $adz_views->updated );
 			$current_time    = time();
 			$seconds         = $current_time - $last_update;
-			$interval_in_sec = sanitize_text_field( $_POST['ad_visibility_interval'] );
-			$display_type    = sanitize_text_field( $_POST['display_type'] );
+			$interval_in_sec = sanitize_text_field( $adz_in_ad_visibility_interval );
+			$display_type    = sanitize_text_field( $adz_in_display_type );
 
 			$wpdb->update(
 				$wpdb->prefix . 'adz_views',
 				array(
 					'visitor_ip'      => $visitor_ip,
-					'targate_id'      => sanitize_text_field( $_POST['target'] ),
+					'targate_id'      => sanitize_text_field( $adz_in_target ),
 					'target_type'     => $target_type,
 					'number_of_times' => $adz_views->number_of_times + 1,
 					'ad_date'         => date( 'Y-m-d' ),
@@ -194,7 +215,7 @@ function adz_get_advertise_content() {
 				),
 				array(
 					'visitor_ip' => $visitor_ip,
-					'targate_id' => sanitize_text_field( $_POST['target'] ),
+					'targate_id' => sanitize_text_field( $adz_in_target ),
 				)
 			);
 
@@ -215,56 +236,56 @@ function adz_get_advertise_content() {
 			$ad      = $ad_info[0];
 			$ad_text = $ad->content;
 
-			$visitor_ip = $_SERVER['REMOTE_ADDR'];
+			$visitor_ip = adzworld_visitor_ip();
 
-			$adz_views = adz_get_view_row( $visitor_ip, isset( $_POST['target'] ) ? (int) $_POST['target'] : 0, $target_type );
+			$adz_views = adz_get_view_row( $visitor_ip, isset( $adz_in_target ) ? (int) $adz_in_target : 0, $target_type );
 
-			$display_type = sanitize_text_field( $_POST['display_type'] );
+			$display_type = sanitize_text_field( $adz_in_display_type );
 
 			if ( empty( $adz_views ) ) {
-				if ( $_SESSION['first_time'] >= time() ) {
+				if ( isset( $_SESSION['first_time'] ) && $_SESSION['first_time'] >= time() ) {
 					echo 'continue';
 					exit;
 				} else {
-					$_SESSION['first_time'] = time() + sanitize_text_field( $_POST['ad_visibility_interval'] );
+					$_SESSION['first_time'] = time() + sanitize_text_field( $adz_in_ad_visibility_interval );
 				}
 
-				$adz_template_file = adz_resolve_template( isset( $_POST['adz_template'] ) ? wp_unslash( $_POST['adz_template'] ) : '' );
+				$adz_template_file = adz_resolve_template( $adz_in_adz_template );
 				if ( '' === $adz_template_file ) {
 					echo 'continue';
 					exit;
 				}
 				require $adz_template_file;
 				if ( $next_adz_pool == 'publisher' || ! $next_adz_pool ) {
-					if ( $_POST['target_type'] == 'shortcode' ) {
-						$publisher_rotations_stats = get_post_meta( sanitize_text_field( $_POST['target'] ), 'adz_rotation_shortcode', true );
+					if ( $adz_in_target_type == 'shortcode' ) {
+						$publisher_rotations_stats = get_post_meta( sanitize_text_field( $adz_in_target ), 'adz_rotation_shortcode', true );
 						if ( empty( $publisher_rotations_stats['served'] ) || ! $publisher_rotations_stats ) {
 
-							$un_serverd                   = explode( ',', sanitize_text_field( $_POST['sequence'] ) );
+							$un_serverd                   = explode( ',', sanitize_text_field( $adz_in_sequence ) );
 							$ad_to_serve                  = array_shift( $un_serverd );
-							$roatation_stats['served'][]  = sanitize_text_field( $_POST['ad_to_serve'] );
+							$roatation_stats['served'][]  = sanitize_text_field( $adz_in_ad_to_serve );
 							$roatation_stats['un_served'] = $un_serverd;
-							update_post_meta( sanitize_text_field( $_POST['target'] ), 'adz_rotation_shortcode', $roatation_stats );
+							update_post_meta( sanitize_text_field( $adz_in_target ), 'adz_rotation_shortcode', $roatation_stats );
 
 						} else {
 							array_shift( $publisher_rotations_stats['un_served'] );
-							$roatation_stats['served']    = array_merge( $publisher_rotations_stats['served'], array( sanitize_text_field( $_POST['ad_to_serve'] ) ) );
+							$roatation_stats['served']    = array_merge( $publisher_rotations_stats['served'], array( sanitize_text_field( $adz_in_ad_to_serve ) ) );
 							$roatation_stats['un_served'] = $publisher_rotations_stats['un_served'];
-							update_post_meta( sanitize_text_field( $_POST['target'] ), 'adz_rotation_shortcode', $roatation_stats );
+							update_post_meta( sanitize_text_field( $adz_in_target ), 'adz_rotation_shortcode', $roatation_stats );
 						}
 					} else {
 						if ( empty( $rotation_adz_pool['served'] ) || ! $rotation_adz_pool ) {
-							$un_serverd = explode( ',', sanitize_text_field( $_POST['sequence'] ) );
+							$un_serverd = explode( ',', sanitize_text_field( $adz_in_sequence ) );
 							array_shift( $un_serverd );
-							$roatation_stats['served'][]  = sanitize_text_field( $_POST['ad_to_serve'] );
+							$roatation_stats['served'][]  = sanitize_text_field( $adz_in_ad_to_serve );
 							$roatation_stats['un_served'] = $un_serverd;
-							adz_update_rotation_state( wp_unslash( $_POST['rotations_id'] ), $roatation_stats );
+							adz_update_rotation_state( $adz_in_rotations_id, $roatation_stats );
 
 						} else {
 							array_shift( $rotation_adz_pool['un_served'] );
-							$roatation_stats['served']    = array_merge( $rotation_adz_pool['served'], array( sanitize_text_field( $_POST['ad_to_serve'] ) ) );
+							$roatation_stats['served']    = array_merge( $rotation_adz_pool['served'], array( sanitize_text_field( $adz_in_ad_to_serve ) ) );
 							$roatation_stats['un_served'] = $rotation_adz_pool['un_served'];
-							adz_update_rotation_state( wp_unslash( $_POST['rotations_id'] ), $roatation_stats );
+							adz_update_rotation_state( $adz_in_rotations_id, $roatation_stats );
 						}//End of if else.
 					}
 					update_option( 'next_adz_pool', 'network' );
@@ -288,19 +309,19 @@ function adz_get_advertise_content() {
 				$last_update     = strtotime( $adz_views->updated );
 				$current_time    = time();
 				$seconds         = $current_time - $last_update;
-				$interval_in_sec = sanitize_text_field( $_POST['ad_visibility_interval'] );
-				$display_type    = sanitize_text_field( $_POST['display_type'] );
+				$interval_in_sec = sanitize_text_field( $adz_in_ad_visibility_interval );
+				$display_type    = sanitize_text_field( $adz_in_display_type );
 
-				if ( $seconds >= $interval_in_sec && ( $adz_views->number_of_times < $_POST['repeat_times'] || $_POST['repeat_times'] == 'infinite' ) ) {
+				if ( $seconds >= $interval_in_sec && ( $adz_views->number_of_times < $adz_in_repeat_times || $adz_in_repeat_times == 'infinite' ) ) {
 
-					if ( $_SESSION['first_time'] >= time() ) {
+					if ( isset( $_SESSION['first_time'] ) && $_SESSION['first_time'] >= time() ) {
 						echo 'continue';
 						exit;
 					} else {
-						$_SESSION['first_time'] = time() + intval( $_POST['ad_visibility_interval'] );
+						$_SESSION['first_time'] = time() + intval( $adz_in_ad_visibility_interval );
 					}
 
-					$adz_template_file = adz_resolve_template( isset( $_POST['adz_template'] ) ? wp_unslash( $_POST['adz_template'] ) : '' );
+					$adz_template_file = adz_resolve_template( $adz_in_adz_template );
 					if ( '' === $adz_template_file ) {
 						echo 'continue';
 						exit;
@@ -309,43 +330,43 @@ function adz_get_advertise_content() {
 
 					if ( $next_adz_pool == 'publisher' || ! $next_adz_pool ) {
 
-						if ( $_POST['target_type'] == 'shortcode' ) {
-							$publisher_rotations_stats = get_post_meta( sanitize_text_field( $_POST['target'] ), 'adz_rotation_shortcode', true );
+						if ( $adz_in_target_type == 'shortcode' ) {
+							$publisher_rotations_stats = get_post_meta( sanitize_text_field( $adz_in_target ), 'adz_rotation_shortcode', true );
 							if ( empty( $publisher_rotations_stats['served'] ) || ! $publisher_rotations_stats ) {
 
-								$un_serverd                   = explode( ',', sanitize_text_field( $_POST['sequence'] ) );
+								$un_serverd                   = explode( ',', sanitize_text_field( $adz_in_sequence ) );
 								$ad_to_serve                  = array_shift( $un_serverd );
-								$roatation_stats['served'][]  = sanitize_text_field( $_POST['ad_to_serve'] );
+								$roatation_stats['served'][]  = sanitize_text_field( $adz_in_ad_to_serve );
 								$roatation_stats['un_served'] = $un_serverd;
-								update_post_meta( sanitize_text_field( $_POST['target'] ), 'adz_rotation_shortcode', $roatation_stats );
+								update_post_meta( sanitize_text_field( $adz_in_target ), 'adz_rotation_shortcode', $roatation_stats );
 
 							} else {
 								array_shift( $publisher_rotations_stats['un_served'] );
-								$roatation_stats['served'] = array_merge( $publisher_rotations_stats['served'], array( sanitize_text_field( $_POST['ad_to_serve'] ) ) );
+								$roatation_stats['served'] = array_merge( $publisher_rotations_stats['served'], array( sanitize_text_field( $adz_in_ad_to_serve ) ) );
 								if ( $publisher_rotations_stats['un_served'][0] == '' ) {
 									$publisher_rotations_stats['un_served'] = array();
 								}
 								$roatation_stats['un_served'] = $publisher_rotations_stats['un_served'];
-								update_post_meta( sanitize_text_field( $_POST['target'] ), 'adz_rotation_shortcode', $roatation_stats );
+								update_post_meta( sanitize_text_field( $adz_in_target ), 'adz_rotation_shortcode', $roatation_stats );
 
 							}
 						} else {
 
 							if ( empty( $rotation_adz_pool['served'] ) || ! $rotation_adz_pool ) {
-								$un_serverd = explode( ',', sanitize_text_field( $_POST['sequence'] ) );
+								$un_serverd = explode( ',', sanitize_text_field( $adz_in_sequence ) );
 								array_shift( $un_serverd );
-								$roatation_stats['served'][]  = sanitize_text_field( $_POST['ad_to_serve'] );
+								$roatation_stats['served'][]  = sanitize_text_field( $adz_in_ad_to_serve );
 								$roatation_stats['un_served'] = $un_serverd;
-								adz_update_rotation_state( wp_unslash( $_POST['rotations_id'] ), $roatation_stats );
+								adz_update_rotation_state( $adz_in_rotations_id, $roatation_stats );
 
 							} else {
 								array_shift( $rotation_adz_pool['un_served'] );
-								$roatation_stats['served'] = array_merge( $rotation_adz_pool['served'], array( sanitize_text_field( $_POST['ad_to_serve'] ) ) );
+								$roatation_stats['served'] = array_merge( $rotation_adz_pool['served'], array( sanitize_text_field( $adz_in_ad_to_serve ) ) );
 								if ( $rotation_adz_pool['un_served'][0] == '' ) {
 									$rotation_adz_pool['un_served'] = array();
 								}
 								$roatation_stats['un_served'] = $rotation_adz_pool['un_served'];
-								adz_update_rotation_state( wp_unslash( $_POST['rotations_id'] ), $roatation_stats );
+								adz_update_rotation_state( $adz_in_rotations_id, $roatation_stats );
 
 							}//End of if else.
 						}
@@ -643,7 +664,7 @@ function adz_show_advertise( $roatations, $ad_to_serve, $repeat_times ) {
 		$ad_info = json_decode( $body );
 		if ( is_array( $ad_info ) && ! empty( $ad_info ) ) {
 
-			$visitor_ip = $_SERVER['REMOTE_ADDR'];
+			$visitor_ip = adzworld_visitor_ip();
 			$ad         = $ad_info[0];
 			$ad_text    = $ad->content;
 			$adz_views  = adz_get_view_row_any( $visitor_ip );

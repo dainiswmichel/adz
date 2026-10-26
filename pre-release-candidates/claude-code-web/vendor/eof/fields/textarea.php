@@ -82,9 +82,9 @@ if ( ! class_exists( 'EOF_field_textarea' ) ) :
 			}
 
 			?>
-		<textarea class="<?php echo esc_attr( $class ); ?>" name="<?php echo esc_attr( $this->option_name ); ?>" id="<?php echo esc_attr( $this->option_id ); ?>" cols="<?php echo ( is_int( $this->field['cols'] ) ) ? $this->field['cols'] : 80; ?>" rows="<?php echo ( is_int( $this->field['rows'] ) ) ? $this->field['rows'] : 20; ?>"><?php echo esc_textarea( $this->value ); ?></textarea>
+		<textarea class="<?php echo esc_attr( $class ); ?>" name="<?php echo esc_attr( $this->option_name ); ?>" id="<?php echo esc_attr( $this->option_id ); ?>" cols="<?php echo (int) ( is_int( $this->field['cols'] ) ? $this->field['cols'] : 80 ); ?>" rows="<?php echo (int) ( is_int( $this->field['rows'] ) ? $this->field['rows'] : 20 ); ?>"><?php echo esc_textarea( $this->value ); ?></textarea>
 		<br/>
-		<p class="description"><?php echo $this->field['desc']; ?></p>
+		<p class="description"><?php echo wp_kses_post( $this->field['desc'] ); ?></p>
 			<?php
 		}
 

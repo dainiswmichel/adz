@@ -87,7 +87,7 @@ if ( ! class_exists( 'EOF_field_image_select' ) ) :
 				<p style="text-align:center;"><?php echo esc_html( $option['label'] ); ?></p></label>
 				<?php
 			}
-			echo '<p class="description" style="margin-top:15px;">' . $this->field['desc'] . '</p>';
+			echo '<p class="description" style="margin-top:15px;">' . wp_kses_post( $this->field['desc'] ) . '</p>';
 		}
 
 		public function sanitize( $input ) {

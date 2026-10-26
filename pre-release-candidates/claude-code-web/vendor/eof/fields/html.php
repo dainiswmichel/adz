@@ -65,7 +65,11 @@ if ( ! class_exists( 'EOF_field_html' ) ) :
 		public function render_field() {
 
 			$html = $this->field['content'];
-			echo $html;
+
+			// Arbitrary markup by design, set by an administrator. wp_kses_post
+			// keeps what a post may contain and strips script, which no
+			// settings field has any business emitting.
+			echo wp_kses_post( $html );
 		}
 	}
 

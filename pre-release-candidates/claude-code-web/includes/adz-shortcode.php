@@ -60,7 +60,10 @@ function adz_shortcode( $atts, $content = null ) {
 		$adz_sequence = $attributes['adz_sequence'];
 	}
 
-	$visitor_ip = $_SERVER['REMOTE_ADDR'];
+	// An unknown address returns an empty string here rather than failing: this
+	// lookup is a local view-count row, and 1.0.8 already keyed it on whatever
+	// REMOTE_ADDR happened to hold.
+	$visitor_ip = adzworld_visitor_ip();
 
 	$adz_views = adz_get_view_row( $visitor_ip, (int) get_the_ID(), 'shortcode' );
 
@@ -110,17 +113,17 @@ function adz_in_page( $adz_interval_min, $adz_duration ) {
 				data: {
 					action :'adz_get_advertise_content',
 					target_type : 'shortcode',
-					target : '<?php echo get_the_ID(); ?>',
-					ad_visibility_interval : '<?php echo $adz_interval_min; ?>',
+					target : '<?php echo absint( get_the_ID() ); ?>',
+					ad_visibility_interval : '<?php echo esc_js( $adz_interval_min ); ?>',
 					repeat_times : 'infinite',
-					adz_nonce: '<?php echo wp_create_nonce( 'adzdotworld' ); ?>'
+					adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
 				},
 				success:function(data) {
 					if(data != 'continue'){
 						jQuery('.adz-world-container').html(data);
 						//jQuery('body').show();
 
-						var i = <?php echo $adz_duration; ?>;
+						var i = <?php echo absint( $adz_duration ); ?>;
 						var adz_interval = setInterval(function () {
 							if (i >= 0) {
 								jQuery('.adz_timer').text(" "+i+" ");
@@ -152,11 +155,11 @@ function adz_in_page( $adz_interval_min, $adz_duration ) {
 				data: {
 					action :'adz_get_advertise_content',
 					target_type : 'shortcode',
-					target : '<?php echo get_the_ID(); ?>',
-					ad_visibility_interval : '<?php echo $adz_interval_min; ?>',
+					target : '<?php echo absint( get_the_ID() ); ?>',
+					ad_visibility_interval : '<?php echo esc_js( $adz_interval_min ); ?>',
 					repeat_times : 'infinite',
 					close_adz : 'true',
-					adz_nonce: '<?php echo wp_create_nonce( 'adzdotworld' ); ?>'
+					adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
 
 				},
 				success:function(data) {
@@ -188,7 +191,10 @@ function adz_in_popup( $adz_interval_min, $adz_duration, $adz_sequence, $adz_tem
 	</div>
 	<script type="text/javascript">
 	jQuery(document).ready(function(){
-		var content_after_ad = '<?php echo base64_encode( $content ); ?>';
+		// wp_json_encode emits the quotes, which is how a PHP value is
+		// handed to JavaScript without hand-written delimiters. The payload
+		// is unchanged: the same base64 string the atob() below expects.
+		var content_after_ad = <?php echo wp_json_encode( base64_encode( $content ) ); ?>;
 		jQuery('#show_adz').click(function(){
 			jQuery('.adz_popup .close_adz').hide();
 			jQuery.ajax({
@@ -197,22 +203,22 @@ function adz_in_popup( $adz_interval_min, $adz_duration, $adz_sequence, $adz_tem
 				data: {
 					action :'adz_get_advertise_content',
 					target_type : 'shortcode',
-					target : '<?php echo get_the_ID(); ?>',
-					ad_visibility_interval : '<?php echo $adz_interval_min; ?>',
-					sequence : '<?php echo $adz_sequence; ?>',
-					display_type : '<?php echo $adz_display; ?>',
-					adz_template : '<?php echo $adz_template; ?>',
-					ad_to_serve : '<?php echo $adz_to_serve; ?>',
+					target : '<?php echo absint( get_the_ID() ); ?>',
+					ad_visibility_interval : '<?php echo esc_js( $adz_interval_min ); ?>',
+					sequence : '<?php echo esc_js( $adz_sequence ); ?>',
+					display_type : '<?php echo esc_js( $adz_display ); ?>',
+					adz_template : '<?php echo esc_js( $adz_template ); ?>',
+					ad_to_serve : '<?php echo esc_js( $adz_to_serve ); ?>',
 					repeat_times : 'infinite',
 					show_popup : 'true',
-					adz_nonce: '<?php echo wp_create_nonce( 'adzdotworld' ); ?>'
+					adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
 				},
 				success:function(data) {
 					if(data != 'continue'){
 						jQuery('#show_overlay').css('visibility','visible');
 						jQuery('#show_overlay').css('opacity','1');
 						jQuery('.adz_popup .content').html(window.atob(data));
-						var i = <?php echo $adz_duration; ?>;
+						var i = <?php echo absint( $adz_duration ); ?>;
 						var adz_interval = setInterval(function () {
 							if (i >= 0) {
 								jQuery('.adz_timer').text(" "+i+" ");
@@ -242,12 +248,12 @@ function adz_in_popup( $adz_interval_min, $adz_duration, $adz_sequence, $adz_tem
 				data: {
 					action :'adz_get_advertise_content',
 					target_type : 'shortcode',
-					target : '<?php echo get_the_ID(); ?>',
-					ad_visibility_interval : '<?php echo $adz_interval_min; ?>',
+					target : '<?php echo absint( get_the_ID() ); ?>',
+					ad_visibility_interval : '<?php echo esc_js( $adz_interval_min ); ?>',
 					repeat_times : 'infinite',
 					close_adz : 'true',
 					show_popup : 'true',
-					adz_nonce: '<?php echo wp_create_nonce( 'adzdotworld' ); ?>'
+					adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
 
 				},
 				success:function(data) {

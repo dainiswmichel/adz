@@ -92,7 +92,7 @@ if ( ! class_exists( 'EOF_field_select' ) ) :
 			if ( empty( $this->value ) && ! empty( $options ) ) {
 				// echo '<option value="" disabled selected>'. esc_html( $this->field['holder'] ) .'</option>';
 			} elseif ( empty( $options ) ) {
-				echo '<option value="" selected>' . __( 'Nothing found.', 'adz-world' ) . '</option>';
+				echo '<option value="" selected>' . esc_html__( 'Nothing found.', 'adz-world' ) . '</option>';
 			}
 			$count = 0;
 			foreach ( $options as $val => $label ) {
@@ -112,7 +112,12 @@ if ( ! class_exists( 'EOF_field_select' ) ) :
 					} else {
 						$selected = '';
 					}
-					echo '<option value="' . $val . '" ' . $selected . '>' . $label . '</option>';
+					printf(
+						'<option value="%1$s" %2$s>%3$s</option>',
+						esc_attr( $val ),
+						esc_attr( $selected ),
+						esc_html( $label )
+					);
 
 				} else {
 					printf(
@@ -127,7 +132,7 @@ if ( ! class_exists( 'EOF_field_select' ) ) :
 			?>
 		</select>
 		
-		<span class="description"><?php echo $this->field['desc']; ?></span>
+		<span class="description"><?php echo wp_kses_post( $this->field['desc'] ); ?></span>
 			<?php
 		}
 

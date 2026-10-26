@@ -68,7 +68,7 @@ if ( ! class_exists( 'EOF_field_email' ) ) :
 			$class = 'regular-text';
 			?>
 		<input type="email" class="<?php echo esc_attr( $class ); ?>" name="<?php echo esc_attr( $this->option_name ); ?>" id="<?php echo esc_attr( $this->option_id ); ?>" placeholder="<?php echo esc_attr( $this->field['holder'] ); ?>" value="<?php echo esc_attr( sanitize_email( $this->value ) ); ?>" <?php echo ( $this->field['readonly'] ) ? 'readonly="readonly"' : ''; ?> >
-		<span class="description"><?php echo $this->field['desc']; ?></span>
+		<span class="description"><?php echo wp_kses_post( $this->field['desc'] ); ?></span>
 			<?php
 		}
 

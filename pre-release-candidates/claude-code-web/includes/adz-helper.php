@@ -39,16 +39,16 @@ function adz_get_advertise( $ad_visibility, $ad_visibility_interval, $repeat_tim
 					type : 'post',
 					data: {
 						action :'adz_get_advertise_content',
-						target_type : '<?php echo $target_type; ?>',
-						target : '<?php echo $target; ?>',
-						ad_visibility_interval : '<?php echo $ad_visibility_interval; ?>',
-						ad_to_serve : '<?php echo $ad_to_serve; ?>',
-						rotations_id : '<?php echo $rotations_id; ?>',
-						sequence : '<?php echo $sequence; ?>',
-						display_type : '<?php echo $display_type; ?>',
-						adz_template : '<?php echo $adz_template; ?>',
-						repeat_times : '<?php echo $repeat_times; ?>' ,
-						adz_nonce: '<?php echo wp_create_nonce( 'adzdotworld' ); ?>'
+						target_type : '<?php echo esc_js( $target_type ); ?>',
+						target : '<?php echo esc_js( $target ); ?>',
+						ad_visibility_interval : '<?php echo esc_js( $ad_visibility_interval ); ?>',
+						ad_to_serve : '<?php echo esc_js( $ad_to_serve ); ?>',
+						rotations_id : '<?php echo esc_js( $rotations_id ); ?>',
+						sequence : '<?php echo esc_js( $sequence ); ?>',
+						display_type : '<?php echo esc_js( $display_type ); ?>',
+						adz_template : '<?php echo esc_js( $adz_template ); ?>',
+						repeat_times : '<?php echo esc_js( $repeat_times ); ?>' ,
+						adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
 					},
 					success:function(data) {
 						
@@ -61,7 +61,7 @@ function adz_get_advertise( $ad_visibility, $ad_visibility_interval, $repeat_tim
 							<?php } ?>
 							<?php if ( is_category() ) { ?>
 								jQuery(document).find('.adz-world-category-wapper').html(window.atob(data));
-								var i = <?php echo $ad_visibility; ?>;
+								var i = <?php echo absint( $ad_visibility ); ?>;
 								var adz_interval = setInterval(function () {
 									if (i >= 0) {
 										jQuery('.adz_timer').text(" "+i+" ");
@@ -76,7 +76,7 @@ function adz_get_advertise( $ad_visibility, $ad_visibility_interval, $repeat_tim
 								}, 1000);
 							<?php } else { ?>
 								jQuery('.adz-world-container').html(window.atob(data));
-								var i = <?php echo $ad_visibility; ?>;
+								var i = <?php echo absint( $ad_visibility ); ?>;
 								var adz_interval = setInterval(function () {
 									if (i >= 0) {
 										jQuery('.adz_timer').text(" "+i+" ");
@@ -108,12 +108,12 @@ function adz_get_advertise( $ad_visibility, $ad_visibility_interval, $repeat_tim
 					type : 'post',
 					data: {
 						action :'adz_get_advertise_content',
-						target_type : '<?php echo $target_type; ?>',
-						target : '<?php echo $target; ?>',
-						ad_visibility_interval : '<?php echo $ad_visibility_interval; ?>',
-						repeat_times : '<?php echo $repeat_times; ?>',
+						target_type : '<?php echo esc_js( $target_type ); ?>',
+						target : '<?php echo esc_js( $target ); ?>',
+						ad_visibility_interval : '<?php echo esc_js( $ad_visibility_interval ); ?>',
+						repeat_times : '<?php echo esc_js( $repeat_times ); ?>',
 						close_adz : 'true',
-						adz_nonce: '<?php echo wp_create_nonce( 'adzdotworld' ); ?>'
+						adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
 
 
 					},
@@ -165,17 +165,17 @@ function adz_get_advertise_popup( $ad_visibility, $ad_visibility_interval, $repe
 				type : 'post',
 				data: {
 					action :'adz_get_advertise_content',
-					target_type : '<?php echo $target_type; ?>',
-					target : '<?php echo $target; ?>',
-					ad_visibility_interval : '<?php echo $ad_visibility_interval; ?>',
-					ad_to_serve : '<?php echo $ad_to_serve; ?>',
-					rotations_id : '<?php echo $rotations_id; ?>',
-					sequence : '<?php echo $sequence; ?>',
-					display_type : '<?php echo $display_type; ?>',
-					adz_template : '<?php echo $adz_template; ?>',
-					repeat_times : '<?php echo $repeat_times; ?>',		          
+					target_type : '<?php echo esc_js( $target_type ); ?>',
+					target : '<?php echo esc_js( $target ); ?>',
+					ad_visibility_interval : '<?php echo esc_js( $ad_visibility_interval ); ?>',
+					ad_to_serve : '<?php echo esc_js( $ad_to_serve ); ?>',
+					rotations_id : '<?php echo esc_js( $rotations_id ); ?>',
+					sequence : '<?php echo esc_js( $sequence ); ?>',
+					display_type : '<?php echo esc_js( $display_type ); ?>',
+					adz_template : '<?php echo esc_js( $adz_template ); ?>',
+					repeat_times : '<?php echo esc_js( $repeat_times ); ?>',		          
 					show_popup : 'true',
-					adz_nonce: '<?php echo wp_create_nonce( 'adzdotworld' ); ?>'
+					adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
 
 				},
 				success:function(data) {
@@ -186,7 +186,7 @@ function adz_get_advertise_popup( $ad_visibility, $ad_visibility_interval, $repe
 						jQuery('.adz_popup .content').html(window.atob(data));
 						
 
-						var i = <?php echo $ad_visibility; ?>;
+						var i = <?php echo absint( $ad_visibility ); ?>;
 						var adz_interval = setInterval(function () {
 							if (i >= 0) {
 								jQuery('.adz_timer').text(" "+i+" ");
@@ -214,13 +214,13 @@ function adz_get_advertise_popup( $ad_visibility, $ad_visibility_interval, $repe
 				type : 'post',
 				data: {
 					action :'adz_get_advertise_content',
-					target_type : '<?php echo $target_type; ?>',
-					target : '<?php echo $target; ?>',
-					ad_visibility_interval : '<?php echo $ad_visibility_interval; ?>',
-					repeat_times : '<?php echo $repeat_times; ?>',
+					target_type : '<?php echo esc_js( $target_type ); ?>',
+					target : '<?php echo esc_js( $target ); ?>',
+					ad_visibility_interval : '<?php echo esc_js( $ad_visibility_interval ); ?>',
+					repeat_times : '<?php echo esc_js( $repeat_times ); ?>',
 					close_adz : 'true',
 					show_popup : 'true',
-					adz_nonce: '<?php echo wp_create_nonce( 'adzdotworld' ); ?>' 
+					adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>' 
 				},
 				success:function(data) {
 					jQuery('#show_overlay').css('visibility','hidden');
@@ -271,6 +271,27 @@ function adz_get_network_id( $adz_ids ) {
 	return rtrim( $network_ids );
 }//end adz_get_network_id()
 
+/**
+ * The requesting visitor's IP address, validated as an IP address.
+ *
+ * REMOTE_ADDR is request data and is absent on some SAPIs, so it is validated
+ * rather than sanitised as text: anything that is not an IP address is not an
+ * IP address, and there is nothing to repair about it. Returns an empty string
+ * when no usable address is present, which callers treat as an unknown
+ * visitor rather than failing.
+ *
+ * @return string Validated IP address, or an empty string.
+ */
+function adzworld_visitor_ip() {
+	if ( ! isset( $_SERVER['REMOTE_ADDR'] ) ) {
+		return '';
+	}
+
+	$ip = filter_var( wp_unslash( $_SERVER['REMOTE_ADDR'] ), FILTER_VALIDATE_IP );
+
+	return false === $ip ? '' : $ip;
+}
+
 /* This Function is user check Visitor is logged in or not on adz.world */
 function adz_world_logged_in() {
 
@@ -281,7 +302,19 @@ function adz_world_logged_in() {
 	}
 
 	global $adz_ad_network_base_url;
-	$ad_network_url = $adz_ad_network_base_url . "wp-json/adz_server/v1/ads/is_visitor_logged?visitor_ip={$_SERVER['REMOTE_ADDR']}";
+
+	/*
+	 * With no usable address there is no remote visitor to look up, so the
+	 * request is not made at all. The address is encoded for a query string on
+	 * the way out.
+	 */
+	$visitor_ip = adzworld_visitor_ip();
+
+	if ( '' === $visitor_ip ) {
+		return false;
+	}
+
+	$ad_network_url = $adz_ad_network_base_url . 'wp-json/adz_server/v1/ads/is_visitor_logged?visitor_ip=' . rawurlencode( $visitor_ip );
 	$args           = array();
 	$response       = wp_remote_get( $ad_network_url, $args );
 
@@ -465,10 +498,10 @@ function adz_get_view_row( $visitor_ip, $target_id, $target_type = '' ) {
 	$today = current_time( 'Y-m-d' );
 
 	if ( '' !== $target_type ) {
-		// phpcs:ignore WordPress.DB -- plugin-owned table; values are prepared.
 		return $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT * FROM {$table} WHERE visitor_ip = %s AND `targate_id` = %d AND `target_type` = %s AND ad_date = %s",
+				'SELECT * FROM %i WHERE visitor_ip = %s AND `targate_id` = %d AND `target_type` = %s AND ad_date = %s',
+				$table,
 				$visitor_ip,
 				(int) $target_id,
 				$target_type,
@@ -478,10 +511,10 @@ function adz_get_view_row( $visitor_ip, $target_id, $target_type = '' ) {
 		);
 	}
 
-	// phpcs:ignore WordPress.DB -- plugin-owned table; values are prepared.
 	return $wpdb->get_row(
 		$wpdb->prepare(
-			"SELECT * FROM {$table} WHERE visitor_ip = %s AND `targate_id` = %d AND ad_date = %s",
+			'SELECT * FROM %i WHERE visitor_ip = %s AND `targate_id` = %d AND ad_date = %s',
+			$table,
 			$visitor_ip,
 			(int) $target_id,
 			$today
@@ -501,10 +534,10 @@ function adz_get_view_row_any( $visitor_ip ) {
 
 	$table = $wpdb->prefix . 'adz_views';
 
-	// phpcs:ignore WordPress.DB -- plugin-owned table; values are prepared.
 	return $wpdb->get_row(
 		$wpdb->prepare(
-			"SELECT * FROM {$table} WHERE visitor_ip = %s AND ad_date = %s",
+			'SELECT * FROM %i WHERE visitor_ip = %s AND ad_date = %s',
+			$table,
 			$visitor_ip,
 			current_time( 'Y-m-d' )
 		),

@@ -66,7 +66,7 @@ if ( ! class_exists( 'EOF_field_heading' ) ) :
 		<hr>
 			<?php
 			if ( ! empty( $this->field['desc'] ) ) {
-				echo '<p class="description">' . $this->field['desc'] . '</p>';
+				echo '<p class="description">' . wp_kses_post( $this->field['desc'] ) . '</p>';
 			}
 		}
 	}

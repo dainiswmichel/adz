@@ -423,14 +423,36 @@ function adz_registration_status() {
 			$reg = adz_NetworkAuthorization::checkRegistration();
 
 		if ( isset( $reg['date'] ) ) {
-			$reg  = 'Registered Since: ' . $reg['date'];
+			// The date comes from the registration response, so it is escaped
+			// here. 1.0.8 interpolated it into output as it arrived.
+			$reg = esc_html__( 'Registered Since: ', 'adz-world' ) . esc_html( $reg['date'] );
 			$reg .= ' <a href="#" class="adz-reset-registration">' . esc_html__( 'Reset the linked account.', 'adz-world' ) . '</a>'
 				. '<input type="hidden" value="' . esc_attr( wp_create_nonce( 'adz_reset_registration' ) ) . '" id="adz_nonce">';
 		} else {
 			$reg = 'Not Registered';
 		}
 	}
-	echo $reg;
+	/*
+	 * Assembled markup: literals plus values escaped at the point of
+	 * concatenation above. It is filtered on the way out against the tags it
+	 * actually needs rather than echoed raw, so a future edit to the
+	 * construction above cannot introduce markup that reaches the page
+	 * unchecked.
+	 */
+	echo wp_kses(
+		$reg,
+		array(
+			'a'     => array(
+				'href'  => array(),
+				'class' => array(),
+			),
+			'input' => array(
+				'type'  => array(),
+				'value' => array(),
+				'id'    => array(),
+			),
+		)
+	);
 }
 
 // Function to fetch all adz terms.

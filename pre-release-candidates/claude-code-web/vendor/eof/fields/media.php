@@ -95,15 +95,15 @@ if ( ! class_exists( 'EOF_field_media' ) ) :
 			}
 			?>
 		<input type="text" class="<?php echo esc_attr( $class ); ?>" id="<?php echo esc_attr( $this->option_id ); ?>" name="<?php echo esc_attr( $this->option_name ); ?>" value="<?php echo esc_attr( $this->value ); ?>" /> 
-		<input class="button eof-media-button" type="button" data-input-id="<?php echo esc_attr( $this->option_id ); ?>" value="<?php _e( 'Upload', 'adz-world' ); ?>" />
+		<input class="button eof-media-button" type="button" data-input-id="<?php echo esc_attr( $this->option_id ); ?>" value="<?php esc_html_e( 'Upload', 'adz-world' ); ?>" />
 			<?php if ( isset( $this->value ) && ! empty( $this->value ) ) : ?>
-		<input class="button eof-media-delete-button" type="button" data-input-id="<?php echo esc_attr( $this->option_id ); ?>" value="<?php _e( 'Delete', 'adz-world' ); ?>" />
+		<input class="button eof-media-delete-button" type="button" data-input-id="<?php echo esc_attr( $this->option_id ); ?>" value="<?php esc_html_e( 'Delete', 'adz-world' ); ?>" />
 		<br>
 				<?php if ( $preview ) : ?>
-			<p class="image-preview"><img src="<?php echo esc_attr( $this->value ); ?>" alt="" style="max-width:100%;"></p>
+			<p class="image-preview"><img src="<?php echo esc_url( $this->value ); ?>" alt="" style="max-width:100%;"></p>
 			<?php endif; ?>
 		<?php endif; ?>
-		<span class="description"><?php echo $this->field['desc']; ?></span>
+		<span class="description"><?php echo wp_kses_post( $this->field['desc'] ); ?></span>
 			<?php
 		}
 

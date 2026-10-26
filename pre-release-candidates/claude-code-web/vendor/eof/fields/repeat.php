@@ -82,7 +82,7 @@ if ( ! class_exists( 'EOF_field_repeat' ) ) :
 			}
 			?>
 		<div class="eof-repeat-table-wrap">
-			<table id="<?php echo $this->field['id']; ?>" class="<?php echo $class; ?>">
+			<table id="<?php echo esc_attr( $this->field['id'] ); ?>" class="<?php echo esc_attr( $class ); ?>">
 				<thead>
 					<tr>
 					<?php
@@ -93,7 +93,7 @@ if ( ! class_exists( 'EOF_field_repeat' ) ) :
 						);
 					}
 					?>
-						<th scope="col" class="item-action"><?php _e( 'Action', 'adz-world' ); ?></th>
+						<th scope="col" class="item-action"><?php esc_html_e( 'Action', 'adz-world' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -115,7 +115,7 @@ if ( ! class_exists( 'EOF_field_repeat' ) ) :
 								$render = new $field_class( $sub_field, $sub_field['default'], $this->parent );
 								$render->render_field();
 							} else {
-								_e( 'The field type does not exisits, please check your code.', 'adz-world' );
+								esc_html_e( 'The field type does not exisits, please check your code.', 'adz-world' );
 							}
 						}
 						echo '</td>';
@@ -148,14 +148,14 @@ if ( ! class_exists( 'EOF_field_repeat' ) ) :
 									$render      = new $field_class( $sub_field, $field_value, $this->parent );
 									$render->render_field();
 								} else {
-									_e( 'The field type does not exisits, please check your code.', 'adz-world' );
+									esc_html_e( 'The field type does not exisits, please check your code.', 'adz-world' );
 								}
 							}
 							echo '</td>';
 						}
 						?>
 						<td class="item-action"><a class="duplicate_row" title="Duplicate" href="javascript:void()"><span class="dashicons dashicons-welcome-add-page"></span></a> <a class="remove_row" title="Delete" href="javascript:void()"><span class="dashicons dashicons-trash"></span></a> 
-						<input name="adz_ad_options[ad_settings][<?php echo $count; ?>][rotation_id]"  value="adz_rotation_<?php echo $count; ?>" type="hidden"> </td>
+						<input name="adz_ad_options[ad_settings][<?php echo absint( $count ); ?>][rotation_id]"  value="adz_rotation_<?php echo esc_html( $count ); ?>" type="hidden"> </td>
 					</tr>	
 						<?php
 						$count += 1;
@@ -164,8 +164,8 @@ endforeach;
 					
 				</tbody>
 			</table>
-			<p class="description"><?php echo $this->field['desc']; ?></p>
-			<p><input class="button add-row" type="button" data-count="<?php echo $count; ?>" value="<?php _e( 'Add', 'adz-world' ); ?>" /></p>
+			<p class="description"><?php echo wp_kses_post( $this->field['desc'] ); ?></p>
+			<p><input class="button add-row" type="button" data-count="<?php echo esc_attr( $count ); ?>" value="<?php esc_html_e( 'Add', 'adz-world' ); ?>" /></p>
 		</div>
 			<?php
 		}
