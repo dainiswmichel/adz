@@ -33,7 +33,7 @@ Tested up to (declared): WordPress 7.1
 * Ad-view selects use prepared queries. The unused concatenated condition string is removed.
 * Admin Ajax URLs in js/plugin.js and vendor/eof/js/eof-custom.js come from wp_localize_script.
 * Earnings screen lists statement buckets and shows them as unconfigured. It does not rewrite ad links or replace a publisher referral code.
-* Access is the general event. A visit is human access. A guest is a human visit with a profile and stores category ids in user meta. A member is a guest who has made an adz-world purchase. An access with no profile uses a session cookie. This candidate does not record a purchase and does not decide that an access is human.   
+* Access remains the word for every audience party. An unknown human is also a visit. A known human is an access, a visit, and a guest. A member adds an adz-world purchase and keeps the earlier words. A bot cannot be a guest or a member, and can access the site as either. An access with no profile uses a session cookie. This candidate does not record a purchase and does not decide that an access is human.   
 
 
 == Coming Soon ==

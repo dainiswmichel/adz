@@ -2,12 +2,14 @@
 /**
  * Visitor and guest ad preferences.
  *
- * Access is the general event. A visit is human access. A guest is a human
- * visit with a profile. On this site the profile is the WordPress account,
- * and that profile's categories are user meta. A member is a guest who has
- * made an adz-world purchase. This plugin does not record that purchase and
- * does not decide whether an access is human. An access with no profile uses
- * the adzworld_prefs session cookie, which is not guaranteed to hold.
+ * Access is the term that stays for every audience party. An unknown human
+ * access is also a visit. A known human is an access, a visit, and a guest.
+ * A member is a guest who has made an adz-world purchase, and those earlier
+ * words still apply. A bot cannot be a guest or a member. A bot can access
+ * the site as a guest or as a member. On this site a profile is the WordPress
+ * account. This plugin does not record a purchase and does not decide that an
+ * access is human. An access with no profile uses the adzworld_prefs session
+ * cookie, which is not guaranteed to hold.
  *
  * @package adz-world
  */
@@ -140,10 +142,11 @@ add_action( 'admin_post_nopriv_adzworld_save_preferences', 'adzworld_save_prefer
 /**
  * Preference form.
  *
- * A guest is a human visit with a profile. A member is that guest after an
- * adz-world purchase. This form stores categories for the current access. It
- * does not record a purchase, grant a capability, or decide that the party
- * is human.
+ * The words are additive. A known human is an access, a visit, and a guest.
+ * A member keeps all three and adds the purchase. A bot cannot be a guest or
+ * a member, and can access the site as either. This form stores categories
+ * for the current access. It does not record a purchase, grant a capability,
+ * or decide that the party is human.
  *
  * @return string
  */
@@ -162,9 +165,9 @@ function adzworld_preferences_shortcode() {
 	echo '<input type="hidden" name="action" value="adzworld_save_preferences" />';
 
 	if ( is_user_logged_in() ) {
-		echo '<p>' . esc_html__( 'This access has a profile on this site, so these ad categories are saved on that profile. A guest is a human visit with a profile. A member is a guest who has made an adz-world purchase. This form does not record a purchase and does not decide whether this access is human.', 'adz-world' ) . '</p>';
+		echo '<p>' . esc_html__( 'This access has a profile on this site, so these ad categories are saved on that profile. A human we know is still an access and a visit, and is also a guest. A member is a guest who has made an adz-world purchase, and remains an access, a visit, and a guest. A bot cannot be a guest or a member. A bot can access the site as a guest or as a member. This form does not record a purchase and does not decide whether this access is human.', 'adz-world' ) . '</p>';
 	} else {
-		echo '<p>' . esc_html__( 'This access has no profile. These ad categories are saved for this browser session and are not guaranteed to hold. A visit is human access. A guest is a human visit with a profile.', 'adz-world' ) . '</p>';
+		echo '<p>' . esc_html__( 'This is an access with no profile. These ad categories are saved for this browser session and are not guaranteed to hold. An unknown human access is also a visit. A guest is a human we know, and that person is still an access and a visit.', 'adz-world' ) . '</p>';
 	}
 
 	if ( is_array( $terms ) && $terms ) {

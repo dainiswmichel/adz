@@ -52,13 +52,14 @@ Data that stays on the publisher’s site when the network switch is off:
 - the monetization-acceptance flag `adzworld_terms_accepted`
 - settings the publisher typed, including a referral code, a PayPal email, an adz-world email, and an Amazon affiliate id
 
-Audience, as defined for this draft:
+Audience, as defined for this draft. The words are additive. A more specific word does not retire “access.”
 
-- Access is the general event. The party may be human, AI, or still unknown.
-- A visit is human access.
-- An access with no profile is not a guest.
-- A guest is a human visit with a profile. On a publisher site that profile is the WordPress account.
-- A member is a guest who has made an adz-world purchase. That is a human visit with a profile, plus the purchase.
+- Every audience party is an access. That includes a visit, a guest, a member, and a bot.
+- An unknown human access is also a visit.
+- A guest is a human we know. That party is an access, a visit, and a guest. On a publisher site the profile is the WordPress account.
+- A member is a guest who has made an adz-world purchase. That party is an access, a visit, a guest, and a member.
+- A bot cannot be a guest. Only a human can be a guest. A bot cannot be a member.
+- A bot can access the site as a guest, or access the site as a paying member. The bot remains the accessor. The guest or member is the human role it is accessing as.
 
 The plugin does not record a purchase, does not grant a WordPress capability for one, and does not send preference slugs as a member attribute. A purchase record would belong to adz-world.com. The existing rotation field that can target a WooCommerce membership plan is the publisher’s own plan. It is not this member definition.
 

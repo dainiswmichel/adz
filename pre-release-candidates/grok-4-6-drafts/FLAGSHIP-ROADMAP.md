@@ -41,13 +41,13 @@ The setup spec’s operational pages remain the ones a later review fetches (`/t
 
 ## Journeys
 
-Access. Something reaches `/`. The party may be human, AI, or still unknown. With no profile, categories on `/` or `/preferences` are held for the session, and the page says the session may not hold. No email is required. No earnings number appears. The page does not call that arrival a visit.
+Access. Every arrival at `/` is an access. The party may be human, AI, or still unknown. With no profile, categories on `/` or `/preferences` are held for the session, and the page says the session may not hold. No email is required. No earnings number appears. Later words are added onto access. Access is not withdrawn.
 
-Visit. Human access. The flagship uses that word only for a human.
+Visit. An unknown human access is also a visit. The flagship adds “visit” for a human. A bot’s access is not a visit.
 
-Guest. A human visit with a profile. On a publisher site that profile is the WordPress account. `[adzworld_preferences]`, while that account is logged in, saves categories on that profile (`adzworld_pref_terms`). A profile alone is not a guest, because the party is not known to be human, and it is not a purchase.
+Guest. A human we know. That party is an access, a visit, and a guest. On a publisher site the profile is the WordPress account. `[adzworld_preferences]`, while that account is logged in, saves categories on that profile (`adzworld_pref_terms`). A profile alone does not prove the party is human. A bot cannot be a guest. A bot can access the site as a guest.
 
-Member. A guest who has made an adz-world purchase: a human visit, with a profile, plus that purchase. The flagship can show a purchase only after adz-world.com has a real purchase record. This candidate does not invent the record, does not treat a login as a purchase, and does not grant a WordPress capability because of one. Publisher WooCommerce membership plans already available in a rotation are that publisher’s plans, not this definition.
+Member. A guest who has made an adz-world purchase. That party is an access, a visit, a guest, and a member. The flagship can show a purchase only after adz-world.com has a real purchase record. This candidate does not invent the record, does not treat a login as a purchase, and does not grant a WordPress capability because of one. A bot cannot be a member. A bot can access the site as a paying member. Publisher WooCommerce membership plans already available in a rotation are that publisher’s plans, not this definition.
 
 Publisher. Installs the free plugin. Serves the publisher’s own adz with the network switch off and sees no outbound requirement. Opens Earnings, reads the draft terms, and either leaves or accepts. Acceptance still does not call out until the existing network switch is on. The statement table reads Unconfigured for every bucket. Stripe and PayPal read unconfigured. The referral code field still shows the publisher’s own code. No payout button is offered.
 
@@ -67,6 +67,6 @@ After a plugin review path exists. Publish the flagship pages in the site map wi
 
 After a settlement feed is real. Implement the read API in `STATEMENT-CONTRACT.md` on adz-world.com, issue site read credentials, and only then let the plugin display a validated statement. Payouts stay on the service state machine. Provider choice happens here, with the open dependencies answered.
 
-Audience status. Access is general. A visit is human access. A guest is a human visit with a profile. A member is that guest after an adz-world purchase. The purchase record waits on the service. No extra privilege is coded ahead of that record.
+Audience status. The words stack. Access stays for every party. An unknown human is also a visit. A known human is an access, a visit, and a guest. A member adds an adz-world purchase. A bot cannot be a guest or a member, and can access the site as either. The purchase record waits on the service. No extra privilege is coded ahead of that record.
 
 Operator identity. Entity, address, and state, decided before any legal route drops its draft banner.
