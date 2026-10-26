@@ -33,7 +33,8 @@ Tested up to (declared): WordPress 7.1
 * Ad-view selects use prepared queries. The unused concatenated condition string is removed.
 * Admin Ajax URLs in js/plugin.js and vendor/eof/js/eof-custom.js come from wp_localize_script.
 * Earnings screen lists statement buckets and shows them as unconfigured. It does not rewrite ad links or replace a publisher referral code.
-* The audience words stack, and access remains on top. Visit, guest, and member are added under access. An unknown human is also a visit. A known human is an access, a visit, and a guest. A member is a guest who has made an adz-world purchase. A bot cannot be a guest or a member, and can access the site as either. An access with no profile uses a session cookie. This candidate does not record a purchase and does not decide that an access is human.   
+* The audience words stack, and access remains on top. Visit, guest, and member are added under access. An unknown human is also a visit. A known human is an access, a visit, and a guest. A member is a guest who has made an adz-world purchase. A bot cannot be a guest or a member, and can access the site as either. An access with no profile uses a session cookie. This candidate does not record a purchase and does not decide that an access is human.
+* `[adzworld_stage]` shows one connected publisher unit (AdSense, Ad Manager, or Taboola) with that network's own tag. Every 10th serve, unless `every` says otherwise, is an adz. The adz serve is an introduction until a purchase note is saved. `display="flat"` and `display="3d"` add arrows and dots. The unit is not duplicated to fill the other serves. Other named networks are not given a tag.   
 
 
 == Coming Soon ==
