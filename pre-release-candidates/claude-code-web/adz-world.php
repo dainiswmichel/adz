@@ -470,7 +470,7 @@ function adz_check_thru_page_adz() {
 					$adz_sequences = adz_get_publisher_adz();
 				}
 
-				if ( function_exists( 'wc_memberships' ) && is_user_logged_in() && ! wc_memberships_is_user_active_member( get_current_user_id(), 'never-show-adz' ) ) {
+				if ( function_exists( 'wc_memberships_is_user_active_member' ) && is_user_logged_in() && ! wc_memberships_is_user_active_member( get_current_user_id(), 'never-show-adz' ) ) {
 
 					if ( wc_memberships_is_user_active_member( get_current_user_id(), $options['member_level'] ) ) {
 
@@ -488,7 +488,7 @@ function adz_check_thru_page_adz() {
 						);
 
 					}
-				} elseif ( function_exists( 'wc_memberships' ) && wc_memberships_is_user_active_member( get_current_user_id(), $options['member_level'] ) && $options['member_level'] == 'never-show-adz' ) {
+				} elseif ( function_exists( 'wc_memberships_is_user_active_member' ) && wc_memberships_is_user_active_member( get_current_user_id(), $options['member_level'] ) && $options['member_level'] == 'never-show-adz' ) {
 
 					$publisher_rotations[] = array(
 						'sequence'       => $adz_sequences,

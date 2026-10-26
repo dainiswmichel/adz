@@ -1,0 +1,70 @@
+<?xml version="1.0"?>
+<ruleset name="adz-world">
+	<description>
+		One shared check for this repository, so every agent and Dainis run the
+		same thing. Plugin code is held to WordPress Coding Standards. The
+		scripts in tools/ are command-line utilities that never run inside
+		WordPress, so the WordPress-runtime sniffs do not apply to them: there
+		is no HTML to escape in terminal output, and WP_Filesystem does not
+		exist in a CLI process.
+
+		Usage:
+		  phpcs --standard=phpcs.xml.dist pre-release-candidates/claude-code-web
+		  phpcs --standard=phpcs.xml.dist tools
+	</description>
+
+	<arg name="extensions" value="php"/>
+	<arg name="colors"/>
+	<arg value="s"/>
+
+	<!-- Never read generated or third-party build output. -->
+	<exclude-pattern>*/node_modules/*</exclude-pattern>
+	<exclude-pattern>*/\.git/*</exclude-pattern>
+	<exclude-pattern>*/languages/*</exclude-pattern>
+
+	<!-- ancestor/ is frozen and must not be reformatted. -->
+	<exclude-pattern>ancestor/*</exclude-pattern>
+
+	<!--
+		tools/tests/ is deliberately not checked against this standard. Those
+		files define stand-ins for WordPress functions such as get_post()
+		sanitize_text_field() and so on, so that the plugin's own functions
+		can be executed without a WordPress install. A file whose purpose is to
+		define get_post() cannot satisfy the prefix rules and should not try.
+		The tool itself, tools/resolve-calls.php, IS still checked.
+	-->
+	<exclude-pattern>tools/tests/*</exclude-pattern>
+
+	<rule ref="WordPress"/>
+
+	<config name="minimum_wp_version" value="6.2"/>
+
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="adz-world"/>
+			</property>
+		</properties>
+	</rule>
+
+	<!--
+		Command-line tooling. These scripts print to a terminal and read files
+		directly, both of which the WordPress runtime sniffs correctly forbid
+		inside a plugin and incorrectly forbid here.
+	-->
+	<rule ref="WordPress.Security.EscapeOutput">
+		<exclude-pattern>tools/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.WP.AlternativeFunctions">
+		<exclude-pattern>tools/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.WP.GlobalVariablesOverride">
+		<exclude-pattern>tools/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.Files.FileName">
+		<exclude-pattern>tools/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<exclude-pattern>tools/*</exclude-pattern>
+	</rule>
+</ruleset>

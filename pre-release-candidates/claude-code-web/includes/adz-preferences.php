@@ -458,6 +458,72 @@ function adzworld_score_ad( $ad_id, $pref ) {
 }
 
 /**
+ * Published adz, newest first, as post IDs.
+ *
+ * Nothing defined this while adzworld_match_adz() called it, so matching
+ * fatalled the moment a rotation tried to pick an adz. It was missed because the
+ * test harness stubbed the name, which meant the tests passed against a function
+ * the plugin did not have.
+ *
+ * get_posts() is asked for post objects rather than ids on purpose: that primes
+ * the post cache, so the get_post() call adzworld_score_ad() makes for each
+ * candidate is served from memory instead of becoming one query per adz. The
+ * pool is capped and filterable, because scoring every adz on a site with tens
+ * of thousands of them is not work to do during a page render.
+ *
+ * @return int[]
+ */
+function adz_get_all_ad_ids() {
+	$cached = wp_cache_get( 'adzworld_all_ad_ids', 'adz-world' );
+
+	if ( is_array( $cached ) ) {
+		return $cached;
+	}
+
+	/**
+	 * How many adz may be scored for one visitor.
+	 *
+	 * @param int $size Pool size.
+	 */
+	$size = (int) apply_filters( 'adzworld_match_pool_size', 200 );
+	$size = max( 1, min( 2000, $size ) );
+
+	$posts = get_posts(
+		array(
+			'post_type'        => 'adz_ad',
+			'post_status'      => 'publish',
+			'posts_per_page'   => $size,
+			'orderby'          => 'date',
+			'order'            => 'DESC',
+			'no_found_rows'    => true,
+			'suppress_filters' => false,
+		)
+	);
+
+	$ids = array_map( 'absint', wp_list_pluck( $posts, 'ID' ) );
+
+	wp_cache_set( 'adzworld_all_ad_ids', $ids, 'adz-world', 5 * MINUTE_IN_SECONDS );
+
+	return $ids;
+}
+
+add_action( 'save_post_adz_ad', 'adzworld_flush_ad_pool' );
+add_action( 'deleted_post', 'adzworld_flush_ad_pool' );
+add_action( 'trashed_post', 'adzworld_flush_ad_pool' );
+add_action( 'untrashed_post', 'adzworld_flush_ad_pool' );
+/**
+ * Drop the cached pool when the set of published adz can have changed.
+ *
+ * Bound to the trash transitions and deletion as well as save, because an adz
+ * leaving the pool matters as much as one joining it.
+ *
+ * @return void
+ */
+function adzworld_flush_ad_pool() {
+	wp_cache_delete( 'adzworld_all_ad_ids', 'adz-world' );
+}
+
+/**
  * The adz that best match a preference, best first.
  *
  * @param array $pref  Preference.
