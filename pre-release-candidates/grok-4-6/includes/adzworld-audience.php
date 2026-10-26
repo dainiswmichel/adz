@@ -142,7 +142,7 @@ add_action( 'admin_post_nopriv_adzworld_save_preferences', 'adzworld_save_prefer
 /**
  * Preference form.
  *
- * The words are additive. A known human is an access, a visit, and a guest.
+ * The more specific words are added under access. A known human is an access, a visit, and a guest.
  * A member keeps all three and adds the purchase. A bot cannot be a guest or
  * a member, and can access the site as either. This form stores categories
  * for the current access. It does not record a purchase, grant a capability,

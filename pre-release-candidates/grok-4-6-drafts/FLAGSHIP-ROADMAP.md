@@ -41,7 +41,7 @@ The setup spec’s operational pages remain the ones a later review fetches (`/t
 
 ## Journeys
 
-Access. Every arrival at `/` is an access. The party may be human, AI, or still unknown. With no profile, categories on `/` or `/preferences` are held for the session, and the page says the session may not hold. No email is required. No earnings number appears. Later words are added onto access. Access is not withdrawn.
+Access. Every arrival at `/` is an access. The party may be human, AI, or still unknown. With no profile, categories on `/` or `/preferences` are held for the session, and the page says the session may not hold. No email is required. No earnings number appears. The more specific words are added under access. Access is not withdrawn.
 
 Visit. An unknown human access is also a visit. The flagship adds “visit” for a human. A bot’s access is not a visit.
 
@@ -67,6 +67,6 @@ After a plugin review path exists. Publish the flagship pages in the site map wi
 
 After a settlement feed is real. Implement the read API in `STATEMENT-CONTRACT.md` on adz-world.com, issue site read credentials, and only then let the plugin display a validated statement. Payouts stay on the service state machine. Provider choice happens here, with the open dependencies answered.
 
-Audience status. The words stack. Access stays for every party. An unknown human is also a visit. A known human is an access, a visit, and a guest. A member adds an adz-world purchase. A bot cannot be a guest or a member, and can access the site as either. The purchase record waits on the service. No extra privilege is coded ahead of that record.
+Audience status. The more specific words are added under access. Access stays for every party. An unknown human is also a visit. A known human is an access, a visit, and a guest. A member adds an adz-world purchase. A bot cannot be a guest or a member, and can access the site as either. The purchase record waits on the service. No extra privilege is coded ahead of that record.
 
 Operator identity. Entity, address, and state, decided before any legal route drops its draft banner.

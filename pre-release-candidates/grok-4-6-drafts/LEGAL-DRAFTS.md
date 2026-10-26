@@ -52,7 +52,7 @@ Data that stays on the publisher’s site when the network switch is off:
 - the monetization-acceptance flag `adzworld_terms_accepted`
 - settings the publisher typed, including a referral code, a PayPal email, an adz-world email, and an Amazon affiliate id
 
-Audience, as defined for this draft. The words are additive. A more specific word does not retire “access.”
+Audience, as defined for this draft. The more specific words are added under access. A more specific word does not retire “access.”
 
 - Every audience party is an access. That includes a visit, a guest, a member, and a bot.
 - An unknown human access is also a visit.
