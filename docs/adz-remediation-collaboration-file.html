@@ -241,6 +241,14 @@
   The new test passes WPCS; legacy touched files still have standards findings. Prior baseline failure was inspected in source, not executed.
   <strong>Not complete:</strong> configured-rotation target ownership, client-supplied sequence/state bounds and all remaining Issue 10 acceptance checks.
   No integrated release changes or closure claim.</p>
+  <p><strong>Grok evidence, 2026y-10m-26d-UTC-13h-47m-23s:</strong> candidate
+  <code>pre-release-candidates/grok-4-6/</code> at <code>573c885</code>.
+  A public rotation id has to match <code>adz_rotation_&lt;digits&gt;</code>, be a row in saved ad settings, and cover the requested post, one of its categories, or one of its tags.
+  A shortcode target has to be a published post whose content contains <code>[Adzworld]</code> or <code>[adzworld_stage]</code>.
+  Stored state keeps only the served list, the unserved list, and that rotation's own serve order (<code>publisher</code>, <code>network</code>, or <code>visitor</code>).
+  The old site-wide <code>next_adz_pool</code> option is not written.
+  A command-line stub passed: a foreign option name writes nothing, an uncovered target writes nothing, the served list survives an order change, and a shortcode order stays on that post.
+  That stub is not a WordPress request and not an HTTP 400. This does not close Issue 10 or Issue 11.</p>
   <blockquote>"This isn't just about sanitizing input ... arbitrary values never reach certain places that can trigger an execution."</blockquote>
   <p><strong>Surfaces:</strong> all reads and writes reached through <code>rotations_id</code> in the public ad endpoint,
   rotation helpers, generated identifiers and legitimate shortcode/rotation state callers.</p>
@@ -830,6 +838,62 @@ file to an older version to recover one section, because that discards every ent
 as its last fetch. An edit made to a stale local copy and then committed will drop whatever landed
 on <code>main</code> in the meantime. Fetch and merge first, every time, and the two commands above
 will show whether anything went missing before the push rather than after.</p>
+</section>
+
+<section id="grok-candidate-2026y-10m-26d-UTC-13h-47m-23s">
+<h2>Grok candidate, 2026y-10m-26d-UTC-13h-47m-23s</h2>
+<p class="status">Candidate evidence only. No task in the index is assigned by this entry. Nothing here is INTEGRATED VERIFIED.</p>
+<p><strong>Candidate:</strong> <code>pre-release-candidates/grok-4-6/</code>, commit <code>573c885</code>.
+Earlier commits on that slot include <code>7f703b4</code> and <code>bbfca5d</code>.
+<code>ancestor/</code>, <code>adz-world-wordpress-codebase/</code>, and the other candidate folders were not edited for this note.
+No <code>docs/compile-winners.txt</code> line exists. This entry does not create one.</p>
+
+<h3>Why this candidate is the one to compare from</h3>
+<p>The three candidates that contain repair work do not solve the same problem. Codex has the strongest executed WordPress record. claude-code-web has the wider static pass over the original email list. Grok is the only slot that holds the settled product rules and the stricter Issue 10 target rule in one tree. That is why it is the comparison base. It is not a claim that every task is finished, and it is not a claim that its checks replace Codex's WordPress run.</p>
+<ul>
+<li><strong>Issue 10 and 11.</strong> The acceptance text requires the configured rotation/target relationship, not only a prefix. Codex requires the id to be a saved row and records target ownership as still open. claude-code-web validates the <code>adz_rotation_&lt;n&gt;</code> prefix. Grok requires the saved row and refuses the write unless that row lists the post, or the post's categories or tags intersect the row. State items that are not empty have to match <code>[A-Za-z0-9_-]{1,64}</code>, with at most 100 per list. The serve order is stored on that rotation, or on the shortcode post. A public request cannot advance one site-wide pool for every rotation.</li>
+<li><strong>What the shortcode serves.</strong> <code>[adzworld_stage]</code> serves AdSense, Google Ad Manager, and Taboola only after each network's own acceptance and only from the publisher's own ids. Media.net, Carbon, MGID, Infolinks, Amazon Publisher Services, Teads, Mediavine, Raptive, Ezoic, Monumetric, Publift, PropellerAds, Adsterra, and Monetag are named and are not given a tag. Adz stay out until <code>adz</code> or <code>ads</code> adds them. Once added, they show without a purchase note. A note ranks them and drops an adz the note rules out. A note that matches nothing does not empty the rotation. <code>every="10"</code> is one optional mix and does nothing when no adz were added. claude-code-web reached the same show/hide rule later, with <code>count</code>, and stores the publisher's ad code behind <code>unfiltered_html</code>. Codex serves an existing provider shortcode the same way, also behind <code>unfiltered_html</code>, and its nine-to-one weight is a random draw per uncached render, not a serve count. Grok does not paste arbitrary script and does not draw the mix at random.</li>
+<li><strong>Money.</strong> The earnings screen lists statement buckets as unconfigured. It does not print a <code>$0.00</code> balance or a successful payout. The 10/90 split is integer half-up on a settled commission amount, and the two shares add back to the gross. It applies only to adz served through adz-world.com after a separate <code>manage_options</code> acceptance. Activation does not call out. Ad links are not rewritten, and a saved referral code is not replaced. Stripe and PayPal are reported unconfigured. There is no local ledger table treated as the books and no conversion route.</li>
+<li><strong>Audience words.</strong> Access stays the general term. An unknown human is also a visit. A known human is an access, a visit, and a guest. A member is a guest who has made an adz-world purchase and remains the three terms under access. A bot cannot be a guest or a member. The candidate does not record a purchase and does not decide that an access is human.</li>
+<li><strong>Issue 06 and 08, as far as this slot went.</strong> Chosen is not called. The settings selects are the browser's own multiple selects. That UI was not opened in a browser. Values printed into the legacy public ad script go through <code>esc_js</code>. The countdown is an integer. Template chrome is escaped. The ad body in <code>template1.php</code> goes through <code>wp_kses</code>. Other admin sinks in the EOF fields are still open.</li>
+</ul>
+
+<h3>Where the other slots are ahead</h3>
+<p>Codex, in the section above, ran the candidate on WordPress 7.1.3 / PHP 8.4.7, including HTTP rejection of an unconfigured rotation id, view-row behavior, a debug reactivation, and a browser pass of the legacy ad and of its own rotation. Plugin Check there failed at 23 errors and 135 warnings, and full PHPCS failed at 711 errors and 139 warnings. Those failures are evidence. Grok has no equivalent WordPress run, so it does not outrank Codex on executed proof.</p>
+<p>claude-code-web records a wider static sweep of the email list: five readme tags, <code>screen_icon()</code> removed, an ABSPATH inventory, a template allowlist exercised with traversal strings, and gettext moved toward <code>adz-world</code>. Its own table marks WordPress runtime and Plugin Check as not run, and it records template output in <code>template1.php</code> as still open. Grok's readme also has five tags, and <code>screen_icon(</code> is absent from the Grok tree, but that is a grep, not the sweep Claude recorded.</p>
+
+<h3>This candidate, by task</h3>
+<p>Status words describe <code>pre-release-candidates/grok-4-6/</code> at <code>573c885</code> only.</p>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Task</th><th>In this candidate</th><th>Evidence</th></tr></thead>
+<tbody>
+<tr><td>00</td><td>Nothing. The email still does not name the guideline.</td><td>—</td></tr>
+<tr><td>01</td><td><code>js/plugin.js</code> and <code>vendor/eof/js/eof-custom.js</code> take the Ajax URL from <code>wp_localize_script</code>. A search of the slot finds no <code>/wp-admin/admin-ajax.php</code> literal. PHP templates still call <code>admin_url( 'admin-ajax.php' )</code>.</td><td>grep. Not a subdirectory WordPress request.</td></tr>
+<tr><td>02</td><td><code>Requires at least: 6.2</code>.</td><td>Header only. Not executed on 6.2.</td></tr>
+<tr><td>03</td><td><code>Tested up to: 7.1</code>.</td><td>Header only. Not an executed claim.</td></tr>
+<tr><td>04</td><td>Readme tags: advertising, consent, privacy, ads, ad management.</td><td>static</td></tr>
+<tr><td>05</td><td><code>screen_icon(</code> is absent from this slot.</td><td>grep. Other deprecated calls are not fully inventoried.</td></tr>
+<tr><td>06</td><td><code>.chosen(</code> is absent. Selects stay native.</td><td>grep. Settings UI not opened in a browser.</td></tr>
+<tr><td>07</td><td>Outbound calls require the network switch and monetization acceptance. The readme discloses the service. Terms and privacy URLs are not published legal pages. The operator's exact entity and address are unresolved placeholders.</td><td>source. No activation-time packet capture.</td></tr>
+<tr><td>08</td><td>Legacy public ad-script values use <code>esc_js</code>. Stage and template chrome are escaped. EOF field descriptions are still printed without a late-escape pass.</td><td>PHPCS on the stage file exited 0 at <code>7f703b4</code>. The helper and shortcode files still have older sniffs.</td></tr>
+<tr><td>09</td><td>Header text domain is <code>adz-world</code>. The EOF loader still loads <code>languages/eof-{locale}.mo</code>.</td><td>not closed</td></tr>
+<tr><td>10/11</td><td>Saved-row membership, target/category/tag cover, bounded state, per-rotation serve order. See the Issue 10 paragraph.</td><td>command-line stub, 22 checks, all passed. Not HTTP.</td></tr>
+<tr><td>12</td><td>New modules exit without <code>ABSPATH</code>. A full inventory of every shipped PHP file was not the work of <code>573c885</code>.</td><td>not closed</td></tr>
+<tr><td>13</td><td>Activation creates <code>adz_views</code> only. It does not create a ledger table and does not call out. The <code>role_exists()</code> fatal was not reproduced and is not claimed.</td><td>source. No <code>WP_DEBUG</code> activation of this candidate.</td></tr>
+<tr><td>14</td><td>Settings deletion of a rotation option requires <code>is_admin()</code>, <code>manage_options</code>, and the <code>adz_ad_options-options</code> nonce, then the prefix. It does not also require the cover check used on the public write.</td><td>source</td></tr>
+<tr><td>15</td><td>Registration reset is <code>wp_ajax</code> only, with nonce <code>adz_reset_registration</code> and <code>manage_options</code>. Template settings use the admin nonce and <code>manage_options</code>.</td><td>source. Not an anonymous HTTP replay.</td></tr>
+<tr><td>16</td><td>Template names are a basename matching <code>[a-z0-9_-]+\.php</code> and an existing file under <code>adz-templates</code>. A public miss returns <code>continue</code>.</td><td>source</td></tr>
+<tr><td>17</td><td>Ad-view reads use <code>$wpdb-&gt;prepare</code> through <code>adz_find_adz_view</code> and <code>adz_find_adz_view_by_ip</code>.</td><td>source. PHPCS still reports the table name as an interpolation inside those prepared queries.</td></tr>
+<tr><td>18</td><td>The last full-tree WordPress PHPCS, before <code>573c885</code>, was 943 errors and 189 warnings. One existing <code>phpcs:ignore</code> remains, on a legacy <code>unserialize</code> with classes refused. No new ignore was added. Plugin Check is pending.</td><td>not a pass</td></tr>
+<tr><td>19</td><td>Nothing submitted. No release zip. No deploy.</td><td>—</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>What a later compile should not do</h3>
+<p>Do not copy this slot onto <code>adz-world-wordpress-codebase/</code> as a directory. For the files several tasks share, a winner line has to contain the repairs together. Grok's Issue 10 cover check and per-rotation serve order live in <code>includes/adz-helper.php</code> and <code>adz-world.php</code>. Codex's HTTP-proven request binding, if it is the behavior that stays, has to be merged into those same files rather than replaced by an older copy. Claude's raw-script rotation and a local ledger used as the books should not be the files that win those paths.</p>
+<p>Dainis authorizes each <code>compile-winners.txt</code> line. This note is the comparison record for <code>573c885</code>.</p>
 </section>
 
 <section id="historical-drafts">
