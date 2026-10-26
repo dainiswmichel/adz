@@ -4,215 +4,199 @@ msgid ""
 msgstr ""
 "Project-Id-Version: adz.world 1.0.9\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/adz-world\n"
-"POT-Creation-Date: 2026-10-26T09:39:04+00:00\n"
+"POT-Creation-Date: 2026-10-26T11:12:10+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "X-Domain: adz-world\n"
 
-#: classes/eof_fields/select-caps.php:39 vendor/eof/fields/post_select.php:38 vendor/eof/fields/select.php:39
+#: classes/eof_fields/select-caps.php:43 vendor/eof/fields/post_select.php:42 vendor/eof/fields/select.php:43
 msgid "Select"
 msgstr ""
 
-#: classes/eof_fields/select-caps.php:87 vendor/eof/fields/post_select.php:106 vendor/eof/fields/select.php:91
+#: classes/eof_fields/select-caps.php:92 vendor/eof/fields/post_select.php:115 vendor/eof/fields/select.php:95
 msgid "Nothing found."
 msgstr ""
 
-#: includes/adz-cpt-ads.php:8 includes/adz-cpt-ads.php:9 includes/adz-cpt-ads.php:10 includes/adz-cpt-ads.php:11 includes/adz-cpt-ads.php:37
+#: includes/adz-cpt-ads.php:10 includes/adz-cpt-ads.php:11 includes/adz-cpt-ads.php:12 includes/adz-cpt-ads.php:13 includes/adz-cpt-ads.php:39
 msgid "Adz.world"
 msgstr ""
 
-#: includes/adz-cpt-ads.php:12
+#: includes/adz-cpt-ads.php:14
 msgid "Adz.world Archives"
 msgstr ""
 
-#: includes/adz-cpt-ads.php:13
+#: includes/adz-cpt-ads.php:15
 msgid "TV Station Ad Attributes"
 msgstr ""
 
-#: includes/adz-cpt-ads.php:14 includes/adz-cpt-ads.php:166
-msgid "Parent Item:"
-msgstr ""
-
-#: includes/adz-cpt-ads.php:15
-msgid "All Adz"
-msgstr ""
-
-#: includes/adz-cpt-ads.php:16
-msgid "Add New Ad"
-msgstr ""
-
-#: includes/adz-cpt-ads.php:17
-msgid "Add New Adz"
-msgstr ""
-
-#: includes/adz-cpt-ads.php:18
-msgid "New Ad"
-msgstr ""
-
-#: includes/adz-cpt-ads.php:19
-msgid "Edit Ad"
-msgstr ""
-
-#: includes/adz-cpt-ads.php:20
-msgid "Update Ad"
-msgstr ""
-
-#: includes/adz-cpt-ads.php:21 includes/adz-cpt-ads.php:22
-msgid "View Ad"
-msgstr ""
-
-#: includes/adz-cpt-ads.php:23
-msgid "Search Adz.world"
-msgstr ""
-
-#: includes/adz-cpt-ads.php:24
-msgid "Not found"
-msgstr ""
-
-#: includes/adz-cpt-ads.php:25
-msgid "Not found in Trash"
-msgstr ""
-
-#: includes/adz-cpt-ads.php:26
-msgid "Featured Image"
-msgstr ""
-
-#: includes/adz-cpt-ads.php:27
-msgid "Set featured image"
-msgstr ""
-
-#: includes/adz-cpt-ads.php:28
-msgid "Remove featured image"
-msgstr ""
-
-#: includes/adz-cpt-ads.php:29
-msgid "Use as featured image"
-msgstr ""
-
-#: includes/adz-cpt-ads.php:30
-msgid "Insert into item"
-msgstr ""
-
-#: includes/adz-cpt-ads.php:31
-msgid "Uploaded to this Ad"
-msgstr ""
-
-#: includes/adz-cpt-ads.php:32
-msgid "Adz.world list"
-msgstr ""
-
-#: includes/adz-cpt-ads.php:33
-msgid "Adz.world list navigation"
-msgstr ""
-
-#: includes/adz-cpt-ads.php:34
-msgid "Filter ads list"
-msgstr ""
-
-#: includes/adz-cpt-ads.php:38
-msgid "Adz.world to serve up to network"
-msgstr ""
-
-#: includes/adz-cpt-ads.php:161 includes/adz-cpt-ads.php:163
+#: includes/adz-cpt-ads.php:158 includes/adz-cpt-ads.php:160
 msgid "Ad Types"
 msgstr ""
 
-#: includes/adz-cpt-ads.php:162
+#: includes/adz-cpt-ads.php:159
 msgid "Ad Type"
 msgstr ""
 
-#: includes/adz-cpt-ads.php:164
+#: includes/adz-cpt-ads.php:16 includes/adz-cpt-ads.php:163
+msgid "Parent Item:"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:161
 msgid "All Ad Types"
 msgstr ""
 
-#: includes/adz-cpt-ads.php:165
+#: includes/adz-cpt-ads.php:162
 msgid "Parent Item"
 msgstr ""
 
-#: includes/adz-cpt-ads.php:167
+#: includes/adz-cpt-ads.php:164
 msgid "New Ad Type"
 msgstr ""
 
-#: includes/adz-cpt-ads.php:168
+#: includes/adz-cpt-ads.php:165
 msgid "Add New Ad Type"
 msgstr ""
 
-#: includes/adz-cpt-ads.php:169
+#: includes/adz-cpt-ads.php:166
 msgid "Edit Ad Type"
 msgstr ""
 
-#: includes/adz-cpt-ads.php:170
+#: includes/adz-cpt-ads.php:167
 msgid "Update Ad Type"
 msgstr ""
 
-#: includes/adz-cpt-ads.php:171
+#: includes/adz-cpt-ads.php:168
 msgid "View Ad Type"
 msgstr ""
 
-#: includes/adz-cpt-ads.php:172
+#: includes/adz-cpt-ads.php:169
 msgid "Separate items with commas"
 msgstr ""
 
-#: includes/adz-cpt-ads.php:173
+#: includes/adz-cpt-ads.php:17
+msgid "All Adz"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:170
 msgid "Add or remove items"
 msgstr ""
 
-#: includes/adz-cpt-ads.php:174
+#: includes/adz-cpt-ads.php:171
 msgid "Choose from the most used"
 msgstr ""
 
-#: includes/adz-cpt-ads.php:175
+#: includes/adz-cpt-ads.php:172
 msgid "Popular Ad Types"
 msgstr ""
 
-#: includes/adz-cpt-ads.php:176
+#: includes/adz-cpt-ads.php:173
 msgid "Search Ad Types"
 msgstr ""
 
-#: includes/adz-cpt-ads.php:177
+#: includes/adz-cpt-ads.php:174
 msgid "Not Found"
 msgstr ""
 
-#: includes/adz-cpt-ads.php:178
+#: includes/adz-cpt-ads.php:175
 msgid "No Ad Types"
 msgstr ""
 
-#: includes/adz-cpt-ads.php:179
+#: includes/adz-cpt-ads.php:176
 msgid "Ad Type List"
 msgstr ""
 
-#: includes/adz-cpt-ads.php:180
+#: includes/adz-cpt-ads.php:177
 msgid "Ad Type list navigation"
 msgstr ""
 
-#: includes/adz-cpt-ads.php:262
+#: includes/adz-cpt-ads.php:18
+msgid "Add New Ad"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:19
+msgid "Add New Adz"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:20
+msgid "New Ad"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:21
+msgid "Edit Ad"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:22
+msgid "Update Ad"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:23 includes/adz-cpt-ads.php:24
+msgid "View Ad"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:25
+msgid "Search Adz.world"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:256
 msgid "You do not have permission to change template settings."
 msgstr ""
 
-#: includes/adz-cpt-ads.php:326
+#: includes/adz-cpt-ads.php:26
+msgid "Not found"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:27
+msgid "Not found in Trash"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:28
+msgid "Featured Image"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:29
+msgid "Set featured image"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:30
+msgid "Remove featured image"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:31
+msgid "Use as featured image"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:32
+msgid "Insert into item"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:320
 msgid "Not permitted."
 msgstr ""
 
-#: includes/adz-cpt-ads.php:334
+#: includes/adz-cpt-ads.php:328
 msgid "Unknown template."
 msgstr ""
 
-#: includes/adz-dashboard.php:25 includes/adz-dashboard.php:26
-msgid "Earnings"
+#: includes/adz-cpt-ads.php:33
+msgid "Uploaded to this Ad"
 msgstr ""
 
-#: includes/adz-dashboard.php:40
-msgid "You do not have permission to view earnings."
+#: includes/adz-cpt-ads.php:34
+msgid "Adz.world list"
 msgstr ""
 
-#: includes/adz-dashboard.php:46
-msgid "adz-world earnings"
+#: includes/adz-cpt-ads.php:35
+msgid "Adz.world list navigation"
 msgstr ""
 
-#: includes/adz-dashboard.php:76
-msgid "You do not have permission to do that."
+#: includes/adz-cpt-ads.php:36
+msgid "Filter ads list"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:40
+msgid "Adz.world to serve up to network"
 msgstr ""
 
 #: includes/adz-dashboard.php:114
@@ -220,7 +204,7 @@ msgid "Monetization"
 msgstr ""
 
 #: includes/adz-dashboard.php:116
-msgid "adz served through the adz-world monetization service carry adz-world\\'s affiliate codes. adz-world keeps 10% of commission it actually receives and settles 90% to you. The 10% is taken from commission that has been received, not from sales, clicks, impressions or estimates."
+msgid "adz served through the adz-world monetization service carry adz-world's affiliate codes. adz-world keeps 10% of commission it actually receives and settles 90% to you. The 10% is taken from commission that has been received, not from sales, clicks, impressions or estimates."
 msgstr ""
 
 #: includes/adz-dashboard.php:121
@@ -311,6 +295,22 @@ msgstr ""
 msgid "an administrator"
 msgstr ""
 
+#: includes/adz-dashboard.php:25 includes/adz-dashboard.php:26
+msgid "Earnings"
+msgstr ""
+
+#: includes/adz-dashboard.php:40
+msgid "You do not have permission to view earnings."
+msgstr ""
+
+#: includes/adz-dashboard.php:46
+msgid "adz-world earnings"
+msgstr ""
+
+#: includes/adz-dashboard.php:76
+msgid "You do not have permission to do that."
+msgstr ""
+
 #: includes/adz-monetization.php:55 includes/adz-monetization.php:83
 msgid "You do not have permission to change monetization."
 msgstr ""
@@ -321,6 +321,30 @@ msgstr ""
 
 #: includes/adz-money.php:188
 msgid "An amount carried an invalid currency code."
+msgstr ""
+
+#: includes/adz-payouts.php:102
+msgid "Choose a payout method that is available."
+msgstr ""
+
+#: includes/adz-payouts.php:126
+msgid "A payout in this currency is already in progress."
+msgstr ""
+
+#: includes/adz-payouts.php:137
+msgid "That is more than the available balance of %s."
+msgstr ""
+
+#: includes/adz-payouts.php:167
+msgid "The payout request could not be recorded."
+msgstr ""
+
+#: includes/adz-payouts.php:231
+msgid "That payout could not be found."
+msgstr ""
+
+#: includes/adz-payouts.php:244
+msgid "A payout cannot move from %1$s to %2$s."
 msgstr ""
 
 #: includes/adz-payouts.php:80
@@ -335,28 +359,356 @@ msgstr ""
 msgid "A payout amount must be greater than zero."
 msgstr ""
 
-#: includes/adz-payouts.php:102
-msgid "Choose a payout method that is available."
+#: includes/adz-preference-ui.php:312
+msgid "You have the option to receive permission-based adz by filling in what you would like to purchase in the near future below."
 msgstr ""
 
-#: includes/adz-payouts.php:118
-msgid "A payout in this currency is already in progress."
+#: includes/adz-preference-ui.php:321
+msgid "Nothing is tracked. There is no profile of you here, and nothing follows you to another site."
 msgstr ""
 
-#: includes/adz-payouts.php:129
-msgid "That is more than the available balance of %s."
+#: includes/adz-preference-ui.php:322
+msgid "You see what you asked for, in your own words, and you can remove any part of it."
 msgstr ""
 
-#: includes/adz-payouts.php:159
-msgid "The payout request could not be recorded."
+#: includes/adz-preference-ui.php:323
+msgid "Leave it blank and the adz in this space stay exactly as they were."
 msgstr ""
 
-#: includes/adz-payouts.php:223
-msgid "That payout could not be found."
+#: includes/adz-preference-ui.php:354
+msgid "Add to this, or correct it"
 msgstr ""
 
-#: includes/adz-payouts.php:236
-msgid "A payout cannot move from %1$s to %2$s."
+#: includes/adz-preference-ui.php:355
+msgid "What are you looking to buy?"
+msgstr ""
+
+#: includes/adz-preference-ui.php:367
+msgid "a two-seater couch, light colour, not leather"
+msgstr ""
+
+#: includes/adz-preference-ui.php:370
+msgid "Refine"
+msgstr ""
+
+#: includes/adz-preference-ui.php:370
+msgid "Show me"
+msgstr ""
+
+#: includes/adz-preference-ui.php:394
+msgid "Understood as:"
+msgstr ""
+
+#: includes/adz-preference-ui.php:410
+msgid "Remove %s"
+msgstr ""
+
+#: includes/adz-preference-ui.php:422
+msgid "Wrong? Remove anything that does not belong. None of this was guessed from your browsing."
+msgstr ""
+
+#: includes/adz-preference-ui.php:451
+msgid "Forgotten. Nothing was kept."
+msgstr ""
+
+#: includes/adz-preference-ui.php:463
+msgid "Nothing to remove."
+msgstr ""
+
+#: includes/adz-preference-ui.php:467
+msgid "Removed."
+msgstr ""
+
+#: includes/adz-preference-ui.php:473
+msgid "Nothing was entered."
+msgstr ""
+
+#: includes/adz-preference-ui.php:477
+msgid "Updated."
+msgstr ""
+
+#: includes/adz-preferences.php:322
+msgid "not %s"
+msgstr ""
+
+#: includes/adz-preferences.php:328
+msgid "to buy"
+msgstr ""
+
+#: includes/adz-preferences.php:329
+msgid "to lease"
+msgstr ""
+
+#: includes/adz-preferences.php:330
+msgid "to rent"
+msgstr ""
+
+#: includes/adz-preferences.php:331
+msgid "to repair"
+msgstr ""
+
+#: includes/adz-preferences.php:346
+msgid "over %s"
+msgstr ""
+
+#: includes/adz-preferences.php:355
+msgid "under %s"
+msgstr ""
+
+#: includes/adz-preferences.php:364
+msgid "age %d"
+msgstr ""
+
+#: includes/adz-preferences.php:373
+msgid "for %d"
+msgstr ""
+
+#: includes/adz-rotation-admin.php:101
+msgid "A slot needs a name so the shortcode can refer to it."
+msgstr ""
+
+#: includes/adz-rotation-admin.php:113
+msgid "Paste the ad code from your own network account."
+msgstr ""
+
+#: includes/adz-rotation-admin.php:130
+msgid "Saved. Add it to a page with [adz_rotation slots=\"%s\"]."
+msgstr ""
+
+#: includes/adz-rotation-admin.php:143
+msgid "You do not have permission to manage the rotation."
+msgstr ""
+
+#: includes/adz-rotation-admin.php:162
+msgid "Register the ad code you already run. The rotation presents it exactly as your own network supplied it, in the same place, through your own account. Nothing here contacts an ad network."
+msgstr ""
+
+#: includes/adz-rotation-admin.php:173
+msgid "Your account cannot save ad code. That requires the unfiltered_html capability, which on a multisite network is held by super admins only."
+msgstr ""
+
+#: includes/adz-rotation-admin.php:182
+msgid "Registered slots"
+msgstr ""
+
+#: includes/adz-rotation-admin.php:187
+msgid "No slots yet. With none registered the rotation shows only adz a visitor has asked for."
+msgstr ""
+
+#: includes/adz-rotation-admin.php:197
+msgid "Slot"
+msgstr ""
+
+#: includes/adz-rotation-admin.php:198
+msgid "Name"
+msgstr ""
+
+#: includes/adz-rotation-admin.php:199
+msgid "Code"
+msgstr ""
+
+#: includes/adz-rotation-admin.php:200 includes/adz-rotation-admin.php:224
+msgid "Remove"
+msgstr ""
+
+#: includes/adz-rotation-admin.php:238
+msgid "Add a slot"
+msgstr ""
+
+#: includes/adz-rotation-admin.php:24 includes/adz-rotation-admin.php:25 includes/adz-rotation-admin.php:152
+msgid "Rotation"
+msgstr ""
+
+#: includes/adz-rotation-admin.php:248
+msgid "Network"
+msgstr ""
+
+#: includes/adz-rotation-admin.php:260
+msgid "Picking a network only names the slot. The plugin makes no request to any of them."
+msgstr ""
+
+#: includes/adz-rotation-admin.php:278
+msgid "Slot name"
+msgstr ""
+
+#: includes/adz-rotation-admin.php:286
+msgid "sidebar_top"
+msgstr ""
+
+#: includes/adz-rotation-admin.php:289
+msgid "How the shortcode refers to this slot. Lowercase letters, numbers, hyphens and underscores."
+msgstr ""
+
+#: includes/adz-rotation-admin.php:295
+msgid "Label"
+msgstr ""
+
+#: includes/adz-rotation-admin.php:300
+msgid "For your own reference on this screen. Defaults to the network name."
+msgstr ""
+
+#: includes/adz-rotation-admin.php:306
+msgid "Ad code"
+msgstr ""
+
+#: includes/adz-rotation-admin.php:317
+msgid "Pasted and stored exactly as given, because filtering it would break the network tag. Each slot renders once per page: a network keys its own code on a slot id and will not serve the same id twice."
+msgstr ""
+
+#: includes/adz-rotation-admin.php:328
+msgid "Save slot"
+msgstr ""
+
+#: includes/adz-rotation-admin.php:332
+msgid "Using it"
+msgstr ""
+
+#: includes/adz-rotation-admin.php:338
+msgid "Your adz only. Exactly what you serve now, presented by the plugin."
+msgstr ""
+
+#: includes/adz-rotation-admin.php:342
+msgid "Your adz, plus one adz a visitor asked for on one render in ten."
+msgstr ""
+
+#: includes/adz-rotation-admin.php:346
+msgid "3D carousel with arrows and a dotted menu, advancing every seven seconds."
+msgstr ""
+
+#: includes/adz-rotation-admin.php:350
+msgid "Flat carousel with a one-line explanation instead of the full panel."
+msgstr ""
+
+#: includes/adz-rotation-admin.php:354
+msgid "Rotation with no panel, for when the panel lives elsewhere on the page."
+msgstr ""
+
+#: includes/adz-rotation-admin.php:361
+msgid "The one-in-N decision is made when the page is built, so a full-page cache caches it with the page. On a cached site either leave this shortcode uncached or use every=\"1\" and let the rotation itself do the spacing."
+msgstr ""
+
+#: includes/adz-rotation-admin.php:54
+msgid "Removing a slot requires the unfiltered_html capability."
+msgstr ""
+
+#: includes/adz-rotation-admin.php:64
+msgid "That slot no longer exists."
+msgstr ""
+
+#: includes/adz-rotation-admin.php:73
+msgid "Slot removed. The adz it served are no longer in the rotation."
+msgstr ""
+
+#: includes/adz-rotation.php:104
+msgid "Saving ad code requires the unfiltered_html capability."
+msgstr ""
+
+#: includes/adz-rotation.php:112
+msgid "A slot needs a name."
+msgstr ""
+
+#: includes/adz-rotation.php:291
+msgid "Advertising"
+msgstr ""
+
+#: includes/adz-rotation.php:310
+msgid "%1$d of %2$d"
+msgstr ""
+
+#: includes/adz-rotation.php:329
+msgid "Shown because you asked for it. Nothing followed you here."
+msgstr ""
+
+#: includes/adz-rotation.php:34
+msgid "Google AdSense"
+msgstr ""
+
+#: includes/adz-rotation.php:35
+msgid "No traffic minimum. Paste the ad unit code from your AdSense account."
+msgstr ""
+
+#: includes/adz-rotation.php:351
+msgid "Previous"
+msgstr ""
+
+#: includes/adz-rotation.php:355
+msgid "Next"
+msgstr ""
+
+#: includes/adz-rotation.php:361
+msgid "Choose a slide"
+msgstr ""
+
+#: includes/adz-rotation.php:375
+msgid "Slide %d"
+msgstr ""
+
+#: includes/adz-rotation.php:38
+msgid "Google Ad Manager"
+msgstr ""
+
+#: includes/adz-rotation.php:39
+msgid "Paste the GPT slot code for one ad unit."
+msgstr ""
+
+#: includes/adz-rotation.php:42
+msgid "Media.net"
+msgstr ""
+
+#: includes/adz-rotation.php:43
+msgid "Quality review rather than a traffic minimum."
+msgstr ""
+
+#: includes/adz-rotation.php:46
+msgid "Sovrn"
+msgstr ""
+
+#: includes/adz-rotation.php:47
+msgid "Quality review. Aimed at small and mid-sized publishers."
+msgstr ""
+
+#: includes/adz-rotation.php:50
+msgid "Mediavine"
+msgstr ""
+
+#: includes/adz-rotation.php:51
+msgid "Around 50,000 sessions a month. Check their current threshold."
+msgstr ""
+
+#: includes/adz-rotation.php:54
+msgid "Raptive"
+msgstr ""
+
+#: includes/adz-rotation.php:55
+msgid "Around 25,000 monthly pageviews, weighted to certain countries. Check their current threshold."
+msgstr ""
+
+#: includes/adz-rotation.php:58
+msgid "Ezoic"
+msgstr ""
+
+#: includes/adz-rotation.php:59
+msgid "Raised its minimum substantially in 2026. Check their current threshold."
+msgstr ""
+
+#: includes/adz-rotation.php:62
+msgid "Monetag"
+msgstr ""
+
+#: includes/adz-rotation.php:63 includes/adz-rotation.php:67
+msgid "No traffic minimum."
+msgstr ""
+
+#: includes/adz-rotation.php:66
+msgid "Adsterra"
+msgstr ""
+
+#: includes/adz-rotation.php:70
+msgid "Any other network"
+msgstr ""
+
+#: includes/adz-rotation.php:71
+msgid "Paste any ad code. The rotation does not need to know whose it is."
 msgstr ""
 
 #: includes/adz-service.php:108
@@ -375,94 +727,94 @@ msgstr ""
 msgid "The adz-world service returned a response that could not be read."
 msgstr ""
 
-#: vendor/eof/adz-config.php:433
+#: vendor/eof/adz-config.php:427
 msgid "Reset the linked account."
 msgstr ""
 
-#: vendor/eof/fields/media.php:93
-msgid "Upload"
-msgstr ""
-
-#: vendor/eof/fields/media.php:95
-msgid "Delete"
-msgstr ""
-
-#: vendor/eof/fields/post_select.php:68
-msgid "Post type does not exist!"
-msgstr ""
-
-#: vendor/eof/fields/repeat.php:90
-msgid "Action"
-msgstr ""
-
-#: vendor/eof/fields/repeat.php:112 vendor/eof/fields/repeat.php:146
-msgid "The field type does not exisits, please check your code."
-msgstr ""
-
-#: vendor/eof/fields/repeat.php:161
-msgid "Add"
-msgstr ""
-
-#: vendor/eof/core/class-eof-admin.php:140
+#: vendor/eof/core/class-eof-admin.php:144
 msgid "Thank you for using <a href=\"%1$s\" target=\"_blank\">Easy Options Framework</a>!"
 msgstr ""
 
-#: vendor/eof/core/class-eof-import-export.php:34
-msgid "Import/Export"
-msgstr ""
-
-#: vendor/eof/core/class-eof-import-export.php:50
-msgid "Import Settings"
-msgstr ""
-
-#: vendor/eof/core/class-eof-import-export.php:53
-msgid "Please select a <b>.json</b> file generated by this plugin."
-msgstr ""
-
-#: vendor/eof/core/class-eof-import-export.php:63
-msgid "Import from File"
-msgstr ""
-
-#: vendor/eof/core/class-eof-import-export.php:67 vendor/eof/core/class-eof-import-export.php:75
-msgid "Export Settings"
-msgstr ""
-
-#: vendor/eof/core/class-eof-import-export.php:70
-msgid "Click below to generate a <b>.json</b> file for your current option settings."
-msgstr ""
-
-#: vendor/eof/core/class-eof-import-export.php:103
+#: vendor/eof/core/class-eof-import-export.php:104
 msgid "You must upload a <b>.json</b> file generated by this plugin."
 msgstr ""
 
-#: vendor/eof/core/class-eof-import-export.php:130
+#: vendor/eof/core/class-eof-import-export.php:131
 msgid "Import file could not be found. Please try again."
 msgstr ""
 
-#: vendor/eof/core/class-eof-import-export.php:160
+#: vendor/eof/core/class-eof-import-export.php:161
 msgid "Invalid nonce for options use"
 msgstr ""
 
-#: vendor/eof/core/class-eof-loader.php:89
+#: vendor/eof/core/class-eof-import-export.php:36
+msgid "Import/Export"
+msgstr ""
+
+#: vendor/eof/core/class-eof-import-export.php:52
+msgid "Import Settings"
+msgstr ""
+
+#: vendor/eof/core/class-eof-import-export.php:55
+msgid "Please select a <b>.json</b> file generated by this plugin."
+msgstr ""
+
+#: vendor/eof/core/class-eof-import-export.php:65
+msgid "Import from File"
+msgstr ""
+
+#: vendor/eof/core/class-eof-import-export.php:69 vendor/eof/core/class-eof-import-export.php:77
+msgid "Export Settings"
+msgstr ""
+
+#: vendor/eof/core/class-eof-import-export.php:72
+msgid "Click below to generate a <b>.json</b> file for your current option settings."
+msgstr ""
+
+#: vendor/eof/core/class-eof-loader.php:91
 msgid "Donate"
 msgstr ""
 
-#: vendor/eof/core/class-eof-settings.php:138
+#: vendor/eof/core/class-eof-settings.php:141
 msgid "This field type does not exisits, please check your code."
 msgstr ""
 
-#: vendor/eof/core/class-eof-settings.php:186
+#: vendor/eof/core/class-eof-settings.php:188
 msgid "Settings updated!"
 msgstr ""
 
-#: vendor/eof/core/class-eof-settings.php:218
+#: vendor/eof/core/class-eof-settings.php:219
 msgid "Section Defaults Restored!"
 msgstr ""
 
-#: vendor/eof/core/class-eof-views.php:91
+#: vendor/eof/core/class-eof-views.php:104
 msgid "Save Changes"
 msgstr ""
 
-#: vendor/eof/core/class-eof.php:116 vendor/eof/core/class-eof.php:118
+#: vendor/eof/core/class-eof.php:117 vendor/eof/core/class-eof.php:119
 msgid "EOF"
+msgstr ""
+
+#: vendor/eof/fields/media.php:100
+msgid "Delete"
+msgstr ""
+
+#: vendor/eof/fields/media.php:98
+msgid "Upload"
+msgstr ""
+
+#: vendor/eof/fields/post_select.php:74
+msgid "Post type does not exist!"
+msgstr ""
+
+#: vendor/eof/fields/repeat.php:118 vendor/eof/fields/repeat.php:151
+msgid "The field type does not exisits, please check your code."
+msgstr ""
+
+#: vendor/eof/fields/repeat.php:168
+msgid "Add"
+msgstr ""
+
+#: vendor/eof/fields/repeat.php:96
+msgid "Action"
 msgstr ""

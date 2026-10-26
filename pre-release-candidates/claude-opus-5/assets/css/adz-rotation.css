@@ -1,0 +1,441 @@
+/*
+ * Rotation element and permission panel.
+ *
+ * Everything is scoped under .adz-rotation and .adz-panel so a theme's own
+ * styles are not touched, and every custom property is namespaced. The layout
+ * degrades to a plain vertical list of adz with CSS or JavaScript disabled,
+ * because an ad that will not render costs the publisher money.
+ */
+
+.adz-rotation {
+	--adz-radius: 10px;
+	--adz-gap: 14px;
+	--adz-ink: #1d2327;
+	--adz-muted: #646970;
+	--adz-line: #dcdcde;
+	--adz-surface: #fff;
+	--adz-accent: #2271b1;
+
+	position: relative;
+	box-sizing: border-box;
+	margin: 0 0 1.5em;
+	color: var(--adz-ink);
+	font-size: 15px;
+	line-height: 1.5;
+}
+
+.adz-rotation *,
+.adz-panel * {
+	box-sizing: inherit;
+}
+
+/* ---------------------------------------------------------------- viewport */
+
+.adz-rotation__viewport {
+	position: relative;
+	overflow: hidden;
+	border-radius: var(--adz-radius);
+}
+
+.adz-rotation__track {
+	display: flex;
+	gap: var(--adz-gap);
+	align-items: stretch;
+}
+
+.adz-rotation__slide {
+	flex: 0 0 100%;
+	min-width: 0;
+	padding: 0;
+	background: var(--adz-surface);
+	border-radius: var(--adz-radius);
+}
+
+.adz-rotation__body {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 90px;
+	overflow: hidden;
+}
+
+.adz-rotation__body img,
+.adz-rotation__body iframe {
+	max-width: 100%;
+	height: auto;
+}
+
+.adz-rotation__why {
+	margin: 6px 2px 0;
+	color: var(--adz-muted);
+	font-size: 12px;
+	line-height: 1.4;
+}
+
+/*
+ * No JavaScript: every slide stays visible and stacked. The publisher's adz all
+ * render, which is the behaviour that must never depend on a script loading.
+ */
+.adz-rotation:not(.is-ready) .adz-rotation__track {
+	display: block;
+}
+
+.adz-rotation:not(.is-ready) .adz-rotation__slide {
+	margin-bottom: var(--adz-gap);
+}
+
+.adz-rotation:not(.is-ready) .adz-rotation__arrow,
+.adz-rotation:not(.is-ready) .adz-rotation__dots {
+	display: none;
+}
+
+/* --------------------------------------------------------- flat carousel */
+
+.adz-rotation--carousel-flat.is-ready .adz-rotation__track {
+	transition: transform 420ms cubic-bezier(0.22, 0.61, 0.36, 1);
+	will-change: transform;
+}
+
+/* ----------------------------------------------------------- 3D carousel */
+
+.adz-rotation--carousel-3d.is-ready .adz-rotation__viewport {
+	overflow: visible;
+	perspective: 1200px;
+	perspective-origin: 50% 45%;
+}
+
+.adz-rotation--carousel-3d.is-ready .adz-rotation__track {
+	display: block;
+	position: relative;
+	height: 220px;
+	transform-style: preserve-3d;
+}
+
+.adz-rotation--carousel-3d.is-ready .adz-rotation__slide {
+	position: absolute;
+	top: 0;
+	left: 50%;
+	width: min(340px, 78%);
+	margin: 0;
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14);
+	transition: transform 520ms cubic-bezier(0.22, 0.61, 0.36, 1), opacity 520ms ease;
+	backface-visibility: hidden;
+}
+
+/*
+ * Depth is set per slide from its distance to the active one. The script writes
+ * --adz-offset; the transform is declarative so it stays interruptible.
+ */
+.adz-rotation--carousel-3d.is-ready .adz-rotation__slide {
+	transform:
+		translateX(-50%)
+		translateX(calc(var(--adz-offset, 0) * 46%))
+		translateZ(calc(max(var(--adz-distance, 0), 0) * -150px))
+		rotateY(calc(var(--adz-offset, 0) * -34deg));
+	opacity: calc(1 - min(var(--adz-distance, 0), 3) * 0.28);
+	z-index: calc(10 - min(var(--adz-distance, 0), 9));
+}
+
+.adz-rotation--carousel-3d.is-ready .adz-rotation__slide[aria-hidden="true"] {
+	pointer-events: none;
+}
+
+/* ------------------------------------------------------------------ stack */
+
+.adz-rotation--stack.is-ready .adz-rotation__track {
+	display: grid;
+	position: relative;
+}
+
+.adz-rotation--stack.is-ready .adz-rotation__slide {
+	grid-area: 1 / 1;
+	transform: translateY(calc(min(var(--adz-distance, 0), 3) * 9px)) scale(calc(1 - min(var(--adz-distance, 0), 3) * 0.04));
+	opacity: calc(1 - min(var(--adz-distance, 0), 3) * 0.3);
+	box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+	transition: transform 420ms ease, opacity 420ms ease;
+	z-index: calc(10 - min(var(--adz-distance, 0), 9));
+}
+
+/* ----------------------------------------------------------------- single */
+
+.adz-rotation--single.is-ready .adz-rotation__slide[aria-hidden="true"] {
+	display: none;
+}
+
+/* ----------------------------------------------------------------- arrows */
+
+.adz-rotation__arrow {
+	position: absolute;
+	top: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 38px;
+	height: 38px;
+	padding: 0;
+	margin: 0;
+	color: var(--adz-ink);
+	font-size: 22px;
+	line-height: 1;
+	background: var(--adz-surface);
+	border: 1px solid var(--adz-line);
+	border-radius: 50%;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	cursor: pointer;
+	transform: translateY(-50%);
+	transition: background 160ms ease, border-color 160ms ease;
+	z-index: 20;
+}
+
+.adz-rotation__arrow:hover,
+.adz-rotation__arrow:focus-visible {
+	background: #f6f7f7;
+	border-color: var(--adz-accent);
+}
+
+.adz-rotation__arrow--prev {
+	left: -6px;
+}
+
+.adz-rotation__arrow--next {
+	right: -6px;
+}
+
+.adz-rotation__arrow[disabled] {
+	opacity: 0.4;
+	cursor: default;
+}
+
+/* ------------------------------------------------------------------- dots */
+
+.adz-rotation__dots {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	justify-content: center;
+	margin-top: 12px;
+}
+
+.adz-rotation__dot {
+	width: 9px;
+	height: 9px;
+	padding: 0;
+	background: var(--adz-line);
+	border: 0;
+	border-radius: 50%;
+	cursor: pointer;
+	transition: background 160ms ease, transform 160ms ease, width 160ms ease;
+}
+
+.adz-rotation__dot[aria-selected="true"] {
+	width: 22px;
+	background: var(--adz-accent);
+	border-radius: 5px;
+}
+
+.adz-rotation__dot:hover {
+	transform: scale(1.2);
+}
+
+/*
+ * The adz dot is marked so a visitor can see which position in the rotation is
+ * the adz they asked for, as opposed to the publisher's own adz. Transparency
+ * about which is which is the premise of the whole thing.
+ */
+.adz-rotation__dot--adz {
+	background: transparent;
+	border: 2px solid var(--adz-accent);
+}
+
+.adz-rotation__dot--adz[aria-selected="true"] {
+	background: var(--adz-accent);
+}
+
+/* ------------------------------------------------------------------ panel */
+
+.adz-panel {
+	padding: 14px 16px;
+	margin: 0 0 14px;
+	background: #f6f7f7;
+	border: 1px solid var(--adz-line, #dcdcde);
+	border-radius: 10px;
+	font-size: 14px;
+}
+
+.adz-intro__lead {
+	margin: 0 0 8px;
+	font-size: 15px;
+	font-weight: 600;
+	line-height: 1.45;
+}
+
+.adz-intro__points {
+	margin: 0 0 12px;
+	padding-left: 18px;
+	color: #50575e;
+	font-size: 13px;
+	line-height: 1.6;
+}
+
+.adz-panel__label {
+	display: block;
+	margin-bottom: 6px;
+	font-weight: 600;
+}
+
+.adz-panel__row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.adz-panel__input {
+	flex: 1 1 220px;
+	min-width: 0;
+	padding: 9px 11px;
+	font-size: 14px;
+	background: #fff;
+	border: 1px solid #8c8f94;
+	border-radius: 6px;
+}
+
+.adz-panel__input:focus {
+	border-color: var(--adz-accent, #2271b1);
+	outline: 2px solid transparent;
+	box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.3);
+}
+
+.adz-panel__submit {
+	padding: 9px 16px;
+	color: #fff;
+	font-size: 14px;
+	background: var(--adz-accent, #2271b1);
+	border: 0;
+	border-radius: 6px;
+	cursor: pointer;
+}
+
+.adz-panel__submit:hover {
+	background: #135e96;
+}
+
+.adz-panel__submit[disabled] {
+	opacity: 0.6;
+	cursor: default;
+}
+
+/* ------------------------------------------------------------------ chips */
+
+.adz-panel__understood {
+	margin: 12px 0 6px;
+	color: #50575e;
+	font-size: 12px;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.adz-panel__chiplist {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.adz-panel__chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 3px 4px 3px 10px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 999px;
+	font-size: 13px;
+	line-height: 1.6;
+}
+
+.adz-panel__chip--exclude {
+	background: #fcf0f1;
+	border-color: #d63638;
+	text-decoration: line-through;
+}
+
+.adz-panel__chip--min_price,
+.adz-panel__chip--max_price,
+.adz-panel__chip--capacity,
+.adz-panel__chip--age {
+	background: #f0f6fc;
+	border-color: #2271b1;
+}
+
+.adz-panel__chip--intent {
+	background: #f0f6ea;
+	border-color: #68de7c;
+}
+
+.adz-panel__chipdrop {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+	height: 20px;
+	padding: 0;
+	color: #646970;
+	font-size: 15px;
+	line-height: 1;
+	background: transparent;
+	border: 0;
+	border-radius: 50%;
+	cursor: pointer;
+}
+
+.adz-panel__chipdrop:hover,
+.adz-panel__chipdrop:focus-visible {
+	color: #d63638;
+	background: #f0f0f1;
+}
+
+.adz-panel__note {
+	margin: 8px 0 0;
+	color: #646970;
+	font-size: 12px;
+}
+
+.adz-panel__status {
+	margin: 8px 0 0;
+	min-height: 1em;
+	color: #50575e;
+	font-size: 12px;
+}
+
+.adz-panel.is-busy .adz-panel__chips {
+	opacity: 0.5;
+}
+
+/* ------------------------------------------------- preferences and themes */
+
+@media (prefers-reduced-motion: reduce) {
+
+	.adz-rotation__track,
+	.adz-rotation__slide,
+	.adz-rotation__dot,
+	.adz-rotation__arrow {
+		transition: none !important;
+	}
+}
+
+@media (max-width: 600px) {
+
+	.adz-rotation__arrow--prev {
+		left: 2px;
+	}
+
+	.adz-rotation__arrow--next {
+		right: 2px;
+	}
+
+	.adz-rotation--carousel-3d.is-ready .adz-rotation__track {
+		height: 190px;
+	}
+}

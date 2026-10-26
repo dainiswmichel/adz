@@ -35,6 +35,10 @@ require_once __DIR__ . '/includes/adz-payouts.php';
 require_once __DIR__ . '/includes/adz-dashboard.php';
 require_once __DIR__ . '/includes/adz-cpt-ads.php';
 require_once __DIR__ . '/includes/adz-shortcode.php';
+require_once __DIR__ . '/includes/adz-preferences.php';
+require_once __DIR__ . '/includes/adz-preference-ui.php';
+require_once __DIR__ . '/includes/adz-rotation.php';
+require_once __DIR__ . '/includes/adz-rotation-admin.php';
 define( 'ADZ_WORLD', plugin_dir_path( __FILE__ ) );
 define( 'ADZ_WORLD_VERSION', '1.0.9' );
 
