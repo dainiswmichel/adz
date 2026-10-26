@@ -1,6 +1,8 @@
 <?php
 
-if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly.
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
 // If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
 	die;
@@ -9,34 +11,34 @@ if ( ! defined( 'WPINC' ) ) {
 /**
  * EOF_Loader Class
  *
- * Load the dependencies, define the locale, 
+ * Load the dependencies, define the locale,
  * and set the hooks for the admin area
- * 
+ *
  * @package EOF
  * @since 1.0.0
  */
-if( !class_exists('EOF_Loader') ) :
+if ( ! class_exists( 'EOF_Loader' ) ) :
 
 	class EOF_Loader {
 
 		/**
-	 	 * Run the loader to execute all of the hooks with WordPress.
-	 	 * Load the dependencies, define the locale, and set the hooks for the admin area
-	 	 * 
-	 	 * @since 1.0.0
-	 	 * @return void
-	 	 */
+		 * Run the loader to execute all of the hooks with WordPress.
+		 * Load the dependencies, define the locale, and set the hooks for the admin area
+		 *
+		 * @since 1.0.0
+		 * @return void
+		 */
 		public function run() {
 
-			add_action('admin_enqueue_scripts', array($this, 'enqueue_scripts') );
-			add_filter( 'plugin_row_meta', array($this, 'donate_link'), 10, 2 );
+			add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
+			add_filter( 'plugin_row_meta', array( $this, 'donate_link' ), 10, 2 );
 			$this->i18n();
 			$this->require_files();
 		}
 
 		/**
 		 * Loads the core framework files
-		 * 
+		 *
 		 * @since  1.0.0
 		 * @return void
 		 */
@@ -55,10 +57,10 @@ if( !class_exists('EOF_Loader') ) :
 		 * @return void
 		 */
 		function enqueue_scripts() {
-			wp_enqueue_script('jquery');
+			wp_enqueue_script( 'jquery' );
 			wp_enqueue_style( 'jquery-ui' );
-			wp_enqueue_style('eof-style', EOF_URL . 'css/eof-style.css' );
-			wp_enqueue_script('eof_custom_js', EOF_URL . 'js/eof-custom.js', array( 'jquery', 'wp-color-picker' ), '1.1.0', true );
+			wp_enqueue_style( 'eof-style', EOF_URL . 'css/eof-style.css' );
+			wp_enqueue_script( 'eof_custom_js', EOF_URL . 'js/eof-custom.js', array( 'jquery', 'wp-color-picker' ), '1.1.0', true );
 			wp_localize_script(
 				'eof_custom_js',
 				'adzworldEof',
@@ -83,12 +85,12 @@ if( !class_exists('EOF_Loader') ) :
 		 * Add donate link to plugin description in /wp-admin/plugins.php
 		 *
 		 * @since  1.0.0
-		 * @param  array $plugin_meta
+		 * @param  array  $plugin_meta
 		 * @param  string $plugin_file
 		 * @return array
 		 */
 		function donate_link( $plugin_meta, $plugin_file ) {
-			
+
 			if ( strpos( $plugin_file, 'eof.php' ) !== false ) {
 				$plugin_meta[] = sprintf(
 					'<a href="%s" target="_blank">%s</a>',
@@ -98,7 +100,6 @@ if( !class_exists('EOF_Loader') ) :
 			}
 			return $plugin_meta;
 		}
-
 	}
 
 	$loader = new EOF_Loader();

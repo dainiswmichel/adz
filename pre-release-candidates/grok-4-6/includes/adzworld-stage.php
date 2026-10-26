@@ -3,10 +3,12 @@
  * Rotation stage.
  *
  * The shortcode serves the ad networks the administrator has already
- * connected. Adz are absent until the shortcode adds them. every="10" is one
- * mix: nine network serves, then one adz serve. It does nothing when no adz
- * were added. Until a purchase note is saved, an added adz serve is the
- * introduction panel. The note stays on this site.
+ * connected. Adz are absent until the shortcode adds them. Once added, those
+ * adz are in the rotation. A purchase note ranks them and drops an adz the
+ * note rules out. It does not decide whether any adz appear. every="10" is
+ * one mix: nine network serves, then one adz serve. It does nothing when no
+ * adz were added. The introduction sits with the adz until a note is saved.
+ * The note stays on this site.
  *
  * display="slot" is one visible item. display="flat" and display="3d" add
  * forward and back arrows and a dotted menu.
@@ -569,7 +571,12 @@ function adzworld_stage_network_ids( $requested ) {
 }
 
 /**
- * Local adz for the stage, best note match first.
+ * Local adz for the stage.
+ *
+ * An empty note returns the configured adz in date order. A note ranks matches
+ * first and drops an adz the note rules out. A zero score stays, so a note that
+ * names nothing still leaves the configured adz in the rotation. Equal scores
+ * keep date order on PHP 7.4, where usort is not stable.
  *
  * @param mixed  $id_list Optional id list.
  * @param string $intent  Purchase note.
@@ -588,6 +595,7 @@ function adzworld_stage_ads( $id_list, $intent ) {
 
 	if ( $ids ) {
 		$args['post__in'] = $ids;
+		$args['orderby']  = 'post__in';
 	}
 
 	$posts = get_posts( $args );
@@ -600,8 +608,9 @@ function adzworld_stage_ads( $id_list, $intent ) {
 		return array_slice( $posts, 0, 5 );
 	}
 
-	$parts  = adzworld_intent_parts( $intent );
-	$scored = array();
+	$parts   = adzworld_intent_parts( $intent );
+	$scored  = array();
+	$ordinal = 0;
 
 	foreach ( $posts as $post ) {
 		if ( ! $post instanceof WP_Post ) {
@@ -611,29 +620,28 @@ function adzworld_stage_ads( $id_list, $intent ) {
 		$score = adzworld_score_ad_text( $post->post_title . ' ' . $post->post_content, $parts );
 
 		if ( $score < 0 ) {
+			++$ordinal;
 			continue;
 		}
 
 		$scored[] = array(
-			'post'  => $post,
-			'score' => $score,
+			'post'    => $post,
+			'score'   => $score,
+			'ordinal' => $ordinal,
 		);
+		++$ordinal;
 	}
 
 	usort(
 		$scored,
 		static function ( $left, $right ) {
 			if ( $left['score'] === $right['score'] ) {
-				return 0;
+				return $left['ordinal'] <=> $right['ordinal'];
 			}
 
 			return ( $left['score'] > $right['score'] ) ? -1 : 1;
 		}
 	);
-
-	if ( ! $scored ) {
-		return array_slice( $posts, 0, 5 );
-	}
 
 	$out = array();
 
@@ -758,14 +766,15 @@ function adzworld_stage_shortcode( $atts ) {
 		'adzworld_stage'
 	);
 
-	$display   = adzworld_stage_display( $atts['display'] );
-	$every     = adzworld_stage_every( $atts['every'] );
-	$browse    = ( 'slot' !== $display );
-	$adz_count = adzworld_stage_adz_count( $atts['adz'], $atts['ads'] );
-	$kinds     = array();
-	$payloads  = array();
-	$intent    = '';
-	$ads       = array();
+	$display    = adzworld_stage_display( $atts['display'] );
+	$every      = adzworld_stage_every( $atts['every'] );
+	$browse     = ( 'slot' !== $display );
+	$adz_count  = adzworld_stage_adz_count( $atts['adz'], $atts['ads'] );
+	$kinds      = array();
+	$payloads   = array();
+	$intent     = '';
+	$ads        = array();
+	$intro_html = '';
 
 	foreach ( adzworld_stage_network_ids( $atts['network'] ) as $network_id ) {
 		$kinds[]    = 'network';
@@ -774,23 +783,19 @@ function adzworld_stage_shortcode( $atts ) {
 
 	if ( $adz_count > 0 ) {
 		$intent = adzworld_current_intent();
+		$ads    = array_slice( adzworld_stage_ads( $atts['ads'], $intent ), 0, $adz_count );
 
-		if ( '' !== $intent ) {
-			$ads = array_slice( adzworld_stage_ads( $atts['ads'], $intent ), 0, $adz_count );
+		foreach ( $ads as $post ) {
+			$kinds[]    = 'adz';
+			$payloads[] = array( 'post' => $post );
 		}
 
 		if ( '' === $intent || ! $ads ) {
-			$kinds[]    = 'intro';
-			$payloads[] = array();
-		} else {
-			foreach ( $ads as $post ) {
-				$kinds[]    = 'adz';
-				$payloads[] = array( 'post' => $post );
-			}
+			$intro_html = adzworld_intro_html( $intent );
 		}
 	}
 
-	if ( ! $kinds ) {
+	if ( ! $kinds && '' === $intro_html ) {
 		if ( current_user_can( 'manage_options' ) ) {
 			return '<p class="adzworld-stage__empty">' . esc_html__( 'This stage has no network unit and no adz in the rotation.', 'adz-world' ) . '</p>';
 		}
@@ -817,15 +822,13 @@ function adzworld_stage_shortcode( $atts ) {
 			}
 
 			$slides[] = adzworld_stage_slide( 'network', $active, __( 'Advertisement', 'adz-world' ), $unit );
-		} elseif ( 'intro' === $kind ) {
-			$slides[] = adzworld_stage_slide( 'intro', $active, '', adzworld_intro_html( $intent ) );
 		} else {
 			$post     = $payloads[ $source_index ]['post'];
 			$slides[] = adzworld_stage_slide(
 				'adz',
 				$active,
 				__( 'adz', 'adz-world' ),
-				adzworld_stage_ad_html( $post ) . ( $active ? adzworld_intent_form( $intent, true ) : '' )
+				adzworld_stage_ad_html( $post ) . ( $active && '' === $intro_html ? adzworld_intent_form( $intent, true ) : '' )
 			);
 		}
 
@@ -835,6 +838,18 @@ function adzworld_stage_shortcode( $atts ) {
 	}
 
 	if ( ! $slides ) {
+		if ( '' !== $intro_html ) {
+			wp_enqueue_style(
+				'adzworld-stage',
+				plugin_dir_url( adzworld_plugin_file() ) . 'css/adzworld-stage.css',
+				array(),
+				'1.1.0'
+			);
+			adzworld_stage_flag( 'script' );
+
+			return $intro_html;
+		}
+
 		if ( current_user_can( 'manage_options' ) ) {
 			return '<p class="adzworld-stage__empty">' . esc_html__( 'This stage has no network unit and no adz in the rotation.', 'adz-world' ) . '</p>';
 		}
@@ -882,7 +897,7 @@ function adzworld_stage_shortcode( $atts ) {
 
 	$html .= '</section>';
 
-	return $html;
+	return $intro_html . $html;
 }
 add_shortcode( 'adzworld_stage', 'adzworld_stage_shortcode' );
 
