@@ -126,45 +126,71 @@ wall. The absence of the usual hostile furniture is itself part of the argument.
 
 ## VGM — visitors, guests, members
 
-Settled:
+**Revised 26 October 2026.** Dainis settled the definitions. They are no longer
+proposals.
 
-- **Visitors** — preferences live in a session. Persistence is not guaranteed
-  and this is by design: no account, no profile, nothing to lose.
-- **Guests** — logged in, preferences persist across sessions and devices, with
-  the start and stop dates the 2018 `visitor_preference` record already carried.
+| | Definition | Identity | Preferences | Attribution |
+|---|---|---|---|---|
+| **Visitor** | unknown audience member | none | session only, may not survive | none |
+| **Guest** | accessing the site with a profile | account | persist across sessions and devices | none by default |
+| **Member** | has made an adz-world purchase | account | persist | yes, by their own choice |
 
-**Members — undecided.** Four proposals, with what each costs.
+The definitions resolve three things that the earlier proposals left tangled.
 
-**(a) Earning.** Members accrue a share of commission from their own purchases,
-redeemable against a participating publisher's subscription. Strongest reason to
-sign up; the reader is paid for attention they chose to give.
-*Cost:* needs purchase attribution back to a person, which means a per-visitor
-sub-identifier reaching the merchant. That is a real privacy trade and it must
-be the member's explicit choice, not a condition of membership.
+**Membership is earned by transacting, not granted or sold.** A Guest becomes a
+Member at the moment a purchase settles. Nobody applies, nobody is approved, and
+adz-world decides nothing. This also removes the paid-tier question entirely:
+charging readers to escape advertising was never going to be coherent here, and
+now there is no slot where such a tier could sit.
 
-**(b) Portability.** A member's preferences are honoured at every participating
-site, set once. The clearest expression of the original idea.
-*Cost:* needs a shared preference store, which is the one piece that cannot be
-local. Architecturally the largest item on this list.
+**It fixes the privacy trade.** Earning requires a purchase to be attributable to
+a person, which means a per-visitor sub-identifier reaching the merchant. Under
+the settled definitions that identifier is only ever attached for someone who
+has chosen to earn. A Visitor is anonymous by construction. A Guest is anonymous
+to merchants unless they opt in. Only a Member — someone who has already decided
+they want the earnings — carries one. The trade is made once, knowingly, by the
+person who benefits from it.
 
-**(c) Standing requests.** A member posts what they are looking for — "a bicycle
-for a nine-year-old, by March" — and producers answer it.
-*Cost:* inverts the model from matching to a marketplace. Needs moderation.
-Possibly the most valuable thing here and certainly the most work.
+**It makes the ladder honest at every rung.**
 
-**(d) Transparency.** A member sees every adz they were shown, why, and what it
-earned the publisher. Nothing new is collected; it is a view onto what already
-exists.
-*Cost:* lowest of the four. Also the most defensible, since it proves the claim
-rather than asserting it.
+- Visitor: the adz get better. Nothing is asked, nothing is kept.
+- Guest: the preferences stop being lost. Still nothing reaches a merchant.
+- Member: purchases start paying for things. The identifier is the price, and
+  they set it knowingly.
 
-**No paid tier is proposed.** Charging readers to escape advertising is the
-model this is arguing against.
+Each step is the reader's own choice and each gives them something they did not
+have. No step is a dark pattern, because at no point is anything taken to reach
+the next one.
 
-Recommendation for discussion rather than decision: (d) is cheap, provable and
-consistent. (a) is the strongest incentive and carries the real trade-off. (b)
-is the original vision and the biggest build. (c) is the most interesting and
-the least defined.
+### What the plugin already does correctly under these definitions
+
+`adz_apply_attribution()` attaches **no visitor identifier at all** — only the
+publisher id, the destination and the post id. That is correct for Visitors and
+for Guests who have not opted into earning, which is every reader today.
+
+### What the plugin does not do
+
+Settled by Dainis in `725c178`: **the plugin does not record the purchase and
+does not grant a WordPress capability for it.** A purchase record belongs to
+adz-world.com. A login is not a purchase. The existing rotation field that can
+target a WooCommerce membership plan is the publisher's own plan and has nothing
+to do with this definition.
+
+So membership is a fact held by the service, not a role held by the plugin.
+Nothing in the candidate reads, writes or acts on member status.
+
+### What remains open
+
+Member *capabilities at adz-world.com* are not settled by the definition. What a Member can do
+with their earnings — token balance against a participating publisher's
+subscription, direct payout, or something else — is a separate decision, and it
+depends on the token-versus-currency question: redeemable only at the publisher
+who issued it is loyalty points and essentially unregulated; transferable
+between publishers or convertible to cash is stored value, with the licensing
+that follows.
+
+The Member sub-identifier is also not yet implemented. It cannot be until the
+settlement service exists, because there is nothing for it to attribute to.
 
 ## Contributing to the WordPress community
 
