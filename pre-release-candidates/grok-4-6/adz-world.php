@@ -28,6 +28,8 @@ require_once(__DIR__.'/includes/adz-shortcode.php');
 require_once __DIR__ . '/includes/adzworld-platform.php';
 require_once __DIR__ . '/includes/adzworld-audience.php';
 require_once __DIR__ . '/includes/adzworld-ledger.php';
+require_once __DIR__ . '/includes/adzworld-networks.php';
+require_once __DIR__ . '/includes/adzworld-stage.php';
 define( 'ADZ_WORLD', plugin_dir_path(__FILE__ ) ); 
 
 

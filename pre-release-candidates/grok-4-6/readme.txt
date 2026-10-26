@@ -93,6 +93,41 @@ https://docs.stripe.com/global-payouts/testing . PayPal Payouts sandbox
 endpoint documented by PayPal: https://api-m.sandbox.paypal.com/v1/payments/payouts .
 Neither provider is called by this plugin.
 
+= Optional publisher ad slot =
+
+The shortcode `[adzworld_stage]` can show a unit the publisher already
+runs, then show an adz on every 10th serve. `every` changes that count.
+`display="slot"` shows one item. `display="flat"` and `display="3d"` add
+arrows and a dotted menu. The network tag is not copied to fill the other
+nine places.
+
+A unit loads only after an administrator saves it on the Ad slot screen and
+checks that network's acceptance. Installation does not do this. The purchase
+note from the introduction panel stays on this site and is not added to the
+network request.
+
+* **Google AdSense.** Script host `pagead2.googlesyndication.com`. Sent by
+  that script: the publisher id, ad unit id, and the page view AdSense
+  collects. Terms: https://www.google.com/adsense/terms . Privacy:
+  https://policies.google.com/privacy .
+* **Google Ad Manager.** Script host `securepubads.g.doubleclick.net`. Sent
+  by that script: the ad unit path and the page view Google collects. Terms:
+  https://admanager.google.com/home/terms/ . Privacy:
+  https://policies.google.com/privacy .
+* **Taboola.** Script host `cdn.taboola.com`. Sent by that script: the
+  publisher id, placement, and the page view Taboola collects. The loader
+  runs when that slide is the visible item. Terms:
+  https://www.taboola.com/policies/publisher-terms-and-conditions . Privacy:
+  https://www.taboola.com/policies/privacy-policy .
+
+Media.net, Carbon, MGID, Infolinks, Amazon Publisher Services, Teads
+(formerly Outbrain), Mediavine, Raptive, Ezoic, Monumetric, Publift,
+PropellerAds, Adsterra, and Monetag are named on the Ad slot screen and are
+not given a tag. Whole-page contracts and pop or push formats are not placed
+in the rotator. This plugin does not take a commission on these units. The
+10/90 split above applies only to adz served through adz-world.com after the
+separate monetization acceptance.
+
 == Installation ==
 
 WordPress Installation Instructions:
