@@ -102,6 +102,7 @@ function adz_get_advertise_content() {
 		echo 'continue';
 		exit;
 	}
+	adzworld_pool_context( $adzworld_target_type, $adzworld_target_id, $adzworld_rotation_id );
 	if ( ! is_numeric( $_POST['ad_visibility_interval'] ) ) {
 		echo 'continue';
 		exit;
@@ -117,8 +118,13 @@ function adz_get_advertise_content() {
 		return;
 	}
 	global $adz_ad_network_base_url;
-	$next_adz_pool     = get_option( 'next_adz_pool' );
 	$rotation_adz_pool = adz_rotation_state( $adzworld_rotation_id );
+	if ( 'shortcode' === $adzworld_target_type ) {
+		$adzworld_pool_state = get_post_meta( $adzworld_target_id, 'adz_rotation_shortcode', true );
+	} else {
+		$adzworld_pool_state = $rotation_adz_pool;
+	}
+	$next_adz_pool = adzworld_rotation_pool( $adzworld_pool_state );
 	$publisher_user_id = $adz_publisher_options['adz_registered']['publisher_user_id'];
 	$ad_to_serve_val   = sanitize_text_field( $_POST['ad_to_serve'] );
 	if ( $next_adz_pool == 'publisher' || ! $next_adz_pool ) {
@@ -234,13 +240,13 @@ function adz_get_advertise_content() {
 							$ad_to_serve                  = array_shift( $un_serverd );
 							$roatation_stats['served'][]  = sanitize_text_field( $_POST['ad_to_serve'] );
 							$roatation_stats['un_served'] = $un_serverd;
-							update_post_meta( sanitize_text_field( $_POST['target'] ), 'adz_rotation_shortcode', $roatation_stats );
+							adzworld_update_shortcode_rotation_state( $adzworld_target_id, $roatation_stats );
 
 						} else {
 							array_shift( $publisher_rotations_stats['un_served'] );
 							$roatation_stats['served']    = array_merge( $publisher_rotations_stats['served'], array( sanitize_text_field( $_POST['ad_to_serve'] ) ) );
 							$roatation_stats['un_served'] = $publisher_rotations_stats['un_served'];
-							update_post_meta( sanitize_text_field( $_POST['target'] ), 'adz_rotation_shortcode', $roatation_stats );
+							adzworld_update_shortcode_rotation_state( $adzworld_target_id, $roatation_stats );
 						}
 					} else {
 						if ( empty( $rotation_adz_pool['served'] ) || ! $rotation_adz_pool ) {
@@ -257,18 +263,18 @@ function adz_get_advertise_content() {
 							adz_update_rotation_state( $adzworld_rotation_id, $roatation_stats, $adzworld_target_id );
 						}//End of if else.
 					}
-					update_option( 'next_adz_pool', 'network' );
+					adzworld_commit_pool( 'network' );
 
 				} elseif ( $next_adz_pool == 'network' ) {
 
 					if ( adz_world_logged_in() ) {
-						update_option( 'next_adz_pool', 'visitor' );
+						adzworld_commit_pool( 'visitor' );
 					} else {
-						update_option( 'next_adz_pool', 'publisher' );
+						adzworld_commit_pool( 'publisher' );
 					}
 				} elseif ( $next_adz_pool == 'visitor' ) {
 
-					update_option( 'next_adz_pool', 'publisher' );
+					adzworld_commit_pool( 'publisher' );
 
 				}
 				exit;
@@ -307,7 +313,7 @@ function adz_get_advertise_content() {
 								$ad_to_serve                  = array_shift( $un_serverd );
 								$roatation_stats['served'][]  = sanitize_text_field( $_POST['ad_to_serve'] );
 								$roatation_stats['un_served'] = $un_serverd;
-								update_post_meta( sanitize_text_field( $_POST['target'] ), 'adz_rotation_shortcode', $roatation_stats );
+								adzworld_update_shortcode_rotation_state( $adzworld_target_id, $roatation_stats );
 
 							} else {
 								array_shift( $publisher_rotations_stats['un_served'] );
@@ -316,7 +322,7 @@ function adz_get_advertise_content() {
 									$publisher_rotations_stats['un_served'] = array();
 								}
 								$roatation_stats['un_served'] = $publisher_rotations_stats['un_served'];
-								update_post_meta( sanitize_text_field( $_POST['target'] ), 'adz_rotation_shortcode', $roatation_stats );
+								adzworld_update_shortcode_rotation_state( $adzworld_target_id, $roatation_stats );
 
 							}
 						} else {
@@ -340,20 +346,20 @@ function adz_get_advertise_content() {
 							}//End of if else.
 						}
 
-						update_option( 'next_adz_pool', 'network' );
+						adzworld_commit_pool( 'network' );
 
 					} elseif ( $next_adz_pool == 'network' ) {
 
 						if ( adz_world_logged_in() ) {
 
-							update_option( 'next_adz_pool', 'visitor' );
+							adzworld_commit_pool( 'visitor' );
 						} else {
 
-							update_option( 'next_adz_pool', 'publisher' );
+							adzworld_commit_pool( 'publisher' );
 						}
 					} elseif ( $next_adz_pool == 'visitor' ) {
 
-						update_option( 'next_adz_pool', 'publisher' );
+						adzworld_commit_pool( 'publisher' );
 					}
 					exit;
 				} else {
@@ -596,7 +602,8 @@ function adz_show_advertise( $roatations, $ad_to_serve, $repeat_times ) {
 
 	global $wpdb;
 	$rotation_adz_pool = adz_rotation_state( $roatations['rotation_id'] );
-	$next_adz_pool     = get_option( 'next_adz_pool' );
+	$next_adz_pool     = adzworld_rotation_pool( $rotation_adz_pool );
+	adzworld_pool_context( 'page', isset( $roatations['rotation_page'] ) ? $roatations['rotation_page'] : 0, isset( $roatations['rotation_id'] ) ? $roatations['rotation_id'] : '' );
 	$adz_ad_options    = get_option( 'adz_ad_options' );
 
 	$adz_publisher_options = get_option( 'adz_publisher_options' );
@@ -668,18 +675,18 @@ function adz_show_advertise( $roatations, $ad_to_serve, $repeat_times ) {
 						adz_update_rotation_state( $roatations['rotation_id'], $roatation_stats, isset( $roatations['rotation_page'] ) ? $roatations['rotation_page'] : 0 );
 
 					}//End of if else.
-					update_option( 'next_adz_pool', 'network' );
+					adzworld_commit_pool( 'network' );
 
 				} elseif ( $next_adz_pool == 'network' ) {
 
 					if ( adz_world_logged_in() ) {
-						update_option( 'next_adz_pool', 'visitor' );
+						adzworld_commit_pool( 'visitor' );
 					} else {
-						update_option( 'next_adz_pool', 'publisher' );
+						adzworld_commit_pool( 'publisher' );
 					}
 				} elseif ( $next_adz_pool == 'visitor' ) {
 
-					update_option( 'next_adz_pool', 'publisher' );
+					adzworld_commit_pool( 'publisher' );
 
 				}
 				exit;
@@ -717,17 +724,17 @@ function adz_show_advertise( $roatations, $ad_to_serve, $repeat_times ) {
 
 						}//End of if else.
 
-						update_option( 'next_adz_pool', 'network' );
+						adzworld_commit_pool( 'network' );
 
 					} elseif ( $next_adz_pool == 'network' ) {
 
 						if ( adz_world_logged_in() ) {
-							update_option( 'next_adz_pool', 'visitor' );
+							adzworld_commit_pool( 'visitor' );
 						} else {
-							update_option( 'next_adz_pool', 'publisher' );
+							adzworld_commit_pool( 'publisher' );
 						}
 					} elseif ( $next_adz_pool == 'visitor' ) {
-						update_option( 'next_adz_pool', 'publisher' );
+						adzworld_commit_pool( 'publisher' );
 
 					}
 					exit;

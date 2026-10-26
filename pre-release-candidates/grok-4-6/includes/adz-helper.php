@@ -40,16 +40,16 @@ function adz_get_advertise( $ad_visibility, $ad_visibility_interval, $repeat_tim
 					type : 'post',
 					data: {
 						action :'adz_get_advertise_content',
-						target_type : '<?php echo $target_type; ?>',
-						target : '<?php echo $target; ?>',
-						ad_visibility_interval : '<?php echo $ad_visibility_interval; ?>',
-						ad_to_serve : '<?php echo $ad_to_serve; ?>',
-						rotations_id : '<?php echo $rotations_id; ?>',
-						sequence : '<?php echo $sequence; ?>',
-						display_type : '<?php echo $display_type; ?>',
-						adz_template : '<?php echo $adz_template; ?>',
-						repeat_times : '<?php echo $repeat_times; ?>' ,
-						adz_nonce: '<?php echo wp_create_nonce( 'adzdotworld' ); ?>'
+						target_type : '<?php echo esc_js( is_scalar( $target_type ) ? (string) $target_type : '' ); ?>',
+						target : '<?php echo esc_js( (string) absint( $target ) ); ?>',
+						ad_visibility_interval : '<?php echo esc_js( (string) absint( $ad_visibility_interval ) ); ?>',
+						ad_to_serve : '<?php echo esc_js( is_scalar( $ad_to_serve ) ? (string) $ad_to_serve : '' ); ?>',
+						rotations_id : '<?php echo esc_js( is_scalar( $rotations_id ) ? (string) $rotations_id : '' ); ?>',
+						sequence : '<?php echo esc_js( is_scalar( $sequence ) ? (string) $sequence : '' ); ?>',
+						display_type : '<?php echo esc_js( is_scalar( $display_type ) ? (string) $display_type : '' ); ?>',
+						adz_template : '<?php echo esc_js( is_scalar( $adz_template ) ? (string) $adz_template : '' ); ?>',
+						repeat_times : '<?php echo esc_js( is_scalar( $repeat_times ) ? (string) $repeat_times : '' ); ?>' ,
+						adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
 					},
 					success:function(data) {
 						
@@ -62,7 +62,7 @@ function adz_get_advertise( $ad_visibility, $ad_visibility_interval, $repeat_tim
 							<?php } ?>
 							<?php if ( is_category() ) { ?>
 								jQuery(document).find('.adz-world-category-wapper').html(window.atob(data));
-								var i = <?php echo $ad_visibility; ?>;
+								var i = <?php echo (int) absint( $ad_visibility ); ?>;
 								var adz_interval = setInterval(function () {
 									if (i >= 0) {
 										jQuery('.adz_timer').text(" "+i+" ");
@@ -77,7 +77,7 @@ function adz_get_advertise( $ad_visibility, $ad_visibility_interval, $repeat_tim
 								}, 1000);
 							<?php } else { ?>
 								jQuery('.adz-world-container').html(window.atob(data));
-								var i = <?php echo $ad_visibility; ?>;
+								var i = <?php echo (int) absint( $ad_visibility ); ?>;
 								var adz_interval = setInterval(function () {
 									if (i >= 0) {
 										jQuery('.adz_timer').text(" "+i+" ");
@@ -109,12 +109,12 @@ function adz_get_advertise( $ad_visibility, $ad_visibility_interval, $repeat_tim
 					type : 'post',
 					data: {
 						action :'adz_get_advertise_content',
-						target_type : '<?php echo $target_type; ?>',
-						target : '<?php echo $target; ?>',
-						ad_visibility_interval : '<?php echo $ad_visibility_interval; ?>',
-						repeat_times : '<?php echo $repeat_times; ?>',
+						target_type : '<?php echo esc_js( is_scalar( $target_type ) ? (string) $target_type : '' ); ?>',
+						target : '<?php echo esc_js( (string) absint( $target ) ); ?>',
+						ad_visibility_interval : '<?php echo esc_js( (string) absint( $ad_visibility_interval ) ); ?>',
+						repeat_times : '<?php echo esc_js( is_scalar( $repeat_times ) ? (string) $repeat_times : '' ); ?>',
 						close_adz : 'true',
-						adz_nonce: '<?php echo wp_create_nonce( 'adzdotworld' ); ?>'
+						adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
 
 
 					},
@@ -166,17 +166,17 @@ function adz_get_advertise_popup( $ad_visibility, $ad_visibility_interval, $repe
 				type : 'post',
 				data: {
 					action :'adz_get_advertise_content',
-					target_type : '<?php echo $target_type; ?>',
-					target : '<?php echo $target; ?>',
-					ad_visibility_interval : '<?php echo $ad_visibility_interval; ?>',
-					ad_to_serve : '<?php echo $ad_to_serve; ?>',
-					rotations_id : '<?php echo $rotations_id; ?>',
-					sequence : '<?php echo $sequence; ?>',
-					display_type : '<?php echo $display_type; ?>',
-					adz_template : '<?php echo $adz_template; ?>',
-					repeat_times : '<?php echo $repeat_times; ?>',		          
+					target_type : '<?php echo esc_js( is_scalar( $target_type ) ? (string) $target_type : '' ); ?>',
+					target : '<?php echo esc_js( (string) absint( $target ) ); ?>',
+					ad_visibility_interval : '<?php echo esc_js( (string) absint( $ad_visibility_interval ) ); ?>',
+					ad_to_serve : '<?php echo esc_js( is_scalar( $ad_to_serve ) ? (string) $ad_to_serve : '' ); ?>',
+					rotations_id : '<?php echo esc_js( is_scalar( $rotations_id ) ? (string) $rotations_id : '' ); ?>',
+					sequence : '<?php echo esc_js( is_scalar( $sequence ) ? (string) $sequence : '' ); ?>',
+					display_type : '<?php echo esc_js( is_scalar( $display_type ) ? (string) $display_type : '' ); ?>',
+					adz_template : '<?php echo esc_js( is_scalar( $adz_template ) ? (string) $adz_template : '' ); ?>',
+					repeat_times : '<?php echo esc_js( is_scalar( $repeat_times ) ? (string) $repeat_times : '' ); ?>',		          
 					show_popup : 'true',
-					adz_nonce: '<?php echo wp_create_nonce( 'adzdotworld' ); ?>'
+					adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
 
 				},
 				success:function(data) {
@@ -187,7 +187,7 @@ function adz_get_advertise_popup( $ad_visibility, $ad_visibility_interval, $repe
 						jQuery('.adz_popup .content').html(window.atob(data));
 						
 
-						var i = <?php echo $ad_visibility; ?>;
+						var i = <?php echo (int) absint( $ad_visibility ); ?>;
 						var adz_interval = setInterval(function () {
 							if (i >= 0) {
 								jQuery('.adz_timer').text(" "+i+" ");
@@ -215,13 +215,13 @@ function adz_get_advertise_popup( $ad_visibility, $ad_visibility_interval, $repe
 				type : 'post',
 				data: {
 					action :'adz_get_advertise_content',
-					target_type : '<?php echo $target_type; ?>',
-					target : '<?php echo $target; ?>',
-					ad_visibility_interval : '<?php echo $ad_visibility_interval; ?>',
-					repeat_times : '<?php echo $repeat_times; ?>',
+					target_type : '<?php echo esc_js( is_scalar( $target_type ) ? (string) $target_type : '' ); ?>',
+					target : '<?php echo esc_js( (string) absint( $target ) ); ?>',
+					ad_visibility_interval : '<?php echo esc_js( (string) absint( $ad_visibility_interval ) ); ?>',
+					repeat_times : '<?php echo esc_js( is_scalar( $repeat_times ) ? (string) $repeat_times : '' ); ?>',
 					close_adz : 'true',
 					show_popup : 'true',
-					adz_nonce: '<?php echo wp_create_nonce( 'adzdotworld' ); ?>' 
+					adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>' 
 				},
 				success:function(data) {
 					jQuery('#show_overlay').css('visibility','hidden');
@@ -447,10 +447,122 @@ function adzworld_shortcode_rotation_target( $target_id ) {
 }
 
 /**
- * Keep rotation state to the two lists the rotator writes.
+ * One of the three serve orders. Anything else is the publisher order.
+ *
+ * @param mixed $pool Candidate order.
+ * @return string
+ */
+function adzworld_pool_name( $pool ) {
+	$pool = is_string( $pool ) ? $pool : '';
+
+	if ( in_array( $pool, array( 'publisher', 'network', 'visitor' ), true ) ) {
+		return $pool;
+	}
+
+	return 'publisher';
+}
+
+/**
+ * Serve order stored with a rotation. A missing value starts at the publisher order.
+ *
+ * @param mixed $state Rotation state.
+ * @return string
+ */
+function adzworld_rotation_pool( $state ) {
+	if ( ! is_array( $state ) || ! isset( $state['pool'] ) ) {
+		return 'publisher';
+	}
+
+	return adzworld_pool_name( $state['pool'] );
+}
+
+/**
+ * Remember which rotation a serve is writing, for this request only.
+ *
+ * @param string|null $target_type Target type, or null to read the remembered values.
+ * @param mixed       $target_id   Target id.
+ * @param mixed       $rotation_id Rotation id.
+ * @return array{target_type:string,target_id:int,rotation_id:string}
+ */
+function adzworld_pool_context( $target_type = null, $target_id = null, $rotation_id = null ) {
+	static $context = array(
+		'target_type' => '',
+		'target_id'   => 0,
+		'rotation_id' => '',
+	);
+
+	if ( null !== $target_type ) {
+		$context = array(
+			'target_type' => is_string( $target_type ) ? $target_type : '',
+			'target_id'   => absint( $target_id ),
+			'rotation_id' => is_scalar( $rotation_id ) ? (string) $rotation_id : '',
+		);
+	}
+
+	return $context;
+}
+
+/**
+ * Store the next serve order on the shortcode post or on the rotation.
+ *
+ * A shortcode serve does not change another post. A page serve does not change
+ * another rotation. Nothing writes the old site-wide next_adz_pool option.
+ *
+ * @param string $pool Next order.
+ * @return bool
+ */
+function adzworld_commit_pool( $pool ) {
+	$context = adzworld_pool_context();
+	$pool    = adzworld_pool_name( $pool );
+
+	if ( 'shortcode' === $context['target_type'] ) {
+		$state = get_post_meta( $context['target_id'], 'adz_rotation_shortcode', true );
+
+		if ( ! is_array( $state ) ) {
+			$state = array();
+		}
+
+		$state['pool'] = $pool;
+
+		return adzworld_update_shortcode_rotation_state( $context['target_id'], $state );
+	}
+
+	$state = adz_rotation_state( $context['rotation_id'] );
+
+	if ( ! is_array( $state ) ) {
+		$state = array();
+	}
+
+	$state['pool'] = $pool;
+
+	return adz_update_rotation_state( $context['rotation_id'], $state, $context['target_id'] );
+}
+
+/**
+ * Store shortcode rotation progress only for a published post that contains the shortcode.
+ *
+ * @param mixed $target_id Post id.
+ * @param mixed $state     Served lists and serve order.
+ * @return bool
+ */
+function adzworld_update_shortcode_rotation_state( $target_id, $state ) {
+	$target_id = adzworld_shortcode_rotation_target( $target_id );
+	$state     = adzworld_sanitize_rotation_state( $state );
+
+	if ( ! $target_id || null === $state ) {
+		return false;
+	}
+
+	update_post_meta( $target_id, 'adz_rotation_shortcode', $state );
+
+	return true;
+}
+
+/**
+ * Keep rotation state to the served lists and the serve order.
  *
  * @param mixed $state Posted or built state.
- * @return array<string,string[]>|null
+ * @return array<string,mixed>|null
  */
 function adzworld_sanitize_rotation_state( $state ) {
 	if ( ! is_array( $state ) ) {
@@ -484,6 +596,7 @@ function adzworld_sanitize_rotation_state( $state ) {
 	return array(
 		'served'    => $clean_list( isset( $state['served'] ) ? $state['served'] : array() ),
 		'un_served' => $clean_list( isset( $state['un_served'] ) ? $state['un_served'] : array() ),
+		'pool'      => adzworld_pool_name( isset( $state['pool'] ) ? $state['pool'] : 'publisher' ),
 	);
 }
 
@@ -594,8 +707,9 @@ function adz_find_adz_view_by_ip( $visitor_ip ) {
 /**
  * Store a rotation's state, but only under a genuine rotation id.
  *
- * @param mixed $rotation_id Candidate rotation id from the request.
- * @param mixed $state       Rotation state to store.
+ * @param mixed    $rotation_id Candidate rotation id from the request.
+ * @param mixed    $state       Rotation state to store.
+ * @param int|null $target_id   Post or page the rotation must cover. Null skips that check.
  * @return bool True when written, false when the id was refused.
  */
 function adz_update_rotation_state( $rotation_id, $state, $target_id = null ) {
