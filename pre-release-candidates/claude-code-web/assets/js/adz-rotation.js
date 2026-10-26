@@ -270,7 +270,11 @@
 			try {
 				new Rotation( root );
 			} catch ( error ) {
+				// Presentation failed, so hand the page back to the CSS
+				// fallback: every slide visible and stacked. The reason is left
+				// on the element so a publisher can see why without a console.
 				root.classList.remove( 'is-ready' );
+				root.setAttribute( 'data-adz-error', error && error.message ? error.message : 'unknown' );
 			}
 		} );
 
