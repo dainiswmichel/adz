@@ -41,6 +41,23 @@ try {
 		adzworld_test_assert( ! is_wp_error( $response ) && 400 === wp_remote_retrieve_response_code( $response ), 'Anonymous AJAX action is unregistered: ' . $adzworld_test_action );
 	}
 	adzworld_test_assert( ! adz_network_enabled(), 'Local serving test has no external service enabled' );
+	$response = wp_remote_post(
+		admin_url( 'admin-ajax.php' ),
+		array(
+			'body' => array(
+				'action'                 => 'adz_get_advertise_content',
+				'adz_nonce'              => wp_create_nonce( 'adzdotworld' ),
+				'ad_visibility_interval' => 60,
+				'ad_to_serve'            => $local_ad,
+				'target_type'            => 'page',
+				'target'                 => $local_ad,
+				'rotations_id'           => 'adz_rotation_99999999999999999999',
+			),
+		)
+	);
+	adzworld_test_assert( ! is_wp_error( $response ) && 400 === wp_remote_retrieve_response_code( $response ), 'Public ad request rejects a syntactically valid but unconfigured rotation before rendering' );
+	$data = json_decode( wp_remote_retrieve_body( $response ), true );
+	adzworld_test_assert( is_array( $data ) && false === $data['success'], 'Unconfigured rotation returns an explicit failure, not a successful ad response' );
 	adzworld_test_assert( in_array( (string) $local_ad, explode( ',', adz_get_publisher_adz() ), true ), 'Local ad sequence uses the local post ID without network metadata' );
 	wp_update_post(
 		array(

@@ -231,6 +231,16 @@
 
 <section id="issue10">
   <h2>Issue 10. Prevent public rotation requests from choosing arbitrary options</h2><p class="status">OPEN</p>
+  <p><strong>Codex progress, 26 October 2026:</strong> candidate
+  <code>pre-release-candidates/codex-gpt5/</code>, based on <code>214bb44</code>.
+  The change in the commit containing this entry requires saved rotation membership before public option access and state-helper writes.
+  Previously a matching name prefix alone was sufficient. Real local HTTP checks reject an unconfigured prefixed ID with HTTP 400 and an explicit JSON failure.
+  Disposable-option tests confirm rejected writes preserve the stored value while configured rotations still accept updates.
+  Array identifiers and malformed saved settings are rejected. Existing HTTP ad rendering and admin-authorization tests still pass.
+  New test: <code>tests/configured-rotations.php</code>; executed through <code>wp eval-file</code> on WordPress 7.1.3 / PHP 8.4.7.
+  The new test passes WPCS; legacy touched files still have standards findings. Prior baseline failure was inspected in source, not executed.
+  <strong>Not complete:</strong> configured-rotation target ownership, client-supplied sequence/state bounds and all remaining Issue 10 acceptance checks.
+  No integrated release changes or closure claim.</p>
   <blockquote>"This isn't just about sanitizing input ... arbitrary values never reach certain places that can trigger an execution."</blockquote>
   <p><strong>Surfaces:</strong> all reads and writes reached through <code>rotations_id</code> in the public ad endpoint,
   rotation helpers, generated identifiers and legitimate shortcode/rotation state callers.</p>

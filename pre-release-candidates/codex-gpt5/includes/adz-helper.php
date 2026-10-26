@@ -361,6 +361,32 @@ function adz_validate_rotation_id( $rotation_id ) {
 }
 
 /**
+ * Resolve a rotation option only when it belongs to saved plugin settings.
+ *
+ * @param mixed $rotation_id Requested rotation identifier.
+ * @return string Configured identifier, or an empty string when unavailable.
+ */
+function adzworld_configured_rotation_id( $rotation_id ) {
+	$rotation_id = adz_validate_rotation_id( $rotation_id );
+	if ( '' === $rotation_id ) {
+		return '';
+	}
+
+	$options = get_option( 'adz_ad_options' );
+	if ( ! is_array( $options ) || ! isset( $options['ad_settings'] ) || ! is_array( $options['ad_settings'] ) ) {
+		return '';
+	}
+
+	foreach ( $options['ad_settings'] as $rotation ) {
+		if ( is_array( $rotation ) && isset( $rotation['rotation_id'] ) && $rotation_id === $rotation['rotation_id'] ) {
+			return $rotation_id;
+		}
+	}
+
+	return '';
+}
+
+/**
  * Store a rotation's state, but only under a genuine rotation id.
  *
  * @param mixed $rotation_id Candidate rotation id from the request.
@@ -368,7 +394,7 @@ function adz_validate_rotation_id( $rotation_id ) {
  * @return bool True when written, false when the id was refused.
  */
 function adz_update_rotation_state( $rotation_id, $state ) {
-	$rotation_id = adz_validate_rotation_id( $rotation_id );
+	$rotation_id = adzworld_configured_rotation_id( $rotation_id );
 
 	if ( '' === $rotation_id ) {
 		return false;

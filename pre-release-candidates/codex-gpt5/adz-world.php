@@ -105,8 +105,11 @@ function adz_get_advertise_content() {
 		return;
 	}
 	global $adz_ad_network_base_url;
-	$next_adz_pool     = get_option( 'next_adz_pool' );
-	$rotation_id       = isset( $_POST['rotations_id'] ) ? adz_validate_rotation_id( wp_unslash( $_POST['rotations_id'] ) ) : '';
+	$next_adz_pool = get_option( 'next_adz_pool' );
+	$rotation_id  = isset( $_POST['rotations_id'] ) && is_string( $_POST['rotations_id'] ) ? adzworld_configured_rotation_id( sanitize_text_field( wp_unslash( $_POST['rotations_id'] ) ) ) : '';
+	if ( ! isset( $_POST['target_type'] ) || ! is_string( $_POST['target_type'] ) || ( 'shortcode' !== $_POST['target_type'] && '' === $rotation_id ) ) {
+		wp_send_json_error( array( 'message' => __( 'The requested ad rotation is not configured.', 'adz-world' ) ), 400 );
+	}
 	$rotation_adz_pool = $rotation_id ? get_option( $rotation_id ) : array();
 	$publisher_user_id = isset( $adz_publisher_options['adz_registered']['publisher_user_id'] ) ? absint( $adz_publisher_options['adz_registered']['publisher_user_id'] ) : 0;
 	$ad_to_serve_val   = sanitize_text_field( $_POST['ad_to_serve'] );
