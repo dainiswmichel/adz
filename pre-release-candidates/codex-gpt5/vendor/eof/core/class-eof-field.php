@@ -1,5 +1,11 @@
 <?php
-// Exit if accessed directly
+/**
+ * Legacy plugin and settings-framework support.
+ *
+ * @package adz-world
+ */
+
+// Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -13,21 +19,41 @@ if ( ! class_exists( 'EOF_field' ) ) :
 	 * @package EOF
 	 * @since 1.0.0
 	 */
-	class EOF_field {
+	class EOF_Field {
 
-		/** @var EOF Parent settings framework. */
+		/**
+		 * Parent settings framework.
+		 *
+		 * @var EOF
+		 */
 		public $parent;
 
-		/** @var string Form option name. */
+		/**
+		 * Form option name.
+		 *
+		 * @var string
+		 */
 		public $option_name = '';
 
-		/** @var string Form option identifier. */
+		/**
+		 * Form option identifier.
+		 *
+		 * @var string
+		 */
 		public $option_id = '';
 
-		/** @var mixed Current field value. */
+		/**
+		 * Current field value.
+		 *
+		 * @var mixed
+		 */
 		public $value;
 
-		/** @var array Field configuration. */
+		/**
+		 * Field configuration.
+		 *
+		 * @var array
+		 */
 		public $field = array();
 
 		/**
@@ -36,7 +62,7 @@ if ( ! class_exists( 'EOF_field' ) ) :
 		 * This function will setup the field type data
 		 *
 		 * @since  1.0.0
-		 * @param array $field
+		 * @param array $field Field configuration.
 		 * @return void
 		 */
 		public function __construct( $field = array() ) {
@@ -57,7 +83,7 @@ if ( ! class_exists( 'EOF_field' ) ) :
 		 * Default field value sanitize
 		 *
 		 * @since  1.0.0
-		 * @param  string $value - value to filter
+		 * @param  string $value - value to filter.
 		 * @return string        - filtered value
 		 */
 		public function sanitize( $value ) {
@@ -69,7 +95,7 @@ if ( ! class_exists( 'EOF_field' ) ) :
 		 * Beautify ID, replace '[',']' with '_'
 		 *
 		 * @since  1.0.0
-		 * @param  string $id - value to filter
+		 * @param  string $id - value to filter.
 		 * @return string     - filtered id
 		 */
 		public function beautifyid( $id ) {

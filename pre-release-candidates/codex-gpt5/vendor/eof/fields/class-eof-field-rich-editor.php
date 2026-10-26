@@ -9,14 +9,18 @@
  * @package     EOF
  * @subpackages Fields
  */
-// Exit if accessed directly
+
+// Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 if ( ! class_exists( 'EOF_field_rich_editor' ) ) :
 
-	class EOF_field_rich_editor extends EOF_field {
+	/**
+	 * Configured eof field rich editor component.
+	 */
+	class EOF_Field_Rich_Editor extends EOF_field {
 
 		/**
 		 * __construct
@@ -25,10 +29,13 @@ if ( ! class_exists( 'EOF_field_rich_editor' ) ) :
 		 *
 		 * @since 1.0.0
 		 * @return void
+		 * @param array $field Field configuration.
+		 * @param mixed $value Current field value.
+		 * @param EOF   $framework Parent settings framework.
 		 */
-		public function __construct( $field, $value, $parent ) {
-			// vars
-			$this->parent      = $parent;
+		public function __construct( $field, $value, $framework ) {
+			// vars.
+			$this->parent      = $framework;
 			$this->option_name = $field['option_name'];
 			$this->option_id   = parent::beautifyid( $field['option_name'] );
 
@@ -47,7 +54,7 @@ if ( ! class_exists( 'EOF_field_rich_editor' ) ) :
 				)
 			);
 
-			// If value does not set, use the default
+			// If value does not set, use the default.
 			if ( is_null( $this->value ) ) {
 				$this->value = $this->field['default'];
 			}
@@ -59,8 +66,6 @@ if ( ! class_exists( 'EOF_field_rich_editor' ) ) :
 		 * Render field
 		 *
 		 * Create the HTML interface for your field
-		 *
-		 * @param $field - an array holding all the field's data
 		 *
 		 * @since 1.0
 		 * @return void
@@ -94,15 +99,20 @@ if ( ! class_exists( 'EOF_field_rich_editor' ) ) :
 			} else {
 
 				?>
-		<textarea class="<?php echo esc_attr( $class ); ?>" name="<?php echo esc_attr( $this->option_name ); ?>" id="<?php echo esc_attr( $this->option_id ); ?>" cols="<?php echo ( is_int( $this->field['cols'] ) ) ? $this->field['cols'] : 80; ?>" rows="<?php echo ( is_int( $this->field['rows'] ) ) ? $this->field['rows'] : 20; ?>"><?php echo esc_textarea( stripslashes( $this->value ) ); ?></textarea>
+		<textarea class="<?php echo esc_attr( $class ); ?>" name="<?php echo esc_attr( $this->option_name ); ?>" id="<?php echo esc_attr( $this->option_id ); ?>" cols="<?php echo absint( ( is_int( $this->field['cols'] ) ) ? $this->field['cols'] : 80 ); ?>" rows="<?php echo absint( ( is_int( $this->field['rows'] ) ) ? $this->field['rows'] : 20 ); ?>"><?php echo esc_textarea( stripslashes( $this->value ) ); ?></textarea>
 				<?php
 			}
 			?>
 		<br/>
-		<p class="description"><?php echo $this->field['desc']; ?></p>
+		<p class="description"><?php echo wp_kses_post( $this->field['desc'] ); ?></p>
 			<?php
 		}
 
+		/**
+		 * Sanitize the configured field value.
+		 *
+		 * @param mixed $input Submitted field value.
+		 */
 		public function sanitize( $input ) {
 
 			$sanitize_input = $input;

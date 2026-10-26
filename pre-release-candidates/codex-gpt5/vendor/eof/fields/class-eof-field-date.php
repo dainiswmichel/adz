@@ -1,22 +1,26 @@
 <?php
 /**
- * EOF Text Field Class
+ * EOF Date Picker Field Class
  *
  * All the logic for this field type
  *
- * @class       EOF_field_text
+ * @class       EOF_field_date
  * @extends     EOF_field
  * @package     EOF
  * @subpackages Fields
  */
-// Exit if accessed directly
+
+// Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! class_exists( 'EOF_field_text' ) ) :
+if ( ! class_exists( 'EOF_field_date' ) ) :
 
-	class EOF_field_text extends EOF_field {
+	/**
+	 * Configured eof field date component.
+	 */
+	class EOF_Field_Date extends EOF_field {
 
 		/**
 		 * __construct
@@ -25,10 +29,13 @@ if ( ! class_exists( 'EOF_field_text' ) ) :
 		 *
 		 * @since 1.0.0
 		 * @return void
+		 * @param array $field Field configuration.
+		 * @param mixed $value Current field value.
+		 * @param EOF   $framework Parent settings framework.
 		 */
-		public function __construct( $field, $value, $parent ) {
-			// vars
-			$this->parent      = $parent;
+		public function __construct( $field, $value, $framework ) {
+			// vars.
+			$this->parent      = $framework;
 			$this->option_name = $field['option_name'];
 			$this->option_id   = parent::beautifyid( $field['option_name'] );
 
@@ -45,7 +52,7 @@ if ( ! class_exists( 'EOF_field_text' ) ) :
 				)
 			);
 
-			// If value does not set, use the default
+			// If value does not set, use the default.
 			if ( is_null( $this->value ) ) {
 				$this->value = $this->field['default'];
 			}
@@ -58,14 +65,13 @@ if ( ! class_exists( 'EOF_field_text' ) ) :
 		 *
 		 * Create the HTML interface for your field
 		 *
-		 * @param $field - an array holding all the field's data
-		 *
 		 * @since 1.0
 		 * @return void
 		 */
 		public function render_field() {
 
-			$class = '';
+			$class = 'eof-datepicker';
+
 			switch ( $this->field['sizes'] ) {
 				case 'small':
 					$class .= ' small-text';
@@ -77,21 +83,21 @@ if ( ! class_exists( 'EOF_field_text' ) ) :
 					$class .= ' regular-text';
 					break;
 			}
-			?>	
-		<input type="text" class="<?php echo esc_attr( $class ); ?>" name="<?php echo esc_attr( $this->option_name ); ?>" id="<?php echo esc_attr( $this->option_id ); ?>" value="<?php echo esc_attr( $this->value ); ?>" >
-		<span class="description"><?php echo $this->field['desc']; ?></span>
+			?>
+		<input type="date" class="<?php echo esc_attr( $class ); ?>" name="<?php echo esc_attr( $this->option_name ); ?>" id="<?php echo esc_attr( $this->option_id ); ?>" value="<?php echo esc_attr( $this->value ); ?>">
+		<span class="description"><?php echo wp_kses_post( $this->field['desc'] ); ?></span>
 			<?php
 		}
 
 		/**
-		 * Default field sanitize
+		 * Sanitize the configured field value.
 		 *
-		 * @param  $value           value to filter
-		 * @return $sanitize_value  filtered value
+		 * @param mixed $value Current field value.
 		 */
 		public function sanitize( $value ) {
 
-			$sanitize_value = trim( $value );
+			$sanitize_value = strip_tags( $value );
+
 			return $sanitize_value;
 		}
 	}

@@ -9,14 +9,18 @@
  * @package     EOF
  * @subpackages Fields
  */
-// Exit if accessed directly
+
+// Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 if ( ! class_exists( 'EOF_field_media' ) ) :
 
-	class EOF_field_media extends EOF_field {
+	/**
+	 * Configured eof field media component.
+	 */
+	class EOF_Field_Media extends EOF_field {
 
 		/**
 		 * __construct
@@ -25,10 +29,13 @@ if ( ! class_exists( 'EOF_field_media' ) ) :
 		 *
 		 * @since 1.0.0
 		 * @return void
+		 * @param array $field Field configuration.
+		 * @param mixed $value Current field value.
+		 * @param EOF   $framework Parent settings framework.
 		 */
-		public function __construct( $field, $value, $parent ) {
-			// vars
-			$this->parent      = $parent;
+		public function __construct( $field, $value, $framework ) {
+			// vars.
+			$this->parent      = $framework;
 			$this->option_name = $field['option_name'];
 			$this->option_id   = parent::beautifyid( $field['option_name'] );
 
@@ -45,7 +52,7 @@ if ( ! class_exists( 'EOF_field_media' ) ) :
 				)
 			);
 
-			// If value does not set, use the default
+			// If value does not set, use the default.
 			if ( is_null( $this->value ) ) {
 				$this->value = $this->field['default'];
 			}
@@ -72,8 +79,6 @@ if ( ! class_exists( 'EOF_field_media' ) ) :
 		 *
 		 * Create the HTML interface for your field
 		 *
-		 * @param $field - an array holding all the field's data
-		 *
 		 * @since 1.0
 		 * @return void
 		 */
@@ -95,18 +100,23 @@ if ( ! class_exists( 'EOF_field_media' ) ) :
 			}
 			?>
 		<input type="text" class="<?php echo esc_attr( $class ); ?>" id="<?php echo esc_attr( $this->option_id ); ?>" name="<?php echo esc_attr( $this->option_name ); ?>" value="<?php echo esc_attr( $this->value ); ?>" /> 
-		<input class="button eof-media-button" type="button" data-input-id="<?php echo esc_attr( $this->option_id ); ?>" value="<?php _e( 'Upload', 'adz-world' ); ?>" />
+		<input class="button eof-media-button" type="button" data-input-id="<?php echo esc_attr( $this->option_id ); ?>" value="<?php esc_html_e( 'Upload', 'adz-world' ); ?>" />
 			<?php if ( isset( $this->value ) && ! empty( $this->value ) ) : ?>
-		<input class="button eof-media-delete-button" type="button" data-input-id="<?php echo esc_attr( $this->option_id ); ?>" value="<?php _e( 'Delete', 'adz-world' ); ?>" />
+		<input class="button eof-media-delete-button" type="button" data-input-id="<?php echo esc_attr( $this->option_id ); ?>" value="<?php esc_html_e( 'Delete', 'adz-world' ); ?>" />
 		<br>
 				<?php if ( $preview ) : ?>
 			<p class="image-preview"><img src="<?php echo esc_attr( $this->value ); ?>" alt="" style="max-width:100%;"></p>
 			<?php endif; ?>
 		<?php endif; ?>
-		<span class="description"><?php echo $this->field['desc']; ?></span>
+		<span class="description"><?php echo wp_kses_post( $this->field['desc'] ); ?></span>
 			<?php
 		}
 
+		/**
+		 * Sanitize the configured field value.
+		 *
+		 * @param mixed $value Current field value.
+		 */
 		public function sanitize( $value ) {
 
 			$sanitize_value = strip_tags( $value );

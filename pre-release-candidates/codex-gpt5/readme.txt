@@ -95,6 +95,22 @@ you can make your own adz or serve adz from external ad networks, so the adz the
 
 == External services ==
 
+Candidate remediation behavior: affiliate metadata is saved by the authorized
+local advertisement editor even when the advertising network is disconnected.
+A failed remote deletion retains the network advertisement ID for a retry.
+Transport failures and invalid registration responses do not erase existing
+publisher credentials. Settings imports are administrator-only, read their
+uploaded JSON locally, and use the same configured-field validation as normal
+saves. Exports require both administrative permission and an export nonce.
+
+The legacy flat-response REST adapter now reuses WordPress HTTP transport,
+including Basic, Header, Query and Digest authentication. Its optional client
+certificate mode uses the documented http_api_curl hook and requires the
+Requests cURL transport, HTTPS and a readable PEM bundle. Real mutual-TLS
+verification remains outstanding; this is not a certificate-compatibility
+certification. The native certificate option call is retained openly for
+review, not hidden behind a diagnostic exclusion.
+
 Candidate earnings statement connection: an administrator may separately opt
 in on Adz.world > Earnings and configure a publisher ID and a read-only token.
 Only an explicit statement request sends that token to

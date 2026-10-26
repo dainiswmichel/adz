@@ -113,6 +113,87 @@ function ad_network_meta_box_markup_pub( $post ) {
 	<?php
 }
 
+/**
+ * Save affiliate metadata only from the authorized advertisement editor.
+ *
+ * Automated updates keep existing metadata instead of reading nonexistent POST keys.
+ *
+ * @param int $post_id Advertisement identifier.
+ * @return true|WP_Error Whether the submitted editor values were saved.
+ */
+function adzworld_save_ad_metadata( $post_id ) {
+	if ( ! current_user_can( 'edit_post', $post_id ) ) {
+		return new WP_Error( 'adzworld_ad_forbidden', __( 'Permission to edit this advertisement is required.', 'adz-world' ) );
+	}
+	$nonce = isset( $_POST['meta-box-nonce'] ) && is_string( $_POST['meta-box-nonce'] )
+		? sanitize_text_field( wp_unslash( $_POST['meta-box-nonce'] ) ) : '';
+	if ( ! wp_verify_nonce( $nonce, basename( __FILE__ ) ) ) {
+		return new WP_Error( 'adzworld_ad_nonce', __( 'The advertisement metadata request could not be verified.', 'adz-world' ) );
+	}
+	$values = array(
+		'affiliation_network_name' => isset( $_POST['affiliation_network_name'] ) && is_string( $_POST['affiliation_network_name'] )
+			? sanitize_text_field( wp_unslash( $_POST['affiliation_network_name'] ) ) : '',
+		'affiliation_network_url'  => isset( $_POST['affiliation_network_url'] ) && is_string( $_POST['affiliation_network_url'] )
+			? esc_url_raw( wp_unslash( $_POST['affiliation_network_url'] ) ) : '',
+		'affiliation_id'           => isset( $_POST['affiliation_id'] ) && is_string( $_POST['affiliation_id'] )
+			? sanitize_text_field( wp_unslash( $_POST['affiliation_id'] ) ) : '',
+	);
+	foreach ( $values as $key => $value ) {
+		if ( get_post_meta( $post_id, $key, true ) !== $value && ! update_post_meta( $post_id, $key, wp_slash( $value ) ) ) {
+			return new WP_Error( 'adzworld_ad_storage', __( 'Advertisement metadata could not be saved.', 'adz-world' ) );
+		}
+	}
+	return true;
+}
+
+/**
+ * Persist editor metadata before the advertisement is synchronized remotely.
+ *
+ * @param int $post_id Advertisement identifier.
+ */
+function adzworld_handle_ad_metadata( $post_id ) {
+	if ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
+		return;
+	}
+	$nonce = isset( $_POST['meta-box-nonce'] ) && is_string( $_POST['meta-box-nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['meta-box-nonce'] ) ) : '';
+	if ( '' === $nonce ) {
+		return;
+	}
+	$result = wp_verify_nonce( $nonce, basename( __FILE__ ) )
+		? adzworld_save_ad_metadata( $post_id )
+		: new WP_Error( 'adzworld_ad_nonce', __( 'The advertisement metadata request could not be verified.', 'adz-world' ) );
+	if ( is_wp_error( $result ) ) {
+		adzworld_network_notice( $result );
+	}
+}
+add_action( 'save_post_adz_ad', 'adzworld_handle_ad_metadata', 10 );
+
+/**
+ * Preserve an actionable, non-secret service error across the admin redirect.
+ *
+ * @param WP_Error $error Failure to display.
+ */
+function adzworld_network_notice( $error ) {
+	if ( get_current_user_id() ) {
+		set_transient( 'adzworld_network_notice_' . get_current_user_id(), $error->get_error_message(), 300 );
+	}
+}
+
+/**
+ * Display and consume the current administrator's service failure notice.
+ */
+function adzworld_render_network_notice() {
+	if ( ! current_user_can( 'edit_posts' ) ) {
+		return;
+	}
+	$key     = 'adzworld_network_notice_' . get_current_user_id();
+	$message = get_transient( $key );
+	if ( is_string( $message ) && '' !== $message ) {
+		echo '<div class="notice notice-error"><p>' . esc_html( $message ) . '</p></div>';
+		delete_transient( $key );
+	}
+}
+add_action( 'admin_notices', 'adzworld_render_network_notice' );
 
 /**
  * Register the advertisement's metadata editor.
@@ -236,11 +317,14 @@ add_action( 'init', 'ad_taxonomy_pub', 0 );
  */
 function adz_sync_network_ads( $post_id, $post_after ) {
 	if ( 'adz_ad' === $post_after->post_type ) {
-		adz_NetworkAuthorization::update_ad( $post_id, $post_after );
+		$result = Adz_NetworkAuthorization::update_ad( $post_id, $post_after );
+		if ( is_wp_error( $result ) ) {
+			adzworld_network_notice( $result );
+		}
 	}
 }
 
-add_action( 'post_updated', 'adz_sync_network_ads', 10, 2 );
+add_action( 'save_post_adz_ad', 'adz_sync_network_ads', 30, 2 );
 
 
 
@@ -253,7 +337,10 @@ function adz_sync_network_ads_delete( $post_id ) {
 	if ( 'adz_ad' !== get_post_type( $post_id ) ) {
 			return;
 	}
-		adz_NetworkAuthorization::delete_ad( $post_id );
+	$result = Adz_NetworkAuthorization::delete_ad( $post_id );
+	if ( is_wp_error( $result ) ) {
+		adzworld_network_notice( $result );
+	}
 }
 
 add_action( 'before_delete_post', 'adz_sync_network_ads_delete' );

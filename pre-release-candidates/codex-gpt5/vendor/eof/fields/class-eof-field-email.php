@@ -9,14 +9,18 @@
  * @package     EOF
  * @subpackages Fields
  */
-// Exit if accessed directly
+
+// Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 if ( ! class_exists( 'EOF_field_email' ) ) :
 
-	class EOF_field_email extends EOF_field {
+	/**
+	 * Configured eof field email component.
+	 */
+	class EOF_Field_Email extends EOF_field {
 
 		/**
 		 * __construct
@@ -25,10 +29,13 @@ if ( ! class_exists( 'EOF_field_email' ) ) :
 		 *
 		 * @since 1.0.0
 		 * @return void
+		 * @param array $field Field configuration.
+		 * @param mixed $value Current field value.
+		 * @param EOF   $framework Parent settings framework.
 		 */
-		public function __construct( $field, $value, $parent ) {
-			// vars
-			$this->parent      = $parent;
+		public function __construct( $field, $value, $framework ) {
+			// vars.
+			$this->parent      = $framework;
 			$this->option_name = $field['option_name'];
 			$this->option_id   = parent::beautifyid( $field['option_name'] );
 
@@ -46,7 +53,7 @@ if ( ! class_exists( 'EOF_field_email' ) ) :
 				)
 			);
 
-			// If value does not set, use the default
+			// If value does not set, use the default.
 			if ( is_null( $this->value ) ) {
 				$this->value = $this->field['default'];
 			}
@@ -59,8 +66,6 @@ if ( ! class_exists( 'EOF_field_email' ) ) :
 		 *
 		 * Create the HTML interface for your field
 		 *
-		 * @param $field - an array holding all the field's data
-		 *
 		 * @since 1.0
 		 * @return void
 		 */
@@ -68,10 +73,15 @@ if ( ! class_exists( 'EOF_field_email' ) ) :
 			$class = 'regular-text';
 			?>
 		<input type="email" class="<?php echo esc_attr( $class ); ?>" name="<?php echo esc_attr( $this->option_name ); ?>" id="<?php echo esc_attr( $this->option_id ); ?>" placeholder="<?php echo esc_attr( $this->field['holder'] ); ?>" value="<?php echo esc_attr( sanitize_email( $this->value ) ); ?>" <?php echo ( $this->field['readonly'] ) ? 'readonly="readonly"' : ''; ?> >
-		<span class="description"><?php echo $this->field['desc']; ?></span>
+		<span class="description"><?php echo wp_kses_post( $this->field['desc'] ); ?></span>
 			<?php
 		}
 
+		/**
+		 * Sanitize the configured field value.
+		 *
+		 * @param mixed $input Submitted field value.
+		 */
 		public function sanitize( $input ) {
 
 			$sanitize_input = sanitize_email( $input );

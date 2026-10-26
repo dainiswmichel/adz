@@ -1,8 +1,11 @@
-/*
+/**
  * The chosen library was removed: wordpress.org no longer permits bundling
  * libraries that are not maintained. Without it these calls become no-ops and
  * the fields stay as the browser's own multi-selects.
+ *
+ * @package adz-world
  */
+
 if ( typeof jQuery !== 'undefined' && typeof jQuery.fn.chosen === 'undefined' ) {
 	jQuery.fn.chosen = function () {
 		return this; };
@@ -101,8 +104,7 @@ jQuery( document ).ready(
 			},
 			/*=Color Picker Field */
 			color: function () {
-				// Add Color Picker to all inputs that have 'color-field' class
-				// $( '.eof-color-picker' ).wpColorPicker();
+				// Add Color Picker to all inputs that have 'color-field' class.
 			},
 			/*=Date Picker Field */
 			date: function () {
@@ -156,11 +158,10 @@ jQuery( document ).ready(
 									function ( attachment, index ) {
 										attachment = attachment.toJSON();
 										if ( 0 === index ) {
-												// Place first attachment in field
+												// Place first attachment in field.
 												$url_input.val( attachment.url );
 										} else {
-											// Create a new row for all additional attachments
-											// @todo
+											// Create a new row for all additional attachments.
 										}
 									}
 								);
@@ -173,7 +174,6 @@ jQuery( document ).ready(
 					}
 				);
 
-				// var custom_uploader, $url_input = '';
 			},
 			image_select: function () {
 
@@ -299,10 +299,6 @@ jQuery( document ).ready(
 						count += 1;
 						$( '.add-row' ).attr( 'data-count', count );
 
-						// var $clone = $tr.clone();
-						// $clone.find(':text').val('');
-						// $tr.after($clone);
-						// $(this).closest('tr').clone();
 					}
 				);
 			},

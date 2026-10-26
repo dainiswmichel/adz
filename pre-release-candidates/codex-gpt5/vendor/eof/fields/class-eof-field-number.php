@@ -9,14 +9,18 @@
  * @package     EOF
  * @subpackages Fields
  */
-// Exit if accessed directly
+
+// Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 if ( ! class_exists( 'EOF_field_number' ) ) :
 
-	class EOF_field_number extends EOF_field {
+	/**
+	 * Configured eof field number component.
+	 */
+	class EOF_Field_Number extends EOF_field {
 
 		/**
 		 * __construct
@@ -25,10 +29,13 @@ if ( ! class_exists( 'EOF_field_number' ) ) :
 		 *
 		 * @since 1.0.0
 		 * @return void
+		 * @param array $field Field configuration.
+		 * @param mixed $value Current field value.
+		 * @param EOF   $framework Parent settings framework.
 		 */
-		public function __construct( $field, $value, $parent ) {
-			// vars
-			$this->parent      = $parent;
+		public function __construct( $field, $value, $framework ) {
+			// vars.
+			$this->parent      = $framework;
 			$this->option_name = $field['option_name'];
 			$this->option_id   = parent::beautifyid( $field['option_name'] );
 
@@ -45,7 +52,7 @@ if ( ! class_exists( 'EOF_field_number' ) ) :
 				)
 			);
 
-			// If value does not set, use the default
+			// If value does not set, use the default.
 			if ( is_null( $this->value ) ) {
 				$this->value = $this->field['default'];
 			}
@@ -57,8 +64,6 @@ if ( ! class_exists( 'EOF_field_number' ) ) :
 		 * Render field
 		 *
 		 * Create the HTML interface for your field
-		 *
-		 * @param $field - an array holding all the field's data
 		 *
 		 * @since 1.0
 		 * @return void
@@ -80,10 +85,15 @@ if ( ! class_exists( 'EOF_field_number' ) ) :
 			}
 			?>
 		<input type="number" class="<?php echo esc_attr( $class ); ?>" name="<?php echo esc_attr( $this->option_name ); ?>" id="<?php echo esc_attr( $this->option_id ); ?>" value="<?php echo esc_attr( $this->value ); ?>" >
-		<span class="description"><?php echo $this->field['desc']; ?></span>
+		<span class="description"><?php echo wp_kses_post( $this->field['desc'] ); ?></span>
 			<?php
 		}
 
+		/**
+		 * Sanitize the configured field value.
+		 *
+		 * @param mixed $value Current field value.
+		 */
 		public function sanitize( $value ) {
 
 			$sanitize_value = ( is_numeric( $value ) ) ? $value : 0;

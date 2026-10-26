@@ -1,5 +1,11 @@
 <?php
-// Exit if accessed directly
+/**
+ * Legacy plugin and settings-framework support.
+ *
+ * @package adz-world
+ */
+
+// Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -15,16 +21,21 @@ if ( ! class_exists( 'EOF_Views' ) ) :
 	 */
 	class EOF_Views {
 
-		// Hold it's parent object which is EOF
-		var $parent = null;
+		/**
+		 * Hold it's parent object which is EOF.
+		 *
+		 * @var mixed
+		 */
+		public $parent = null;
 
 		/**
 		 * Fire!
 		 *
 		 * @since 1.0.0
+		 * @param EOF $framework Parent settings framework.
 		 */
-		public function __construct( $parent ) {
-			$this->parent = $parent;
+		public function __construct( $framework ) {
+			$this->parent = $framework;
 		}
 
 		/**
@@ -36,38 +47,33 @@ if ( ! class_exists( 'EOF_Views' ) ) :
 		public function admin_options_page() {
 
 			$section_ids = array_keys( $this->parent->sections );
-			$active_tab  = isset( $_GET['tab'] ) ? $_GET['tab'] : $section_ids[0];
+			$active_tab  = isset( $_GET['tab'] ) && is_string( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : $section_ids[0];
 			$base_url    = menu_page_url( $this->parent->configs['page_slug'], false );
-
-			ob_start();
+			if ( ! isset( $this->parent->sections[ $active_tab ] ) ) {
+				echo '<div class="notice notice-error"><p>' . esc_html__( 'The requested settings section does not exist.', 'adz-world' ) . '</p></div>';
+				return;
+			}
 			?>
 		<div class="wrap">
 			<h2 class="nav-tab-wrapper">
 				<?php
 				foreach ( $this->parent->sections as $section ) {
 					$actived = ( $active_tab == $section['id'] ) ? 'nav-tab-active' : '';
-					if ( isset( $section['type'] ) && $section['type'] == 'url' ) {
+					if ( isset( $section['type'] ) && 'url' === $section['type'] ) {
 						printf(
 							'<a href="%1$s" title="%2$s" class="nav-tab %3$s">%4$s</a>',
-							$section['url'],
-							$section['title'],
-							$actived,
-							$section['title']
+							esc_url( $section['url'] ),
+							esc_attr( $section['title'] ),
+							esc_attr( $actived ),
+							esc_html( $section['title'] )
 						);
 					} else {
-						$domain = $_SERVER['HTTP_HOST'];
-						// find out the path to the current file:
-						$path = $_SERVER['SCRIPT_NAME'];
-						// find out the QueryString:
-						$queryString = $_SERVER['QUERY_STRING'];
-						// put it all together:
-						$url = 'http://' . $domain . $path . '?' . $queryString;
 						printf(
 							'<a href="%1$s" title="%2$s" class="nav-tab %3$s">%4$s</a>',
-							add_query_arg( array( 'tab' => $section['id'] ), $url ),
-							$section['title'],
-							$actived,
-							$section['title']
+							esc_url( add_query_arg( 'tab', $section['id'], $base_url ) ),
+							esc_attr( $section['title'] ),
+							esc_attr( $actived ),
+							esc_html( $section['title'] )
 						);
 					}
 				}
@@ -111,10 +117,6 @@ if ( ! class_exists( 'EOF_Views' ) ) :
 		</div>
 		<!-- END .wrap -->
 			<?php
-			$outup = ob_get_contents();
-			ob_end_clean();
-
-			echo $outup;
 		}
 	}
 

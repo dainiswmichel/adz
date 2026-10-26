@@ -1,4 +1,9 @@
 <?php
+/**
+ * Legacy plugin and settings-framework support.
+ *
+ * @package adz-world
+ */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -20,29 +25,68 @@ if ( ! class_exists( 'EOF' ) ) :
 	 */
 	class EOF {
 
-		// Hold setting configures
-		var $configs = array();
+		/**
+		 * Hold setting configures.
+		 *
+		 * @var mixed
+		 */
+		public $configs = array();
 
-		// Hold setting fields
-		var $sections = array();
+		/**
+		 * Hold setting fields.
+		 *
+		 * @var mixed
+		 */
+		public $sections = array();
 
-		// Hold options
-		var $options = array();
+		/**
+		 * Hold options.
+		 *
+		 * @var array
+		 */
+		public $options = array();
 
-		// Hold default options
-		var $default_options = array();
+		/**
+		 * Hold default options.
+		 *
+		 * @var array
+		 */
+		public $default_options = array();
 
-		// Hold null value options
-		var $null_options = array();
+		/**
+		 * Hold null value options.
+		 *
+		 * @var array
+		 */
+		public $null_options = array();
 
-		// Hold admin object
-		var $eof_admin;
+		/**
+		 * Hold admin object.
+		 *
+		 * @var mixed
+		 */
+		public $eof_admin;
 
-		// Hold settings object
-		var $eof_settings;
+		/**
+		 * Hold settings object.
+		 *
+		 * @var mixed
+		 */
+		public $eof_settings;
 
-		// Hold admin setting views object
-		var $eof_views;
+		/**
+		 * Hold admin setting views object.
+		 *
+		 * @var mixed
+		 */
+		public $eof_views;
+
+		/**
+		 * Optional import and export controller.
+		 *
+		 * @var EOF_Import_Export|null
+		 */
+		public $eof_port;
 
 		/**
 		 * Define the core functionality of the plugin.
@@ -50,6 +94,8 @@ if ( ! class_exists( 'EOF' ) ) :
 		 * Set the plugin configures that can be used throughout the plugin.
 		 *
 		 * @since 1.0.0
+		 * @param array $configs Framework configuration.
+		 * @param array $sections Configured settings sections.
 		 */
 		public function __construct( $configs = array(), $sections = array() ) {
 
@@ -102,40 +148,40 @@ if ( ! class_exists( 'EOF' ) ) :
 		 * @since  1.0.0
 		 * @return array
 		 */
-		function get_default_configs() {
+		public function get_default_configs() {
 
 			$default = array(
 				// This is where your data is stored in the database and also becomes your global variable name.
 				'opt_name'           => 'eof_options',
-				// Set a different name for your global variable other than the opt_name
+				// Set a different name for your global variable other than the opt_name.
 				'global_variable'    => 'eof_options',
-				// Specify if the admin menu should appear or not. Options: menu or submenu
+				// Specify if the admin menu should appear or not. Options: menu or submenu.
 				'menu_type'          => 'menu',
-				// Show the sections below the admin menu item or not
+				// Show the sections below the admin menu item or not.
 				'allow_sub_menu'     => false,
-				// Specify admin menu title
+				// Specify admin menu title.
 				'menu_title'         => __( 'EOF', 'adz-world' ),
-				// Specify admin page title
+				// Specify admin page title.
 				'page_title'         => __( 'EOF', 'adz-world' ),
-				// For a full list of options, visit: http://codex.wordpress.org/Function_Reference/add_submenu_page#Parameters
+				// For a full list of options, visit: http://codex.wordpress.org/Function_Reference/add_submenu_page#Parameters.
 				'page_parent'        => 'themes.php',
 				// Order where the menu appears in the admin area. If there is any conflict, something will not show. Warning.
 				'menu_priority'      => 55,
-				// Specify a custom URL to an icon
+				// Specify a custom URL to an icon.
 				'menu_icon'          => 'dashicons-carrot',
-				// Order where the menu divider appears in the admin area. array(35,37)
+				// Order where the menu divider appears in the admin area. array(35,37).
 				'menu_divider'       => null,
 				// Permissions needed to access the options panel.
 				'page_permissions'   => 'manage_options',
-				// Page slug used to denote the panel
+				// Page slug used to denote the panel.
 				'page_slug'          => '_eof_options',
-				// On load save the defaults to DB before user clicks save or not
+				// On load save the defaults to DB before user clicks save or not.
 				'save_defaults'      => false,
 				// Shows the Import/Export panel when not used as a field.
 				'show_import_export' => true,
-				// Specify option page help tabs. array( array('id' => '', 'title' => '', 'content' => ''), )
+				// Specify option page help tabs. array( array('id' => '', 'title' => '', 'content' => ''), ).
 				'help_tabs'          => null,
-				// Specify option page help sidebar content
+				// Specify option page help sidebar content.
 				'help_sidebar'       => '',
 			);
 
@@ -148,7 +194,7 @@ if ( ! class_exists( 'EOF' ) ) :
 		 * @since 1.0
 		 * @return void
 		 */
-		function set_global_variable() {
+		public function set_global_variable() {
 
 			$this->refresh();
 
@@ -163,12 +209,12 @@ if ( ! class_exists( 'EOF' ) ) :
 		 * Sort an array by a specific key.
 		 * Maintains index association.
 		 *
-		 * @param  array    $array     array which need be sort
-		 * @param  array    $on        specific key
-		 * @param  constant $order  order type
+		 * @param  array    $array     array which need be sort.
+		 * @param  array    $on        specific key.
+		 * @param  constant $order  order type.
 		 * @return array            sortable array
 		 */
-		function array_sort( $array, $on, $order = SORT_ASC ) {
+		public function array_sort( $array, $on, $order = SORT_ASC ) {
 			$new_array      = array();
 			$sortable_array = array();
 			$null_count     = 1001;
@@ -185,7 +231,7 @@ if ( ! class_exists( 'EOF' ) ) :
 						}
 						if ( ! $found ) {
 							$sortable_array[ $k ] = $null_count;
-							$null_count          += 1;
+							++$null_count;
 						}
 					} else {
 						$sortable_array[ $k ] = $v;

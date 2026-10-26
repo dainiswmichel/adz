@@ -20,11 +20,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 global $adz_ad_network_base_url;
 $adz_ad_network_base_url = 'https://adz-world.com/';
 require_once __DIR__ . '/vendor/eof/eof.php';
-require_once __DIR__ . '/vendor/eof/core/field.php';
+require_once __DIR__ . '/vendor/eof/core/class-eof-field.php';
 require_once __DIR__ . '/vendor/eof/adz-config.php';
-require_once __DIR__ . '/classes/network_authorization.class.php';
-require_once __DIR__ . '/classes/eof_fields/dynamic.php';
-require_once __DIR__ . '/classes/eof_fields/select-caps.php';
+require_once __DIR__ . '/classes/class-adz-networkauthorization.php';
+require_once __DIR__ . '/classes/eof_fields/class-eof-field-dynamic.php';
+require_once __DIR__ . '/classes/eof_fields/class-eof-field-select-caps.php';
 require_once __DIR__ . '/session-handling.php';
 require_once __DIR__ . '/includes/adz-helper.php';
 require_once __DIR__ . '/includes/adz-cpt-ads.php';

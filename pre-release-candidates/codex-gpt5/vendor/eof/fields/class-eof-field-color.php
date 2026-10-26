@@ -9,14 +9,18 @@
  * @package     EOF
  * @subpackages Fields
  */
-// Exit if accessed directly
+
+// Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 if ( ! class_exists( 'EOF_field_color' ) ) :
 
-	class EOF_field_color extends EOF_field {
+	/**
+	 * Configured eof field color component.
+	 */
+	class EOF_Field_Color extends EOF_field {
 
 		/**
 		 * __construct
@@ -25,10 +29,13 @@ if ( ! class_exists( 'EOF_field_color' ) ) :
 		 *
 		 * @since 1.0.0
 		 * @return void
+		 * @param array $field Field configuration.
+		 * @param mixed $value Current field value.
+		 * @param EOF   $framework Parent settings framework.
 		 */
-		public function __construct( $field, $value, $parent ) {
-			// vars
-			$this->parent      = $parent;
+		public function __construct( $field, $value, $framework ) {
+			// vars.
+			$this->parent      = $framework;
 			$this->option_name = $field['option_name'];
 			$this->option_id   = parent::beautifyid( $field['option_name'] );
 
@@ -44,7 +51,7 @@ if ( ! class_exists( 'EOF_field_color' ) ) :
 				)
 			);
 
-			// If value does not set, use the default
+			// If value does not set, use the default.
 			if ( is_null( $this->value ) ) {
 				$this->value = $this->field['default'];
 			}
@@ -74,8 +81,6 @@ if ( ! class_exists( 'EOF_field_color' ) ) :
 		 *
 		 * Create the HTML interface for your field
 		 *
-		 * @param $field - an array holding all the field's data
-		 *
 		 * @since 1.0
 		 * @return void
 		 */
@@ -88,11 +93,17 @@ if ( ! class_exists( 'EOF_field_color' ) ) :
 			<?php
 		}
 
+		/**
+		 * Sanitize the configured field value.
+		 *
+		 * @param mixed $input Submitted field value.
+		 */
 		public function sanitize( $input ) {
 
-			$sanitize_input = strip_tags( $input );
-			if ( ! preg_match( '/^#[a-f0-9]{6}$/i', $sanitize_input ) ) {
-				// add_settings_error( $setting, $code, $message, $type );
+			$sanitize_input = sanitize_hex_color( $input );
+			if ( null === $sanitize_input ) {
+				add_settings_error( 'eof-' . $this->parent->configs['opt_name'] . '-notices', 'invalid-color', __( 'The color setting must be a valid hexadecimal color.', 'adz-world' ) );
+				return $this->value;
 			}
 			return $sanitize_input;
 		}

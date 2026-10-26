@@ -9,14 +9,18 @@
  * @package     EOF
  * @subpackages Fields
  */
-// Exit if accessed directly
+
+// Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 if ( ! class_exists( 'EOF_field_image_select' ) ) :
 
-	class EOF_field_image_select extends EOF_field {
+	/**
+	 * Configured eof field image select component.
+	 */
+	class EOF_Field_Image_Select extends EOF_field {
 
 		/**
 		 * __construct
@@ -25,10 +29,13 @@ if ( ! class_exists( 'EOF_field_image_select' ) ) :
 		 *
 		 * @since 1.0.0
 		 * @return void
+		 * @param array $field Field configuration.
+		 * @param mixed $value Current field value.
+		 * @param EOF   $framework Parent settings framework.
 		 */
-		public function __construct( $field, $value, $parent ) {
-			// vars
-			$this->parent      = $parent;
+		public function __construct( $field, $value, $framework ) {
+			// vars.
+			$this->parent      = $framework;
 			$this->option_name = $field['option_name'];
 			$this->option_id   = parent::beautifyid( $field['option_name'] );
 
@@ -41,19 +48,11 @@ if ( ! class_exists( 'EOF_field_image_select' ) ) :
 					'desc'     => '',
 					'default'  => '',
 					'options'  => null,
-					/*
-					array(
-					'value' => array(
-						'img_url' => '',
-						'label' => ''
-					),
-					)
-					*/
 					'readonly' => false,
 				)
 			);
 
-			// If value does not set, use the default
+			// If value does not set, use the default.
 			if ( is_null( $this->value ) ) {
 				$this->value = $this->field['default'];
 			}
@@ -65,8 +64,6 @@ if ( ! class_exists( 'EOF_field_image_select' ) ) :
 		 * Render field
 		 *
 		 * Create the HTML interface for your field
-		 *
-		 * @param $field - an array holding all the field's data
 		 *
 		 * @since 1.0
 		 * @return void
@@ -87,9 +84,14 @@ if ( ! class_exists( 'EOF_field_image_select' ) ) :
 				<p style="text-align:center;"><?php echo esc_html( $option['label'] ); ?></p></label>
 				<?php
 			}
-			echo '<p class="description" style="margin-top:15px;">' . $this->field['desc'] . '</p>';
+			echo '<p class="description" style="margin-top:15px;">' . wp_kses_post( $this->field['desc'] ) . '</p>';
 		}
 
+		/**
+		 * Sanitize the configured field value.
+		 *
+		 * @param mixed $input Submitted field value.
+		 */
 		public function sanitize( $input ) {
 
 			return $input;

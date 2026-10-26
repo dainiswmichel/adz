@@ -9,14 +9,18 @@
  * @package     EOF
  * @subpackages Fields
  */
-// Exit if accessed directly
+
+// Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 if ( ! class_exists( 'EOF_field_heading' ) ) :
 
-	class EOF_field_heading extends EOF_field {
+	/**
+	 * Configured eof field heading component.
+	 */
+	class EOF_Field_Heading extends EOF_field {
 
 		/**
 		 * __construct
@@ -25,10 +29,13 @@ if ( ! class_exists( 'EOF_field_heading' ) ) :
 		 *
 		 * @since 1.0.0
 		 * @return void
+		 * @param array $field Field configuration.
+		 * @param mixed $value Current field value.
+		 * @param EOF   $framework Parent settings framework.
 		 */
-		public function __construct( $field, $value, $parent ) {
-			// vars
-			$this->parent      = $parent;
+		public function __construct( $field, $value, $framework ) {
+			// vars.
+			$this->parent      = $framework;
 			$this->option_name = $field['option_name'];
 			$this->option_id   = parent::beautifyid( $field['option_name'] );
 
@@ -43,20 +50,18 @@ if ( ! class_exists( 'EOF_field_heading' ) ) :
 				)
 			);
 
-			// If value does not set, use the default
+			// If value does not set, use the default.
 			if ( is_null( $this->value ) ) {
 				$this->value = $this->field['default'];
 			}
 
-			// parent::__construct($field);
+			// parent::__construct($field);.
 		}
 
 		/**
 		 * Render field
 		 *
 		 * Create the HTML interface for your field
-		 *
-		 * @param $field - an array holding all the field's data
 		 *
 		 * @since 1.0
 		 * @return void
@@ -66,7 +71,7 @@ if ( ! class_exists( 'EOF_field_heading' ) ) :
 		<hr>
 			<?php
 			if ( ! empty( $this->field['desc'] ) ) {
-				echo '<p class="description">' . $this->field['desc'] . '</p>';
+				echo '<p class="description">' . wp_kses_post( $this->field['desc'] ) . '</p>';
 			}
 		}
 	}

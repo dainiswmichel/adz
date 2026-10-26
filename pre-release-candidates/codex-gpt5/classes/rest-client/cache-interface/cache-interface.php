@@ -1,4 +1,9 @@
 <?php
+/**
+ * Legacy plugin and settings-framework support.
+ *
+ * @package adz-world
+ */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -11,16 +16,16 @@ interface CacheInterface {
 	/**
 	 * Adds or updates value to the cache
 	 *
-	 * @param  string  $key    Unique key that can be used to access cache
-	 * @param mixed   $value   value being cached
-	 * @param integer $expires Number of seconds before cache expires
+	 * @param  string  $key    Unique key that can be used to access cache.
+	 * @param mixed   $value   value being cached.
+	 * @param integer $expires Number of seconds before cache expires.
 	 */
 	public function set( $key, $value, $expires = 0 );
 
 	/**
 	 * Gets the value for the key
 	 *
-	 * @param  string $key
+	 * @param  string $key Storage key.
 	 * @return mixed  cached value
 	 */
 	public function get( $key );
@@ -28,7 +33,7 @@ interface CacheInterface {
 	/**
 	 * Deletes the specified key from cache regardless of experation setting
 	 *
-	 * @param  string $key access key
+	 * @param  string $key access key.
 	 * @return mixed      Value of key before it was deleted
 	 */
 	public function delete( $key );
@@ -36,7 +41,7 @@ interface CacheInterface {
 	/**
 	 * Identify cache for grouping purposes
 	 *
-	 * @param string $id Id of the cache
+	 * @param string $id Id of the cache.
 	 */
 	public function set_id( $id );
 }

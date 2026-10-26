@@ -1,22 +1,26 @@
 <?php
 /**
- * EOF Textarea Field Class
+ * EOF Text Field Class
  *
  * All the logic for this field type
  *
- * @class       EOF_field_textarea
+ * @class       EOF_field_text
  * @extends     EOF_field
  * @package     EOF
  * @subpackages Fields
  */
-// Exit if accessed directly
+
+// Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! class_exists( 'EOF_field_textarea' ) ) :
+if ( ! class_exists( 'EOF_field_text' ) ) :
 
-	class EOF_field_textarea extends EOF_field {
+	/**
+	 * Configured eof field text component.
+	 */
+	class EOF_Field_Text extends EOF_field {
 
 		/**
 		 * __construct
@@ -25,10 +29,13 @@ if ( ! class_exists( 'EOF_field_textarea' ) ) :
 		 *
 		 * @since 1.0.0
 		 * @return void
+		 * @param array $field Field configuration.
+		 * @param mixed $value Current field value.
+		 * @param EOF   $framework Parent settings framework.
 		 */
-		public function __construct( $field, $value, $parent ) {
-			// vars
-			$this->parent      = $parent;
+		public function __construct( $field, $value, $framework ) {
+			// vars.
+			$this->parent      = $framework;
 			$this->option_name = $field['option_name'];
 			$this->option_id   = parent::beautifyid( $field['option_name'] );
 
@@ -40,14 +47,12 @@ if ( ! class_exists( 'EOF_field_textarea' ) ) :
 					'title'    => '',
 					'desc'     => '',
 					'default'  => '',
-					'rows'     => 20,
-					'cols'     => 80,
-					'sizes'    => 'large',
+					'sizes'    => 'regular',
 					'readonly' => false,
 				)
 			);
 
-			// If value does not set, use the default
+			// If value does not set, use the default.
 			if ( is_null( $this->value ) ) {
 				$this->value = $this->field['default'];
 			}
@@ -60,15 +65,12 @@ if ( ! class_exists( 'EOF_field_textarea' ) ) :
 		 *
 		 * Create the HTML interface for your field
 		 *
-		 * @param $field - an array holding all the field's data
-		 *
 		 * @since 1.0
 		 * @return void
 		 */
 		public function render_field() {
 
 			$class = '';
-
 			switch ( $this->field['sizes'] ) {
 				case 'small':
 					$class .= ' small-text';
@@ -80,21 +82,22 @@ if ( ! class_exists( 'EOF_field_textarea' ) ) :
 					$class .= ' regular-text';
 					break;
 			}
-
-			?>
-		<textarea class="<?php echo esc_attr( $class ); ?>" name="<?php echo esc_attr( $this->option_name ); ?>" id="<?php echo esc_attr( $this->option_id ); ?>" cols="<?php echo ( is_int( $this->field['cols'] ) ) ? $this->field['cols'] : 80; ?>" rows="<?php echo ( is_int( $this->field['rows'] ) ) ? $this->field['rows'] : 20; ?>"><?php echo esc_textarea( $this->value ); ?></textarea>
-		<br/>
-		<p class="description"><?php echo $this->field['desc']; ?></p>
+			?>	
+		<input type="text" class="<?php echo esc_attr( $class ); ?>" name="<?php echo esc_attr( $this->option_name ); ?>" id="<?php echo esc_attr( $this->option_id ); ?>" value="<?php echo esc_attr( $this->value ); ?>" >
+		<span class="description"><?php echo wp_kses_post( $this->field['desc'] ); ?></span>
 			<?php
 		}
 
-		public function sanitize( $input ) {
-			// global $allowedposttags;
+		/**
+		 * Default field sanitize
+		 *
+		 * @param mixed $value Current field value.
+		 * @return $sanitize_value  filtered value
+		 */
+		public function sanitize( $value ) {
 
-			// $sanitize_input = wp_kses( $input, $allowedposttags );
-			$sanitize_input = $input;
-
-			return $sanitize_input;
+			$sanitize_value = trim( $value );
+			return $sanitize_value;
 		}
 	}
 

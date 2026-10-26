@@ -1,4 +1,9 @@
-/*Javascript for admin*/
+/**
+ * Advertisement template settings controls.
+ *
+ * @package adz-world
+ */
+
 jQuery( document ).ready(
 	function () {
 		jQuery( '#adz_template_list' ).change(

@@ -9,14 +9,18 @@
  * @package     EOF
  * @subpackages Fields
  */
-// Exit if accessed directly
+
+// Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 if ( ! class_exists( 'EOF_field_select' ) ) :
 
-	class EOF_field_select extends EOF_field {
+	/**
+	 * Configured eof field select component.
+	 */
+	class EOF_Field_Select extends EOF_field {
 
 		/**
 		 * __construct
@@ -25,10 +29,13 @@ if ( ! class_exists( 'EOF_field_select' ) ) :
 		 *
 		 * @since 1.0.0
 		 * @return void
+		 * @param array $field Field configuration.
+		 * @param mixed $value Current field value.
+		 * @param EOF   $framework Parent settings framework.
 		 */
-		public function __construct( $field, $value, $parent ) {
-			// vars
-			$this->parent      = $parent;
+		public function __construct( $field, $value, $framework ) {
+			// vars.
+			$this->parent      = $framework;
 			$this->option_name = $field['option_name'];
 			$this->option_id   = parent::beautifyid( $field['option_name'] );
 
@@ -49,7 +56,7 @@ if ( ! class_exists( 'EOF_field_select' ) ) :
 				)
 			);
 
-			// If value does not set, use the default
+			// If value does not set, use the default.
 			if ( is_null( $this->value ) ) {
 				$this->value = $this->field['default'];
 			}
@@ -61,8 +68,6 @@ if ( ! class_exists( 'EOF_field_select' ) ) :
 		 * Render field
 		 *
 		 * Create the HTML interface for your field
-		 *
-		 * @param $field - an array holding all the field's data
 		 *
 		 * @since 1.0
 		 * @return void
@@ -86,34 +91,25 @@ if ( ! class_exists( 'EOF_field_select' ) ) :
 
 			?>
 		
-		<select class="<?php echo esc_attr( $class ); ?>" <?php echo ( $this->field['multiple'] == 'yes' ) ? 'multiple="multiple"' : ''; ?> name="<?php echo ( $this->field['multiple'] == 'yes' ) ? esc_attr( $this->option_name ) . '[]' : esc_attr( $this->option_name ); ?>" id="<?php echo esc_attr( $this->option_id ); ?>">
+			<?php if ( 'yes' === $this->field['multiple'] ) : ?>
+				<input type="hidden" name="<?php echo esc_attr( $this->option_name ); ?>" value="">
+			<?php endif; ?>
+		<select class="<?php echo esc_attr( $class ); ?>" <?php echo ( 'yes' === $this->field['multiple'] ) ? 'multiple="multiple"' : ''; ?> name="<?php echo ( 'yes' === $this->field['multiple'] ) ? esc_attr( $this->option_name ) . '[]' : esc_attr( $this->option_name ); ?>" id="<?php echo esc_attr( $this->option_id ); ?>">
 			<?php
-			// Placeholder
-			if ( empty( $this->value ) && ! empty( $options ) ) {
-				// echo '<option value="" disabled selected>'. esc_html( $this->field['holder'] ) .'</option>';
-			} elseif ( empty( $options ) ) {
-				echo '<option value="" selected>' . __( 'Nothing found.', 'adz-world' ) . '</option>';
+			// Placeholder.
+			if ( empty( $options ) ) {
+				echo '<option value="" selected>' . esc_html__( 'Nothing found.', 'adz-world' ) . '</option>';
 			}
 			$count = 0;
 			foreach ( $options as $val => $label ) {
-				if ( $this->field['multiple'] == 'yes' ) {
-					if ( empty( $this->value ) && ! empty( $options ) ) {
-						if ( $count == 0 ) {
-							$selected = '';
-						} else {
-							$selected = '';
-						}
-					} elseif ( ! empty( $this->value ) && is_array( $this->value ) ) {
-						if ( in_array( $val, $this->value ) ) {
-							$selected = 'selected="selected"';
-						} else {
-							$selected = '';
-						}
-					} else {
-						$selected = '';
-					}
-					echo '<option value="' . $val . '" ' . $selected . '>' . $label . '</option>';
-
+				if ( 'yes' === $this->field['multiple'] ) {
+					$is_selected = in_array( (string) $val, array_map( 'strval', (array) $this->value ), true );
+					printf(
+						'<option value="%1$s" %2$s>%3$s</option>',
+						esc_attr( $val ),
+						selected( true, $is_selected, false ),
+						esc_html( $label )
+					);
 				} else {
 					printf(
 						'<option value="%1$s" %2$s>%3$s</option>',
@@ -127,10 +123,15 @@ if ( ! class_exists( 'EOF_field_select' ) ) :
 			?>
 		</select>
 		
-		<span class="description"><?php echo $this->field['desc']; ?></span>
+		<span class="description"><?php echo wp_kses_post( $this->field['desc'] ); ?></span>
 			<?php
 		}
 
+		/**
+		 * Sanitize the configured field value.
+		 *
+		 * @param mixed $input Submitted field value.
+		 */
 		public function sanitize( $input ) {
 
 			$sanitize_input = $input;

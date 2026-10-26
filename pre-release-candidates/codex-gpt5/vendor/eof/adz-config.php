@@ -1,4 +1,9 @@
 <?php
+/**
+ * Legacy plugin and settings-framework support.
+ *
+ * @package adz-world
+ */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -16,7 +21,7 @@ add_action( 'init', 'adz_check_post_function' );
  *
  * Three independent conditions now have to hold: the request is an authorised
  * administrator saving this plugin's own settings form, and the rotation id is
- * one this plugin generates (adz_rotation_<n>, see vendor/eof/fields/repeat.php).
+ * one this plugin generates (adz_rotation_<n>, see vendor/eof/fields/class-eof-field-repeat.php).
  *
  * @return void
  */
@@ -80,16 +85,24 @@ function adz_reset_registration() {
 }
 add_action( 'wp_ajax_adz_reset_registration', 'adz_reset_registration' );
 
+/**
+ * Read the bundled settings help document.
+ *
+ * @param mixed $file File.
+ */
 function adz_get_data_from_file( $file ) {
 
 	return file_get_contents( __DIR__ . '/' . $file );
 }
+/**
+ * Configure the advertisement settings sections.
+ */
 function adz_setings_setup() {
 
 	$sections       = array();
 	$configs        = array();
 	$adz_ad_options = get_option( 'adz_ad_options' );
-	// General Section
+	// General Section.
 	$sections['tos'] = array(
 		'title'    => 'Accept TOS and Registration',
 		'id'       => 'tos',
@@ -131,7 +144,6 @@ function adz_setings_setup() {
 			'adzdotworld_email'             => array(
 				'type'    => 'email',
 				'title'   => 'Adz.world Email',
-				'desc'    => '',
 				'default' => '',
 				'sizes'   => 'regular',
 				'desc'    => 'Please enter the Adz.world email address.',
@@ -187,12 +199,21 @@ function adz_setings_setup() {
 	);
 
 	add_action( 'updated_option', 'adz_check_registration', 10, 3 );
+	/**
+	 * Synchronize changed settings after an authorized save.
+	 *
+	 * @param mixed $option Option.
+	 * @param mixed $old_value Old value.
+	 * @param mixed $value Current field value.
+	 */
 	function adz_check_registration( $option, $old_value, $value ) {
 
-		if ( $option == 'adz_ad_options' ) {
+		if ( 'adz_ad_options' === $option ) {
 
-			adz_NetworkAuthorization::updateRegistration( $value );
-
+			$result = Adz_NetworkAuthorization::update_registration( $value );
+			if ( is_wp_error( $result ) ) {
+				adzworld_network_notice( $result );
+			}
 		}
 	}
 	$user = wp_get_current_user();
@@ -200,38 +221,38 @@ function adz_setings_setup() {
 	$configs = array(
 		// This is where your data is stored in the database and also becomes your global variable name.
 		'opt_name'           => 'adz_ad_options',
-		// Set a different name for your global variable other than the opt_name
+		// Set a different name for your global variable other than the opt_name.
 		'global_variable'    => '',
-		// Specify if the admin menu should appear or not. Options: menu or submenu
+		// Specify if the admin menu should appear or not. Options: menu or submenu.
 		'page_parent'        => 'edit.php?post_type=adz_ad',
 		'menu_type'          => 'submenu',
-		// Show the sections below the admin menu item or not
+		// Show the sections below the admin menu item or not.
 		'allow_sub_menu'     => false,
-		// Admin menu title
+		// Admin menu title.
 		'menu_title'         => 'Adz Settings',
-		// Page title of admin menu page
+		// Page title of admin menu page.
 		'page_title'         => 'Adz Settings',
 		// For a full list of options, visit: http://codex.wordpress.org/Function_Reference/add_submenu_page#Parameters
 		// 'page_parent'       => 'themes.php',
 		// Order where the menu appears in the admin area. If there is any conflict, something will not show. Warning.
 		'menu_priority'      => 10,
-		// Specify a custom URL to an icon
+		// Specify a custom URL to an icon.
 		'menu_icon'          => 'dashicons-visibility',
 		// Order where the menu divider appears in the admin area.
 		'menu_divider'       => null,
 		// Permissions needed to access the options panel.
 		'page_permissions'   => /*in_array( 'adz_world_manager', $user->roles ) ? 'adz_world_manager' :*/ 'manage_options',
-		// Page slug used to denote the panel
+		// Page slug used to denote the panel.
 		'page_slug'          => '_adz_ad_options',
-		// Show the panel pages on the admin bar
+		// Show the panel pages on the admin bar.
 		'admin_bar'          => false,
-		// Choose an icon for the admin bar menu
+		// Choose an icon for the admin bar menu.
 		'admin_bar_icon'     => 'dashicons-visibility',
-		// On load save the defaults to DB before user clicks save or not
+		// On load save the defaults to DB before user clicks save or not.
 		'save_defaults'      => false,
 		// Shows the Import/Export panel when not used as a field.
-		'show_import_export' => false,
-		// Specify option page help tabs. array( array('id' => '', 'title' => '', 'content' => ''), )
+		'show_import_export' => true,
+		// Specify option page help tabs. array( array('id' => '', 'title' => '', 'content' => ''), ).
 		'help_tabs'          => array(
 			array(
 				'id'      => 'help',
@@ -244,7 +265,7 @@ function adz_setings_setup() {
 				'content' => '<p>Information about stuff.</p>',
 			),
 		),
-		// Specify option page help sidebar content
+		// Specify option page help sidebar content.
 		'help_sidebar'       => '<p>Static help and information</p>',
 	);
 
@@ -260,6 +281,9 @@ add_action( 'init', 'adz_setings_setup' );
 
 // Function to create adz rotation setting form.
 
+/**
+ * Define the configured legacy rotation fields.
+ */
 function adz_rotation_setting_array() {
 	global $adz_ad_network_base_url;
 	$adz_publisher_options = get_option( 'adz_publisher_options' );
@@ -324,7 +348,6 @@ function adz_rotation_setting_array() {
 						'type'    => 'radio',
 						'title'   => 'Show Adz Rotation',
 						'desc'    => '',
-						'default' => '',
 						'options' => array(
 							'in_sequence' => 'In sequence',
 							'random'      => 'Randomize',
@@ -359,7 +382,6 @@ function adz_rotation_setting_array() {
 						'type'    => 'radio',
 						'title'   => 'Show Adz in popup, within page/post, or thru page',
 						'desc'    => '',
-						'default' => '',
 						'options' => array(
 							'popup'     => 'Popup',
 							'page'      => 'Within page/post',
@@ -402,7 +424,10 @@ function adz_rotation_setting_array() {
 }
 
 
-// Function to fetch all adz
+// Function to fetch all adz.
+/**
+ * List published advertisements for the settings selectors.
+ */
 function adz_get_all_adz() {
 	$adz_list  = array();
 	$args      = array(
@@ -420,30 +445,42 @@ function adz_get_all_adz() {
 	return $adz_list;
 }
 
-// Function to check user register to the adz.world
+// Function to check user register to the adz.world.
+/**
+ * Return escaped registration status and its reset control.
+ */
 function adz_registration_status() {
 	$adz_publisher_options = get_option( 'adz_publisher_options' );
 	$reg                   = 'Not Registered';
 	if ( isset( $adz_publisher_options['adz_registered'] ) ) {
-			$reg = adz_NetworkAuthorization::checkRegistration();
-
-		if ( isset( $reg['date'] ) ) {
-			$reg  = 'Registered Since: ' . $reg['date'];
+			$reg = Adz_NetworkAuthorization::check_registration();
+		if ( is_wp_error( $reg ) ) {
+			return esc_html( $reg->get_error_message() );
+		}
+		if ( isset( $reg['date'] ) && is_string( $reg['date'] ) ) {
+			$reg  = esc_html__( 'Registered Since:', 'adz-world' ) . ' ' . esc_html( $reg['date'] );
 			$reg .= ' <a href="#" class="adz-reset-registration">' . esc_html__( 'Reset the linked account.', 'adz-world' ) . '</a>'
 				. '<input type="hidden" value="' . esc_attr( wp_create_nonce( 'adz_reset_registration' ) ) . '" id="adz_nonce">';
 		} else {
 			$reg = 'Not Registered';
 		}
 	}
-	echo $reg;
+	return $reg;
 }
 
 // Function to fetch all adz terms.
 
+/**
+ * List available remote advertisement categories.
+ */
 function adz_list_all_adz_type() {
 	$select_box = array();
 
-	$caetgories = adz_NetworkAuthorization::get_ad_types();
+	$caetgories = Adz_NetworkAuthorization::get_ad_types();
+	if ( is_wp_error( $caetgories ) ) {
+		adzworld_network_notice( $caetgories );
+		return $select_box;
+	}
 	if ( ! empty( $caetgories ) ) {
 		foreach ( $caetgories as $category ) {
 
@@ -454,6 +491,9 @@ function adz_list_all_adz_type() {
 }
 
 // Function to fetch all membership plans of Woocommerce memebership if installed.
+/**
+ * List optional membership plans and the guest audience.
+ */
 function adz_get_membership_level() {
 	$level_list = array();
 	if ( function_exists( 'wc_memberships' ) ) {
@@ -476,7 +516,10 @@ function adz_get_membership_level() {
 	return $level_list;
 }
 
-// Function to fetch pages and posts
+// Function to fetch pages and posts.
+/**
+ * List published posts and pages for settings selection.
+ */
 function adz_get_all_pages() {
 
 	$page_list   = array();
@@ -496,6 +539,9 @@ function adz_get_all_pages() {
 }
 
 // Function to fetch pages and posts filtered which do not want in the rotation settings.
+/**
+ * List pages not excluded from legacy rotations.
+ */
 function adz_get_filterd_pages() {
 
 	$ad_settings_options = get_option( 'adz_ad_options' );
@@ -523,14 +569,23 @@ function adz_get_filterd_pages() {
 }
 
 // Function to fetch categories.
+/**
+ * List terms for the configured taxonomy.
+ *
+ * @param mixed $taxonomy Taxonomy.
+ */
 function adz_get_all_categories( $taxonomy ) {
 	$term_list = array();
 	$terms     = get_terms(
-		$taxonomy,
 		array(
+			'taxonomy'   => $taxonomy,
 			'hide_empty' => false,
 		)
 	);
+	if ( is_wp_error( $terms ) ) {
+		adzworld_network_notice( $terms );
+		return $term_list;
+	}
 	if ( ! empty( $terms ) ) {
 		foreach ( $terms as $term ) {
 			$term_list['']               = '';
@@ -540,7 +595,10 @@ function adz_get_all_categories( $taxonomy ) {
 	return $term_list;
 }
 
-// Function to fetch all User Roles
+// Function to fetch all User Roles.
+/**
+ * List WordPress roles and the guest audience.
+ */
 function adz_list_all_user_roles() {
 	global $wp_roles;
 
@@ -549,7 +607,10 @@ function adz_list_all_user_roles() {
 	return $roles;
 }
 
-// Function to fetch templates lists
+// Function to fetch templates lists.
+/**
+ * List shipped advertisement templates.
+ */
 function adz_get_adz_template() {
 	$adz_template_list = array();
 	$dir               = ADZ_WORLD . 'adz-templates';
@@ -557,7 +618,7 @@ function adz_get_adz_template() {
 	if ( ! empty( $templates ) ) {
 		foreach ( $templates as $template ) {
 			$ext = pathinfo( $template, PATHINFO_EXTENSION );
-			if ( $ext == 'php' ) {
+			if ( 'php' === $ext ) {
 				$adz_template_list[ $template ] = $template;
 			}
 		}

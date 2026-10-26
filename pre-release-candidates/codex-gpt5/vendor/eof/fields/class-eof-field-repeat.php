@@ -9,14 +9,18 @@
  * @package     EOF
  * @subpackages Fields
  */
-// Exit if accessed directly
+
+// Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 if ( ! class_exists( 'EOF_field_repeat' ) ) :
 
-	class EOF_field_repeat extends EOF_field {
+	/**
+	 * Configured eof field repeat component.
+	 */
+	class EOF_Field_Repeat extends EOF_field {
 
 		/**
 		 * __construct
@@ -25,10 +29,13 @@ if ( ! class_exists( 'EOF_field_repeat' ) ) :
 		 *
 		 * @since 1.0.0
 		 * @return void
+		 * @param array $field Field configuration.
+		 * @param mixed $value Current field value.
+		 * @param EOF   $framework Parent settings framework.
 		 */
-		public function __construct( $field, $value, $parent ) {
+		public function __construct( $field, $value, $framework ) {
 
-			$this->parent      = $parent;
+			$this->parent      = $framework;
 			$this->option_name = $field['option_name'];
 			$this->option_id   = parent::beautifyid( $field['option_name'] );
 
@@ -46,7 +53,7 @@ if ( ! class_exists( 'EOF_field_repeat' ) ) :
 				)
 			);
 
-			// If value does not set, use the default
+			// If value does not set, use the default.
 			if ( is_null( $this->value ) ) {
 				$this->value = $this->field['default'];
 			}
@@ -58,8 +65,6 @@ if ( ! class_exists( 'EOF_field_repeat' ) ) :
 		 * Render field
 		 *
 		 * Create the HTML interface for your field
-		 *
-		 * @param $field - an array holding all the field's data
 		 *
 		 * @since 1.0
 		 * @return void
@@ -82,7 +87,7 @@ if ( ! class_exists( 'EOF_field_repeat' ) ) :
 			}
 			?>
 		<div class="eof-repeat-table-wrap">
-			<table id="<?php echo $this->field['id']; ?>" class="<?php echo $class; ?>">
+			<table id="<?php echo esc_attr( $this->field['id'] ); ?>" class="<?php echo esc_attr( $class ); ?>">
 				<thead>
 					<tr>
 					<?php
@@ -93,7 +98,7 @@ if ( ! class_exists( 'EOF_field_repeat' ) ) :
 						);
 					}
 					?>
-						<th scope="col" class="item-action"><?php _e( 'Action', 'adz-world' ); ?></th>
+						<th scope="col" class="item-action"><?php esc_html_e( 'Action', 'adz-world' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -102,7 +107,7 @@ if ( ! class_exists( 'EOF_field_repeat' ) ) :
 						$i = 0;
 					foreach ( $this->field['sub_fields'] as $key => $sub_field ) {
 
-						// Add some core configures to field
+						// Add some core configures to field.
 						$sub_field['id']          = isset( $key ) ? $key : null;
 						$sub_field['option_name'] = "{$this->option_name}[field_count][{$key}]";
 						$sub_field['option_id']   = '';
@@ -115,11 +120,11 @@ if ( ! class_exists( 'EOF_field_repeat' ) ) :
 								$render = new $field_class( $sub_field, $sub_field['default'], $this->parent );
 								$render->render_field();
 							} else {
-								_e( 'The field type does not exisits, please check your code.', 'adz-world' );
+								esc_html_e( 'The field type does not exisits, please check your code.', 'adz-world' );
 							}
 						}
 						echo '</td>';
-						$i += 1;
+						++$i;
 					}
 					?>
 						<td class="item-action">
@@ -133,7 +138,7 @@ if ( ! class_exists( 'EOF_field_repeat' ) ) :
 						<?php
 						foreach ( $this->field['sub_fields'] as $key => $sub_field ) {
 
-							// Add some core configures to field
+							// Add some core configures to field.
 							$sub_field['id']          = isset( $key ) ? $key : null;
 							$sub_field['option_name'] = "{$this->option_name}[{$count}][{$key}]";
 							$sub_field['option_id']   = '';
@@ -148,32 +153,38 @@ if ( ! class_exists( 'EOF_field_repeat' ) ) :
 									$render      = new $field_class( $sub_field, $field_value, $this->parent );
 									$render->render_field();
 								} else {
-									_e( 'The field type does not exisits, please check your code.', 'adz-world' );
+									esc_html_e( 'The field type does not exisits, please check your code.', 'adz-world' );
 								}
 							}
 							echo '</td>';
 						}
 						?>
 						<td class="item-action"><a class="duplicate_row" title="Duplicate" href="javascript:void()"><span class="dashicons dashicons-welcome-add-page"></span></a> <a class="remove_row" title="Delete" href="javascript:void()"><span class="dashicons dashicons-trash"></span></a> 
-						<input name="adz_ad_options[ad_settings][<?php echo $count; ?>][rotation_id]"  value="adz_rotation_<?php echo $count; ?>" type="hidden"> </td>
+						<input name="adz_ad_options[ad_settings][<?php echo absint( $count ); ?>][rotation_id]"  value="adz_rotation_<?php echo absint( $count ); ?>" type="hidden"> </td>
 					</tr>	
 						<?php
-						$count += 1;
+						++$count;
 endforeach;
 					?>
 					
 				</tbody>
 			</table>
-			<p class="description"><?php echo $this->field['desc']; ?></p>
-			<p><input class="button add-row" type="button" data-count="<?php echo $count; ?>" value="<?php _e( 'Add', 'adz-world' ); ?>" /></p>
+			<p class="description"><?php echo wp_kses_post( $this->field['desc'] ); ?></p>
+			<p><input class="button add-row" type="button" data-count="<?php echo absint( $count ); ?>" value="<?php esc_html_e( 'Add', 'adz-world' ); ?>" /></p>
 		</div>
 			<?php
 		}
 
+		/**
+		 * Sanitize the configured field value.
+		 *
+		 * @param mixed $value Current field value.
+		 */
 		public function sanitize( $value ) {
-			// Remove the hidden element for clone.
-			$sanitize_value = array_slice( $value, 1 );
-			return $sanitize_value;
+			if ( is_array( $value ) ) {
+				unset( $value['field_count'] );
+			}
+			return $value;
 		}
 	}
 
