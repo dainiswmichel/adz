@@ -23,10 +23,10 @@ Honesty constraints. Unresolved operator facts are not printed as a footer addre
 | Path | What a person finds |
 | --- | --- |
 | `/` | What the exchange is, the 10/90 rule, a session preference control, links onward |
-| `/how-it-works` | Publisher site, visitor session, guest account, service as the future book of record |
+| `/how-it-works` | Publisher site, access, human visit, guest profile, service as the future book of record |
 | `/economics` | Settled-commission basis, minor units, currencies kept apart, what is not a fee |
 | `/publishers` | Free plugin, install is not consent, both switches required before any call-out, earnings screen is unconfigured until a statement exists |
-| `/visitors` | Session preferences, what is stored, what is not an account |
+| `/access` | Session preferences for an access with no profile, and what a human visit, a guest, and a member are |
 | `/preferences` | The same session control as the home page, with the persistence limit repeated |
 | `/wordpress` | How the project intends to participate in the WordPress community |
 | `/roadmap` | The phases below |
@@ -41,17 +41,19 @@ The setup spec’s operational pages remain the ones a later review fetches (`/t
 
 ## Journeys
 
-Visitor. An unknown audience member. Arrives at `/` with no profile. Reads that an ad is shown because the publisher asked for an exchange, not because a script followed them. Sets categories on `/` or `/preferences`. The choice is held for the session and the page says the session may not hold. The visitor is not asked for an email. No earnings number appears.
+Access. Something reaches `/`. The party may be human, AI, or still unknown. With no profile, categories on `/` or `/preferences` are held for the session, and the page says the session may not hold. No email is required. No earnings number appears. The page does not call that arrival a visit.
 
-Guest. Accessing the site with a profile. On a publisher site that profile is the WordPress account. Opens `[adzworld_preferences]` while logged in. The form says the categories are saved on that profile on that site (`adzworld_pref_terms`). The profile is not by itself a purchase.
+Visit. Human access. The flagship uses that word only for a human.
 
-Member. A guest who has made an adz-world purchase. The flagship can say that, and can show a purchase only after adz-world.com has a real purchase record. This candidate does not invent the record, does not treat a login as a purchase, and does not grant a WordPress capability because of one. Publisher WooCommerce membership plans already available in a rotation are that publisher’s plans, not this definition.
+Guest. A human visit with a profile. On a publisher site that profile is the WordPress account. `[adzworld_preferences]`, while that account is logged in, saves categories on that profile (`adzworld_pref_terms`). A profile alone is not a guest, because the party is not known to be human, and it is not a purchase.
+
+Member. A guest who has made an adz-world purchase: a human visit, with a profile, plus that purchase. The flagship can show a purchase only after adz-world.com has a real purchase record. This candidate does not invent the record, does not treat a login as a purchase, and does not grant a WordPress capability because of one. Publisher WooCommerce membership plans already available in a rotation are that publisher’s plans, not this definition.
 
 Publisher. Installs the free plugin. Serves the publisher’s own adz with the network switch off and sees no outbound requirement. Opens Earnings, reads the draft terms, and either leaves or accepts. Acceptance still does not call out until the existing network switch is on. The statement table reads Unconfigured for every bucket. Stripe and PayPal read unconfigured. The referral code field still shows the publisher’s own code. No payout button is offered.
 
 ## WordPress community
 
-The plugin remains free and GPLv3. The contribution that can be demonstrated now is the consent mechanic: default is no phone-home, acceptance is a separate administrator action, external calls are described in `readme.txt`, and a visitor can set categories without creating an account.
+The plugin remains free and GPLv3. The contribution that can be demonstrated now is the consent mechanic: default is no phone-home, acceptance is a separate administrator action, external calls are described in `readme.txt`, and an access can set categories for a session without creating a profile.
 
 Later, if the operator wants a public note, a make.wordpress.org post can describe that pattern and link the plugin. The post would not say the Plugins Team endorses adz-world, the revenue share, or permission-based advertising as a project of WordPress.
 
@@ -65,6 +67,6 @@ After a plugin review path exists. Publish the flagship pages in the site map wi
 
 After a settlement feed is real. Implement the read API in `STATEMENT-CONTRACT.md` on adz-world.com, issue site read credentials, and only then let the plugin display a validated statement. Payouts stay on the service state machine. Provider choice happens here, with the open dependencies answered.
 
-Member status. A member is a guest who has made an adz-world purchase. The purchase record waits on the service. No extra privilege is coded ahead of that record.
+Audience status. Access is general. A visit is human access. A guest is a human visit with a profile. A member is that guest after an adz-world purchase. The purchase record waits on the service. No extra privilege is coded ahead of that record.
 
 Operator identity. Entity, address, and state, decided before any legal route drops its draft banner.

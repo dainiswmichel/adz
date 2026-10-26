@@ -2,11 +2,12 @@
 /**
  * Visitor and guest ad preferences.
  *
- * A visitor is an unknown audience member. Their choice lives in the
- * adzworld_prefs session cookie and is not guaranteed to hold. A guest is
- * accessing the site with a profile; on this site that profile is the
- * WordPress account, and the choice is user meta. A member is a guest who
- * has made an adz-world purchase. This plugin does not record that purchase.
+ * Access is the general event. A visit is human access. A guest is a human
+ * visit with a profile. On this site the profile is the WordPress account,
+ * and that profile's categories are user meta. A member is a guest who has
+ * made an adz-world purchase. This plugin does not record that purchase and
+ * does not decide whether an access is human. An access with no profile uses
+ * the adzworld_prefs session cookie, which is not guaranteed to hold.
  *
  * @package adz-world
  */
@@ -70,7 +71,7 @@ function adzworld_visitor_pref_terms() {
 /**
  * Preference term ids for the current person.
  *
- * Guests, who have a profile, use user meta. Visitors use the session cookie.
+ * A profile uses user meta. An access with no profile uses the session cookie.
  *
  * @return int[]
  */
@@ -137,9 +138,12 @@ add_action( 'admin_post_adzworld_save_preferences', 'adzworld_save_preferences' 
 add_action( 'admin_post_nopriv_adzworld_save_preferences', 'adzworld_save_preferences' );
 
 /**
- * Preference form. Visitors get a session cookie. Guests get user meta.
- * A member is a guest who has made an adz-world purchase. This form does
- * not record a purchase and does not grant a capability.
+ * Preference form.
+ *
+ * A guest is a human visit with a profile. A member is that guest after an
+ * adz-world purchase. This form stores categories for the current access. It
+ * does not record a purchase, grant a capability, or decide that the party
+ * is human.
  *
  * @return string
  */
@@ -158,9 +162,9 @@ function adzworld_preferences_shortcode() {
 	echo '<input type="hidden" name="action" value="adzworld_save_preferences" />';
 
 	if ( is_user_logged_in() ) {
-		echo '<p>' . esc_html__( 'You are a guest. These ad categories are saved on your profile on this site. A member is a guest who has made an adz-world purchase. This form does not record a purchase.', 'adz-world' ) . '</p>';
+		echo '<p>' . esc_html__( 'This access has a profile on this site, so these ad categories are saved on that profile. A guest is a human visit with a profile. A member is a guest who has made an adz-world purchase. This form does not record a purchase and does not decide whether this access is human.', 'adz-world' ) . '</p>';
 	} else {
-		echo '<p>' . esc_html__( 'You are a visitor, an unknown audience member. These ad categories are saved for this browser session and are not guaranteed to hold. A profile on this site is what makes a guest.', 'adz-world' ) . '</p>';
+		echo '<p>' . esc_html__( 'This access has no profile. These ad categories are saved for this browser session and are not guaranteed to hold. A visit is human access. A guest is a human visit with a profile.', 'adz-world' ) . '</p>';
 	}
 
 	if ( is_array( $terms ) && $terms ) {
