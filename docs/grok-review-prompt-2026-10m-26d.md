@@ -16,12 +16,18 @@ and never force-push; and you report what you actually ran rather than what you
 expect would pass.
 
 **Treat this as an audit, not an endorsement.** The agent that wrote this
-candidate found several of its own errors during one session: a fatal call to a
-function nothing defined, a phantom finding produced by its own analysis tool, a
-PHPCS config broken by illegal XML that silently reported nothing, and two
-escaping functions applied to the wrong context. The prior probability of more
+candidate found six of its own errors during one session: a fatal call to a
+function nothing defined; a phantom finding produced by its own analysis tool; a
+PHPCS config broken by illegal XML that silently reported nothing; two escaping
+functions applied to the wrong context; a test runner that reported "All checks
+passed" for a candidate where every test had fatalled; and a call gate that did
+not fail on the one thing it was written to catch. The prior probability of more
 mistakes is high, not low. Finding one is the useful outcome. Confirming a
 number is less useful than disproving it.
+
+Note in particular that the tooling you are asked to run below was itself
+corrected twice on 2026-10-26, after the figures in the entry were measured.
+Do not assume it is right now either.
 
 ## 1. Verify the claims, do not take them
 
@@ -52,6 +58,10 @@ php tools/resolve-calls.php pre-release-candidates/claude-code-web
 sh tools/tests/run-all.sh pre-release-candidates/claude-code-web
 ```
 
+`run-all.sh` exits 0 only when every check that ran passed, and reports `SKIP`
+for a check that could not run. A `SKIP` is not a pass. Read the counts at the
+bottom, not the absence of the word FAIL.
+
 Before you trust `phpcs.xml.dist`, prove it parses rather than merely runs. A
 ruleset with illegal XML causes PHPCS to report nothing, which reads exactly
 like a clean result. This already happened once:
@@ -62,9 +72,26 @@ phpcs --standard=phpcs.xml.dist --report=summary tools/_probe.php   # must repor
 rm tools/_probe.php
 ```
 
-Apply the same scepticism to `tools/resolve-calls.php`. It is a tool written by
-the agent whose work you are auditing, and it has already produced one phantom
-fatal. Point it at a file you have deliberately broken and confirm it notices.
+Apply the same scepticism to `tools/resolve-calls.php` and to `run-all.sh`. Both
+were written by the agent whose work you are auditing, and both have already
+produced a wrong answer: a phantom duplicate-definition fatal in all four trees,
+and a reported pass for tests that never ran. Exercise their failure paths
+before believing their success paths. Copy the candidate somewhere writable and
+break it on purpose:
+
+```sh
+cp -r pre-release-candidates/claude-code-web /tmp/probe
+printf '<?php\nfunction x( {\n' > /tmp/probe/includes/_a.php          # syntax error
+printf '<?php\nfunction y() { return adz_nope(); }\n' > /tmp/probe/includes/_b.php   # unresolved own-prefix call
+printf '<?php\nfunction adzworld_flush_ad_pool() {}\n' > /tmp/probe/includes/_c.php  # duplicate definition
+
+php tools/resolve-calls.php /tmp/probe        # must name all three and exit 1
+sh tools/tests/run-all.sh /tmp/probe          # must report FAIL and exit 1
+rm -rf /tmp/probe
+```
+
+If either reports success on that tree, the checks in section 1 are worthless
+and you should say so before going further.
 
 ## 2. Review the risky changes for broken behaviour, not style
 
