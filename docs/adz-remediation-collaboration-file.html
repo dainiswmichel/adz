@@ -501,6 +501,137 @@ the authoritative settlement service, and the still-unidentified original closur
 Dainis is not being asked to test this as a finished or standards-clean plugin.</p>
 </section>
 
+<section id="codex-audit-2026y-10m-26d-UTC-14h-06m-51s">
+<h2>Codex remediation notes and case for selection</h2>
+<p class="meta"><strong>UTC MTS:</strong>
+<time datetime="2026-10-26T14:06:51Z">2026y-10m-26d-UTC-14h-06m-51s</time>.
+Agent: Codex. Candidate: <code>pre-release-candidates/codex-gpt5/</code>.</p>
+<p><strong>Tested code:</strong>
+<a href="https://github.com/dainiswmichel/adz/commit/277dc303664c6a13f3c663c90095ab87f31c582e"><code>277dc303664c6a13f3c663c90095ab87f31c582e</code></a>,
+following the explicit-rotation and bound-request build <code>762524a</code>.
+This is a candidate progress record, not a task assignment, integration decision or deployment approval.</p>
+<p class="status">CANDIDATE PROGRESS VERIFIED - NOT RELEASE-READY.
+Full WPCS: 0 errors / 61 warnings. Plugin Check: 1 error / 124 warnings.</p>
+
+<h3>Why I recommend this candidate to the team</h3>
+<p>My case for choosing this version is that it combines the requested presentation tool with
+tested safeguards at the boundaries where the original plugin actually failed: public requests,
+administrator saves, database state and remote-service failures. The recommendation is about
+specific implementation choices and reproducible behavior, not the model name, feature count or a
+claim that every other candidate is worse. I have not run every competing candidate through an
+identical runtime acceptance suite, so an unconditional overall-winner claim would be unsupported.</p>
+<ol>
+<li><strong>Public request integrity covers the whole journey.</strong>
+The earlier build binds the actual rendered target, rotation, sequence, selected ad, template,
+interval, repetition and operation into the request token across inline, popup, shortcode and
+through-page callers. Saved rotation membership is checked as well; a valid-looking prefix is not
+enough. Tampering tests exercise rejection and unchanged stored state. Close updates address the
+specific view row, including its target type, instead of overwriting historical or unrelated records.
+This is configuration integrity, not administrator authority, human identification or proof of a
+billable impression. An unchanged public configuration remains replayable until its token expires.</li>
+<li><strong>The publisher decides what is shown.</strong>
+Existing-provider shortcodes, local ads and introduction panels are explicit rotation sources.
+A provider-only configuration inserts no local ad or introduction. Weighted single display and
+manual flat/3D carousels are available without a provider-tag refresh loop. This respects the
+instruction that no configured adz means no adz; it does not claim universal network certification,
+an exact one-in-ten quota or permission to ignore provider placement policies.</li>
+<li><strong>Local editing does not depend on a remote service.</strong>
+Affiliate metadata now saves through the authorized advertisement editor even when disconnected.
+The contract suite exercises every network entry point with the connection off and records zero
+outbound requests. Synchronization reads already-authorized stored metadata rather than raw POST
+values, so automated saves do not invent missing form fields.</li>
+<li><strong>Failures preserve recoverable state.</strong>
+A failed remote deletion retains the network ad identifier for retry. Failed registration does
+not erase the site's existing publisher credentials. Transport errors, invalid JSON and missing
+response identifiers remain explicit failures rather than success-shaped fallbacks.
+These paths are exercised with mocked WordPress HTTP responses, not asserted from inspection alone.</li>
+<li><strong>Settings are validated independently of a rendered form or its referrer.</strong>
+Unknown settings and malformed scalar fields are rejected. Repeat-field children are sanitized,
+the hidden prototype is removed by its key, and the first actual row survives. Clearing a multiple
+selection now persists an empty selection. The newly enabled Import/Export tab offers
+administrator-only backup and validated restore; anonymous export access is removed. Actual HTTP
+tests cover saving, nonce failure, anonymous rejection and JSON export, and the exported settings
+are successfully re-imported through the real controller.</li>
+<li><strong>One repaired transport, not two diverging authentication implementations.</strong>
+PUT no longer calls a nonexistent method; changed credentials take effect; query values are
+encoded without becoming extra parameters; Digest signs the real resource path and query;
+cached responses include authentication identity; mutations invalidate cached reads.
+The legacy adapter retains its flat response shape while reusing the WordPress HTTP adapter.
+Its certificate mode is retained openly, with an outstanding real mutual-TLS test and a visible
+Plugin Check finding, rather than deleted, silently downgraded or hidden behind an exclusion.</li>
+<li><strong>Product additions have honest limits.</strong>
+Preference refinements stay in the current page's memory; there is no claimed NLP, matching service,
+persistent profile or preference transmission. The 90/10 model applies to settled affiliate
+commission actually received, not purchase totals or ad spend. Integer-accounting and disabled
+sandbox contracts are tested; authoritative settlement, live payouts and live affiliate accounts
+are not implemented or certified by those checks.</li>
+</ol>
+<p><strong>Selection recommendation:</strong> use this candidate as a strong executable reference
+for public-request integrity, local-first editing, state-preserving remote failures, settings
+round trips and explicitly configured display. Retain the best competing solution wherever its
+evidence is stronger. Integrate issue-by-issue and merge coupled callers/tests together; do not
+replace the release source wholesale with this directory.</p>
+
+<h3>Current executed evidence</h3>
+<p>Environment: the existing <code>../adz-world-test-site-by-codex/</code>, symlinked to this candidate,
+WordPress 7.1.3 / PHP 8.4.7. Both <code>WP_DEBUG</code> and <code>WP_DEBUG_LOG</code> are enabled.
+The earlier Codex section and other agents' comparison tables are historical snapshots; their
+older Codex counts are not the results of <code>277dc30</code>.</p>
+<div class="table-wrap"><table>
+<thead><tr><th>Gate or behavior</th><th>Result for this code</th></tr></thead>
+<tbody>
+<tr><td>Complete WordPress-standard PHPCS, annotations ignored</td>
+<td><strong>0 errors / 61 warnings</strong>, down from 711 / 139 at <code>762524a</code>.
+The entire candidate was checked, including framework and tests. No diagnostic suppression or
+scope exclusion was introduced. Remaining warnings mean this is not a standards-clean pass.</td></tr>
+<tr><td>Official Plugin Check</td>
+<td><strong>1 error / 124 warnings</strong>, down from 23 / 135.
+The remaining error is the native <code>curl_setopt_array()</code> certificate-option call in
+<code>classes/rest-client/class-phprestclient.php</code>, used within WordPress's documented
+<code>http_api_curl</code> hook. It remains a release blocker, not a claimed exemption.</td></tr>
+<tr><td>Syntax and shared call resolver</td>
+<td>All 56 PHP files lint. JavaScript syntax checks pass for the rotation, legacy, administrator
+and EOF assets. The shared resolver reports 0 internal arity mismatches and 0 duplicate
+file-scope definitions; 154 external targets remain unresolved, none identified as this
+codebase's own. That is not certification of every external dependency.</td></tr>
+<tr><td>Accumulated local WordPress suites</td>
+<td>All nine pass: <code>configured-rotations.php</code>, <code>rotation-display.php</code>,
+<code>provider-contracts.php</code>, <code>template-settings.php</code>,
+<code>through-page.php</code>, <code>http-regression.php</code>,
+<code>rest-client-contracts.php</code>, <code>settings-network.php</code> and
+<code>settings-http.php</code>. These also run the existing regression checks.
+Provider and network-service responses are mocked; the administrator save/export requests and
+legacy rendering tests use the actual local WordPress HTTP server. No live money was contacted.</td></tr>
+<tr><td>Actual debug-enabled deactivation/reactivation</td>
+<td>PASS; zero fresh debug-log bytes during activation. Historical failed-test diagnostics were
+preserved. Original test settings, disposable advertisement fixtures and HTTP sessions were restored
+or removed by the regression suites.</td></tr>
+<tr><td>Real mutual TLS</td>
+<td><strong>NOT RUN.</strong> <code>tests/certificate-http.php</code> exists, but execution approval
+blocked disposable certificate generation even after Dainis consented. No successful certificate
+handshake or certificate-compatibility claim is made.</td></tr>
+</tbody></table></div>
+<p><strong>Reproduction:</strong> from the repository root, run
+<code>phpcs --standard=WordPress --ignore-annotations pre-release-candidates/codex-gpt5</code>;
+<code>wp --path=../adz-world-test-site-by-codex plugin check adz-world --format=json</code>;
+and <code>wp --path=../adz-world-test-site-by-codex eval-file pre-release-candidates/codex-gpt5/tests/&lt;suite&gt;.php</code>
+for each named suite. HTTP suites require the local server at <code>127.0.0.1:18777</code>.
+Raw evidence is retained in the originating session, not added to the release payload.</p>
+
+<h3>Behavior changes and remaining acceptance conditions</h3>
+<p>The code commit explicitly records the changed save authorization, response caching,
+state-preserving failure handling, available administrator backup/restore and removal of
+anonymous export. Field class filenames now follow WPCS and internal includes were updated;
+the old public network method spellings remain callable through compatibility dispatch.
+No plugin release version was bumped. No other agent's candidate, frozen ancestor or integrated
+release source was changed by this work.</p>
+<p><strong>Still open:</strong> all remaining WPCS/Plugin Check findings, the mutual-TLS test,
+the minimum-version compatibility matrix, provider-specific policy/live-account validation,
+the production settlement service and legal/service publication dependencies, the unidentified
+original closure guideline, and final integration/artifact verification. This entry marks no
+integrated issue complete and does not ask Dainis to accept a failing gate as a finished plugin.</p>
+</section>
+
 <section id="roadmap-claude-code-web">
 <h2>claude-code-web — roadmap to a fully remediated plugin</h2>
 <p class="status">Comment, not an assignment claim. No task in the index above is claimed by this entry.</p>
