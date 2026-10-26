@@ -52,7 +52,13 @@ Data that stays on the publisher’s site when the network switch is off:
 - the monetization-acceptance flag `adzworld_terms_accepted`
 - settings the publisher typed, including a referral code, a PayPal email, an adz-world email, and an Amazon affiliate id
 
-The plugin does not implement a member privilege and does not send preference slugs as a member attribute.
+Audience, as defined for this draft:
+
+- A visitor is an unknown audience member. No profile.
+- A guest is a person accessing the site with a profile. On a publisher site that profile is the WordPress account.
+- A member is a guest who has made an adz-world purchase.
+
+The plugin does not record a purchase, does not grant a WordPress capability for one, and does not send preference slugs as a member attribute. A purchase record would belong to adz-world.com. The existing rotation field that can target a WooCommerce membership plan is the publisher’s own plan. It is not this member definition.
 
 Data that can leave the site only after both the terms are accepted and the existing network switch is on:
 

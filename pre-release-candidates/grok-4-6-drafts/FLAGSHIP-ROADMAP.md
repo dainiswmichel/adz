@@ -41,23 +41,13 @@ The setup spec’s operational pages remain the ones a later review fetches (`/t
 
 ## Journeys
 
-Visitor. Arrives at `/`. Reads that an ad is shown because the publisher asked for an exchange, not because a script followed them. Sets categories on `/` or `/preferences`. The choice is posted to the publisher’s own WordPress site when this control is the plugin shortcode `[adzworld_preferences]`, or held in the flagship session when the control is the site demo. The page says the session may not hold. The visitor is not asked for an email. No earnings number appears.
+Visitor. An unknown audience member. Arrives at `/` with no profile. Reads that an ad is shown because the publisher asked for an exchange, not because a script followed them. Sets categories on `/` or `/preferences`. The choice is held for the session and the page says the session may not hold. The visitor is not asked for an email. No earnings number appears.
 
-Guest. Already has, or creates, a WordPress account on a publisher site. Opens the same shortcode while logged in. The form says the categories are saved on that account on that site (`adzworld_pref_terms`). Logging out does not publish those categories to other sites. The flagship can explain this; it does not need a second account system to explain it.
+Guest. Accessing the site with a profile. On a publisher site that profile is the WordPress account. Opens `[adzworld_preferences]` while logged in. The form says the categories are saved on that profile on that site (`adzworld_pref_terms`). The profile is not by itself a purchase.
+
+Member. A guest who has made an adz-world purchase. The flagship can say that, and can show a purchase only after adz-world.com has a real purchase record. This candidate does not invent the record, does not treat a login as a purchase, and does not grant a WordPress capability because of one. Publisher WooCommerce membership plans already available in a rotation are that publisher’s plans, not this definition.
 
 Publisher. Installs the free plugin. Serves the publisher’s own adz with the network switch off and sees no outbound requirement. Opens Earnings, reads the draft terms, and either leaves or accepts. Acceptance still does not call out until the existing network switch is on. The statement table reads Unconfigured for every bucket. Stripe and PayPal read unconfigured. The referral code field still shows the publisher’s own code. No payout button is offered.
-
-## Member proposals
-
-Member capabilities are not implemented. Three proposals for a later decision:
-
-1. No member tier. Guests are logged-in users with preferences on that one site. Tradeoff: nothing new to misunderstand, and no cross-site preference. Community participation stays in the plugin’s consent behavior rather than in a rank.
-
-2. Publisher-local lists. A publisher, using capabilities WordPress already gives them, groups logged-in guests on that site (for example a private category of ads those guests asked for). Tradeoff: useful on one site, no adz-world-wide privilege, no payment, and no central directory of people.
-
-3. Portable categories. A person later opts in, on the service, to let category slugs travel to other publisher sites. No WordPress capability is added. No email is part of the offer. Tradeoff: this needs the statement service’s account model, a separate consent record, and a deletion path. It is easy to confuse with a paid rank, so the interface would have to say that it is not a purchase. This candidate does not build it.
-
-Paid tiers are not part of any proposal.
 
 ## WordPress community
 
@@ -75,6 +65,6 @@ After a plugin review path exists. Publish the flagship pages in the site map wi
 
 After a settlement feed is real. Implement the read API in `STATEMENT-CONTRACT.md` on adz-world.com, issue site read credentials, and only then let the plugin display a validated statement. Payouts stay on the service state machine. Provider choice happens here, with the open dependencies answered.
 
-Member choice. One of the three proposals above, decided before any of them is coded.
+Member status. A member is a guest who has made an adz-world purchase. The purchase record waits on the service. No extra privilege is coded ahead of that record.
 
 Operator identity. Entity, address, and state, decided before any legal route drops its draft banner.

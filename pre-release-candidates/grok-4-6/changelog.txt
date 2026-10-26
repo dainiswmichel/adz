@@ -33,7 +33,7 @@ Tested up to (declared): WordPress 7.1
 * Ad-view selects use prepared queries. The unused concatenated condition string is removed.
 * Admin Ajax URLs in js/plugin.js and vendor/eof/js/eof-custom.js come from wp_localize_script.
 * Earnings screen lists statement buckets and shows them as unconfigured. It does not rewrite ad links or replace a publisher referral code.
-* Visitor preferences use a session cookie. Logged-in guests store category ids in user meta. No member privilege is implemented.   
+* A visitor is an unknown audience member and uses a session cookie. A guest has a profile and stores category ids in user meta. A member is a guest who has made an adz-world purchase. This candidate does not record that purchase.   
 
 
 == Coming Soon ==
