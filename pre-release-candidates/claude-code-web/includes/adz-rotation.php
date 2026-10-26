@@ -183,22 +183,23 @@ add_shortcode( 'adz_rotation', 'adzworld_rotation_shortcode' );
  *   display   carousel-3d | carousel-flat | stack | single
  *   controls  arrows | dots | both | none
  *   slots     comma-separated registered network slot keys, in rotation order
- *   every     one render in N carries an adz; 0 serves the publisher's adz only
- *   count     how many adz to carry on a render that carries any
+ *   count     how many adz are in the rotation; 0 puts none in
+ *   every     optional: carry the adz on one render in N instead of every one
  *   slides    hard cap on positions in the rotation, 1-24
  *   panel     yes | no - show the permission panel
  *   intro     full | short | none - how much the panel explains
  *   interval  seconds between automatic advances, 0 to disable
  *
- * With every="0" and one registered slot this serves exactly what the publisher
- * serves now, in the same place, through their own account, and the plugin only
- * presents it. Raising "every" adds an adz the visitor asked for to one render
- * in N, and nothing about the publisher's own adz changes.
+ * What is in the rotation is what shows. The admin registers the ad code from
+ * the networks they already use, and chooses how many adz go in alongside it.
+ * With count="0" no adz go in and none show. With count="1" an adz goes in and
+ * it shows, whether or not the visitor has filled in the panel: a preference
+ * decides which adz is picked, never whether one appears.
  *
- * The one-in-N roll happens on the server, so a full-page cache will cache the
- * roll along with the page. On a cached site the honest way to run this is one
- * adz per render ( every="1" ) with the rotation itself doing the spacing, or a
- * cache plugin configured to leave this shortcode uncached.
+ * "every" is an optional frequency control for a publisher who wants the adz to
+ * appear less often than every render. It rolls on the server, so a full-page
+ * cache caches the roll along with the page; on a cached site either leave this
+ * shortcode uncached or leave every at 1 and let the rotation do the spacing.
  *
  * @param array $atts Shortcode attributes.
  * @return string
@@ -209,8 +210,8 @@ function adzworld_rotation_shortcode( $atts ) {
 			'display'  => 'carousel-flat',
 			'controls' => 'both',
 			'slots'    => '',
-			'every'    => 10,
 			'count'    => 1,
+			'every'    => 1,
 			'slides'   => 12,
 			'panel'    => 'yes',
 			'intro'    => 'full',
@@ -223,8 +224,8 @@ function adzworld_rotation_shortcode( $atts ) {
 	$display   = in_array( $atts['display'], array( 'carousel-3d', 'carousel-flat', 'stack', 'single' ), true ) ? $atts['display'] : 'carousel-flat';
 	$controls  = in_array( $atts['controls'], array( 'arrows', 'dots', 'both', 'none' ), true ) ? $atts['controls'] : 'both';
 	$intro     = in_array( $atts['intro'], array( 'full', 'short', 'none' ), true ) ? $atts['intro'] : 'full';
-	$every     = max( 0, min( 1000, (int) $atts['every'] ) );
-	$count     = max( 1, min( 12, (int) $atts['count'] ) );
+	$count     = max( 0, min( 12, (int) $atts['count'] ) );
+	$every     = max( 1, min( 1000, (int) $atts['every'] ) );
 	$positions = max( 1, min( 24, (int) $atts['slides'] ) );
 	$interval  = max( 0, min( 120, (int) $atts['interval'] ) );
 
@@ -248,13 +249,14 @@ function adzworld_rotation_shortcode( $atts ) {
 	}
 
 	/*
-	 * Adz are matched only against a preference the visitor set. With the panel
-	 * untouched there is nothing to match, so an untouched rotation is the
-	 * publisher's own adz and nothing else.
+	 * count decides whether adz are in the rotation at all. A visitor's
+	 * preference reorders what adzworld_match_adz() returns and absolutely
+	 * excludes anything they ruled out, but it is not a condition on adz
+	 * appearing: an admin who put an adz in the rotation gets an adz.
 	 */
 	$adz = array();
 
-	if ( $every > 0 && $has_pref && 1 === wp_rand( 1, $every ) ) {
+	if ( $count > 0 && ( 1 === $every || 1 === wp_rand( 1, $every ) ) ) {
 		foreach ( adzworld_match_adz( $pref, $count ) as $ad_id ) {
 			$ad = get_post( $ad_id );
 

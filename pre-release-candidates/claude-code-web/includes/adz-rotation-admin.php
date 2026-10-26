@@ -160,7 +160,7 @@ function adzworld_rotation_render() {
 		<p>
 			<?php
 			esc_html_e(
-				'Register the ad code you already run. The rotation presents it exactly as your own network supplied it, in the same place, through your own account. Nothing here contacts an ad network.',
+				'Register the ad code from the networks you already use. The rotation can be configured to serve it, unchanged, through your own account. Nothing here contacts an ad network.',
 				'adz-world'
 			);
 			?>
@@ -334,12 +334,16 @@ function adzworld_rotation_render() {
 		<table class="widefat striped">
 			<tbody>
 				<tr>
-					<td><code>[adz_rotation slots="sidebar_top" every="0"]</code></td>
-					<td><?php esc_html_e( 'Your adz only. Exactly what you serve now, presented by the plugin.', 'adz-world' ); ?></td>
+					<td><code>[adz_rotation slots="sidebar_top" count="0"]</code></td>
+					<td><?php esc_html_e( 'Your networks only. No adz are in the rotation, so none show.', 'adz-world' ); ?></td>
 				</tr>
 				<tr>
-					<td><code>[adz_rotation slots="sidebar_top,sidebar_mid" every="10"]</code></td>
-					<td><?php esc_html_e( 'Your adz, plus one adz a visitor asked for on one render in ten.', 'adz-world' ); ?></td>
+					<td><code>[adz_rotation slots="sidebar_top,sidebar_mid" count="1"]</code></td>
+					<td><?php esc_html_e( 'Your networks, plus one adz in the rotation. It shows on every render.', 'adz-world' ); ?></td>
+				</tr>
+				<tr>
+					<td><code>[adz_rotation slots="sidebar_top" count="1" every="10"]</code></td>
+					<td><?php esc_html_e( 'The same, but the adz is carried on one render in ten rather than every one.', 'adz-world' ); ?></td>
 				</tr>
 				<tr>
 					<td><code>[adz_rotation display="carousel-3d" controls="both" interval="7"]</code></td>
@@ -359,7 +363,7 @@ function adzworld_rotation_render() {
 		<p>
 			<?php
 			esc_html_e(
-				'The one-in-N decision is made when the page is built, so a full-page cache caches it with the page. On a cached site either leave this shortcode uncached or use every="1" and let the rotation itself do the spacing.',
+				'A visitor who fills in the panel changes which adz is picked, not whether one appears. If no adz are in the rotation, none show. The optional every="N" roll is made when the page is built, so a full-page cache caches it with the page; on a cached site either leave this shortcode uncached or leave every at 1.',
 				'adz-world'
 			);
 			?>

@@ -8,7 +8,7 @@ candidate is authoritative. Compare a candidate with the integrated source
 to review its proposed changes:
 
 ```bash
-diff -qr ../adz-world-wordpress-codebase claude-opus-5
+diff -qr ../adz-world-wordpress-codebase claude-code-web
 ```
 
 Symlink a candidate into a local WordPress installation so the site runs the

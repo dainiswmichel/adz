@@ -465,17 +465,45 @@ function adzworld_score_ad( $ad_id, $pref ) {
  * @return int[] Adz post IDs.
  */
 function adzworld_match_adz( $pref, $limit = 5 ) {
-	$scored = array();
+	$scored  = array();
+	$ordinal = 0;
 
 	foreach ( adz_get_all_ad_ids() as $ad_id ) {
 		$score = adzworld_score_ad( $ad_id, $pref );
 
-		if ( $score > 0 ) {
-			$scored[ $ad_id ] = $score;
+		/*
+		 * A negative score is an exclusion the visitor stated, and that is
+		 * absolute. A zero score only means nothing matched, which is the
+		 * normal case for a visitor who has not filled in the panel. Dropping
+		 * those would leave the rotation empty whenever nobody has typed
+		 * anything, so what a preference changes is which adz come first, not
+		 * whether any adz appear at all.
+		 */
+		if ( $score < 0 ) {
+			continue;
 		}
+
+		$scored[] = array(
+			'id'      => $ad_id,
+			'score'   => $score,
+			'ordinal' => $ordinal,
+		);
+
+		++$ordinal;
 	}
 
-	arsort( $scored );
+	// Highest score first, original order preserved within a tie. usort is only
+	// stable from PHP 8.0, so the ordinal does the tie-breaking explicitly.
+	usort(
+		$scored,
+		static function ( $a, $b ) {
+			if ( $a['score'] === $b['score'] ) {
+				return $a['ordinal'] <=> $b['ordinal'];
+			}
 
-	return array_slice( array_keys( $scored ), 0, max( 1, (int) $limit ) );
+			return $b['score'] <=> $a['score'];
+		}
+	);
+
+	return array_slice( wp_list_pluck( $scored, 'id' ), 0, max( 1, (int) $limit ) );
 }

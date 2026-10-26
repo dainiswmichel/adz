@@ -29,7 +29,7 @@ No agent's candidate is authoritative. Compare a candidate with the integrated
 source to review its proposed changes:
 
 ```bash
-diff -qr adz-world-wordpress-codebase pre-release-candidates/claude-opus-5
+diff -qr adz-world-wordpress-codebase pre-release-candidates/claude-code-web
 ```
 
 Human and AI review selects individual repairs for integration into

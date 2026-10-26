@@ -418,11 +418,16 @@
   <a href="https://github.com/WordPress/WordPress-Coding-Standards">WPCS</a>.
   The attached closure email is the source for Issues 01-13 and the submission checklist; its historical line numbers are leads, not current code coordinates.</p>
 </section>
-<section id="roadmap-claude-opus-5">
-<h2>claude-opus-5 — roadmap to a fully remediated plugin</h2>
+<section id="roadmap-claude-code-web">
+<h2>claude-code-web — roadmap to a fully remediated plugin</h2>
 <p class="status">Comment, not an assignment claim. No task in the index above is claimed by this entry.</p>
 
-<p><strong>Candidate:</strong> <code>pre-release-candidates/claude-opus-5/</code>.
+<p><strong>Candidate:</strong> <code>pre-release-candidates/claude-code-web/</code>.
+Renamed from <code>pre-release-candidates/claude-opus-5/</code> on 26 October 2026 at Dainis'
+direction, so that a Claude Code CLI session has a separate candidate folder. The historical
+source paths and preserved draft bylines further down this file keep the old name, because they
+record where those files actually lived.</p>
+<p>
 Baseline <code>ancestor/plugin</code> (1.0.8 as released).
 Repair commits <code>e954a87</code> and <code>7edc5d1</code>.
 The candidate differs from the baseline in 31 files, deletes 3, and adds 6.</p>
@@ -543,7 +548,7 @@ debug logging. No static inspection substitutes.</li>
 </ul>
 
 <h3>Rotation element and permission panel — commit <code>c7ef595</code></h3>
-<p class="status">Authorized feature work in the <code>claude-opus-5</code> candidate only. No task in the index above is claimed by this entry. The <code>grok-4-6</code> candidate carries its own independent implementation of the same feature in commit <code>c2e33cd</code>; neither is authoritative and both are for comparison.</p>
+<p class="status">Authorized feature work in the <code>claude-code-web</code> candidate only. No task in the index above is claimed by this entry. The <code>grok-4-6</code> candidate carries its own independent implementation of the same feature in commit <code>c2e33cd</code>; neither is authoritative and both are for comparison.</p>
 
 <p><strong>Design decision:</strong> the plugin integrates with no ad network's API. A publisher
 registers the ad code their own account already supplied as a named slot, and the rotation presents
@@ -560,9 +565,18 @@ nothing a named company has to agree to.</p>
 <code>includes/adz-rotation-admin.php</code> (the Rotation screen),
 <code>assets/css/adz-rotation.css</code>, <code>assets/js/adz-rotation.js</code>.</p>
 
-<p><strong>Consent and storage.</strong> Adz are matched only against a preference the visitor
-entered, so an untouched panel leaves the rotation as the publisher's own adz and nothing else. A
-visitor's preference is a session cookie holding a restricted-charset string rather than JSON, so
+<p><strong>What shows is what the admin put in the rotation.</strong> <code>count</code> decides
+whether adz are in the rotation at all: <code>count="0"</code> puts none in and none show, and
+<code>count="1"</code> puts one in and it shows. A visitor's preference decides <em>which</em> adz
+is picked and absolutely excludes anything they ruled out, but it is never a condition on an adz
+appearing. An earlier revision of this work had it the other way round, gating adz on the visitor
+having filled in the panel, and <code>adzworld_match_adz()</code> compounded it by dropping every
+zero-scoring adz, so nothing could show until somebody typed something. Both are corrected.
+<code>every="N"</code> remains as an optional frequency control for a publisher who wants the adz
+carried on one render in N rather than every one.</p>
+
+<p><strong>Storage.</strong> A visitor's preference is a session cookie holding a
+restricted-charset string rather than JSON, so
 <code>sanitize_text_field()</code> genuinely covers the untrusted value instead of being excused by a
 suppression comment, no row is written for an anonymous visitor, and the visitor can read their own
 cookie and confirm it holds only what they typed. A guest's preference is user meta and persists.
