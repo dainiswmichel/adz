@@ -2,7 +2,7 @@
 /**
  * Monetization consent and affiliate attribution.
  *
- * adz served through the adz-world monetization service carry adz-world's
+ * Adz served through the adz-world monetization service carry adz-world's
  * affiliate codes. adz-world keeps 10% of commission it actually receives and
  * settles 90% to the publisher.
  *
@@ -119,8 +119,7 @@ function adz_monetization_consent_record() {
  * @return array<string,string[]>
  */
 function adz_affiliate_parameters() {
-	return array
-	(
+	return array(
 		'amazon'     => array( 'tag', 'ascsubtag' ),
 		'awin'       => array( 'awinaffid' ),
 		'cj'         => array( 'PID', 'pid', 'AID' ),

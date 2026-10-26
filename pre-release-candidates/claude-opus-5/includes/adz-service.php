@@ -73,9 +73,9 @@ defined( 'ABSPATH' ) || exit; // Exit if accessed directly.
  */
 function adz_service_contract() {
 	return array(
-		'status'   => 'proposed',
-		'base'     => 'https://adz-world.com/wp-json/adzworld/v1',
-		'built'    => false,
+		'status'    => 'proposed',
+		'base'      => 'https://adz-world.com/wp-json/adzworld/v1',
+		'built'     => false,
 		'endpoints' => array(
 			'GET /statement?since=',
 			'GET /balances',

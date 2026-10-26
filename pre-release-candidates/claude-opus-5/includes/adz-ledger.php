@@ -2,12 +2,12 @@
 /**
  * Local mirror of the publisher's statement.
  *
- * adz-world.com is the authority for what has been earned and what is payable.
+ * The adz-world.com service is the authority for what has been earned and what is payable.
  * This plugin stores a read-only copy so the dashboard can render without a
  * round trip, and so a publisher can see their history when the service is
  * unreachable. Nothing here decides an amount.
  *
- * The mirror is append-only and idempotent: a line is identified by the
+ * This mirror is append-only and idempotent: a line is identified by the
  * service's own reference, and a line that already exists is never rewritten.
  * A statement that arrives twice, or out of order, changes nothing.
  *
@@ -109,7 +109,7 @@ function adz_ledger_install() {
 /**
  * Run the install when the stored schema version is behind.
  *
- * register_activation_hook does not fire on plugin update.
+ * The register_activation_hook callback does not fire on plugin update.
  *
  * @return void
  */
@@ -124,10 +124,10 @@ function adz_ledger_maybe_upgrade() {
 /**
  * The states a statement line can be in.
  *
- * pending   the service expects this but it is not confirmed by the merchant
- * settled   the merchant has paid the commission to adz-world
- * reversed  a previously settled commission was refunded or clawed back
- * adjusted  a correction issued by adz-world
+ * Pending means the service expects this but the merchant has not confirmed it.
+ * Settled means the merchant has paid the commission to adz-world. Reversed
+ * means a previously settled commission was refunded or clawed back. Adjusted
+ * means a correction issued by adz-world.
  *
  * Only 'settled' contributes to what a publisher can withdraw. 'pending' is
  * shown, clearly separated, because publishers want to see it -- not because
@@ -182,8 +182,8 @@ function adz_ledger_record( $line ) {
 
 	$table = adz_ledger_table();
 
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- plugin-owned table.
-	$exists = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$table} WHERE external_ref = %s", $ref ) );
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table, no core API.
+	$exists = $wpdb->get_var( $wpdb->prepare( 'SELECT id FROM %i WHERE external_ref = %s', $table, $ref ) );
 
 	if ( $exists ) {
 		return 'duplicate';
@@ -226,21 +226,20 @@ function adz_ledger_balances() {
 	$ledger  = adz_ledger_table();
 	$payouts = adz_payouts_table();
 
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- plugin-owned table, aggregate read.
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table, no core API.
 	$lines = $wpdb->get_results(
-		"SELECT currency, state,
-			SUM(settled_minor) AS settled,
-			SUM(fee_minor) AS fee,
-			SUM(publisher_minor) AS publisher
-		 FROM {$ledger}
-		 GROUP BY currency, state"
+		$wpdb->prepare(
+			'SELECT currency, state, SUM(settled_minor) AS settled, SUM(fee_minor) AS fee, SUM(publisher_minor) AS publisher FROM %i GROUP BY currency, state',
+			$ledger
+		)
 	);
 
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- plugin-owned table, aggregate read.
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table, no core API.
 	$paid = $wpdb->get_results(
-		"SELECT currency, state, SUM(amount_minor) AS amount
-		 FROM {$payouts}
-		 GROUP BY currency, state"
+		$wpdb->prepare(
+			'SELECT currency, state, SUM(amount_minor) AS amount FROM %i GROUP BY currency, state',
+			$payouts
+		)
 	);
 
 	$out = array();

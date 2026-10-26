@@ -1,6 +1,8 @@
-<?php  
+<?php
 
-if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly.
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
 /**
  * Easy Options Framework
  *
@@ -27,14 +29,13 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
-if( !defined('EOF_DIR') ) {
-	define('EOF_DIR', plugin_dir_path( __FILE__ ));
+if ( ! defined( 'EOF_DIR' ) ) {
+	define( 'EOF_DIR', plugin_dir_path( __FILE__ ) );
 }
-if( !defined('EOF_URL') ) {
-	define('EOF_URL', plugin_dir_url( __FILE__ ));
+if ( ! defined( 'EOF_URL' ) ) {
+	define( 'EOF_URL', plugin_dir_url( __FILE__ ) );
 }
 /**
  * The core plugin class files
  */
 require EOF_DIR . 'core/class-eof-loader.php';
-?>

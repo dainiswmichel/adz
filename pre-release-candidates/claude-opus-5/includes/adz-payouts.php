@@ -105,12 +105,20 @@ function adz_payout_request( $currency, $amount_minor, $method ) {
 	$table = adz_payouts_table();
 
 	// One open request per currency. Simplest rule that cannot double-spend.
-	$open = adz_payout_open_states();
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL -- plugin-owned table; states are a fixed internal list.
+	$open         = adz_payout_open_states();
+	$placeholders = implode( ', ', array_fill( 0, count( $open ), '%s' ) );
+
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table, no core API.
 	$existing = $wpdb->get_var(
 		$wpdb->prepare(
-			"SELECT id FROM {$table} WHERE currency = %s AND state IN ('" . implode( "','", $open ) . "') LIMIT 1",
-			$currency
+			/*
+			 * $placeholders is built from a fixed internal list, and the argument
+			 * count matches exactly: %i + %s + one %s per open state. The sniff
+			 * cannot count a placeholder string assembled at runtime.
+			 */
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
+			"SELECT id FROM %i WHERE currency = %s AND state IN ( {$placeholders} ) LIMIT 1",
+			array_merge( array( $table, $currency ), $open )
 		)
 	);
 
@@ -216,8 +224,8 @@ function adz_payout_set_state( $id, $to, $reason = '' ) {
 	$id    = (int) $id;
 	$to    = sanitize_key( $to );
 
-	// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- plugin-owned table.
-	$from = $wpdb->get_var( $wpdb->prepare( "SELECT state FROM {$table} WHERE id = %d", $id ) );
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table, no core API.
+	$from = $wpdb->get_var( $wpdb->prepare( 'SELECT state FROM %i WHERE id = %d', $table, $id ) );
 
 	if ( null === $from ) {
 		return new WP_Error( 'adz_payout_missing', __( 'That payout could not be found.', 'adz-world' ) );

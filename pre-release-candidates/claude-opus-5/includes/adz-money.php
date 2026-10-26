@@ -6,7 +6,7 @@
  * cents for USD, yen for JPY, fils for KWD. Floats are never used for money:
  * they lose fractions of a unit silently and the loss is not reproducible.
  *
- * adz-world.com is the authority for what is owed. This file exists so that
+ * The adz-world.com service is the authority for what is owed. This file exists so that
  * what the plugin displays is arithmetically consistent with the statements it
  * receives, not so that the plugin can decide anything about money.
  *
@@ -15,7 +15,7 @@
 
 defined( 'ABSPATH' ) || exit; // Exit if accessed directly.
 
-/** adz-world's share of settled commission, in basis points. 1000 = 10%. */
+/** The adz-world share of settled commission, in basis points. 1000 = 10%. */
 const ADZ_FEE_BASIS_POINTS = 1000;
 
 /**
