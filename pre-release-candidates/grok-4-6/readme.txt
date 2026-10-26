@@ -95,11 +95,12 @@ Neither provider is called by this plugin.
 
 = Optional publisher ad slot =
 
-The shortcode `[adzworld_stage]` can show a unit the publisher already
-runs, then show an adz on every 10th serve. `every` changes that count.
-`display="slot"` shows one item. `display="flat"` and `display="3d"` add
-arrows and a dotted menu. The network tag is not copied to fill the other
-nine places.
+The shortcode `[adzworld_stage]` serves the networks saved on the Ad slot
+screen. It shows no adz unless the shortcode adds them, for example
+`adz="1"` or `ads="12,15"`. `every="10"` is one mix of that choice: nine
+network serves, then one adz serve. With no adz added, `every` changes
+nothing. `display="slot"` shows one item. `display="flat"` and
+`display="3d"` add arrows and a dotted menu.
 
 A unit loads only after an administrator saves it on the Ad slot screen and
 checks that network's acceptance. Installation does not do this. The purchase
