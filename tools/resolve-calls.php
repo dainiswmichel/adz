@@ -354,7 +354,21 @@ $constructs = array_flip(
 	)
 );
 
+/*
+ * Prefixes that belong to this codebase. A call carrying one of these cannot be
+ * supplied by WordPress or by PHP, so if it resolves to nothing it is a fatal
+ * waiting for the first request that reaches that line. These are failures, not
+ * entries on a list to read.
+ *
+ * This distinction exists because the first version of this tool listed every
+ * unresolved call together, and the one that mattered -- adz_get_all_ad_ids(),
+ * which nothing defined and which the rotation called on every render -- sat in
+ * a list of 130 WordPress functions where it had to be spotted by eye.
+ */
+$own_prefixes = array( 'adz_', 'adzworld_', 'eof_' );
+
 $unresolved = array();
+$missing    = array();
 
 foreach ( $calls as $name => $sites ) {
 	if ( isset( $functions[ $name ] ) || isset( $internal[ $name ] ) || isset( $constructs[ $name ] ) ) {
@@ -370,9 +384,17 @@ foreach ( $calls as $name => $sites ) {
 	}
 
 	$unresolved[ $name ] = $sites;
+
+	foreach ( $own_prefixes as $prefix ) {
+		if ( 0 === strpos( $name, $prefix ) ) {
+			$missing[ $name ] = $sites;
+			break;
+		}
+	}
 }
 
 ksort( $unresolved );
+ksort( $missing );
 
 $arity = array();
 
@@ -398,8 +420,23 @@ foreach ( $functions as $name => $def ) {
 	}
 }
 
+echo "=== Calls to this codebase's own prefixes that resolve to nothing ===\n";
+echo "=== (a fatal on the first request that reaches the line) ===\n\n";
+
+foreach ( $missing as $name => $sites ) {
+	printf( "  %s is defined nowhere, called %d time(s):\n", $name . '()', count( $sites ) );
+
+	foreach ( $sites as $site ) {
+		printf( "      %s\n", $site['where'] );
+	}
+}
+
+if ( empty( $missing ) ) {
+	echo "  none\n";
+}
+
 if ( ! $quiet ) {
-	echo "=== Unresolved calls (WordPress supplies most; read, do not assume) ===\n\n";
+	echo "\n=== Other unresolved calls (WordPress supplies most; read, do not assume) ===\n\n";
 
 	foreach ( $unresolved as $name => $sites ) {
 		printf( "  %-44s %2d call(s)  %s\n", $name . '()', count( $sites ), $sites[0]['where'] );
@@ -440,13 +477,14 @@ if ( empty( $dupes ) ) {
 }
 
 printf(
-	"\n%d file-scope functions, %d methods, %d call targets, %d unresolved, %d arity, %d duplicate\n",
+	"\n%d file-scope functions, %d methods, %d call targets, %d unresolved (%d of them this codebase's own), %d arity, %d duplicate\n",
 	count( $functions ),
 	count( $methods ),
 	count( $calls ),
 	count( $unresolved ),
+	count( $missing ),
 	count( $arity ),
 	count( $dupes )
 );
 
-exit( ( empty( $arity ) && empty( $dupes ) ) ? 0 : 1 );
+exit( ( empty( $missing ) && empty( $arity ) && empty( $dupes ) ) ? 0 : 1 );

@@ -11,6 +11,23 @@ if ( ! is_dir( $adz_plugin ) ) {
 	exit( 2 );
 }
 
+$adz_requires = array(
+	'includes/adz-preferences.php',
+	'includes/adz-preference-ui.php',
+);
+
+/*
+ * This harness targets specific files. A candidate that does not have them is
+ * not a failure, it is simply out of scope, so it exits 3 and says so. Exiting
+ * 0 here would report a pass for a test that never ran.
+ */
+foreach ( $adz_requires as $adz_needed ) {
+	if ( ! is_file( $adz_plugin . '/' . $adz_needed ) ) {
+		printf( "SKIP: %s has no %s\n", basename( $adz_plugin ), $adz_needed );
+		exit( 3 );
+	}
+}
+
 
 // A tiny catalogue of adz, keyed by id, so the matcher has something to rank.
 $GLOBALS['adz_catalogue'] = array(
