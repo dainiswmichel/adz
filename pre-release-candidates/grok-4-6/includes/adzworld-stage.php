@@ -2,14 +2,14 @@
 /**
  * Rotation stage.
  *
- * Ordinary serves show the publisher's connected unit, using that network's
- * own tag. Every Nth serve, 10 unless the shortcode says otherwise, shows an
- * adz. Until this access saves a purchase note, that serve is the introduction
- * panel. The note stays on this site.
+ * The shortcode serves the ad networks the administrator has already
+ * connected. Adz are absent until the shortcode adds them. every="10" is one
+ * mix: nine network serves, then one adz serve. It does nothing when no adz
+ * were added. Until a purchase note is saved, an added adz serve is the
+ * introduction panel. The note stays on this site.
  *
  * display="slot" is one visible item. display="flat" and display="3d" add
- * forward and back arrows and a dotted menu. The network unit is not copied
- * nine times.
+ * forward and back arrows and a dotted menu.
  *
  * @package adz-world
  */
@@ -194,16 +194,20 @@ function adzworld_stage_is_adz_turn( $serve, $every ) {
 }
 
 /**
- * Cycle length from the shortcode. Values below 2 stay at 10.
+ * Mix length from the shortcode. Empty or below 2 means the items are even.
  *
  * @param mixed $every Attribute.
  * @return int
  */
 function adzworld_stage_every( $every ) {
+	if ( ! is_scalar( $every ) || '' === (string) $every ) {
+		return 0;
+	}
+
 	$every = absint( $every );
 
 	if ( $every < 2 ) {
-		return 10;
+		return 0;
 	}
 
 	if ( $every > 100 ) {
@@ -211,6 +215,85 @@ function adzworld_stage_every( $every ) {
 	}
 
 	return $every;
+}
+
+/**
+ * How many adz the shortcode puts in the rotation. Zero means none.
+ *
+ * An id list wins over the count. The count stops at five.
+ *
+ * @param mixed $adz     Count attribute.
+ * @param mixed $id_list Id attribute.
+ * @return int
+ */
+function adzworld_stage_adz_count( $adz, $id_list ) {
+	$ids = adzworld_id_list( $id_list );
+
+	if ( $ids ) {
+		return count( $ids );
+	}
+
+	$count = absint( $adz );
+
+	return ( $count > 5 ) ? 5 : $count;
+}
+
+/**
+ * Indexes to render for this serve.
+ *
+ * Browsing returns every configured item. A slot with one item returns it.
+ * A slot whose list contains an adz and a mix walks the network items, then
+ * one adz item when the count lands. A list with no adz cannot return one.
+ *
+ * @param string[] $kinds  Item kinds, network or anything else for an adz.
+ * @param int      $serve  1-based serve count.
+ * @param int      $every  Mix length, or 0 when the items are even.
+ * @param bool     $one    True for the single-item display.
+ * @return int[]
+ */
+function adzworld_stage_pick_indexes( $kinds, $serve, $every, $one ) {
+	$indexes = array_keys( $kinds );
+
+	if ( ! $indexes ) {
+		return array();
+	}
+
+	if ( ! $one || 1 === count( $indexes ) ) {
+		return $indexes;
+	}
+
+	$serve = absint( $serve );
+
+	if ( $serve < 1 ) {
+		$serve = 1;
+	}
+
+	$network_indexes = array();
+	$adz_indexes     = array();
+
+	foreach ( $kinds as $index => $kind ) {
+		if ( 'network' === $kind ) {
+			$network_indexes[] = $index;
+		} else {
+			$adz_indexes[] = $index;
+		}
+	}
+
+	if ( $network_indexes && $adz_indexes && adzworld_stage_is_adz_turn( $serve, $every ) ) {
+		$turn = (int) floor( $serve / absint( $every ) ) - 1;
+
+		if ( $turn < 0 ) {
+			$turn = 0;
+		}
+
+		return array( $adz_indexes[ $turn % count( $adz_indexes ) ] );
+	}
+
+	if ( $network_indexes && $adz_indexes && absint( $every ) >= 2 ) {
+		return array( $network_indexes[ ( $serve - 1 ) % count( $network_indexes ) ] );
+	}
+
+	return array( $indexes[ ( $serve - 1 ) % count( $indexes ) ] );
 }
 
 /**
@@ -455,33 +538,34 @@ function adzworld_intro_html( $intent ) {
 }
 
 /**
- * Connected network for this shortcode.
+ * Connected networks for this shortcode.
  *
  * A named network that is not enabled is not replaced with a different one.
- * An empty name uses the first enabled slot network.
+ * An empty name uses every enabled slot network.
  *
  * @param mixed $requested Attribute.
- * @return string
+ * @return string[]
  */
-function adzworld_stage_network_id( $requested ) {
+function adzworld_stage_network_ids( $requested ) {
 	$requested = is_string( $requested ) ? sanitize_key( $requested ) : '';
 	$settings  = adzworld_network_settings();
+	$ids       = array();
 
 	if ( '' !== $requested ) {
 		if ( isset( $settings[ $requested ] ) && '1' === $settings[ $requested ]['enabled'] ) {
-			return $requested;
+			return array( $requested );
 		}
 
-		return '';
+		return array();
 	}
 
 	foreach ( adzworld_slot_network_ids() as $id ) {
 		if ( isset( $settings[ $id ] ) && '1' === $settings[ $id ]['enabled'] ) {
-			return $id;
+			$ids[] = $id;
 		}
 	}
 
-	return '';
+	return $ids;
 }
 
 /**
@@ -663,80 +747,99 @@ function adzworld_stage_shortcode( $atts ) {
 	$atts = shortcode_atts(
 		array(
 			'display' => 'slot',
-			'every'   => '10',
+			'every'   => '',
 			'arrows'  => '1',
 			'dots'    => '1',
 			'network' => '',
 			'ads'     => '',
+			'adz'     => '0',
 		),
 		$atts,
 		'adzworld_stage'
 	);
 
-	$display      = adzworld_stage_display( $atts['display'] );
-	$every        = adzworld_stage_every( $atts['every'] );
-	$browse       = ( 'slot' !== $display );
-	$network_id   = adzworld_stage_network_id( $atts['network'] );
-	$has_network  = ( '' !== $network_id );
-	$adz_turn     = $has_network ? adzworld_stage_is_adz_turn( adzworld_stage_serve_number(), $every ) : true;
-	$intent       = adzworld_current_intent();
-	$ads          = adzworld_stage_ads( $atts['ads'], $intent );
-	$slides       = array();
-	$active_index = -1;
-	$network_on   = ( $has_network && ( $browse || ! $adz_turn ) );
-	$mount_now    = ( $network_on && ! $adz_turn );
-	$load         = $network_on && ( 'taboola' !== $network_id || $mount_now );
-	$intro_on     = ( $adz_turn && ( '' === $intent || ! $ads ) );
-	$ad_on        = ( $adz_turn && '' !== $intent && $ads );
+	$display   = adzworld_stage_display( $atts['display'] );
+	$every     = adzworld_stage_every( $atts['every'] );
+	$browse    = ( 'slot' !== $display );
+	$adz_count = adzworld_stage_adz_count( $atts['adz'], $atts['ads'] );
+	$kinds     = array();
+	$payloads  = array();
+	$intent    = '';
+	$ads       = array();
 
-	if ( $network_on ) {
-		$unit = adzworld_network_slide_html( $network_id, $mount_now, $load );
+	foreach ( adzworld_stage_network_ids( $atts['network'] ) as $network_id ) {
+		$kinds[]    = 'network';
+		$payloads[] = array( 'id' => $network_id );
+	}
 
-		if ( '' !== $unit ) {
-			if ( $mount_now ) {
-				$active_index = count( $slides );
+	if ( $adz_count > 0 ) {
+		$intent = adzworld_current_intent();
+
+		if ( '' !== $intent ) {
+			$ads = array_slice( adzworld_stage_ads( $atts['ads'], $intent ), 0, $adz_count );
+		}
+
+		if ( '' === $intent || ! $ads ) {
+			$kinds[]    = 'intro';
+			$payloads[] = array();
+		} else {
+			foreach ( $ads as $post ) {
+				$kinds[]    = 'adz';
+				$payloads[] = array( 'post' => $post );
 			}
-			$slides[] = adzworld_stage_slide( 'network', $mount_now, __( 'Advertisement', 'adz-world' ), $unit );
 		}
 	}
 
-	if ( $browse || $intro_on || ! $slides ) {
-		$intro_active = $intro_on && ( -1 === $active_index );
-		if ( $intro_active ) {
-			$active_index = count( $slides );
+	if ( ! $kinds ) {
+		if ( current_user_can( 'manage_options' ) ) {
+			return '<p class="adzworld-stage__empty">' . esc_html__( 'This stage has no network unit and no adz in the rotation.', 'adz-world' ) . '</p>';
 		}
-		$slides[] = adzworld_stage_slide( 'intro', $intro_active, '', adzworld_intro_html( $intent ) );
+
+		return '';
 	}
 
-	foreach ( $ads as $index => $post ) {
-		if ( ! $browse && ( ! $ad_on || 0 !== $index ) ) {
-			continue;
+	$chosen       = adzworld_stage_pick_indexes( $kinds, adzworld_stage_serve_number(), $every, ! $browse );
+	$slides       = array();
+	$active_index = 0;
+	$have_active  = false;
+
+	foreach ( $chosen as $source_index ) {
+		$kind   = $kinds[ $source_index ];
+		$active = ! $have_active;
+
+		if ( 'network' === $kind ) {
+			$network_id = $payloads[ $source_index ]['id'];
+			$load       = ( 'taboola' !== $network_id || $active );
+			$unit       = adzworld_network_slide_html( $network_id, $active, $load );
+
+			if ( '' === $unit ) {
+				continue;
+			}
+
+			$slides[] = adzworld_stage_slide( 'network', $active, __( 'Advertisement', 'adz-world' ), $unit );
+		} elseif ( 'intro' === $kind ) {
+			$slides[] = adzworld_stage_slide( 'intro', $active, '', adzworld_intro_html( $intent ) );
+		} else {
+			$post     = $payloads[ $source_index ]['post'];
+			$slides[] = adzworld_stage_slide(
+				'adz',
+				$active,
+				__( 'adz', 'adz-world' ),
+				adzworld_stage_ad_html( $post ) . ( $active ? adzworld_intent_form( $intent, true ) : '' )
+			);
 		}
 
-		$slide_active = ( $ad_on && 0 === $index && ! $mount_now );
-		if ( $slide_active ) {
-			$active_index = count( $slides );
-		}
-		$slides[] = adzworld_stage_slide(
-			'adz',
-			$slide_active,
-			__( 'adz', 'adz-world' ),
-			adzworld_stage_ad_html( $post ) . ( $slide_active ? adzworld_intent_form( $intent, true ) : '' )
-		);
-
-		if ( ! $browse ) {
-			break;
+		if ( $active && $slides ) {
+			$have_active = true;
 		}
 	}
 
 	if ( ! $slides ) {
-		$slides[]     = adzworld_stage_slide( 'intro', true, '', adzworld_intro_html( $intent ) );
-		$active_index = 0;
-	}
+		if ( current_user_can( 'manage_options' ) ) {
+			return '<p class="adzworld-stage__empty">' . esc_html__( 'This stage has no network unit and no adz in the rotation.', 'adz-world' ) . '</p>';
+		}
 
-	if ( -1 === $active_index ) {
-		$active_index = 0;
-		$slides[0]    = str_replace( 'class="adzworld-stage__slide"', 'class="adzworld-stage__slide is-active"', $slides[0] );
+		return '';
 	}
 
 	wp_enqueue_style(

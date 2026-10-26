@@ -456,8 +456,8 @@ function adzworld_render_network_screen() {
 		echo '<div class="notice notice-success"><p>' . esc_html__( 'Saved.', 'adz-world' ) . '</p></div>';
 	}
 
-	echo '<p>' . esc_html__( 'The stage shows one connected unit with that network’s own tag. Every 10th serve, unless the shortcode sets another count, shows an adz instead. The first of those is an introduction where this access can write what they would like to purchase. That note stays on this site.', 'adz-world' ) . '</p>';
-	echo '<p><code>[adzworld_stage display="slot" every="10"]</code> <code>[adzworld_stage display="flat" every="10"]</code> <code>[adzworld_stage display="3d" every="10"]</code></p>';
+	echo '<p>' . esc_html__( 'The stage serves the networks saved here. Adz stay out of that rotation until the shortcode adds them. The introduction, and the purchase note, appear only with those adz. The note stays on this site.', 'adz-world' ) . '</p>';
+	echo '<p><code>[adzworld_stage]</code> <code>[adzworld_stage display="flat"]</code> <code>[adzworld_stage display="3d" adz="1"]</code> <code>[adzworld_stage adz="1" every="10"]</code></p>';
 	echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 	echo '<input type="hidden" name="action" value="adzworld_save_networks" />';
 	wp_nonce_field( 'adzworld_save_networks', 'adzworld_network_nonce' );
