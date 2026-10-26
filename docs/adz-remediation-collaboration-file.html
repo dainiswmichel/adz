@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>adz-world remediation - shared task register</title>
+<title>adz-world remediation collaboration file</title>
 <style>
   :root { color-scheme:light; --ink:#192739; --muted:#526174; --line:#d6dfe9; --paper:#f4f7fb; --blue:#165998; --amber:#795000; }
   * { box-sizing:border-box; }
@@ -37,18 +37,9 @@
 <body>
 <main>
 <header>
-  <p><strong>Shared revision history - no global version counter</strong></p>
-  <p><strong>Shared document for every agent:</strong> <code>docs/adz-remediation.html</code>.
+  <p><strong>Shared collaboration file. Version history is tracked in Git.</strong></p>
+  <p><strong>Shared document for every agent:</strong> <code>docs/adz-remediation-collaboration-file.html</code>.
   Agent-specific documentation directories and competing remediation documents are not used.</p>
-  <div class="table-wrap">
-    <table aria-label="Document revision history">
-      <thead><tr><th>Unique revision ID</th><th>Editor</th><th>Scope / change</th></tr></thead>
-      <tbody>
-        <tr><td><code>2026-10-26T09:13:11Z-codex-e94585c9-4aaa-4c19-94d9-839851bdafc3</code></td><td>Codex</td><td>Initial shared task register, stable issue IDs and regression/evidence requirements; consolidated Claude drafts with provenance and explicit historical status; independent revision IDs instead of a competing global version counter.</td></tr>
-        <!-- New revision entries are appended before this marker. No existing IDs are renumbered. -->
-      </tbody>
-    </table>
-  </div>
   <p class="meta">Dainis Michel / adz-world / task register / 26 October 2026</p>
   <h1>WordPress.org remediation: individually repairable, permanently testable</h1>
   <p>Source: the Plugins Team's <strong>29 September 2026 closure email</strong>, Review ID
@@ -62,15 +53,11 @@
 <section id="workflow">
   <h2>How a task becomes and stays fixed</h2>
   <p><strong>Shared editing and Git publication:</strong> Claude Code and all other agents update this same file.
-  Each committed document update adds a revision-history row at the top of this document, using
-  <code>YYYY-MM-DDTHH:MM:SSZ-agent-UUID</code> as its unique revision ID.
-  The UTC timestamp records the edit; the agent and newly generated UUID prevent collisions even when edits happen in the same second.
-  There is no shared integer counter, no global "latest revision" field, and no requirement to reserve a number.
-  Existing revision IDs remain unchanged. Parallel entries are both retained; timestamps do not decide which conflicting content wins.
-  A document revision ID is separate from plugin version, tested code commit, and the Git commit containing the edit.
+  Git tracks document versions; no manual version counter, UUID or separate revision ledger is required.
+  Updates identify the task, agent, actual result and tested code commit where applicable.
   Agents working directly on GitHub read the latest main-branch document before editing and preserve other agents' entries.
   Local editors fetch and reconcile remote changes before pushing; conflicting updates are merged, never force-pushed or replaced wholesale.
-  If a push is rejected because another agent updated main, the agent fetches and merges the new work, preserving both revision entries and reviewing overlapping task edits.
+  If a push is rejected because another agent updated main, the agent fetches and merges the new work, preserving contributions and reviewing overlapping task edits.
   Agents normally edit only their assigned issue blocks and add their own evidence/history entries.
   Conflicting claims about one task are resolved against the identified code and tests, not by last-writer-wins.
   Commits occur at meaningful progress points: assignment, verified repair, integration, or reopening after regression.

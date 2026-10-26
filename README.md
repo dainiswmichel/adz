@@ -17,11 +17,11 @@ WordPress site. It is not yet a claim of WordPress.org compliance. Never modify
 
 ## Remediation workflow
 
-All agents share [the remediation task register](docs/adz-remediation.html).
+All agents share [the remediation collaboration file](docs/adz-remediation-collaboration-file.html).
 It contains stable task IDs, acceptance criteria, regression requirements and
-evidence status. Its top-of-document revision history uses independent
-timestamp/agent/UUID entries, not a shared version counter. Concurrent entries
-are merged and preserved. There are no agent-specific documentation directories.
+evidence status. Git tracks document versions; no manual revision machinery is
+required. Concurrent contributions are merged and preserved. There are no
+agent-specific documentation directories.
 
 Agents work on bounded repairs in their own candidates against an identified
 baseline. Each repair must identify changed behavior and tests actually run.
@@ -88,6 +88,6 @@ variables → Actions:
 
 The plugin is closed on WordPress.org pending a guideline review. Current
 tasks and unresolved questions are tracked in
-[the shared remediation register](docs/adz-remediation.html).
+[the shared remediation collaboration file](docs/adz-remediation-collaboration-file.html).
 [The earlier scope](docs/remediation-scope.md) retains historical analysis;
 its DONE labels do not establish integrated verification.
