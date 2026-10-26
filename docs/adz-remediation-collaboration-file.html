@@ -541,6 +541,53 @@ placeholders and cannot be published as they stand.</li>
 <li><strong>Tasks 03, 13, 18, and runtime proof for 14-17.</strong> All require a real WordPress with
 debug logging. No static inspection substitutes.</li>
 </ul>
+
+<h3>Rotation element and permission panel — commit <code>c7ef595</code></h3>
+<p class="status">Authorized feature work in the <code>claude-opus-5</code> candidate only. No task in the index above is claimed by this entry. The <code>grok-4-6</code> candidate carries its own independent implementation of the same feature in commit <code>c2e33cd</code>; neither is authoritative and both are for comparison.</p>
+
+<p><strong>Design decision:</strong> the plugin integrates with no ad network's API. A publisher
+registers the ad code their own account already supplied as a named slot, and the rotation presents
+it unchanged, in the same place, through the publisher's own account. An adz the visitor asked for
+takes one render in N. With <code>every="0"</code> and one slot registered the plugin serves exactly
+what the site serves today. Writing an integration per network would mean an account per network,
+each revocable by its owner; nothing here asks any network for anything, so nothing a network does
+can switch it off. The network preset list is labels and notes only — no API call, no key, and
+nothing a named company has to agree to.</p>
+
+<p><strong>Files added:</strong> <code>includes/adz-preferences.php</code> (facet parser),
+<code>includes/adz-preference-ui.php</code> (storage, panel, AJAX),
+<code>includes/adz-rotation.php</code> (the <code>[adz_rotation]</code> shortcode),
+<code>includes/adz-rotation-admin.php</code> (the Rotation screen),
+<code>assets/css/adz-rotation.css</code>, <code>assets/js/adz-rotation.js</code>.</p>
+
+<p><strong>Consent and storage.</strong> Adz are matched only against a preference the visitor
+entered, so an untouched panel leaves the rotation as the publisher's own adz and nothing else. A
+visitor's preference is a session cookie holding a restricted-charset string rather than JSON, so
+<code>sanitize_text_field()</code> genuinely covers the untrusted value instead of being excused by a
+suppression comment, no row is written for an anonymous visitor, and the visitor can read their own
+cookie and confirm it holds only what they typed. A guest's preference is user meta and persists.
+The plugin records no purchase and grants no capability for one, so nothing here distinguishes a
+member. Saving ad code requires <code>unfiltered_html</code>; the nonce proves provenance and is not
+treated as authorisation.</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Check</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td><code>php -l</code>, all 54 candidate PHP files; <code>node --check</code> on the script</td><td>Clean.</td></tr>
+<tr><td>PHPCS 3.13.6 / wp-coding-standards/wpcs, WordPress standard, the four new PHP files</td><td>Zero errors, zero warnings. The rest of the candidate still carries the 949 pre-existing violations reported at <code>fcca74f</code>; this work does not change that number.</td></tr>
+<tr><td><code>adzworld_build_rotation()</code> over 10 publisher/adz combinations</td><td>Spacing even in every case, no slot duplicated. The test found a real defect: with more publisher slots than positions the adz were truncated away entirely. Both lists are now trimmed to the cap first.</td></tr>
+<tr><td>Parser against the four specified phrasings, 42 assertions</td><td>All pass. Cookie round trip lossless and charset-restricted in every case; six hostile cookie values rebuilt rather than trusted. The test found a real parser defect: "a light color" captured "color" as a product term, which would have matched adz about paint. Facet nouns are now stop words.</td></tr>
+<tr><td>Translation catalogue</td><td>Pre-existing defect fixed: PHP string escapes were not resolved, so a msgid read <code>adz-world\'s affiliate codes</code> while <code>__()</code> is called with <code>adz-world's</code>. That entry could never match and the string was untranslatable. Regenerated to 202 strings from 114, with none of the originals dropped.</td></tr>
+<tr><td>WordPress runtime</td><td><strong>Not run.</strong> The shortcode, admin screen, AJAX endpoint and carousel have not been exercised in a browser or on a clean install. The rendered output and the 3D transform are static inspection only. Plugin Check not run. Not claimed as passing.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>Caching caveat, stated rather than hidden:</strong> the one-in-N decision is made when the
+page is built, so a full-page cache caches the decision with the page. On a cached site the honest
+configuration is either to leave the shortcode uncached or to use <code>every="1"</code> and let the
+rotation itself do the spacing. This is documented on the Rotation screen.</p>
 </section>
 
 <section id="historical-drafts">
