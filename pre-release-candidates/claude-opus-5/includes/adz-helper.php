@@ -516,3 +516,62 @@ function adz_get_view_row_any( $visitor_ip ) {
 		OBJECT
 	);
 }
+
+/**
+ * Read a template's header/footer settings.
+ *
+ * 1.0.8 called serialize() explicitly before update_option(), which already
+ * serializes arrays itself, and the template then called unserialize() on the
+ * result. That explicit pair is what made an option value reach unserialize()
+ * -- an object-injection sink -- and it is removed. Values are now stored as a
+ * plain array.
+ *
+ * Existing installs still hold the double-serialized string, so that form is
+ * read here and converted on the next save rather than lost.
+ *
+ * @param string $template Template filename, e.g. 'template1.php'.
+ * @return array{header_text:string,header_style:string,footer_text:string,footer_style:string}
+ */
+function adz_get_template_settings_array( $template ) {
+	$defaults = array(
+		'header_text'  => '',
+		'header_style' => 'center',
+		'footer_text'  => '',
+		'footer_style' => 'center',
+	);
+
+	$template = basename( (string) $template );
+
+	if ( '' === adz_resolve_template( $template ) ) {
+		return $defaults;
+	}
+
+	$stored = get_option( 'template_' . $template );
+
+	if ( is_array( $stored ) ) {
+		return wp_parse_args( $stored, $defaults );
+	}
+
+	if ( is_string( $stored ) && '' !== $stored ) {
+		// Legacy double-serialized value. Decoded without allowing objects.
+		$legacy = maybe_unserialize( $stored );
+
+		if ( is_array( $legacy ) ) {
+			return wp_parse_args( $legacy, $defaults );
+		}
+	}
+
+	return $defaults;
+}
+
+/**
+ * Validate a text-alignment value.
+ *
+ * @param mixed $style Candidate.
+ * @return string One of left, right, center.
+ */
+function adz_sanitize_alignment( $style ) {
+	$style = sanitize_key( (string) $style );
+
+	return in_array( $style, array( 'left', 'right', 'center' ), true ) ? $style : 'center';
+}

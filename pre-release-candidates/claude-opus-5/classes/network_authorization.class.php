@@ -180,9 +180,13 @@ class adz_NetworkAuthorization {
 			
 			$ad['ad_type_slugs'] = $preferences;	
 			
-			update_post_meta( $post_id, 'affiliation_network_name', sanitize_text_field( $_POST['affiliation_network_name'] ) );
-			update_post_meta( $post_id, 'affiliation_network_url', sanitize_text_field( $_POST['affiliation_network_url'] ) );
-			update_post_meta( $post_id, 'affiliation_id', sanitize_text_field( $_POST['affiliation_id'] ) );	
+			/*
+			 * These three meta values used to be written here from $_POST on
+			 * the post_updated hook, with no nonce, no capability check and no
+			 * isset() guard, so any update that did not carry the fields wiped
+			 * them. Saving now happens in adzworld_save_ad_meta(), which runs
+			 * only for the ad meta box form. This method reads them.
+			 */
 			$ad['custom_field']['affiliation_network_name'] = get_post_meta( $post_id, 'affiliation_network_name', true );
    			$ad['custom_field']['affiliation_network_url'] = get_post_meta( $post_id, 'affiliation_network_url', true );
    			$ad['custom_field']['affiliation_id'] = get_post_meta( $post_id, 'affiliation_id', true );

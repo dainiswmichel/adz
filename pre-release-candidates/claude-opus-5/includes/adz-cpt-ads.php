@@ -76,7 +76,7 @@ function ad_network_meta_box_markup_pub($post){
 	    		<label><b>Affiliation Network Name: </b> </label>		
 	    	</td>
 	    	<td>
-	    		<input type="text" name="affiliation_network_name" value="<?php echo $affiliation_network_name; ?>">
+	    		<input type="text" name="affiliation_network_name" value="<?php echo esc_attr( $affiliation_network_name ); ?>">
 	    	</td>
     	</tr>
     	<tr>
@@ -84,7 +84,7 @@ function ad_network_meta_box_markup_pub($post){
 	    		<label><b>Affiliation Network URL: </b> </label>		
 	    	</td>
 	    	<td>
-	    		<input type="text" name="affiliation_network_url" value="<?php echo $affiliation_network_url; ?>">
+	    		<input type="text" name="affiliation_network_url" value="<?php echo esc_attr( $affiliation_network_url ); ?>">
 	    	</td>
     	</tr>
 	    <tr>
@@ -92,7 +92,7 @@ function ad_network_meta_box_markup_pub($post){
 	    		<label><b>Affiliation id: </b></label>		
 	    	</td>
 	    	<td>
-	    		<input type="text" name="affiliation_id" value="<?php echo $affiliation_id; ?>">
+	    		<input type="text" name="affiliation_id" value="<?php echo esc_attr( $affiliation_id ); ?>">
 	    	</td>
 
 	    </tr>
@@ -249,17 +249,37 @@ add_action('admin_menu', 'adz_templates_setting_menu', 11 );
 
 // Function to add Adz template setting form in backend.
 function adz_template_setting(){
-	if( isset($_POST['adz_template']) && $_POST['adz_template'] != '' ){
+	/*
+	 * Being on an admin page is not authorisation. 1.0.8 wrote these values
+	 * with no capability check and no nonce, used the submitted template name
+	 * as the option name, stored four unsanitised fields that are later echoed
+	 * into every visitor's page, and called serialize() explicitly -- which is
+	 * what forced the matching unserialize() in the template.
+	 */
+	if ( isset( $_POST['adz_template'] ) && '' !== $_POST['adz_template'] ) {
 
-		$template_settings = array('header_text' => $_POST["header_text"],
-								   'header_style' => $_POST["header_style"],
-							 	   'footer_text' => $_POST["footer_text"],
-							 	   'footer_style' => $_POST["footer_style"]
-							  );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to change template settings.', 'adz-world' ), 403 );
+		}
 
-		update_option("template_".$_POST['adz_template'],serialize($template_settings),true);
+		check_admin_referer( 'adz_template_settings' );
+
+		$template = adz_resolve_template( wp_unslash( $_POST['adz_template'] ) );
+
+		if ( '' !== $template ) {
+			$template_settings = array(
+				'header_text'  => isset( $_POST['header_text'] ) ? wp_kses_post( wp_unslash( $_POST['header_text'] ) ) : '',
+				'header_style' => adz_sanitize_alignment( isset( $_POST['header_style'] ) ? wp_unslash( $_POST['header_style'] ) : '' ),
+				'footer_text'  => isset( $_POST['footer_text'] ) ? wp_kses_post( wp_unslash( $_POST['footer_text'] ) ) : '',
+				'footer_style' => adz_sanitize_alignment( isset( $_POST['footer_style'] ) ? wp_unslash( $_POST['footer_style'] ) : '' ),
+			);
+
+			// Stored as an array. update_option() serializes it; we do not.
+			update_option( 'template_' . basename( $template ), $template_settings, true );
+		}
 	}
 	echo '<form method="post" action="">';
+	wp_nonce_field( 'adz_template_settings' );
 	echo ' <h3>Edit your Adz template header and footer text here.</h3>';
 	echo '<label>Select Adz Template</label><br>';
 
@@ -289,15 +309,86 @@ function adz_template_setting(){
 
 }
 
-function get_template_settings(){
-	if(isset($_POST['selected_template'])){
-		$template_name = $_POST['selected_template'];
-		$template_data = get_option('template_'.$template_name);
-		
-		echo json_encode( unserialize($template_data) );
-		exit;
+/**
+ * Return a template's stored header/footer settings to the settings screen.
+ *
+ * 1.0.8 registered this for unauthenticated AJAX, took the option name from the
+ * request, ran unserialize() on whatever came back, and used an unprefixed
+ * function name likely to collide with another plugin. All four are repaired:
+ * administrators only, nonce verified, template matched against the shipped
+ * allowlist, and no unserialize() anywhere in the path.
+ *
+ * @return void
+ */
+function adzworld_ajax_get_template_settings() {
+
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => __( 'Not permitted.', 'adz-world' ) ), 403 );
 	}
 
+	check_ajax_referer( 'adz_admin', 'nonce' );
+
+	$template = isset( $_POST['selected_template'] ) ? wp_unslash( $_POST['selected_template'] ) : '';
+
+	if ( '' === adz_resolve_template( $template ) ) {
+		wp_send_json_error( array( 'message' => __( 'Unknown template.', 'adz-world' ) ), 400 );
+	}
+
+	wp_send_json_success( adz_get_template_settings_array( $template ) );
 }
-add_action('wp_ajax_get_template_settings', 'get_template_settings');
-add_action('wp_ajax_nopriv_get_template_settings', 'get_template_settings');
+add_action( 'wp_ajax_get_template_settings', 'adzworld_ajax_get_template_settings' );
+add_action( 'save_post_adz_ad', 'adzworld_save_ad_meta', 10, 2 );
+/**
+ * Save the affiliation fields from the ad meta box.
+ *
+ * The nonce field at the top of this file has existed since 1.0.8 and was never
+ * verified anywhere. Meanwhile the three values were written from
+ * adz_NetworkAuthorization::update_ad() on the post_updated hook, with no
+ * capability check, no nonce, and no isset() guard -- so any update path that
+ * does not carry those fields (Quick Edit, bulk edit, a scheduled publish via
+ * wp-cron, REST, WP-CLI) silently overwrote all three with empty strings.
+ *
+ * Saving now happens here, once, and only writes a field the form actually
+ * submitted.
+ *
+ * @param int     $post_id Post being saved.
+ * @param WP_Post $post    Post object.
+ * @return void
+ */
+function adzworld_save_ad_meta( $post_id, $post ) {
+
+	if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+		return;
+	}
+
+	if ( wp_is_post_revision( $post_id ) ) {
+		return;
+	}
+
+	if ( ! isset( $_POST['meta-box-nonce'] ) ) {
+		// Not our form: Quick Edit, cron, REST, WP-CLI. Leave the values alone.
+		return;
+	}
+
+	if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['meta-box-nonce'] ) ), basename( __FILE__ ) ) ) {
+		return;
+	}
+
+	if ( ! current_user_can( 'edit_post', $post_id ) ) {
+		return;
+	}
+
+	$fields = array(
+		'affiliation_network_name' => 'sanitize_text_field',
+		'affiliation_network_url'  => 'esc_url_raw',
+		'affiliation_id'           => 'sanitize_text_field',
+	);
+
+	foreach ( $fields as $field => $sanitizer ) {
+		if ( ! isset( $_POST[ $field ] ) ) {
+			continue;
+		}
+
+		update_post_meta( $post_id, $field, call_user_func( $sanitizer, wp_unslash( $_POST[ $field ] ) ) );
+	}
+}

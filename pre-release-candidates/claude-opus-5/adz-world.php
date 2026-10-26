@@ -3,10 +3,17 @@
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly.
 /*
 Plugin Name: adz.world
+Plugin URI: https://wordpress.org/plugins/adz-world/
 Description: Run your website like a TV station by requiring adz views in exchange for access to content
 Version: 1.0.9
+Requires at least: 6.2
+Requires PHP: 7.4
 Author: dainismichel
-Author URI: http://www.dainiswmichel.com
+Author URI: https://www.dainiswmichel.com
+License: GPLv3
+License URI: https://www.gnu.org/licenses/gpl-3.0.html
+Text Domain: adz-world
+Domain Path: /languages
 */
 global $adz_ad_network_base_url;
 $adz_ad_network_base_url = 'https://adz-world.com/';

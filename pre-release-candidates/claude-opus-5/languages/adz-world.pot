@@ -1,0 +1,468 @@
+# Copyright (C) 2026 dainismichel
+# This file is distributed under the GPLv3.
+msgid ""
+msgstr ""
+"Project-Id-Version: adz.world 1.0.9\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/adz-world\n"
+"POT-Creation-Date: 2026-10-26T09:39:04+00:00\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"X-Domain: adz-world\n"
+
+#: classes/eof_fields/select-caps.php:39 vendor/eof/fields/post_select.php:38 vendor/eof/fields/select.php:39
+msgid "Select"
+msgstr ""
+
+#: classes/eof_fields/select-caps.php:87 vendor/eof/fields/post_select.php:106 vendor/eof/fields/select.php:91
+msgid "Nothing found."
+msgstr ""
+
+#: includes/adz-cpt-ads.php:8 includes/adz-cpt-ads.php:9 includes/adz-cpt-ads.php:10 includes/adz-cpt-ads.php:11 includes/adz-cpt-ads.php:37
+msgid "Adz.world"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:12
+msgid "Adz.world Archives"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:13
+msgid "TV Station Ad Attributes"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:14 includes/adz-cpt-ads.php:166
+msgid "Parent Item:"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:15
+msgid "All Adz"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:16
+msgid "Add New Ad"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:17
+msgid "Add New Adz"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:18
+msgid "New Ad"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:19
+msgid "Edit Ad"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:20
+msgid "Update Ad"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:21 includes/adz-cpt-ads.php:22
+msgid "View Ad"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:23
+msgid "Search Adz.world"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:24
+msgid "Not found"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:25
+msgid "Not found in Trash"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:26
+msgid "Featured Image"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:27
+msgid "Set featured image"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:28
+msgid "Remove featured image"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:29
+msgid "Use as featured image"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:30
+msgid "Insert into item"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:31
+msgid "Uploaded to this Ad"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:32
+msgid "Adz.world list"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:33
+msgid "Adz.world list navigation"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:34
+msgid "Filter ads list"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:38
+msgid "Adz.world to serve up to network"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:161 includes/adz-cpt-ads.php:163
+msgid "Ad Types"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:162
+msgid "Ad Type"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:164
+msgid "All Ad Types"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:165
+msgid "Parent Item"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:167
+msgid "New Ad Type"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:168
+msgid "Add New Ad Type"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:169
+msgid "Edit Ad Type"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:170
+msgid "Update Ad Type"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:171
+msgid "View Ad Type"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:172
+msgid "Separate items with commas"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:173
+msgid "Add or remove items"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:174
+msgid "Choose from the most used"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:175
+msgid "Popular Ad Types"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:176
+msgid "Search Ad Types"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:177
+msgid "Not Found"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:178
+msgid "No Ad Types"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:179
+msgid "Ad Type List"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:180
+msgid "Ad Type list navigation"
+msgstr ""
+
+#: includes/adz-cpt-ads.php:262
+msgid "You do not have permission to change template settings."
+msgstr ""
+
+#: includes/adz-cpt-ads.php:326
+msgid "Not permitted."
+msgstr ""
+
+#: includes/adz-cpt-ads.php:334
+msgid "Unknown template."
+msgstr ""
+
+#: includes/adz-dashboard.php:25 includes/adz-dashboard.php:26
+msgid "Earnings"
+msgstr ""
+
+#: includes/adz-dashboard.php:40
+msgid "You do not have permission to view earnings."
+msgstr ""
+
+#: includes/adz-dashboard.php:46
+msgid "adz-world earnings"
+msgstr ""
+
+#: includes/adz-dashboard.php:76
+msgid "You do not have permission to do that."
+msgstr ""
+
+#: includes/adz-dashboard.php:114
+msgid "Monetization"
+msgstr ""
+
+#: includes/adz-dashboard.php:116
+msgid "adz served through the adz-world monetization service carry adz-world\\'s affiliate codes. adz-world keeps 10% of commission it actually receives and settles 90% to you. The 10% is taken from commission that has been received, not from sales, clicks, impressions or estimates."
+msgstr ""
+
+#: includes/adz-dashboard.php:121
+msgid "Links on your adz that already carry your own affiliate identifier are never rewritten."
+msgstr ""
+
+#: includes/adz-dashboard.php:132
+msgid "Monetization is on."
+msgstr ""
+
+#: includes/adz-dashboard.php:136
+msgid "Agreed by %1$s on %2$s."
+msgstr ""
+
+#: includes/adz-dashboard.php:143
+msgid "Switch monetization off"
+msgstr ""
+
+#: includes/adz-dashboard.php:145
+msgid "Monetization is off. No adz on this site are monetized and nothing is sent to adz-world."
+msgstr ""
+
+#: includes/adz-dashboard.php:147
+msgid "Switch monetization on"
+msgstr ""
+
+#: includes/adz-dashboard.php:161
+msgid "No earnings to report"
+msgstr ""
+
+#: includes/adz-dashboard.php:165
+msgid "The adz-world settlement service has not been built yet. When it exists, this screen will show commission adz-world has actually received, the 10% adz-world share, your 90% share, any reversals, and what is available to withdraw. Until then it shows nothing, because there is nothing it could honestly show."
+msgstr ""
+
+#: includes/adz-dashboard.php:189
+msgid "Statement last updated %s ago."
+msgstr ""
+
+#: includes/adz-dashboard.php:193
+msgid "This statement has never been updated from adz-world."
+msgstr ""
+
+#: includes/adz-dashboard.php:197
+msgid "adz-world has reported no commission for this site yet."
+msgstr ""
+
+#: includes/adz-dashboard.php:206
+msgid "These figures do not reconcile: the two shares do not sum to the settled total. This is a fault, and the figures below should not be relied on until adz-world has corrected the statement."
+msgstr ""
+
+#: includes/adz-dashboard.php:213
+msgid "Commission adz-world has received"
+msgstr ""
+
+#: includes/adz-dashboard.php:214
+msgid "adz-world share (10%)"
+msgstr ""
+
+#: includes/adz-dashboard.php:215
+msgid "Your share (90%)"
+msgstr ""
+
+#: includes/adz-dashboard.php:216
+msgid "Reversals and refunds"
+msgstr ""
+
+#: includes/adz-dashboard.php:217
+msgid "Adjustments"
+msgstr ""
+
+#: includes/adz-dashboard.php:218
+msgid "Pending — not yet confirmed, not yours yet"
+msgstr ""
+
+#: includes/adz-dashboard.php:219
+msgid "Reserved against payouts in progress"
+msgstr ""
+
+#: includes/adz-dashboard.php:220
+msgid "Already paid to you"
+msgstr ""
+
+#: includes/adz-dashboard.php:221
+msgid "Available to withdraw"
+msgstr ""
+
+#: includes/adz-dashboard.php:248
+msgid "an administrator"
+msgstr ""
+
+#: includes/adz-monetization.php:55 includes/adz-monetization.php:83
+msgid "You do not have permission to change monetization."
+msgstr ""
+
+#: includes/adz-money.php:182
+msgid "An amount was missing its currency."
+msgstr ""
+
+#: includes/adz-money.php:188
+msgid "An amount carried an invalid currency code."
+msgstr ""
+
+#: includes/adz-payouts.php:80
+msgid "You do not have permission to request a payout."
+msgstr ""
+
+#: includes/adz-payouts.php:94
+msgid "That is not a valid currency code."
+msgstr ""
+
+#: includes/adz-payouts.php:98
+msgid "A payout amount must be greater than zero."
+msgstr ""
+
+#: includes/adz-payouts.php:102
+msgid "Choose a payout method that is available."
+msgstr ""
+
+#: includes/adz-payouts.php:118
+msgid "A payout in this currency is already in progress."
+msgstr ""
+
+#: includes/adz-payouts.php:129
+msgid "That is more than the available balance of %s."
+msgstr ""
+
+#: includes/adz-payouts.php:159
+msgid "The payout request could not be recorded."
+msgstr ""
+
+#: includes/adz-payouts.php:223
+msgid "That payout could not be found."
+msgstr ""
+
+#: includes/adz-payouts.php:236
+msgid "A payout cannot move from %1$s to %2$s."
+msgstr ""
+
+#: includes/adz-service.php:108
+msgid "Monetization is switched off for this site. No adz are being monetized and there is nothing to report."
+msgstr ""
+
+#: includes/adz-service.php:115
+msgid "This site is not connected to the adz-world settlement service. The service is not yet available, so no earnings can be reported."
+msgstr ""
+
+#: includes/adz-service.php:173
+msgid "The adz-world service returned status %d."
+msgstr ""
+
+#: includes/adz-service.php:180
+msgid "The adz-world service returned a response that could not be read."
+msgstr ""
+
+#: vendor/eof/adz-config.php:433
+msgid "Reset the linked account."
+msgstr ""
+
+#: vendor/eof/fields/media.php:93
+msgid "Upload"
+msgstr ""
+
+#: vendor/eof/fields/media.php:95
+msgid "Delete"
+msgstr ""
+
+#: vendor/eof/fields/post_select.php:68
+msgid "Post type does not exist!"
+msgstr ""
+
+#: vendor/eof/fields/repeat.php:90
+msgid "Action"
+msgstr ""
+
+#: vendor/eof/fields/repeat.php:112 vendor/eof/fields/repeat.php:146
+msgid "The field type does not exisits, please check your code."
+msgstr ""
+
+#: vendor/eof/fields/repeat.php:161
+msgid "Add"
+msgstr ""
+
+#: vendor/eof/core/class-eof-admin.php:140
+msgid "Thank you for using <a href=\"%1$s\" target=\"_blank\">Easy Options Framework</a>!"
+msgstr ""
+
+#: vendor/eof/core/class-eof-import-export.php:34
+msgid "Import/Export"
+msgstr ""
+
+#: vendor/eof/core/class-eof-import-export.php:50
+msgid "Import Settings"
+msgstr ""
+
+#: vendor/eof/core/class-eof-import-export.php:53
+msgid "Please select a <b>.json</b> file generated by this plugin."
+msgstr ""
+
+#: vendor/eof/core/class-eof-import-export.php:63
+msgid "Import from File"
+msgstr ""
+
+#: vendor/eof/core/class-eof-import-export.php:67 vendor/eof/core/class-eof-import-export.php:75
+msgid "Export Settings"
+msgstr ""
+
+#: vendor/eof/core/class-eof-import-export.php:70
+msgid "Click below to generate a <b>.json</b> file for your current option settings."
+msgstr ""
+
+#: vendor/eof/core/class-eof-import-export.php:103
+msgid "You must upload a <b>.json</b> file generated by this plugin."
+msgstr ""
+
+#: vendor/eof/core/class-eof-import-export.php:130
+msgid "Import file could not be found. Please try again."
+msgstr ""
+
+#: vendor/eof/core/class-eof-import-export.php:160
+msgid "Invalid nonce for options use"
+msgstr ""
+
+#: vendor/eof/core/class-eof-loader.php:89
+msgid "Donate"
+msgstr ""
+
+#: vendor/eof/core/class-eof-settings.php:138
+msgid "This field type does not exisits, please check your code."
+msgstr ""
+
+#: vendor/eof/core/class-eof-settings.php:186
+msgid "Settings updated!"
+msgstr ""
+
+#: vendor/eof/core/class-eof-settings.php:218
+msgid "Section Defaults Restored!"
+msgstr ""
+
+#: vendor/eof/core/class-eof-views.php:91
+msgid "Save Changes"
+msgstr ""
+
+#: vendor/eof/core/class-eof.php:116 vendor/eof/core/class-eof.php:118
+msgid "EOF"
+msgstr ""
