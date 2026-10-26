@@ -3,7 +3,9 @@
 These project rules apply to every coding agent working in this repository.
 They adapt Dainis' FLOSC accountability rules to the agreed adz-world workflow.
 Read [README.md](README.md) for the directory layout and
-[the remediation scope](docs/remediation-scope.md) for the review findings.
+[the shared remediation register](docs/adz-remediation.html) for tasks and
+current evidence. [The earlier scope](docs/remediation-scope.md) is historical
+analysis, not an authoritative completion checklist.
 
 ## Role and first priority
 
@@ -99,6 +101,18 @@ forbidden.
 - Keep one shared setup specsheet, one verification gate, and one integrated
   release ZIP. Do not create parallel plans, gates, or per-agent release
   packaging schemes.
+- All agents, including agents working directly on GitHub, update
+  `docs/adz-remediation.html`. Do not create agent-specific documentation
+  directories or competing task registers. Preserve existing contributions.
+- Document revisions are entries at the top of that HTML file, identified by
+  UTC timestamp + agent + a newly generated UUID, not a shared incrementing
+  counter. Every committed document update adds an entry; existing IDs remain
+  unchanged. Record tested code commits separately.
+- Read the latest remote document before editing and reconcile concurrent
+  changes before publishing. A rejected push requires fetching and merging,
+  preserving both entries and accepted repairs, never force-pushing or
+  overwriting another agent's file. Work in assigned issue blocks; conflicting
+  task claims require review against code and evidence, not last-writer-wins.
 
 ## Independent candidates, reviewed integration
 

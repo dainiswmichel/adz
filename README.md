@@ -17,6 +17,12 @@ WordPress site. It is not yet a claim of WordPress.org compliance. Never modify
 
 ## Remediation workflow
 
+All agents share [the remediation task register](docs/adz-remediation.html).
+It contains stable task IDs, acceptance criteria, regression requirements and
+evidence status. Its top-of-document revision history uses independent
+timestamp/agent/UUID entries, not a shared version counter. Concurrent entries
+are merged and preserved. There are no agent-specific documentation directories.
+
 Agents work on bounded repairs in their own candidates against an identified
 baseline. Each repair must identify changed behavior and tests actually run.
 No agent's candidate is authoritative. Compare a candidate with the integrated
@@ -80,6 +86,8 @@ variables → Actions:
 - `SVN_USERNAME` — your WordPress.org username
 - `SVN_PASSWORD` — the dedicated SVN password from your WordPress.org profile
 
-The plugin is closed on WordPress.org pending a guideline review. The
-remediation scope and unresolved questions are tracked in
-[`docs/remediation-scope.md`](docs/remediation-scope.md).
+The plugin is closed on WordPress.org pending a guideline review. Current
+tasks and unresolved questions are tracked in
+[the shared remediation register](docs/adz-remediation.html).
+[The earlier scope](docs/remediation-scope.md) retains historical analysis;
+its DONE labels do not establish integrated verification.

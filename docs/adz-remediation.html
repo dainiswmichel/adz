@@ -1,0 +1,861 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>adz-world remediation - shared task register</title>
+<style>
+  :root { color-scheme:light; --ink:#192739; --muted:#526174; --line:#d6dfe9; --paper:#f4f7fb; --blue:#165998; --amber:#795000; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--paper); color:var(--ink); font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  main { max-width:1120px; margin:auto; padding:32px 24px 80px; }
+  h1 { font-size:clamp(28px,4vw,42px); line-height:1.15; }
+  h2 { margin-top:0; font-size:25px; line-height:1.3; }
+  h3 { font-size:18px; margin:22px 0 8px; }
+  a { color:var(--blue); text-underline-offset:3px; }
+  a:focus-visible { outline:3px solid var(--blue); outline-offset:3px; }
+  code { font:0.9em ui-monospace,Menlo,Consolas,monospace; overflow-wrap:anywhere; }
+  section { margin:24px 0; padding:24px; background:white; border:1px solid var(--line); border-radius:12px; scroll-margin-top:20px; }
+  p, li { margin:8px 0; }
+  .meta { color:var(--muted); }
+  .notice { padding:16px 20px; background:#fff5da; border-left:5px solid var(--amber); }
+  .status { display:inline-block; padding:3px 10px; background:#fff5da; color:var(--amber); border-radius:5px; font-size:14px; font-weight:700; }
+  .table-wrap { overflow-x:auto; }
+  table { border-collapse:collapse; width:100%; font-size:14px; }
+  th, td { padding:10px; text-align:left; vertical-align:top; border:1px solid var(--line); }
+  th { background:#eaf1f8; }
+  blockquote { margin:14px 0; padding:8px 16px; border-left:4px solid var(--line); }
+  .archived-source { white-space:pre-wrap; overflow-wrap:anywhere; font:14px/1.6 ui-monospace,Menlo,Consolas,monospace; }
+  summary { cursor:pointer; font-weight:700; padding:10px 0; }
+  dl { margin:12px 0; }
+  dt { font-weight:700; margin-top:12px; }
+  dd { margin:4px 0 12px; }
+  @media (max-width:600px) { main { padding:20px 12px 50px; } section { padding:18px; } }
+  @media print { body { background:white; } main { max-width:none; padding:0; } section { border-radius:0; } h2, h3 { break-after:avoid; } tr { break-inside:avoid; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <p><strong>Shared revision history - no global version counter</strong></p>
+  <p><strong>Shared document for every agent:</strong> <code>docs/adz-remediation.html</code>.
+  Agent-specific documentation directories and competing remediation documents are not used.</p>
+  <div class="table-wrap">
+    <table aria-label="Document revision history">
+      <thead><tr><th>Unique revision ID</th><th>Editor</th><th>Scope / change</th></tr></thead>
+      <tbody>
+        <tr><td><code>2026-10-26T09:13:11Z-codex-e94585c9-4aaa-4c19-94d9-839851bdafc3</code></td><td>Codex</td><td>Initial shared task register, stable issue IDs and regression/evidence requirements; consolidated Claude drafts with provenance and explicit historical status; independent revision IDs instead of a competing global version counter.</td></tr>
+        <!-- New revision entries are appended before this marker. No existing IDs are renumbered. -->
+      </tbody>
+    </table>
+  </div>
+  <p class="meta">Dainis Michel / adz-world / task register / 26 October 2026</p>
+  <h1>WordPress.org remediation: individually repairable, permanently testable</h1>
+  <p>Source: the Plugins Team's <strong>29 September 2026 closure email</strong>, Review ID
+  <code>GUIDELINES ACT adz-world/dainismichel/29Sep26/T1 29Sep26/4.3</code>.
+  Review-window deadline: <strong>28 November 2026</strong>.</p>
+  <div class="notice"><strong>No integrated task is marked complete here.</strong>
+  Candidate edits and candidate tests are evidence for review, not proof that the release source contains a repair.
+  This document itemizes work; it does not repair code, select winners, run a gate, authorize publication, or certify compliance.</div>
+</header>
+
+<section id="workflow">
+  <h2>How a task becomes and stays fixed</h2>
+  <p><strong>Shared editing and Git publication:</strong> Claude Code and all other agents update this same file.
+  Each committed document update adds a revision-history row at the top of this document, using
+  <code>YYYY-MM-DDTHH:MM:SSZ-agent-UUID</code> as its unique revision ID.
+  The UTC timestamp records the edit; the agent and newly generated UUID prevent collisions even when edits happen in the same second.
+  There is no shared integer counter, no global "latest revision" field, and no requirement to reserve a number.
+  Existing revision IDs remain unchanged. Parallel entries are both retained; timestamps do not decide which conflicting content wins.
+  A document revision ID is separate from plugin version, tested code commit, and the Git commit containing the edit.
+  Agents working directly on GitHub read the latest main-branch document before editing and preserve other agents' entries.
+  Local editors fetch and reconcile remote changes before pushing; conflicting updates are merged, never force-pushed or replaced wholesale.
+  If a push is rejected because another agent updated main, the agent fetches and merges the new work, preserving both revision entries and reviewing overlapping task edits.
+  Agents normally edit only their assigned issue blocks and add their own evidence/history entries.
+  Conflicting claims about one task are resolved against the identified code and tests, not by last-writer-wins.
+  Commits occur at meaningful progress points: assignment, verified repair, integration, or reopening after regression.
+  Evidence names the actual tested code commit, not just the document revision.</p>
+  <p>Each task has a stable ID. An agent can repair one coherent task in its own complete candidate.
+  The repair includes a lasting regression check. Later changes must preserve every previously accepted check,
+  not merely pass the tests for the newest task. Task boundaries are not permission to ignore tightly coupled callers.</p>
+  <ol>
+    <li><strong>Assign:</strong> record the agent, candidate path, starting commit, task ID, and overlapping files before work.</li>
+    <li><strong>Repair:</strong> preserve intended features, fix the root cause, and test both authorized success and rejected input.</li>
+    <li><strong>Review:</strong> record the candidate commit, exact changed paths, behavior changes, test commands, environment, and actual results.</li>
+    <li><strong>Integrate:</strong> accept reviewed changes file-by-file through <code>compile-winners.txt</code>. When two tasks change one file, merge both repairs before accepting that file; copying an older file over a newer repair is not integration.</li>
+    <li><strong>Verify:</strong> run the accumulated tests and shared gate on the integrated source, then on the exact release artifact. Dainis tests that identified build on the test site.</li>
+    <li><strong>Protect:</strong> a later failure reopens the affected task and blocks acceptance of the breaking change. No test deletion, weakened assertion, diagnostic suppression, or baseline reset to manufacture a pass.</li>
+  </ol>
+  <p><strong>Status vocabulary:</strong> OPEN; ASSIGNED; CANDIDATE VERIFIED; INTEGRATED VERIFIED; REOPENED; BLOCKED.
+  Only <strong>INTEGRATED VERIFIED</strong> means done for the identified integrated commit.
+  Unrun checks remain unrun. Agent review supplements executable checks; neither substitutes for the other.</p>
+  <p><strong>Boundaries:</strong> <code>ancestor/</code> remains frozen; agents work in
+  <code>pre-release-candidates/&lt;agent&gt;/</code>; <code>adz-world-wordpress-codebase/</code>
+  is the sole release source. No whole-slot replacement. One shared gate and one integrated release ZIP.</p>
+  <p>This is the remediation task register, not another setup specsheet or competing gate.
+  Existing setup: <a href="adz-world-com-do-and-fast-gate-spec-2026-10m-25d.html">shared setup and fast-gate specification</a>.
+  Earlier analysis: <a href="remediation-scope.md">remediation scope</a>; its historical DONE labels are not inherited as current integrated evidence.</p>
+</section>
+
+<section id="index">
+  <h2>Task index and assignment board</h2>
+  <p>Issues 01-13 retain the email's order. Issue 11 deliberately references Issue 10: the email repeats the same defect.
+  Issues 14-18 are additional known repair/verification requirements, not claims made by the email.
+  Task 00 and Task 19 are review/submission coordination, not plugin features. Unassigned means no new assignment is made by this document.</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>ID</th><th>Task</th><th>Source</th><th>Integrated status</th><th>Owner</th></tr></thead>
+    <tbody>
+      <tr><td><a href="#issue00">00</a></td><td>Identify the actual closure guideline</td><td>Email leaves it unnamed</td><td>BLOCKED: clarification outstanding</td><td>Dainis / authorized correspondent</td></tr>
+      <tr><td><a href="#issue01">01</a></td><td>Portable AJAX endpoints</td><td>Email 1</td><td>OPEN</td><td>Unassigned</td></tr>
+      <tr><td><a href="#issue02">02</a></td><td>Accurate minimum WordPress version</td><td>Email 2</td><td>OPEN</td><td>Unassigned</td></tr>
+      <tr><td><a href="#issue03">03</a></td><td>Evidence-backed Tested up to</td><td>Email 3</td><td>OPEN</td><td>Unassigned</td></tr>
+      <tr><td><a href="#issue04">04</a></td><td>At most five readme tags</td><td>Email 4</td><td>OPEN</td><td>Unassigned</td></tr>
+      <tr><td><a href="#issue05">05</a></td><td>Deprecated WordPress APIs</td><td>Email 5</td><td>OPEN</td><td>Unassigned</td></tr>
+      <tr><td><a href="#issue06">06</a></td><td>Unmaintained Chosen dependency</td><td>Email 6</td><td>OPEN</td><td>Unassigned</td></tr>
+      <tr><td><a href="#issue07">07</a></td><td>External-service consent and disclosures</td><td>Email 7</td><td>OPEN; policy publication required</td><td>Unassigned</td></tr>
+      <tr><td><a href="#issue08">08</a></td><td>Shortcode and rendered-output escaping</td><td>Email 8</td><td>OPEN</td><td>Unassigned</td></tr>
+      <tr><td><a href="#issue09">09</a></td><td>Correct translation domain</td><td>Email 9</td><td>OPEN</td><td>Unassigned</td></tr>
+      <tr><td><a href="#issue10">10</a></td><td>Restrict public rotation option access</td><td>Email 10</td><td>OPEN</td><td>Unassigned</td></tr>
+      <tr><td><a href="#issue11">11</a></td><td>Repeated arbitrary-option write finding</td><td>Email 11; same repair as 10</td><td>OPEN; closes with 10</td><td>Same as 10</td></tr>
+      <tr><td><a href="#issue12">12</a></td><td>Direct PHP file access guards</td><td>Email 12</td><td>OPEN</td><td>Unassigned</td></tr>
+      <tr><td><a href="#issue13">13</a></td><td>Clean activation, schema, compatibility, asset scope</td><td>Email 13 and its full checklist</td><td>OPEN</td><td>Unassigned</td></tr>
+      <tr><td><a href="#issue14">14</a></td><td>Unauthenticated option deletion</td><td>Additional known defect</td><td>OPEN</td><td>Unassigned</td></tr>
+      <tr><td><a href="#issue15">15</a></td><td>Registration/settings authorization</td><td>Additional known defect</td><td>OPEN</td><td>Unassigned</td></tr>
+      <tr><td><a href="#issue16">16</a></td><td>Template inclusion allowlist</td><td>Additional known defect</td><td>OPEN</td><td>Unassigned</td></tr>
+      <tr><td><a href="#issue17">17</a></td><td>Prepared database queries</td><td>Additional candidate repair requiring verification</td><td>OPEN</td><td>Unassigned</td></tr>
+      <tr><td><a href="#issue18">18</a></td><td>Whole-plugin WPCS and regression gate</td><td>Required standards; preserve working ads</td><td>OPEN</td><td>Unassigned</td></tr>
+      <tr><td><a href="#issue19">19</a></td><td>Exact-artifact review and authorized submission</td><td>Email final checklist</td><td>BLOCKED on completed repairs/evidence</td><td>Dainis / authorized release operator</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section id="issue00">
+  <h2>Task 00. Establish the closure reason</h2><p class="status">BLOCKED - unnamed guideline</p>
+  <blockquote>"Although they are not directly related to the guideline violation, our algorithms detected some technical issues that you should check."</blockquote>
+  <p><strong>Required outcome:</strong> the Plugins Team identifies the breached guideline and the behavior needing correction.
+  A concise clarification reply must reference the original review thread. Sending it requires Dainis' authorization.</p>
+  <p><strong>Acceptance/evidence:</strong> record the actual response and map any new requirement to a task.
+  Affiliate links, external requests, and consent warrant review, but none is established as the closure cause.
+  This task does not block coding the known repairs; it blocks declaring the closure reason resolved.</p>
+</section>
+
+<section id="issue01">
+  <h2>Issue 01. Resolve every AJAX endpoint through WordPress</h2><p class="status">OPEN</p>
+  <blockquote>"You cannot assume that it's always located at wp-admin/admin-ajax.php."</blockquote>
+  <p><strong>Surfaces:</strong> <code>includes/adz-helper.php</code>, <code>includes/adz-shortcode.php</code>,
+  <code>adz-templates/template1.php</code>, <code>js/plugin.js</code>, <code>vendor/eof/js/eof-custom.js</code>,
+  and their enqueue/localization code. The email's nine examples are not an exhaustive current inventory.</p>
+  <p><strong>Repair/acceptance:</strong> PHP supplies <code>admin_url( 'admin-ajax.php' )</code>;
+  external scripts receive it through the appropriate registered handle. PHP-generated JavaScript uses safe JSON encoding.
+  Nonces and response parsing remain wired to their actual handlers. No hardcoded root path or appended <code>site_url()</code> suffix remains.</p>
+  <p><strong>Regression:</strong> scan all shipped request builders and execute settings retrieval, reset, shortcode and ad rendering.
+  Run a real subdirectory WordPress configuration as well as the ordinary local URL; inspect the actual request URL and success/error handling.
+  A literal-search pass alone is insufficient.</p>
+</section>
+
+<section id="issue02">
+  <h2>Issue 02. Declare the real minimum supported WordPress version</h2><p class="status">OPEN</p>
+  <blockquote>"The 'Requires at least' value should be the lowest version of WordPress that the plugin will work on."</blockquote>
+  <p><strong>Surfaces:</strong> main plugin header, <code>readme.txt</code>, compatibility checks and test configuration.</p>
+  <p><strong>Repair/acceptance:</strong> use matching major-release notation such as <code>6.2</code>, not an unverified number copied from an example.
+  Inventory required APIs and verify the selected minimum with its supported PHP environment.
+  Any intentional support-floor change must be explicit, not an incidental result of a new helper.</p>
+  <p><strong>Regression/evidence:</strong> machine-check matching metadata; install, activate and exercise core ad/settings flows at the declared minimum.
+  Record exact WordPress/PHP versions. No support-floor decision is made by this document.</p>
+</section>
+
+<section id="issue03">
+  <h2>Issue 03. Make Tested up to an executed claim</h2><p class="status">OPEN</p>
+  <blockquote>"Please update your readme to show that it is tested up to the most recent stable major version of WordPress."</blockquote>
+  <p><strong>Repair/acceptance:</strong> verify the current stable release at validation time, test the integrated artifact there,
+  and declare its major-release number. An example in the email or an earlier candidate run is not current integrated evidence.</p>
+  <p><strong>Regression/evidence:</strong> header/readme validation plus clean activation, admin, shortcode, local-ad and authorization checks on that exact release.
+  Record the build identity and versions; rerun when the tested source or current stable target changes.</p>
+</section>
+
+<section id="issue04">
+  <h2>Issue 04. Limit readme tags to five relevant entries</h2><p class="status">OPEN</p>
+  <blockquote>"The tags list of your readme file accepts a maximum of 5 tags."</blockquote>
+  <p><strong>Repair/acceptance:</strong> retain no more than five accurate, relevant tags without unrelated marketing changes.</p>
+  <p><strong>Regression:</strong> parse the actual readme header, count comma-separated nonempty tags, and run Plugin Check's readme checks.
+  The test must fail if a later agent restores the old eleven-tag list.</p>
+</section>
+
+<section id="issue05">
+  <h2>Issue 05. Replace deprecated APIs without losing settings behavior</h2><p class="status">OPEN</p>
+  <blockquote>"includes/adz-cpt-ads.php:250 screen_icon();"</blockquote>
+  <p><strong>Repair/acceptance:</strong> remove the obsolete icon call or use an appropriate supported presentation.
+  Inspect other deprecated calls in the shipped plugin, not frozen reference projects. Do not remove working settings controls to avoid a warning.</p>
+  <p><strong>Regression:</strong> open the affected admin screens with debug logging; assert no deprecated-call diagnostic and confirm settings still save.
+  A removed call is not evidence that the function no longer exists in every WordPress version.</p>
+</section>
+
+<section id="issue06">
+  <h2>Issue 06. Remove the unmaintained Chosen dependency, preserve selection</h2><p class="status">OPEN</p>
+  <blockquote>"We no longer accept using any library that is no longer supported or maintained by their developers."</blockquote>
+  <p><strong>Surfaces:</strong> Chosen 1.8.2 JavaScript, CSS/sprites, enqueue dependencies, and EOF rotation selectors.</p>
+  <p><strong>Repair/acceptance:</strong> use functional native controls or a justified maintained replacement.
+  All page/category/tag selections, multiple selection, repeat rows, duplicate rows, saved selections and reload behavior remain available.
+  A no-op shim alone does not prove the feature works.</p>
+  <p><strong>Regression:</strong> package inventory confirms obsolete assets/references are absent; browser checks cover select, deselect,
+  save, reload and dynamic rows with no JavaScript errors. Keyboard operation remains usable.</p>
+</section>
+
+<section id="issue07">
+  <h2>Issue 07. Document and control external services</h2><p class="status">OPEN - includes publication dependency</p>
+  <blockquote>"What data is sent, why, where and under which conditions."</blockquote>
+  <p><strong>Surfaces:</strong> REST clients, authorization/registration, ad retrieval, IP-based profile lookup,
+  remote creatives/assets, and any earnings/payment additions selected for release.</p>
+  <p><strong>Repair/acceptance:</strong> inventory each actual outbound path, destination, purpose, fields, trigger and consent boundary.
+  Readme disclosures match behavior and link to real, relevant Terms and Privacy pages.
+  Optional external connections are not activated by plugin activation or an unrelated save.
+  Publisher participation does not automatically authorize audience tracking. Affiliate/referral identifiers and the agreed 90/10 commission basis are disclosed where applicable.</p>
+  <p><strong>Regression:</strong> intercept HTTP during activation, ordinary access and ad/settings flows with the service disabled:
+  no optional service request occurs. Verify explicitly enabled, declined and withdrawn states; inspect real enabled payloads on a controlled endpoint.
+  Fetch policy URLs and inspect their content, not merely a 200 response or parking page.</p>
+  <p><strong>Product boundary:</strong> centralized network participation and purchase-tier benefits remain undecided.
+  No forced network adz, pay-to-disconnect behavior, or new local feature lock is authorized by this task.
+  Local advertising remains functional without an external account.</p>
+</section>
+
+<section id="issue08">
+  <h2>Issue 08. Escape shortcode and ad output in its actual context</h2><p class="status">OPEN</p>
+  <blockquote>"All variables, options, and generated values included in the return are escaped using the appropriate WordPress escaping functions."</blockquote>
+  <p><strong>Surfaces:</strong> both shortcode callbacks, generated inline scripts, returned HTML, template fields,
+  remote/local ad content and the browser insertion sites that consume it.</p>
+  <p><strong>Repair/acceptance:</strong> validate iframe dimensions and protocols; escape URLs, attributes and text for their sinks;
+  encode JavaScript data safely. Preserve deliberately supported rich content through an explicit safe HTML policy rather than escaping all content into plain text.
+  Source sanitization is not a replacement for output handling.</p>
+  <p><strong>Regression:</strong> exercise quotes, attribute injection, script terminators, unsafe URLs and allowed rich markup.
+  Confirm no script execution or broken attributes, while links, permitted formatting, iframe dimensions, article content and valid ads still render.
+  Test both shortcode return values and their actual browser use.</p>
+</section>
+
+<section id="issue09">
+  <h2>Issue 09. Use the adz-world translation domain consistently</h2><p class="status">OPEN</p>
+  <blockquote>"The Internationalization functions should look like: esc_html__( 'Hello', 'adz-world' );"</blockquote>
+  <p><strong>Repair/acceptance:</strong> all shipped plugin gettext calls use <code>adz-world</code>, matching the slug and header.
+  Cover bundled EOF strings, new strings, plurals and context-aware calls; preserve placeholders and translator context.</p>
+  <p><strong>Regression:</strong> scan gettext calls using the standards tooling, generate/check translation extraction with existing WordPress tooling,
+  and inspect representative translated admin strings. The email's 49 plus 2 findings are historical, not a current maximum.</p>
+</section>
+
+<section id="issue10">
+  <h2>Issue 10. Prevent public rotation requests from choosing arbitrary options</h2><p class="status">OPEN</p>
+  <blockquote>"This isn't just about sanitizing input ... arbitrary values never reach certain places that can trigger an execution."</blockquote>
+  <p><strong>Surfaces:</strong> all reads and writes reached through <code>rotations_id</code> in the public ad endpoint,
+  rotation helpers, generated identifiers and legitimate shortcode/rotation state callers.</p>
+  <p><strong>Repair/acceptance:</strong> request data cannot select arbitrary option keys.
+  Validate scalar types, allowed identifier format and the configured rotation/target relationship before state access.
+  A matching prefix alone must not grant control of another configured rotation. Bound and validate state values.
+  A nonce printed publicly is not administrator authorization.</p>
+  <p><strong>Regression:</strong> disposable ordinary options remain unchanged after anonymous and low-privilege read/write attempts;
+  malformed arrays and foreign/nonexistent rotation identifiers are rejected explicitly.
+  A real configured rotation still advances and repeats correctly. Assert both protected bytes/state and successful intended behavior.</p>
+</section>
+
+<section id="issue11">
+  <h2>Issue 11. Cover the repeated arbitrary-option write finding</h2><p class="status">OPEN - same repair as Issue 10</p>
+  <blockquote>"A public AJAX endpoint accepts rotations_id from visitors and uses it as an option name."</blockquote>
+  <p>The email repeats two write locations already covered by Issue 10. This is not a separate implementation assignment.
+  Its acceptance evidence must explicitly cover those branches as well as the remaining reads/writes.
+  It closes only with Issue 10's integrated regression results; no duplicate repair, duplicate owner or independent DONE claim.</p>
+</section>
+
+<section id="issue12">
+  <h2>Issue 12. Guard executable PHP files against direct access</h2><p class="status">OPEN</p>
+  <blockquote>"Add it ... before any other code."</blockquote>
+  <p><strong>Repair/acceptance:</strong> executable shipped entry files check <code>ABSPATH</code> before invoking WordPress,
+  instantiating classes or including executable files, respecting any namespace declaration.
+  Inventory all PHP files, including bundled libraries and templates, rather than just the five examples.</p>
+  <p><strong>Regression:</strong> direct unauthenticated HTTP requests produce no plugin output, side effects or PHP diagnostics;
+  ordinary WordPress loading and legitimate template rendering still succeed.
+  Test every executable entry in the final artifact; do not insist on one HTTP status when a guard legitimately exits with an empty body.</p>
+</section>
+
+<section id="issue13">
+  <h2>Issue 13. Activate cleanly and satisfy the entire runtime checklist</h2><p class="status">OPEN</p>
+  <blockquote>"The plugin activates with no fatal errors, warnings or notices."</blockquote>
+  <p><strong>Evidence correction:</strong> the email alleges a core <code>role_exists()</code> redeclaration.
+  Prior local testing on WordPress 7.1.3 did not reproduce that fatal and did not find that function in core.
+  Record the alleged defect separately from what actually happens. Check global collisions and actual call sites; do not invent an error transcript.</p>
+  <ul>
+    <li><strong>13a - Activation/output:</strong> fresh install, deactivate/reactivate, and ordinary admin/front-end access produce no plugin diagnostics or unexpected output with <code>WP_DEBUG</code> and <code>WP_DEBUG_LOG</code> enabled.</li>
+    <li><strong>13b - Schema:</strong> tables exist with the actual custom <code>$wpdb-&gt;prefix</code>, charset/collation and <code>dbDelta()</code>-compatible definitions. Repeated activation preserves data and is idempotent.</li>
+    <li><strong>13c - Dependencies:</strong> declared WordPress/PHP floors and required extensions/plugins are checked before use, with actionable errors rather than fatals. No unsupported compatibility claim.</li>
+    <li><strong>13d - Asset scope:</strong> admin scripts/styles load only where needed; selectors do not restyle unrelated dashboard screens. Front-end assets remain available on intended ad surfaces.</li>
+    <li><strong>13e - Network:</strong> activation triggers no external contact without explicit authorized consent. Shares Issue 07's outbound-request assertions.</li>
+  </ul>
+  <p><strong>Regression/evidence:</strong> capture activation output, exact environment, schema inspection and fresh debug-log range;
+  retain old logs and distinguish unrelated core/plugin messages. Visit settings, editor and front-end pages.
+  Verify custom-prefix installation and the declared minimum/current environments. All five subchecks are required to close Issue 13.</p>
+</section>
+
+<section id="issue14">
+  <h2>Issue 14. Stop unauthenticated arbitrary option deletion</h2><p class="status">OPEN - additional known defect</p>
+  <p><strong>Source distinction:</strong> not listed in the closure email.
+  The original <code>vendor/eof/adz-config.php</code> hooks <code>adz_check_post_function()</code> to <code>init</code>;
+  posted rotation identifiers reached <code>delete_option()</code>. Earlier local HTTP reproduction deleted a disposable probe option.</p>
+  <p><strong>Repair/acceptance:</strong> only the authorized settings operation may delete its own valid rotation state:
+  administrator capability, verified action-specific nonce, validated configured rotation identity and intended request context.
+  An admin URL or <code>is_admin()</code> alone is not authorization.</p>
+  <p><strong>Regression:</strong> use only disposable test options, never <code>siteurl</code> or <code>active_plugins</code>.
+  Real anonymous homepage POST, low-privilege request, missing/invalid nonce and foreign rotation leave protected options unchanged.
+  An authorized real rotation removal still removes its own state and leaves unrelated options intact.
+  Shared code with Issue 10 is coordinated, not overwritten.</p>
+</section>
+
+<section id="issue15">
+  <h2>Issue 15. Authorize registration reset and template-settings administration</h2><p class="status">OPEN - additional known defect</p>
+  <p><strong>Surfaces:</strong> <code>adz_reset_registration()</code>, its AJAX hooks/button/nonce,
+  <code>get_template_settings</code>, and any equivalent settings mutation endpoint.</p>
+  <p><strong>Repair/acceptance:</strong> administrator-only operations require capability plus a dedicated verified nonce.
+  Remove inappropriate anonymous hooks without removing legitimate admin features.
+  Public ad-rendering actions remain public where intended and use their own limited validation.</p>
+  <p><strong>Regression:</strong> anonymous, subscriber, invalid nonce and valid administrator cases.
+  Confirm reset preserves unrelated settings, correct template settings load in the editor, and error responses are visible to the caller.
+  Inventory sibling actions so the repair is not bypassed through an alternate handler.</p>
+</section>
+
+<section id="issue16">
+  <h2>Issue 16. Resolve templates only from the shipped allowlist</h2><p class="status">OPEN - additional known defect</p>
+  <p><strong>Surfaces:</strong> posted template names, all <code>require</code>/<code>include</code> paths and template-settings loading.</p>
+  <p><strong>Repair/acceptance:</strong> only existing shipped, explicitly allowed template files can execute.
+  Reject nonstring input, traversal, absolute paths, wrappers and non-template PHP; use the same validated resolver across callers.
+  Do not simply sanitize a path and then include it.</p>
+  <p><strong>Regression:</strong> negative path/type cases and actual HTTP inclusion attempts using harmless fixtures;
+  no unintended file executes, no content leaks, no diagnostic is produced.
+  Every supported shipped template still renders through its normal flow. A resolver unit test alone is not endpoint evidence.</p>
+</section>
+
+<section id="issue17">
+  <h2>Issue 17. Prepare database queries and validate their inputs</h2><p class="status">OPEN - additional verification requirement</p>
+  <p><strong>Surfaces:</strong> view tracking, shortcode/rotation lookups, schema and all database calls in shipped source.
+  Earlier candidates report four prepared-query repairs; that count is not proof of complete coverage.</p>
+  <p><strong>Repair/acceptance:</strong> dynamic values use appropriate <code>$wpdb</code> helpers or prepared placeholders;
+  identifiers derive only from trusted schema/prefix sources or supported identifier handling.
+  Numeric, address, target-type and state inputs are validated. Compatibility matches Issue 02's selected minimum.</p>
+  <p><strong>Regression:</strong> valid view recording/lookup still works; quotes, unexpected types and hostile strings cannot change query structure or other rows.
+  Exercise real database calls with disposable data and a nondefault prefix; capture query errors and confirm unrelated records remain unchanged.</p>
+</section>
+
+<section id="issue18">
+  <h2>Issue 18. Close standards findings and protect the functioning plugin</h2><p class="status">OPEN</p>
+  <p><strong>Required outcome:</strong> functional, clean WPCS code across the shipped plugin; no errors or unresolved warnings,
+  no blanket exclusions, weakened rules or diagnostic suppression to manufacture a pass.
+  Official Plugin Check findings must be resolved, with actual results inspected rather than trusting the process exit code.
+  Any genuine tooling false positive needs a documented, reviewable disposition, not a silent ignore.</p>
+  <p><strong>Whole-plugin regression coverage:</strong> create/edit/save local ads; rotation selection and persistence; shortcode content;
+  popup and in-page rendering; repeat/interval rules; missing/empty state; public/private/password-protected content boundaries;
+  valid admin operations and rejected unauthorized requests; external service off/on/withdrawn.
+  Local ads work with no remote registration. Tests preserve every accepted task's checks.</p>
+  <p><strong>Acceptance/evidence:</strong> run PHP lint, JavaScript syntax, full WPCS, official Plugin Check, accumulated automated regressions,
+  real WordPress runtime checks and browser journeys on the integrated build.
+  Store reproducible source/tests in Git, not credentials, installed tools, runtime databases or raw logs.
+  Failed infrastructure checks are distinguished from product failures and repaired rather than relabeled passed.</p>
+  <p><strong>Known evidence, not current release status:</strong> Codex candidate commit <code>e49f3c8</code> recorded 46 PHP lint passes,
+  runtime/HTTP and mocked-provider passes, but <strong>1,083 WPCS errors / 314 warnings</strong> and
+  <strong>100 Plugin Check errors / 202 warnings</strong>. Those are historical candidate measurements, not a new scan,
+  not another candidate's results and not integrated completion. Other candidate claims require their own identified evidence.</p>
+</section>
+
+<section id="issue19">
+  <h2>Task 19. Review the exact release artifact and submit only with authorization</h2><p class="status">BLOCKED - repairs and final evidence outstanding</p>
+  <p><strong>Prerequisites:</strong> known repair tasks integrated and verified; closure clarification disposition recorded;
+  required policy pages published and checked; no unfinished service or payment feature presented as working.
+  Prior candidate evidence cannot satisfy this final artifact check.</p>
+  <ol>
+    <li>Record the integrated commit, selected file provenance, final plugin payload and actual shared-gate results.</li>
+    <li>After release authorization, synchronize plugin Version, readme Stable tag and release tag; record accurate minimum/tested versions and changelog behavior changes.</li>
+    <li>Build the one ZIP from the integrated source, excluding candidate review support, secrets and runtime/tooling.
+    Record its SHA-256; install that exact ZIP on clean WordPress and on the designated test site.</li>
+    <li>Run the accumulated gate and Dainis' acceptance journeys against that artifact. A changed build requires fresh applicable evidence.</li>
+    <li>Only with Dainis' authorization, upload the new version to WordPress.org SVN trunk and the matching tag through the agreed release process.
+    Verify the published source/package corresponds to the approved artifact.</li>
+    <li>Reply concisely in the original closure thread with the requested completion checklist and relevant clarifications, without claiming checks not run.</li>
+  </ol>
+  <p>This document authorizes no version bump, release, upload, deployment, email or live-money operation.</p>
+</section>
+
+<section id="evidence">
+  <h2>Evidence record for every accepted repair</h2>
+  <p>Each task update records the following fields in this register or its linked reviewed change.
+  Durable IDs stay unchanged when a task reopens; prior evidence stays visible as history rather than being overwritten by a fresh DONE label.</p>
+  <div class="table-wrap">
+  <table>
+    <tbody>
+      <tr><th scope="row">Task / owner / status</th><td>Stable issue ID, assigned agent, candidate path, and current status.</td></tr>
+      <tr><th scope="row">Source identity</th><td>Starting commit, candidate repair commit, reviewed paths, integrated commit, and artifact hash when applicable.</td></tr>
+      <tr><th scope="row">Behavior and preservation</th><td>What changed; which valid behavior must remain; dependencies and overlapping files.</td></tr>
+      <tr><th scope="row">Executed checks</th><td>Commands, test names, date, WordPress/PHP/tool versions, actual results and a concise evidence location without secrets.</td></tr>
+      <tr><th scope="row">Regression proof</th><td>How the original defect is reproduced safely, what fails on the affected baseline, and what passes on the repair. If baseline execution was not performed, say so.</td></tr>
+      <tr><th scope="row">Remaining work</th><td>Failures, unrun checks, external dependencies and explicit blockers. Empty evidence is not success.</td></tr>
+      <tr><th scope="row">Acceptance / reopening</th><td>Reviewer, accepted integrated identity and date; later breaking change/test failure and corrective change if reopened.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p><strong>Execution order:</strong> known unauthorized mutation/inclusion repairs (10/11, 14-17) take priority.
+  Independent metadata tasks can proceed separately. AJAX, output and UI tasks coordinate shared files.
+  Service disclosure and runtime verification accompany the relevant changes.
+  Issue 18 accumulates tests throughout; it is not postponed until all coding is finished.
+  Task 19 depends on the combined integrated evidence, not the order agents finish their candidates.</p>
+</section>
+
+<section id="scope">
+  <h2>Scope boundaries and vocabulary</h2>
+  <p>This register covers reopening remediation, not an authorization to add a new network, purchase ladder, payment backend or flagship feature set.
+  Existing optional features selected for release must still be reviewed and tested; unfinished additions cannot be called complete.
+  Product work remains distinct from closure repairs.</p>
+  <p><strong>Agreed vocabulary:</strong> access is general; only humans can visit.
+  V means access to the general public; Guest means with a profile; Member means a profile with an adz-world-tracked purchase.
+  Those relationships do not prove human access or grant tracking consent.
+  Centralized network participation and membership benefits remain open product decisions.</p>
+  <p><strong>Source links:</strong>
+  <a href="https://developer.wordpress.org/plugins/wordpress-org/detailed-plugin-guidelines/">Plugin Directory guidelines</a>;
+  <a href="https://developer.wordpress.org/plugins/javascript/ajax/">WordPress AJAX</a>;
+  <a href="https://developer.wordpress.org/apis/security/escaping/">output escaping</a>;
+  <a href="https://developer.wordpress.org/advanced-administration/debug/debug-wordpress/">WordPress debugging</a>;
+  <a href="https://wordpress.org/plugins/plugin-check/">Plugin Check</a>;
+  <a href="https://github.com/WordPress/WordPress-Coding-Standards">WPCS</a>.
+  The attached closure email is the source for Issues 01-13 and the submission checklist; its historical line numbers are leads, not current code coordinates.</p>
+</section>
+<section id="historical-drafts">
+<h2>Historical Claude proposals - preserved sources, not approved policy</h2>
+<p>These existing drafts have been consolidated from the former agent-specific documentation directory. Their full text is preserved below for review; no proposal or factual claim is adopted merely by moving it here. They are not separate active task registers.</p>
+<div class="notice"><strong>Current decisions override historical wording:</strong> V means access to the general public; Guest means with a profile; Member means a profile with an adz-world-tracked purchase. Only humans can visit. Purchase status does not itself establish consent, entitlement to earnings, a particular settlement trigger, or payment-tier benefits. Centralized networks and membership capabilities remain undecided. The surveillance-ad demonstration, asserted data-collection exclusions, tax-form obligations, DPO requirements, affiliate-program restrictions, and claims that loyalty points are unregulated are unverified draft proposals or assertions, not approved product requirements or legal conclusions. Any deployed policy must match verified implementation and reviewed legal facts.</div>
+<details>
+<summary>flagship-roadmap-2026-10m-25d.md</summary>
+<p>Original source: <code>docs/claude-opus-5/flagship-roadmap-2026-10m-25d.md</code><br>SHA-256: <code>18388ffd239f7bd0966a3389e8402de8e6178751dd803b2ff6836b5a3da42a04</code>. Preserved verbatim as Markdown source; expand to read.</p>
+<pre class="archived-source"># adz-world.com — flagship concept, site map and journeys
+
+**Author:** claude-opus-5 · **Date:** 25 October 2026 · **Status:** proposal for discussion
+
+No figure, testimonial or earnings claim in this document is real. Where a
+number would appear, the placeholder says so. The site must not launch with
+invented statistics, and must not suggest the WordPress Plugins Team endorses
+adz-world.
+
+## The idea the site has to carry
+
+Every other advertising site argues from the advertiser&#x27;s side: reach, targeting,
+conversion. This one argues from the reader&#x27;s: **you were never asked.**
+
+The site&#x27;s job is not to describe permission-based advertising. It is to be the
+place where a visitor experiences it, within about fifteen seconds of arriving,
+and notices the difference themselves.
+
+## Demonstrated, not advertised
+
+adz-world.com runs ordinary surveillance advertising in its own slots — Google
+and the rest, exactly as a normal publisher would. Among them, in rotation, the
+panel appears:
+
+&gt; **Would you like the adz on this site to be based on what you actually want?**
+
+A visitor types what they want. From that moment the ad slots on that page serve
+against what they typed. The contrast is the argument, and it is made with the
+site&#x27;s own inventory rather than with a claim.
+
+This is the only part of the site that cannot be compromised. If it is slow,
+ugly, or produces a poor match, nothing else on the site matters.
+
+## Site map
+
+```
+/                       the demonstration, above the fold
+/how-it-works           the three parties, the money, in plain words
+/for-publishers         what a site owner gets, and the 10%
+    /get-started        install, switch on, first adz
+    /earnings           how the statement works, when money is payable
+/for-advertisers        how a producer lists an offer
+    /list-an-offer      self-serve, performance-based, no budget required
+/for-readers            what is and is not recorded about you
+    /your-preferences   set, change, expire, delete
+/the-case               why surveillance advertising wastes advertiser money
+/plugin                 the WordPress plugin
+/pricing                one line: 10% of commission received. Nothing else.
+/terms  /privacy  /disclosure
+/account                sign in — preferences, and for publishers, earnings
+```
+
+Eleven top-level destinations. A site about not wasting people&#x27;s attention
+cannot have a cluttered navigation.
+
+## Visitor-to-publisher journeys
+
+### A reader who has never heard of this
+
+1. Arrives on an article from search or a link.
+2. Sees ordinary ads, ignores them, as always.
+3. In one slot, the panel: *would you like the adz here to be based on what you actually want?*
+4. Types &quot;two-seater couch&quot;. No sign-up, no email, no account.
+5. The slots change. One shows a couch. One shows a local upholsterer.
+6. **The moment.** They came for an article and the advertising became useful.
+7. A quiet line under the adz: *you told us what you wanted. We didn&#x27;t follow you here.*
+
+Nothing is required of them. The session carries the preference. If they close
+the browser and lose it, that is the design, not a failure — there is no profile
+to restore because none was built.
+
+### A reader who comes back
+
+1. Returns. The preference may or may not have survived.
+2. If it has: adz still match. If not: the panel offers again, no lecture.
+3. Offered, once, lightly: *save this so it follows you here?* — that is the
+   guest step, and the only reason to take it is that it is useful.
+
+### A publisher
+
+1. Arrives at `/for-publishers` from the plugin directory or a link.
+2. Reads one screen: your readers choose their adz, you keep 90% of commission.
+3. `/get-started`: install the plugin, switch monetization on, write one adz.
+4. Sees their own site serving a matched adz within the first session.
+5. Returns later to `Adz &gt; Earnings` for a statement that distinguishes pending
+   from settled, and says plainly what is theirs.
+
+### A producer with no ad budget
+
+1. Arrives at `/for-advertisers`. The headline is the offer: **you pay only when
+   it works.**
+2. Creates a free profile, lists what they sell, the offer, the area they serve.
+3. No budget, no bid, no minimum.
+4. Their offer appears when somebody types something it answers.
+
+## Roadmap
+
+**Phase 1 — the demonstration.** The home page and the panel, working, on real
+inventory. Nothing else needs to exist. Until this works there is no site.
+
+**Phase 2 — the reader&#x27;s side.** `/for-readers`, `/your-preferences`, the guest
+account, set/change/expire/delete. The promise is checkable on screen rather
+than asserted in a policy.
+
+**Phase 3 — the publisher&#x27;s side.** `/for-publishers`, `/get-started`,
+`/earnings`, `/plugin`. Matched to whatever the plugin actually does at that
+point, not to what it is planned to do.
+
+**Phase 4 — the producer&#x27;s side.** `/for-advertisers`, `/list-an-offer`,
+self-serve listing. This is where local supply comes from.
+
+**Phase 5 — the argument.** `/the-case`, with real figures from real sources,
+cited. Nothing fabricated. Advertisers respond to waste numbers in a way they do
+not respond to ethics.
+
+Phases 4 and 5 depend on the settlement service existing. Phases 1 to 3 do not.
+
+## Design direction
+
+Fast enough that the demonstration never stutters — a site arguing that
+advertising should respect people cannot be slow because of its own scripts.
+Accessible to WCAG 2.2 AA, because excluding readers while claiming to respect
+them would be incoherent. Responsive, since most readers arrive on a phone.
+Restrained: one typeface, generous space, no carousels, no modals, no cookie
+wall. The absence of the usual hostile furniture is itself part of the argument.
+
+## VGM — visitors, guests, members
+
+**Revised 26 October 2026.** Dainis settled the definitions. They are no longer
+proposals.
+
+| | Definition | Identity | Preferences | Attribution |
+|---|---|---|---|---|
+| **Visitor** | unknown audience member | none | session only, may not survive | none |
+| **Guest** | accessing the site with a profile | account | persist across sessions and devices | none by default |
+| **Member** | has made an adz-world purchase | account | persist | yes, by their own choice |
+
+The definitions resolve three things that the earlier proposals left tangled.
+
+**Membership is earned by transacting, not granted or sold.** A Guest becomes a
+Member at the moment a purchase settles. Nobody applies, nobody is approved, and
+adz-world decides nothing. This also removes the paid-tier question entirely:
+charging readers to escape advertising was never going to be coherent here, and
+now there is no slot where such a tier could sit.
+
+**It fixes the privacy trade.** Earning requires a purchase to be attributable to
+a person, which means a per-visitor sub-identifier reaching the merchant. Under
+the settled definitions that identifier is only ever attached for someone who
+has chosen to earn. A Visitor is anonymous by construction. A Guest is anonymous
+to merchants unless they opt in. Only a Member — someone who has already decided
+they want the earnings — carries one. The trade is made once, knowingly, by the
+person who benefits from it.
+
+**It makes the ladder honest at every rung.**
+
+- Visitor: the adz get better. Nothing is asked, nothing is kept.
+- Guest: the preferences stop being lost. Still nothing reaches a merchant.
+- Member: purchases start paying for things. The identifier is the price, and
+  they set it knowingly.
+
+Each step is the reader&#x27;s own choice and each gives them something they did not
+have. No step is a dark pattern, because at no point is anything taken to reach
+the next one.
+
+### What the plugin already does correctly under these definitions
+
+`adz_apply_attribution()` attaches **no visitor identifier at all** — only the
+publisher id, the destination and the post id. That is correct for Visitors and
+for Guests who have not opted into earning, which is every reader today.
+
+### What the plugin does not do
+
+Settled by Dainis in `725c178`: **the plugin does not record the purchase and
+does not grant a WordPress capability for it.** A purchase record belongs to
+adz-world.com. A login is not a purchase. The existing rotation field that can
+target a WooCommerce membership plan is the publisher&#x27;s own plan and has nothing
+to do with this definition.
+
+So membership is a fact held by the service, not a role held by the plugin.
+Nothing in the candidate reads, writes or acts on member status.
+
+### What remains open
+
+Member *capabilities at adz-world.com* are not settled by the definition. What a Member can do
+with their earnings — token balance against a participating publisher&#x27;s
+subscription, direct payout, or something else — is a separate decision, and it
+depends on the token-versus-currency question: redeemable only at the publisher
+who issued it is loyalty points and essentially unregulated; transferable
+between publishers or convertible to cash is stored value, with the licensing
+that follows.
+
+The Member sub-identifier is also not yet implemented. It cannot be until the
+settlement service exists, because there is nothing for it to attribute to.
+
+## Contributing to the WordPress community
+
+Things that are genuinely useful and claim no endorsement:
+
+- Release the plugin GPL and keep the free tier genuinely free — no feature
+  withheld to force an upgrade.
+- Publish the external-service disclosure as a worked example. The directory&#x27;s
+  guidance is thin and most plugins get it wrong.
+- Contribute the consent pattern itself: a plugin that monetizes a publisher&#x27;s
+  site, asks first, and takes no for an answer, is a pattern the ecosystem is
+  short of.
+- Answer support forum threads about permission-based advertising without
+  pitching.
+
+**Never claim or imply that the Plugins Team endorses adz-world.** They review
+plugins; they do not endorse them. Saying otherwise would be false and would
+jeopardise the listing.
+</pre>
+</details>
+<details>
+<summary>legal-drafts-2026-10m-25d.md</summary>
+<p>Original source: <code>docs/claude-opus-5/legal-drafts-2026-10m-25d.md</code><br>SHA-256: <code>7810a36638e15d22af437cfc7f0c3907c26d8cfa0244b0d1af250cc8259a9188</code>. Preserved verbatim as Markdown source; expand to read.</p>
+<pre class="archived-source"># adz-world legal drafts
+
+**Author:** claude-opus-5 · **Date:** 25 October 2026 · **Status:** draft for review
+
+These are drafts for a lawyer to review, not legal advice, approved policy, or
+evidence of compliance. They must not be published as finished pages while they
+still contain placeholders.
+
+## Unresolved facts
+
+Every item below is a blank that must be filled by Dainis or counsel. They are
+written as `[[PLACEHOLDER]]` throughout so they cannot be published by accident.
+
+| Placeholder | What is needed |
+|---|---|
+| `[[LEGAL_ENTITY]]` | Exact registered name. &quot;adz-world, USA&quot; is not an entity. |
+| `[[ENTITY_TYPE]]` | LLC, corporation, sole proprietorship |
+| `[[STATE]]` | State of formation — determines governing law and consumer rules |
+| `[[BUSINESS_ADDRESS]]` | Registered address. Required on most policy pages. |
+| `[[CONTACT_EMAIL]]` | A monitored address for legal and privacy requests |
+| `[[DPO_CONTACT]]` | Required if EU/UK publishers are accepted |
+| `[[TAX_ID]]` | For publisher tax reporting |
+| `[[PAYOUT_PROVIDER]]` | Stripe or PayPal — unresolved |
+| `[[MINIMUM_PAYOUT]]` | Per currency |
+| `[[HOLDBACK_PERIOD]]` | How long settled commission is held against reversals |
+
+## Open questions counsel must answer
+
+These change the product, not just the wording.
+
+1. **Money transmission.** adz-world receives commission from merchants and
+   disburses part of it to publishers. Holding funds that belong to someone else
+   and paying them out may require money-transmitter licensing, state by state.
+   Keeping funds out of the plugin does not change this: the hosted business
+   still holds them.
+2. **Tax reporting.** Payments to US publishers over the threshold require
+   1099-NEC or 1099-K reporting; non-US publishers require W-8BEN collection and
+   possible withholding.
+3. **Affiliate programme terms.** Amazon Associates and most networks prohibit
+   sharing commission with third parties, or require disclosure of sub-affiliate
+   arrangements. Whether this model is permitted under each programme&#x27;s terms is
+   a per-programme question and a hard launch dependency.
+4. **FTC disclosure.** US endorsement guides require affiliate relationships to
+   be disclosed to the reader, not only to the publisher. Who is responsible for
+   that disclosure appearing — adz-world or the publisher — needs deciding, and
+   the plugin should make it easy either way.
+5. **Which publisher countries are accepted**, since payout rails, tax and
+   sanctions screening all vary.
+
+---
+
+# 1. Service terms and publisher revenue-share agreement
+
+**adz-world Publisher Terms** — draft
+
+**1. The parties.** These terms are between `[[LEGAL_ENTITY]]`, a
+`[[ENTITY_TYPE]]` organised under the laws of `[[STATE]]` (&quot;adz-world&quot;), and the
+operator of the website that has switched monetization on (&quot;Publisher&quot;).
+
+**2. What the service does.** adz-world places its own affiliate identifiers on
+adz served through the monetization service, pursues the resulting commission
+with merchants and affiliate networks, and accounts to Publisher for it.
+
+**3. Consent.** Monetization applies only to sites where an administrator has
+switched it on. Installing the plugin is not consent. Publisher may switch it
+off at any time, with immediate effect.
+
+**4. The share.** adz-world retains **10%** of affiliate commission it actually
+receives and attributes to Publisher. Publisher is entitled to the remaining
+**90%**. The share is calculated on commission received — not on product sales,
+advertiser spend, clicks, impressions, or estimated earnings.
+
+**5. When an amount becomes payable.** Commission becomes payable only once
+adz-world has received it from the merchant or network and the holdback period
+of `[[HOLDBACK_PERIOD]]` has passed without reversal. Amounts shown as pending
+are not payable and may never become payable.
+
+**6. Reversals.** Merchants reverse commission for returns, cancellations and
+fraud, sometimes months later. A reversal of commission already settled to
+Publisher is deducted from Publisher&#x27;s next settlement. Where no further
+settlement follows, adz-world may invoice the reversed amount.
+
+**7. Currency.** Accounts are kept separately per currency. adz-world does not
+convert between currencies for accounting purposes. Where a payout provider
+converts, the provider&#x27;s rate and fees apply and are shown on the statement.
+
+**8. Payouts.** Publisher may request a payout of an available balance above
+`[[MINIMUM_PAYOUT]]`. Payouts are made by `[[PAYOUT_PROVIDER]]`. Provider fees
+are `[[FEE_TREATMENT]]`. adz-world may withhold a payout where it is required by
+law, where tax documentation is outstanding, or where fraud is suspected.
+
+**9. Publisher&#x27;s own affiliate arrangements.** adz-world does not rewrite links
+that already carry Publisher&#x27;s affiliate identifier.
+
+**10. Publisher obligations.** Publisher will not generate clicks or conversions
+artificially, will not conceal the advertising nature of adz from readers, and
+will comply with the disclosure requirements of their jurisdiction.
+
+**11. Termination.** Either party may terminate at any time. Commission settled
+before termination remains payable. Commission pending at termination is paid if
+and when received, subject to clause 6.
+
+**12. No guarantee of earnings.** adz-world makes no representation about the
+amount Publisher will earn. Past or illustrative figures are not a forecast.
+
+**13. Liability.** `[[LIABILITY_CLAUSE — counsel]]`
+
+**14. Governing law.** `[[STATE]]`, `[[DISPUTE_RESOLUTION — counsel]]`
+
+---
+
+# 2. Privacy and data handling
+
+**adz-world Privacy Policy** — draft
+
+**What we collect from publishers:** site URL, the WordPress user ID and login
+of the administrator who switched monetization on, the date and terms version
+agreed, the site&#x27;s publisher identifier and token, payout destination details
+held by `[[PAYOUT_PROVIDER]]`, and the statement of commission attributed to the
+site.
+
+**What we collect from visitors:** when a visitor clicks a monetized adz, the
+click passes through adz-world carrying the publisher identifier, the
+destination URL and the ID of the post the adz appeared on. **No visitor
+identifier, IP address, cookie or profile is attached by the plugin.**
+
+adz-world records that a click occurred and, if the merchant reports a
+conversion, the commission arising. Merchants and affiliate networks operate
+their own tracking on their own sites, under their own policies, once the
+visitor arrives there. adz-world does not control that and does not receive a
+visitor profile from it.
+
+**What we never collect:** visitor browsing history across sites, visitor
+preferences, post content, reader email addresses, or any profile of an
+individual reader.
+
+**Legal basis (UK/EU):** `[[LEGAL_BASIS — counsel]]`. Publisher data is
+processed to perform the contract. Click data is processed on the basis of
+`[[BASIS — counsel]]` and the question of whether a pass-through click
+constitutes personal data requires review.
+
+**Retention:** statement and payout records are retained for
+`[[RETENTION_PERIOD]]` to meet accounting and tax obligations. Click records are
+retained for `[[CLICK_RETENTION]]`.
+
+**Your rights:** access, correction, deletion and portability, exercised at
+`[[CONTACT_EMAIL]]`. `[[DPO_CONTACT]]` where applicable.
+
+**Sub-processors:** `[[PAYOUT_PROVIDER]]`, `[[HOSTING_PROVIDER]]`,
+`[[ANY_OTHERS]]`. A current list must be maintained.
+
+---
+
+# 3. Affiliate disclosure and monetization consent
+
+**The consent screen text** (as implemented in the plugin):
+
+&gt; adz served through the adz-world monetization service carry adz-world&#x27;s
+&gt; affiliate codes. adz-world keeps 10% of commission it actually receives and
+&gt; settles 90% to you. The 10% is taken from commission that has been received,
+&gt; not from sales, clicks, impressions or estimates.
+&gt;
+&gt; Links on your adz that already carry your own affiliate identifier are never
+&gt; rewritten.
+
+**Reader-facing disclosure.** Separately from publisher consent, readers must be
+told that adz carry affiliate links. The wording below is a starting point and
+its placement and prominence need review against FTC guidance and equivalent
+rules elsewhere.
+
+&gt; Some adz on this site are affiliate links. If you buy something through one,
+&gt; this site earns a share of the sale at no extra cost to you.
+
+Whether adz-world provides this automatically or requires the publisher to place
+it is an open product decision with a compliance consequence.
+
+---
+
+# 4. Payout, reversal, fee and currency policy
+
+| Item | Draft position | Status |
+|---|---|---|
+| Share | 10% adz-world / 90% publisher, on commission received | settled |
+| Basis | settled affiliate commission, not sales or estimates | settled |
+| Currency | separate balances per currency, no conversion for accounting | settled |
+| Minimum payout | `[[MINIMUM_PAYOUT]]` per currency | open |
+| Holdback | `[[HOLDBACK_PERIOD]]` after settlement before payable | open |
+| Payout schedule | on request, or `[[SCHEDULE]]` | open |
+| Provider fees | `[[FEE_TREATMENT]]` — borne by adz-world or deducted | open |
+| FX on payout | provider&#x27;s rate, shown on the statement | open |
+| Reversal after payout | deducted from next settlement, else invoiced | draft |
+| Dormant balances | `[[ESCHEATMENT]]` — unclaimed property rules vary by state | open |
+| Payout countries | `[[COUNTRIES]]` | open |
+| Tax documentation | W-9 / W-8BEN before first payout | open |
+
+---
+
+# 5. WordPress readme external-service disclosure
+
+Implemented in `readme.txt` in the candidate. It states that the plugin contacts
+nothing unless monetization is switched on; what the service is; what is sent
+and when; what is never sent; that publisher affiliate links are not rewritten;
+and links to the Terms and Privacy pages.
+
+**Dependency:** the Plugins Team stated they will check those links on
+re-review. `https://adz-world.com/terms/` and `https://adz-world.com/privacy/`
+must resolve to real pages with real content before resubmission. Publishing
+these drafts with placeholders intact would fail that check and would be worse
+than having no page.
+</pre>
+</details>
+</section>
+</main>
+</body>
+</html>
