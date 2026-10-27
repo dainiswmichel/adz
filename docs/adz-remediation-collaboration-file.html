@@ -1097,6 +1097,115 @@ The commands below were run on this machine with PHP 8.4.7 and PHP_CodeSniffer 3
 <p>WordPress was not booted. No admin screen, no shortcode render, no Ajax call, no <code>dbDelta</code> result, no <code>WP_DEBUG_LOG</code> capture, no Plugin Check. The grok-4-6 and claude-code-cli rows in the table were not remeasured. <code>resolve-calls.php</code> was not re-run on the <code>762524a</code> Codex tree. The 98 assertions were not read line by line; their printed totals were. EOF was inspected for the escaping mistakes named in the review request, not diffed field by field against all ninety edits.</p>
 </section>
 
+<section id="ccw-round1-2026y-10m-27d-UTC-09h-14m-24s">
+<h2>claude-code-web, Round 1 discussion and audit, 2026y-10m-27d-UTC-09h-14m-24s</h2>
+<p class="status">Round 1 contribution from the agent that owns <code>pre-release-candidates/claude-code-web/</code>. Discussion and audit only; no plugin or website code was changed in this round. No task in the index is claimed or closed. Nothing here is INTEGRATED VERIFIED. Measured at <code>1a9d8fc</code>.</p>
+
+<h3>A. Integrated and candidate inventory</h3>
+<p>All figures from one pass at <code>1a9d8fc</code> with PHPCS 3.13.6 and <code>phpcs.xml.dist</code>. "Security" is the five sniffs <code>WordPress.Security.EscapeOutput</code>, <code>WordPress.Security.ValidatedSanitizedInput</code>, <code>WordPress.Security.NonceVerification</code>, <code>WordPress.DB.PreparedSQL</code>, <code>WordPress.DB.PreparedSQLPlaceholders</code>.</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Tree</th><th>Security errors</th><th>All WPCS errors</th><th>Warnings</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td><code>adz-world-wordpress-codebase</code> (integrated)</td><td>329</td><td>7405</td><td>858</td><td>Last touched by the setup commit <code>0bc61b7</code>. Differs from <code>ancestor/plugin</code> in 2 files.</td></tr>
+<tr><td><code>codex-gpt5</code></td><td><strong>0</strong></td><td><strong>0</strong></td><td>61</td><td>Strongest static result of the four.</td></tr>
+<tr><td><code>claude-code-web</code></td><td>0</td><td>710</td><td>190</td><td>Mine. The 1 security warning is <code>includes/adz-payouts.php:113</code>.</td></tr>
+<tr><td><code>grok-4-6</code></td><td>172</td><td>879</td><td>191</td><td></td></tr>
+<tr><td><code>claude-code-cli</code></td><td>329</td><td>7405</td><td>858</td><td>Identical figures to the integrated source; an unmodified baseline copy.</td></tr>
+</tbody>
+</table>
+</div>
+
+<p><strong>Additive correction to my own earlier entry.</strong> The table in <code>#ccw-remediation-notes</code> (MTS 2026-10-26T13:48:18Z, measured at <code>762524a</code>) recorded <code>codex-gpt5</code> at 102 security errors and 704 total. Commit <code>277dc30</code> replaced that candidate and it now measures 0 and 0. The claim in that entry that <code>claude-code-web</code> is "the only candidate at zero security sniff errors" is no longer true, and the case made there for this candidate being strongest no longer holds on these measures. Grok recorded the same thing in <code>#grok-audit-ccw-2026y-10m-26d-UTC-14h-18m-24s</code> and was right to. I am not editing the earlier entry; this paragraph is the correction. I also miscounted there: <code>tools/tests/</code> holds three assertion files, not four, and the <code>esc_js()</code> count across the helper and the shortcode is 42, not 41.</p>
+
+<h3>B. Verified fixes already in the integrated source that must not be re-coded</h3>
+<p><strong>There are none.</strong> The integrated source differs from <code>ancestor/plugin</code> in two files, carries 329 security errors and 7405 total, and was last modified by the layout setup commit. Its figures are identical to <code>claude-code-cli</code>, which is a baseline copy. Nothing has been integrated yet.</p>
+<p>The practical consequence for the sequence: Round 5 is not a merge of small deltas onto a partly repaired trunk. Every repair the plugin needs still has to arrive from a candidate, and the integrated source will change substantially in one step. Whatever acceptance evidence Rounds 2 to 4 produce should be runnable against the integrated source afterwards, not only against the candidate it was written in, or Round 5 will land unverified code.</p>
+
+<h3>C. Strongest solutions found, by candidate</h3>
+<p><strong><code>codex-gpt5</code> is the strongest candidate at this commit, and not only on the counts.</strong> It is the one tree that fixed the undefined-function fatal described in section D. It reaches 0 WPCS errors across the whole tree, including the bundled framework, where mine stops at 710. Its test files exercise real WordPress through <code>wp eval-file</code> with mocked provider responses, which is a deeper check than anything I wrote. The cost is that they require a WordPress install and so did not execute here.</p>
+<p><strong><code>claude-code-web</code></strong> contributes the <code>[adz_rotation]</code> presentation layer with the permission panel and refinement parser; the integer-minor-unit money split with a proven exact-split invariant; and repository-level checks that need no WordPress (<code>phpcs.xml.dist</code>, <code>tools/resolve-calls.php</code>, <code>tools/tests/</code>, 98 assertions). Its weakness is the 710 remaining formatting and documentation errors and the three defects in section D.</p>
+<p><strong><code>grok-4-6</code></strong> contributes an independent rotation implementation and, more valuably so far, the audit in <code>#grok-audit-ccw-2026y-10m-26d-UTC-14h-18m-24s</code>, which found a fatal in my candidate that my own tooling passed over. Its static counts are mid-table.</p>
+<p><strong><code>claude-code-cli</code></strong> is an unmodified baseline copy and has nothing to compare yet.</p>
+
+<h3>D. Prioritized gaps and concrete disagreements</h3>
+
+<h4>D1. A fatal in the shipped 1.0.8 free plugin, still present in four of five trees</h4>
+<p><code>includes/adz-shortcode.php</code> calls <code>get_publisher_adz()</code> when the shortcode's <code>adz_sequence</code> attribute is empty, which is the default. That unprefixed function is defined only in <code>ancestor/pro/includes/adz-helper.php:253</code>. The free plugin defines <code>adz_get_publisher_adz()</code> and never the unprefixed name, so <code>[Adzworld]</code> with no sequence has been a fatal in the free plugin since 1.0.8.</p>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Tree</th><th>Call site</th><th>State</th></tr></thead>
+<tbody>
+<tr><td><code>ancestor/plugin</code> (1.0.8 as shipped)</td><td><code>includes/adz-shortcode.php:38</code></td><td>broken</td></tr>
+<tr><td><code>adz-world-wordpress-codebase</code></td><td><code>includes/adz-shortcode.php:38</code></td><td>broken</td></tr>
+<tr><td><code>claude-code-cli</code></td><td><code>includes/adz-shortcode.php:38</code></td><td>broken</td></tr>
+<tr><td><code>claude-code-web</code></td><td><code>includes/adz-shortcode.php:58</code></td><td>broken</td></tr>
+<tr><td><code>grok-4-6</code></td><td><code>includes/adz-shortcode.php:58</code></td><td>broken</td></tr>
+<tr><td><code>codex-gpt5</code></td><td><code>includes/adz-shortcode.php:76</code></td><td><strong>fixed</strong>, calls <code>adz_get_publisher_adz()</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>Grok found this and it is the single most useful finding on the board. Codex's one-line fix is the solution to adopt, and it should go into the integrated source regardless of which candidate wins anything else. I am not proposing a different approach to it; there is only one correct name.</p>
+<p>This is also worth weighing against Task 13 and Task 00. It is not an activation fatal, so it does not by itself explain an activation fault, and it is not a guideline violation. But it does mean the plugin's primary shortcode, used with its documented default, has never worked in the published version. Anyone testing 1.0.8 by placing <code>[Adzworld]</code> on a page saw a fatal, not an ad.</p>
+
+<h4>D2. My own call gate gave false assurance on all five trees</h4>
+<p><code>tools/resolve-calls.php</code> exits 0 on every tree above, including the four carrying the D1 fatal. It fails only on unresolved calls matching <code>adz_</code>, <code>adzworld_</code> or <code>eof_</code>, and <code>get_publisher_adz</code> matches none of them, so it was filed under "WordPress supplies most of these" among 132 other names. I built that gate yesterday specifically to catch a call that resolves to nothing, reported it as catching that class of defect, and it then passed over a live instance of exactly that defect. Treat its green result as weaker evidence than my earlier entry implies. The prefix list is the wrong mechanism; a resolver that knows the actual WordPress function set would be the right one, and <code>php-stubs/wordpress-stubs</code> would supply it if composer can be made to authenticate.</p>
+
+<h4>D3. Three confirmed defects in claude-code-web</h4>
+<ul>
+<li><strong>A timezone regression I introduced.</strong> The views row is written with <code>date( 'Y-m-d' )</code> at <code>adz-world.php:191</code> and <code>:213</code>, and read with <code>current_time( 'Y-m-d' )</code> at <code>includes/adz-helper.php:498</code> and <code>:542</code>. Ancestor used <code>date()</code> on both sides. I changed the read side during the prepared-statement repair and left the writes, so on any site whose WordPress timezone differs from the server's, requests near the date boundary write one row and look for another. The publisher sees view counts stall or duplicate rows appear. Grok found this; it is correct.</li>
+<li><strong>PHP 8 functions under a 7.4 declaration, mine alone.</strong> <code>str_ends_with()</code> at <code>includes/adz-preferences.php:155</code> and <code>:158</code>, and <code>str_contains()</code> at <code>includes/adz-preference-ui.php:101</code>, are PHP 8.0 or later. Both <code>adz-world.php:12</code> and <code>readme.txt:7</code> declare <code>Requires PHP: 7.4</code>. On a 7.4 host the preference parser and the cookie decoder fatal. No other candidate uses these functions. Either the code changes or the declared minimum does, and changing the declared minimum narrows the plugin's install base, so the code should change.</li>
+<li><strong>A withdrawn claim left in a code comment.</strong> <code>includes/adz-helper.php:11</code> still states that WordPress core ships <code>role_exists()</code>. I withdrew that in writing after Codex failed to reproduce it and core Trac #31304 turned out to have been closed invalid. The comment contradicts the record and should go.</li>
+</ul>
+
+<h4>D4. Dead code left by my input normalisation</h4>
+<p>Every <code>$adz_in_*</code> variable in <code>adz_get_advertise_content()</code> is always set, so <code>isset( $adz_in_target_type )</code> at <code>adz-world.php:170</code> and <code>isset( $adz_in_close_adz )</code> at <code>:183</code> and <code>:198</code> are always true, the <code>else</code> at <code>:173-176</code> is unreachable, and <code>$cond</code> is assigned there and never read. Separately, <code>absint( get_the_ID() )</code> sends the character <code>0</code> outside the loop where ancestor sent an empty value. Neither is a fatal; both are untidiness I introduced and should clear rather than leave for a reviewer to find.</p>
+
+<h4>D5. Where I disagree with a current entry</h4>
+<p>I do not disagree with any finding in Grok's audit; I verified its three most serious claims independently and all three hold. My disagreement is with my own earlier entry, corrected in section A. One smaller point on Grok's section: it records <code>run-all.sh</code> reporting <code>FAIL</code> on <code>php -l</code> for the two <code>${var}</code> deprecation lines even though all 51 files parse. That is a defect in my runner, not in the candidate; the <code>php -l</code> step keeps any line that is not "No syntax errors" and so treats a deprecation notice as a parse failure. The deprecations themselves are real and live in <code>classes/rest-client/WP-Rest-Client.php:211</code> and <code>PHP-Rest-Client.php:245</code>.</p>
+
+<h3>E. Recommended scope and acceptance evidence for Rounds 2 to 4</h3>
+<p>Scopes kept coupled rather than split per file, and ordered so that the thing that stops the plugin working comes first.</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Round</th><th>Scope</th><th>Acceptance evidence</th></tr></thead>
+<tbody>
+<tr>
+	<td><strong>2</strong></td>
+	<td>Make the plugin run. The D1 undefined call; the D3 timezone split and PHP-version fatals; whatever each agent's own tree carries of the same kind. One coherent pass over the legacy serve path: shortcode, page rotation, the Ajax handler, and the views table they share.</td>
+	<td>A clean WordPress install with <code>WP_DEBUG</code> and <code>WP_DEBUG_LOG</code> on: activation with an empty log; <code>[Adzworld]</code> on a page rendering without a fatal; <code>[adz_rotation]</code> likewise; one view row written and then found by the next request, with the site timezone deliberately set away from the server's. A <code>php -l</code> pass under PHP 7.4 as well as 8.x, since 7.4 is the declared minimum.</td>
+</tr>
+<tr>
+	<td><strong>3</strong></td>
+	<td>Submission surface. WPCS to zero across the tree, Plugin Check clean or every remaining finding explained, the <code>base64_encode</code> transport decided, readme and header accuracy, and the text domain and prefix rules applied consistently.</td>
+	<td>Actual PHPCS and Plugin Check output pasted, not summarised. For each suppression that survives, the reason and the reviewer-facing justification. A statement of which findings are pre-existing and which the round introduced.</td>
+</tr>
+<tr>
+	<td><strong>4</strong></td>
+	<td>Behaviour under the approved VGM vocabulary, and the money surface as display only. Rotations showing nothing when nothing is configured; consent recorded explicitly and versioned; no existing publisher affiliate link rewritten; settlement and payout paths reporting unavailability rather than inventing figures.</td>
+	<td>A test that an empty adz configuration inserts no adz. A test that a link already carrying a publisher affiliate identifier is returned unchanged. A test that every service call returns <code>WP_Error</code> when unconfigured. The exact-split invariant checked across currencies with zero and two decimal places, including negative amounts.</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<p>Two cross-round asks. First, one acceptance suite that runs against any tree by path, so the same evidence can be produced for a candidate and then for the integrated source in Round 5; <code>tools/tests/run-all.sh &lt;dir&gt;</code> already takes a path and <code>phpcs.xml.dist</code> is shared, and both should be extended rather than duplicated per agent. Second, the gate in D2 wants replacing with a resolver that knows the real WordPress function set, because four trees shipping a fatal past a green check is the kind of result that makes every other green check worth less.</p>
+
+<h3>F. Blockers and decisions that need Dainis</h3>
+<ul>
+<li><strong>A WordPress install.</strong> Nothing in this repository has been activated, no admin screen opened, no Ajax request sent, no Plugin Check run. Every acceptance test in section E needs one. This is the largest single gap and no amount of static comparison closes it. Codex records a WordPress run of its own candidate; if that environment can be shared or described, the other three can stop guessing.</li>
+<li><strong>Task 00, the actual guideline.</strong> Still unnamed. Every technical item above can close with the plugin still closed.</li>
+<li><strong>Task 13, the activation fault.</strong> Still unidentified by anyone, including me. My earlier <code>role_exists()</code> explanation was withdrawn as unverified and D3 records that the comment asserting it is still in my tree. D1 is not it, because that fatal is at shortcode render rather than activation.</li>
+<li><strong>Issue 07.</strong> The Plugins Team said they will check the Terms and Privacy links. <code>adz-world.com/terms/</code> and <code>/privacy/</code> must exist with real content. The legal drafts in this file still carry unresolved placeholders for the operating entity, its address and its state, and those are not mine to invent.</li>
+<li><strong>PHP minimum.</strong> D3 needs a decision in principle: hold 7.4 and remove the PHP 8 calls, or raise the declared minimum. I recommend holding 7.4 and changing the code, but the install-base trade is yours.</li>
+<li><strong>Which candidate wins the rotation presentation.</strong> Mine and <code>grok-4-6</code>'s are independent implementations of the same feature and both exist. That is a Round 5 selection, not something either of us should resolve by overwriting the other.</li>
+</ul>
+
+<p>No remediation coding was done in this round. Awaiting Codex's Round 2 prompt.</p>
+</section>
+
 <section id="historical-drafts">
 <h2>Historical Claude proposals - preserved sources, not approved policy</h2>
 <p>These existing drafts have been consolidated from the former agent-specific documentation directory. Their full text is preserved below for review; no proposal or factual claim is adopted merely by moving it here. They are not separate active task registers.</p>
