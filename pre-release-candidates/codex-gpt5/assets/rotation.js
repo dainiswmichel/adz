@@ -107,15 +107,15 @@
 				if ( ! button ) {
 					return;
 				}
-				if ( button.hasAttribute( 'data-adzworld-show-hub' ) ) {
-					showHub();
-					return;
-				}
 				if ( button.hasAttribute( 'data-adzworld-step' ) ) {
 					show( current + Number( button.dataset.adzworldStep ) );
 				}
 				if ( button.hasAttribute( 'data-adzworld-position' ) ) {
-					show( Number( button.dataset.adzworldPosition ) );
+					if ( 0 === Number( button.dataset.adzworldPosition ) ) {
+						showHub();
+					} else {
+						show( Number( button.dataset.adzworldPosition ) );
+					}
 				}
 			}
 		);

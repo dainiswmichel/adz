@@ -308,8 +308,8 @@
 	position: absolute;
 	top: 50%;
 	left: 50%;
-	width: 0.55rem;
-	height: 0.55rem;
+	width: 0.45rem;
+	height: 0.45rem;
 	background: #fff;
 	border: 2px solid var(--adzworld-accent);
 	border-radius: 50%;
@@ -322,8 +322,22 @@
 }
 
 .adzworld-rotation .adzworld-dots button[aria-pressed="true"]::before {
-	width: 1.15rem;
-	border-radius: 999px;
+	width: 0.65rem;
+	height: 0.65rem;
+	border-radius: 50%;
+	background: var(--adzworld-accent);
+}
+
+.adzworld-rotation .adzworld-dots .adzworld-hub-position::before {
+	width: 0.72rem;
+	height: 0.72rem;
+	border-radius: 0.22rem;
+}
+
+.adzworld-rotation .adzworld-dots .adzworld-hub-position[aria-pressed="true"]::before {
+	width: 0.82rem;
+	height: 0.82rem;
+	border-radius: 0.25rem;
 	background: var(--adzworld-accent);
 }
 
@@ -331,21 +345,6 @@
 	margin-block-start: 1rem;
 	padding-block-start: 0.75rem;
 	border-block-start: 1px solid #dcdcde;
-}
-
-.adzworld-hub-return {
-	margin-block-start: 0.75rem;
-	padding: 0.4rem 0.75rem;
-	color: var(--adzworld-accent);
-	font-weight: 600;
-	background: #f0f6fc;
-	border: 1px solid #72aee6;
-	border-radius: 999px;
-}
-
-.adzworld-hub-return:hover,
-.adzworld-hub-return:focus-visible {
-	background: #fff;
 }
 
 .adzworld-evaluation summary {

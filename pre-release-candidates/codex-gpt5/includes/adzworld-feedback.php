@@ -201,7 +201,6 @@ function adzworld_feedback_control( $target, $category ) {
 			</form>
 		</div>
 	</details>
-	<button type="button" class="adzworld-hub-return" data-adzworld-show-hub><?php esc_html_e( 'Your adz hub', 'adz-world' ); ?></button>
 	<?php
 	return (string) ob_get_clean();
 }

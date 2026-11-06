@@ -366,6 +366,7 @@ function adzworld_render_rotation( $attributes ) {
 	$sources   = adzworld_rotation_sources();
 	$slides    = '';
 	$dots      = '';
+	$adz_index = 0;
 	$rendering = true;
 	try {
 		foreach ( $slots as $index => $slot ) {
@@ -386,9 +387,16 @@ function adzworld_render_rotation( $attributes ) {
 			}
 			$slides .= '<section class="adzworld-slide" id="' . esc_attr( $slide_id ) . '" role="group" aria-roledescription="'
 				. esc_attr__( 'slide', 'adz-world' ) . '" aria-label="' . esc_attr( ( $index + 1 ) . ' / ' . count( $slots ) ) . '">' . $html . '</section>';
-			/* translators: %d: slide position. */
-			$dot_label = sprintf( __( 'Show advertisement %d', 'adz-world' ), $index + 1 );
-			$dots     .= '<button type="button" data-adzworld-position="' . esc_attr( $index ) . '" aria-controls="' . esc_attr( $slide_id ) . '" aria-label="'
+			if ( 'intro' === $slot['type'] ) {
+				$dot_class = ' class="adzworld-hub-position"';
+				$dot_label = __( 'Show your adz hub', 'adz-world' );
+			} else {
+				++$adz_index;
+				$dot_class = '';
+				/* translators: %d: adz position, excluding the user hub. */
+				$dot_label = sprintf( __( 'Show adz %d', 'adz-world' ), $adz_index );
+			}
+			$dots .= '<button type="button"' . $dot_class . ' data-adzworld-position="' . esc_attr( $index ) . '" aria-controls="' . esc_attr( $slide_id ) . '" aria-label="'
 				. esc_attr( $dot_label ) . '"><span class="screen-reader-text">' . esc_html( $dot_label ) . '</span></button>';
 		}
 	} finally {
