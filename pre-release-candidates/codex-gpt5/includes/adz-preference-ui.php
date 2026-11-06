@@ -308,9 +308,9 @@ function adzworld_has_preference( $pref ) {
 /**
  * The introduction panel: what this is, before anything is asked of the visitor.
  *
- * Shown above the input when no preference is set. It names what the rotation
- * is doing, because a visitor who does not know what an adz is cannot
- * meaningfully opt in to one.
+ * Shown above the input throughout the invitation-to-hub journey. It names
+ * what the rotation is doing, because a visitor who does not know what an adz
+ * is cannot meaningfully opt in to one.
  *
  * @param string $depth full | short.
  * @return void
@@ -350,13 +350,15 @@ function adzworld_render_preference_panel( $pref, $has_pref, $intro = 'full' ) {
 	$chips       = adzworld_preference_chips( $pref );
 	$input_id    = wp_unique_id( 'adz-panel-input-' );
 	$input_label = __( 'What are you looking to buy?', 'adz-world' );
+	$panel_title = $has_pref ? __( 'Your adz hub', 'adz-world' ) : __( 'Advertising by invitation', 'adz-world' );
 	?>
 	<form class="adz-panel" method="post" data-adz-panel>
 		<?php wp_nonce_field( 'adzworld_preference', 'adzworld_preference_nonce' ); ?>
+		<h3 class="adz-panel__title"><?php echo esc_html( $panel_title ); ?></h3>
 
 		<?php
-		if ( ! $has_pref && 'none' !== $intro ) {
-			adzworld_render_intro( $intro );
+		if ( 'none' !== $intro ) {
+			adzworld_render_intro( $has_pref ? 'short' : $intro );
 		}
 		?>
 
@@ -432,7 +434,7 @@ function adzworld_render_chips( $chips ) {
 		<?php endforeach; ?>
 	</ul>
 	<p class="adz-panel__note">
-		<?php esc_html_e( 'Refine the invitation or remove anything that does not belong.', 'adz-world' ); ?>
+		<?php esc_html_e( 'Review or remove anything that does not belong.', 'adz-world' ); ?>
 	</p>
 	<?php
 }

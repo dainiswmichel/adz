@@ -156,8 +156,14 @@
 	border-radius: 0.75rem;
 }
 
+.adz-panel__title {
+	margin: 0 0 0.35rem;
+	color: #1d2327;
+	font-size: 1.3rem;
+}
+
 .adz-intro__lead {
-	margin-block-start: 0;
+	margin: 0;
 	font-weight: 600;
 }
 
