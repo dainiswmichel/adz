@@ -99,6 +99,26 @@
 			}
 		}
 
+		function showCategory( category ) {
+			var position = slides.findIndex(
+				function ( slide ) {
+					return slide.dataset.adzworldCategory === category;
+				}
+			);
+
+			if ( position > 0 ) {
+				show( position );
+				slides[ position ].scrollIntoView( { behavior: 'smooth', block: 'center' } );
+			}
+		}
+
+		rotation.addEventListener(
+			'adzworld:show-category',
+			function ( event ) {
+				showCategory( event.detail.category || '' );
+			}
+		);
+
 		rotation.addEventListener(
 			'click',
 			function ( event ) {
@@ -161,6 +181,21 @@
 		var status = form.querySelector( '[data-adz-status]' );
 		var improveTarget = form.dataset.adzImproveTarget || '';
 
+		function closeEditor( editor ) {
+			var chip = editor.closest( '.adz-panel__chip' );
+			var edit = chip ? chip.querySelector( '.adz-panel__chipedit' ) : null;
+			var text = chip ? chip.querySelector( '.adz-panel__category, .adz-panel__chiptext' ) : null;
+
+			editor.hidden = true;
+			if ( edit ) {
+				edit.hidden = false;
+				edit.setAttribute( 'aria-expanded', 'false' );
+			}
+			if ( text ) {
+				text.hidden = false;
+			}
+		}
+
 		form.addEventListener(
 			'submit',
 			function ( event ) {
@@ -196,58 +231,125 @@
 			'change',
 			function ( event ) {
 				var categoryName = event.target.closest( '.adz-panel__category-name' );
+				var refinementName = event.target.closest( '.adz-panel__refinement-name' );
 
-				if ( ! categoryName || categoryName.value.trim() === categoryName.dataset.adzCategoryOriginal ) {
+				if ( categoryName && categoryName.value.trim() === categoryName.dataset.adzCategoryOriginal ) {
+					closeEditor( categoryName );
 					return;
 				}
 
-				post(
-					'adzworld_refine',
-					settings.preferenceNonce,
-					{
-						mode: 'rename',
-						refinement: categoryName.value,
-						value: categoryName.dataset.adzCategoryOriginal || ''
-					}
-				).then(
-					function ( payload ) {
-						if ( payload && payload.success ) {
-							rememberHubReturn();
-							window.location.reload();
-						} else if ( status ) {
-							status.textContent = payload && payload.data ? payload.data.message : '';
-							categoryName.value = categoryName.dataset.adzCategoryOriginal || '';
+				if ( categoryName ) {
+					post(
+						'adzworld_refine',
+						settings.preferenceNonce,
+						{
+							mode: 'rename',
+							refinement: categoryName.value,
+							value: categoryName.dataset.adzCategoryOriginal || ''
 						}
-					}
-				);
+					).then(
+						function ( payload ) {
+							if ( payload && payload.success ) {
+								rememberHubReturn();
+								window.location.reload();
+							} else if ( status ) {
+								status.textContent = payload && payload.data ? payload.data.message : '';
+								categoryName.value = categoryName.dataset.adzCategoryOriginal || '';
+								closeEditor( categoryName );
+							}
+						}
+					);
+					return;
+				}
+
+				if ( refinementName && refinementName.value.trim() === refinementName.dataset.adzRefinementText ) {
+					closeEditor( refinementName );
+					return;
+				}
+
+				if ( refinementName ) {
+					post(
+						'adzworld_refine',
+						settings.preferenceNonce,
+						{
+							mode: 'rename_refinement',
+							refinement: refinementName.value,
+							value: refinementName.dataset.adzRefinementOriginal || ''
+						}
+					).then(
+						function ( payload ) {
+							if ( payload && payload.success ) {
+								rememberHubReturn();
+								window.location.reload();
+							} else if ( status ) {
+								status.textContent = payload && payload.data ? payload.data.message : '';
+								refinementName.value = refinementName.dataset.adzRefinementText || '';
+								closeEditor( refinementName );
+							}
+						}
+					);
+				}
 			}
 		);
 
 		form.addEventListener(
 			'click',
 			function ( event ) {
-				var remove = event.target.closest( '.adz-panel__chipdrop' );
+				var category = event.target.closest( '.adz-panel__category' );
+				var edit = event.target.closest( '.adz-panel__chipedit' );
+				var control;
 
-				if ( ! remove ) {
+				if ( category ) {
+					event.preventDefault();
+					form.closest( '.adzworld-rotation' ).dispatchEvent(
+						new window.CustomEvent(
+							'adzworld:show-category',
+							{ detail: { category: category.dataset.adzCategory || '' } }
+						)
+					);
+					post(
+						'adzworld_refine',
+						settings.preferenceNonce,
+						{
+							mode: 'select',
+							value: category.dataset.adzCategory || ''
+						}
+					);
 					return;
 				}
-				event.preventDefault();
-				post(
-					'adzworld_refine',
-					settings.preferenceNonce,
-					{
-						facet: remove.dataset.adzFacet || '',
-						mode: 'drop',
-						value: remove.dataset.adzValue || ''
+
+				if ( edit ) {
+					event.preventDefault();
+					control = document.getElementById( edit.dataset.adzEditControl || '' );
+					if ( control ) {
+						edit.hidden = true;
+						edit.parentElement.querySelector( '.adz-panel__category, .adz-panel__chiptext' ).hidden = true;
+						control.hidden = false;
+						edit.setAttribute( 'aria-expanded', 'true' );
+						control.focus();
+						control.select();
 					}
-				).then(
-					function ( payload ) {
-						if ( payload && payload.success ) {
-							rememberHubReturn();
-							window.location.reload();
-						}
-					}
-				);
+				}
+			}
+		);
+
+		form.addEventListener(
+			'keydown',
+			function ( event ) {
+				var editor = event.target.closest( '.adz-panel__category-name, .adz-panel__refinement-name' );
+
+				if ( ! editor ) {
+					return;
+				}
+				if ( 'Enter' === event.key ) {
+					event.preventDefault();
+					editor.blur();
+				}
+				if ( 'Escape' === event.key ) {
+					event.preventDefault();
+					editor.value = editor.dataset.adzCategoryOriginal || editor.dataset.adzRefinementText || '';
+					closeEditor( editor );
+				}
 			}
 		);
 	}

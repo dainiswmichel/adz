@@ -255,7 +255,18 @@
 	color: #fff;
 }
 
-.adzworld-rotation .adz-panel__category-name {
+.adzworld-rotation .adz-panel__category {
+	min-width: 0;
+	min-height: 0;
+	padding: 0.2rem 0.35rem;
+	background: transparent;
+	color: inherit;
+	border: 0;
+	font-weight: 600;
+}
+
+.adzworld-rotation .adz-panel__category-name,
+.adzworld-rotation .adz-panel__refinement-name {
 	min-width: 0;
 	min-height: 0;
 	max-width: 16rem;
@@ -268,19 +279,23 @@
 	font-weight: 600;
 }
 
-.adzworld-rotation .adz-panel__category-name:focus {
+.adzworld-rotation .adz-panel__category-name:focus,
+.adzworld-rotation .adz-panel__refinement-name:focus {
 	background: #fff;
 	color: #1d2327;
 	outline: 2px solid #2271b1;
 	outline-offset: 1px;
 }
 
-.adz-panel__chipdrop {
-	min-width: 2rem;
-	min-height: 2rem;
-	padding: 0;
+.adz-panel__chipedit {
+	min-width: 1.5rem;
+	min-height: 1.5rem;
+	padding: 0.1rem;
+	color: inherit;
+	background: transparent;
 	border: 0;
 	border-radius: 50%;
+	font-size: 0.85rem;
 }
 
 .adz-panel__note,

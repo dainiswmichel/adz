@@ -440,9 +440,19 @@ function adzworld_render_chips( $chips ) {
 				<?php foreach ( $categories as $chip ) : ?>
 					<?php $category_id = wp_unique_id( 'adz-category-' ); ?>
 					<li class="adz-panel__chip adz-panel__chip--categories<?php echo ! empty( $chip['active'] ) ? ' is-active' : ''; ?>">
-						<label class="screen-reader-text" for="<?php echo esc_attr( $category_id ); ?>">
-							<?php esc_html_e( 'Edit category', 'adz-world' ); ?>
-						</label>
+						<button type="button" class="adz-panel__category" data-adz-category="<?php echo esc_attr( $chip['value'] ); ?>">
+							<?php echo esc_html( $chip['label'] ); ?>
+						</button>
+						<button
+							type="button"
+							class="adz-panel__chipedit"
+							data-adz-edit-control="<?php echo esc_attr( $category_id ); ?>"
+							aria-controls="<?php echo esc_attr( $category_id ); ?>"
+							aria-expanded="false"
+						>
+							<span class="screen-reader-text"><?php esc_html_e( 'Edit category', 'adz-world' ); ?></span>
+							<span aria-hidden="true">&#9998;</span>
+						</button>
 						<input
 							id="<?php echo esc_attr( $category_id ); ?>"
 							class="adz-panel__category-name"
@@ -450,26 +460,8 @@ function adzworld_render_chips( $chips ) {
 							value="<?php echo esc_attr( $chip['label'] ); ?>"
 							maxlength="48"
 							data-adz-category-original="<?php echo esc_attr( $chip['value'] ); ?>"
+							hidden
 						>
-						<button
-							type="button"
-							class="adz-panel__chipdrop"
-							data-adz-facet="categories"
-							data-adz-value="<?php echo esc_attr( $chip['value'] ); ?>"
-						>
-							<span class="screen-reader-text">
-								<?php
-								echo esc_html(
-									sprintf(
-										/* translators: %s: the category being removed. */
-										__( 'Remove category %s', 'adz-world' ),
-										$chip['label']
-									)
-								);
-								?>
-							</span>
-							<span aria-hidden="true">&times;</span>
-						</button>
 					</li>
 				<?php endforeach; ?>
 			</ul>
@@ -479,27 +471,32 @@ function adzworld_render_chips( $chips ) {
 		<p class="adz-panel__section-label"><?php esc_html_e( 'Refinements', 'adz-world' ); ?></p>
 		<ul class="adz-panel__chiplist">
 			<?php foreach ( $refinements as $chip ) : ?>
+				<?php $refinement_id = wp_unique_id( 'adz-refinement-' ); ?>
 				<li class="adz-panel__chip adz-panel__chip--<?php echo esc_attr( $chip['facet'] ); ?>">
 					<span class="adz-panel__chiptext"><?php echo esc_html( $chip['label'] ); ?></span>
 					<button
 						type="button"
-						class="adz-panel__chipdrop"
-						data-adz-facet="<?php echo esc_attr( $chip['facet'] ); ?>"
-						data-adz-value="<?php echo esc_attr( $chip['value'] ); ?>"
+						class="adz-panel__chipedit"
+						data-adz-edit-control="<?php echo esc_attr( $refinement_id ); ?>"
+						aria-controls="<?php echo esc_attr( $refinement_id ); ?>"
+						aria-expanded="false"
 					>
-						<span class="screen-reader-text">
-							<?php
-							echo esc_html(
-								sprintf(
-									/* translators: %s: the refinement being removed. */
-									__( 'Remove refinement %s', 'adz-world' ),
-									$chip['label']
-								)
-							);
-							?>
-						</span>
-						<span aria-hidden="true">&times;</span>
+						<span class="screen-reader-text"><?php esc_html_e( 'Edit refinement', 'adz-world' ); ?></span>
+						<span aria-hidden="true">&#9998;</span>
 					</button>
+					<label class="screen-reader-text" for="<?php echo esc_attr( $refinement_id ); ?>">
+						<?php esc_html_e( 'Edit refinement', 'adz-world' ); ?>
+					</label>
+					<input
+						id="<?php echo esc_attr( $refinement_id ); ?>"
+						class="adz-panel__refinement-name"
+						type="text"
+						value="<?php echo esc_attr( $chip['label'] ); ?>"
+						maxlength="120"
+						data-adz-refinement-original="<?php echo esc_attr( $chip['value'] ); ?>"
+						data-adz-refinement-text="<?php echo esc_attr( $chip['label'] ); ?>"
+						hidden
+					>
 				</li>
 			<?php endforeach; ?>
 		</ul>
@@ -563,6 +560,31 @@ function adzworld_ajax_refine() {
 		$pref = adzworld_rename_category( $pref, $old, $category );
 		adzworld_store_preference( $pref );
 		wp_send_json_success( array( 'message' => __( 'Category updated.', 'adz-world' ) ) );
+	}
+
+	if ( 'rename_refinement' === $action ) {
+		$old        = isset( $_POST['value'] )
+			? sanitize_text_field( wp_unslash( $_POST['value'] ) )
+			: '';
+		$refinement = isset( $_POST['refinement'] )
+			? sanitize_text_field( wp_unslash( $_POST['refinement'] ) )
+			: '';
+		$refinement = trim( mb_substr( str_replace( '--', '-', $refinement ), 0, 120 ) );
+		$parts      = explode( '--', $old, 2 );
+
+		if ( ! in_array( $old, $pref['category_refinements'], true ) || 2 !== count( $parts ) || '' === $refinement ) {
+			wp_send_json_error( array( 'message' => __( 'Enter a refinement to keep improving these adz.', 'adz-world' ) ), 400 );
+		}
+
+		$replacement = mb_substr( $parts[0] . '--' . $refinement, 0, 160 );
+		foreach ( $pref['category_refinements'] as $index => $stored ) {
+			if ( $old === $stored ) {
+				$pref['category_refinements'][ $index ] = $replacement;
+			}
+		}
+		$pref['category_refinements'] = array_values( array_unique( $pref['category_refinements'] ) );
+		adzworld_store_preference( $pref );
+		wp_send_json_success( array( 'message' => __( 'Refinement updated.', 'adz-world' ) ) );
 	}
 
 	if ( 'drop' === $action ) {

@@ -371,6 +371,7 @@ function adzworld_render_rotation( $attributes ) {
 	try {
 		foreach ( $slots as $index => $slot ) {
 			$slide_id = $id . '-slide-' . $index;
+			$category = '';
 			if ( 'intro' === $slot['type'] ) {
 				$html = adzworld_rotation_introduction( $slide_id );
 			} elseif ( 'ad' === $slot['type'] ) {
@@ -385,7 +386,8 @@ function adzworld_render_rotation( $attributes ) {
 					. '<p class="adzworld-match-label">' . esc_html( $sources[ $slot['value'] ]['label'] ) . '</p>'
 					. adzworld_feedback_control( 'source-' . $slot['value'], $category );
 			}
-			$slides .= '<section class="adzworld-slide" id="' . esc_attr( $slide_id ) . '" role="group" aria-roledescription="'
+			$category_attribute = '' !== $category ? ' data-adzworld-category="' . esc_attr( $category ) . '"' : '';
+			$slides            .= '<section class="adzworld-slide" id="' . esc_attr( $slide_id ) . '"' . $category_attribute . ' role="group" aria-roledescription="'
 				. esc_attr__( 'slide', 'adz-world' ) . '" aria-label="' . esc_attr( ( $index + 1 ) . ' / ' . count( $slots ) ) . '">' . $html . '</section>';
 			if ( 'intro' === $slot['type'] ) {
 				$dot_class = ' class="adzworld-hub-position"';
