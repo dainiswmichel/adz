@@ -41,11 +41,13 @@ Carousel slides other than the active slide become hidden or inert. Providers
 that prohibit hidden placements must use single mode, not a carousel. No provider
 tag is automatically refreshed or re-requested as a slide changes.
 
-The introduction accepts up to ten refinements as plain text held in this
-page's memory only. It does not send them, persist a profile, interpret natural
-language, or change ad matching. Clearing or leaving the page discards them.
-Account-backed preferences and semantic product matching are not implemented
-by this display feature.
+The invitation accepts categories and refinements in the visitor's own words.
+Logged-out preferences use a browser-session cookie; signed-in preferences use
+user metadata. Visible removable pills show what was understood, matching local
+adz are prioritised, and explicit -100 to 100 evaluations add positive or
+negative weight. Untouched adz remain distinct from an explicit neutral rating.
+Configured provider sources remain responsible for their own inventory,
+targeting, consent rules, and request behavior.
 
 Legacy page, popup, and gated-content requests now carry a configuration-bound
 nonce as well as the public advertising nonce. Changing the target, rotation,

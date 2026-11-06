@@ -58,6 +58,8 @@ The top version is the latest, most up-to-date software release.
 - replaced raw-IP custom-table view tracking with expiring salted-key transients
 - removed unused cURL, client-certificate, Basic-auth, and payment-sandbox prototypes
 - scoped administrator assets to adz-world screens and removed the iframe shortcode's external default URL
+- made the permission-based invitation the first carousel position and attached looping controls to the carousel
+- added session and account preference storage, removable refinement pills, local adz matching, and explicit weighted evaluation
 - completed a zero-error, zero-warning repository PHPCS gate
 
 = 1.0.1 =

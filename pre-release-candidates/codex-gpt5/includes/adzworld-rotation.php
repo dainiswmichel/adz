@@ -201,6 +201,21 @@ function adzworld_parse_rotation( $specification ) {
 		);
 		$total  += $weight;
 	}
+
+	/*
+	 * The invitation is always the first carousel position. The configured
+	 * order of every advertising slot remains stable after it.
+	 */
+	$invitations = array();
+	$advertising = array();
+	foreach ( $slots as $slot ) {
+		if ( 'intro' === $slot['type'] ) {
+			$invitations[] = $slot;
+		} else {
+			$advertising[] = $slot;
+		}
+	}
+	$slots = array_merge( $invitations, $advertising );
 	return $slots;
 }
 
@@ -221,6 +236,34 @@ function adzworld_rotation_weighted_slot( $slots, $draw ) {
 		}
 	}
 	return new WP_Error( 'adzworld_rotation_draw', __( 'The advertising rotation draw is outside its configured range.', 'adz-world' ) );
+}
+
+/**
+ * Render one local adz as creative followed by one caption.
+ *
+ * Text-only adz are the caption. Media adz retain their creative and use the
+ * post title as the caption. Long text can be expanded without duplication.
+ *
+ * @param WP_Post $ad Adz post.
+ * @return string Adz slide content.
+ */
+function adzworld_local_ad_slide( $ad ) {
+	$content   = wp_kses_post( $ad->post_content );
+	$plain     = trim( wp_strip_all_tags( $ad->post_content ) );
+	$has_media = (bool) preg_match( '/<(?:img|picture|video|audio|iframe|svg)\b/i', $ad->post_content );
+
+	if ( $has_media ) {
+		return '<div class="adzworld-creative">' . $content . '</div>'
+			. '<p class="adzworld-caption">' . esc_html( $ad->post_title ) . '</p>';
+	}
+
+	if ( mb_strlen( $plain ) <= 180 ) {
+		return '<p class="adzworld-caption">' . esc_html( $plain ) . '</p>';
+	}
+
+	return '<details class="adzworld-caption adzworld-caption--expandable"><summary>'
+		. esc_html( mb_substr( $plain, 0, 177 ) . '…' ) . '</summary><div class="adzworld-caption__full">'
+		. $content . '</div></details>';
 }
 
 /**
@@ -257,6 +300,28 @@ function adzworld_render_rotation( $attributes ) {
 	}
 	$display  = $attributes['display'];
 	$controls = $attributes['controls'];
+	$pref     = adzworld_current_preference();
+	if ( adzworld_has_preference( $pref ) ) {
+		foreach ( $slots as $index => $candidate ) {
+			$slots[ $index ]['order'] = $index;
+			$slots[ $index ]['score'] = 'ad' === $candidate['type']
+				? adzworld_score_ad( (int) $candidate['value'], $pref )
+				: 0;
+		}
+		usort(
+			$slots,
+			static function ( $first, $second ) {
+				if ( 'intro' === $first['type'] || 'intro' === $second['type'] ) {
+					return 'intro' === $first['type'] ? -1 : 1;
+				}
+				if ( $first['score'] === $second['score'] ) {
+					return $first['order'] <=> $second['order'];
+				}
+
+				return $second['score'] <=> $first['score'];
+			}
+		);
+	}
 	if ( 'single' === $display ) {
 		$draw = wp_rand( 1, array_sum( array_column( $slots, 'weight' ) ) );
 		$slot = adzworld_rotation_weighted_slot( $slots, $draw );
@@ -266,8 +331,37 @@ function adzworld_render_rotation( $attributes ) {
 		$slots = array( $slot );
 	}
 
-	wp_enqueue_style( 'adzworld-rotation', plugins_url( 'assets/rotation.css', dirname( __DIR__ ) . '/adz-world.php' ), array(), '1.0.9' );
-	wp_enqueue_script( 'adzworld-rotation', plugins_url( 'assets/rotation.js', dirname( __DIR__ ) . '/adz-world.php' ), array(), '1.0.9', true );
+	$style_path  = dirname( __DIR__ ) . '/assets/rotation.css';
+	$script_path = dirname( __DIR__ ) . '/assets/rotation.js';
+	wp_enqueue_style(
+		'adzworld-rotation',
+		plugins_url( 'assets/rotation.css', dirname( __DIR__ ) . '/adz-world.php' ),
+		array(),
+		(string) filemtime( $style_path )
+	);
+	wp_enqueue_script(
+		'adzworld-rotation',
+		plugins_url( 'assets/rotation.js', dirname( __DIR__ ) . '/adz-world.php' ),
+		array(),
+		(string) filemtime( $script_path ),
+		true
+	);
+	wp_localize_script(
+		'adzworld-rotation',
+		'adzworldRotation',
+		array(
+			'ajaxUrl'         => admin_url( 'admin-ajax.php' ),
+			'preferenceNonce' => wp_create_nonce( 'adzworld_preference' ),
+			'feedbackNonce'   => wp_create_nonce( 'adzworld_feedback' ),
+			'labels'          => array(
+				'strongDislike' => __( 'Strongly dislike', 'adz-world' ),
+				'dislike'       => __( 'Dislike', 'adz-world' ),
+				'neutral'       => __( 'Neutral', 'adz-world' ),
+				'like'          => __( 'Like', 'adz-world' ),
+				'strongLike'    => __( 'Strongly like', 'adz-world' ),
+			),
+		)
+	);
 	$id        = wp_unique_id( 'adzworld-rotation-' );
 	$sources   = adzworld_rotation_sources();
 	$slides    = '';
@@ -279,33 +373,40 @@ function adzworld_render_rotation( $attributes ) {
 			if ( 'intro' === $slot['type'] ) {
 				$html = adzworld_rotation_introduction( $slide_id );
 			} elseif ( 'ad' === $slot['type'] ) {
-				$ad   = get_post( (int) $slot['value'] );
-				$html = '<div class="adzworld-creative">' . wp_kses_post( $ad->post_content ) . '</div>';
+				$ad       = get_post( (int) $slot['value'] );
+				$category = adzworld_ad_category( $ad, $pref );
+				$html     = adzworld_local_ad_slide( $ad )
+					. adzworld_feedback_control( 'ad-' . $ad->ID, $category );
 			} else {
-				$html = '<div class="adzworld-provider" aria-label="' . esc_attr( $sources[ $slot['value'] ]['label'] ) . '">'
-					. do_shortcode( $sources[ $slot['value'] ]['shortcode'] ) . '</div>';
+				$category = isset( $pref['active_category'] ) ? (string) $pref['active_category'] : '';
+				$html     = '<div class="adzworld-provider" aria-label="' . esc_attr( $sources[ $slot['value'] ]['label'] ) . '">'
+					. do_shortcode( $sources[ $slot['value'] ]['shortcode'] ) . '</div>'
+					. '<p class="adzworld-match-label">' . esc_html( $sources[ $slot['value'] ]['label'] ) . '</p>'
+					. adzworld_feedback_control( 'source-' . $slot['value'], $category );
 			}
 			$slides .= '<section class="adzworld-slide" id="' . esc_attr( $slide_id ) . '" role="group" aria-roledescription="'
 				. esc_attr__( 'slide', 'adz-world' ) . '" aria-label="' . esc_attr( ( $index + 1 ) . ' / ' . count( $slots ) ) . '">' . $html . '</section>';
 			/* translators: %d: slide position. */
 			$dot_label = sprintf( __( 'Show advertisement %d', 'adz-world' ), $index + 1 );
 			$dots     .= '<button type="button" data-adzworld-position="' . esc_attr( $index ) . '" aria-controls="' . esc_attr( $slide_id ) . '" aria-label="'
-				. esc_attr( $dot_label ) . '">' . esc_html( $index + 1 ) . '</button>';
+				. esc_attr( $dot_label ) . '"><span class="screen-reader-text">' . esc_html( $dot_label ) . '</span></button>';
 		}
 	} finally {
 		$rendering = false;
 	}
 	$navigation = '';
 	if ( count( $slots ) > 1 && in_array( $controls, array( 'arrows', 'both' ), true ) ) {
-		$navigation .= '<button type="button" data-adzworld-step="-1">' . esc_html__( 'Previous', 'adz-world' ) . '</button>'
-			. '<button type="button" data-adzworld-step="1">' . esc_html__( 'Next', 'adz-world' ) . '</button>';
+		$navigation .= '<button class="adzworld-previous" type="button" data-adzworld-step="-1"><span aria-hidden="true">&#8249;</span><span class="screen-reader-text">'
+			. esc_html__( 'Previous', 'adz-world' ) . '</span></button>'
+			. '<button class="adzworld-next" type="button" data-adzworld-step="1"><span aria-hidden="true">&#8250;</span><span class="screen-reader-text">'
+			. esc_html__( 'Next', 'adz-world' ) . '</span></button>';
 	}
 	if ( count( $slots ) > 1 && in_array( $controls, array( 'dots', 'both' ), true ) ) {
 		$navigation .= '<div class="adzworld-dots">' . $dots . '</div>';
 	}
 	return '<div class="adzworld-rotation adzworld-rotation--' . esc_attr( $display ) . '" id="' . esc_attr( $id )
-		. '" role="region" aria-label="' . esc_attr( $attributes['label'] ) . '"><div class="adzworld-slides">' . $slides
-		. '</div><div class="adzworld-navigation" hidden>' . $navigation . '</div></div>';
+		. '" role="region" aria-label="' . esc_attr( $attributes['label'] ) . '"><div class="adzworld-carousel"><div class="adzworld-slides">' . $slides
+		. '</div><div class="adzworld-navigation" hidden>' . $navigation . '</div></div></div>';
 }
 
 /**
@@ -315,15 +416,9 @@ function adzworld_render_rotation( $attributes ) {
  * @return string Introduction form.
  */
 function adzworld_rotation_introduction( $id ) {
-	return '<form class="adzworld-preference" data-cleared="' . esc_attr__( 'Preferences cleared.', 'adz-world' )
-		. '" data-limit="' . esc_attr__( 'This page holds up to ten refinements. Clear them to start again.', 'adz-world' )
-		. '" data-noted="' . esc_attr__( 'Preference noted on this page only. No information was sent.', 'adz-world' )
-		. '"><h3>' . esc_html__( 'Advertising by invitation', 'adz-world' ) . '</h3>'
-		. '<label for="' . esc_attr( $id . '-request' ) . '">'
-		. esc_html__( 'You have the option to receive permission-based adz by describing what you would like to purchase in the near future.', 'adz-world' )
-		. '</label><textarea id="' . esc_attr( $id . '-request' ) . '" maxlength="1000" required></textarea>'
-		. '<p>' . esc_html__( 'Your words stay in this page. This form does not send data, enable tracking, or promise matching offers.', 'adz-world' ) . '</p>'
-		. '<button type="submit" disabled>' . esc_html__( 'Add preference', 'adz-world' ) . '</button> '
-		. '<button type="button" class="adzworld-clear-preference">' . esc_html__( 'Clear preferences', 'adz-world' ) . '</button>'
-		. '<p class="adzworld-preference-status" role="status"></p><ol class="adzworld-preference-history"></ol></form>';
+	unset( $id );
+	$preference = adzworld_current_preference();
+	ob_start();
+	adzworld_render_preference_panel( $preference, adzworld_has_preference( $preference ), 'full' );
+	return (string) ob_get_clean();
 }

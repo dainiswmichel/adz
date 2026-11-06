@@ -1,5 +1,5 @@
 /**
- * Local rotation navigation and explicit preference capture.
+ * Invitation-first carousel, preference refinement, and adz evaluation.
  *
  * @package adz-world
  */
@@ -7,92 +7,299 @@
 ( function () {
 	'use strict';
 
-	document.querySelectorAll( '.adzworld-rotation' ).forEach(
-		function ( rotation ) {
-			var slides     = Array.from( rotation.querySelector( '.adzworld-slides' ).children );
-			var navigation = rotation.querySelector( '.adzworld-navigation' );
-			var current    = 0;
-			var depth      = rotation.classList.contains( 'adzworld-rotation--3d' ) && slides.length > 1;
-			rotation.classList.add( 'adzworld-enhanced' );
+	var settings = window.adzworldRotation || {};
 
-			function show( position ) {
-					current = ( position + slides.length ) % slides.length;
-					slides.forEach(
-						function ( slide, index ) {
-							slide.hidden = ! depth && index !== current;
-							slide.classList.toggle( 'adzworld-active', index === current );
-							slide.setAttribute( 'aria-hidden', String( index !== current ) );
-							slide.inert = index !== current;
-						}
-					);
-					rotation.querySelectorAll( '[data-adzworld-position]' ).forEach(
-						function ( button ) {
-							button.setAttribute( 'aria-pressed', String( Number( button.dataset.adzworldPosition ) === current ) );
-						}
-					);
+	/**
+	 * Post a small, nonce-protected request to WordPress.
+	 *
+	 * @param {string} action AJAX action.
+	 * @param {string} nonce  Action nonce.
+	 * @param {Object} values Request values.
+	 * @return {Promise} Parsed JSON response.
+	 */
+	function post( action, nonce, values ) {
+		var body = new window.FormData();
+
+		body.append( 'action', action );
+		body.append( 'nonce', nonce );
+		Object.keys( values ).forEach(
+			function ( key ) {
+				body.append( key, values[ key ] );
 			}
+		);
 
-			rotation.addEventListener(
-				'click',
-				function ( event ) {
-					var button = event.target.closest( 'button' );
-					if ( ! button ) {
-						return;
-					}
-					if ( button.hasAttribute( 'data-adzworld-step' ) ) {
-							show( current + Number( button.dataset.adzworldStep ) );
-					}
-					if ( button.hasAttribute( 'data-adzworld-position' ) ) {
-							show( Number( button.dataset.adzworldPosition ) );
-					}
-					if ( button.classList.contains( 'adzworld-clear-preference' ) ) {
-							var form = button.closest( 'form' );
-							form.querySelector( '.adzworld-preference-history' ).replaceChildren();
-							form.querySelector( 'textarea' ).value                          = '';
-							form.querySelector( '.adzworld-preference-status' ).textContent = form.dataset.cleared;
-					}
+		return window.fetch(
+			settings.ajaxUrl,
+			{
+				body: body,
+				credentials: 'same-origin',
+				method: 'POST'
+			}
+		).then(
+			function ( response ) {
+				return response.json();
+			}
+		);
+	}
+
+	/**
+	 * Activate one slide. Positions wrap continuously at both ends.
+	 *
+	 * @param {HTMLElement} rotation Rotation root.
+	 */
+	function prepareRotation( rotation ) {
+		var slides = Array.from( rotation.querySelectorAll( '.adzworld-slide' ) );
+		var current = 0;
+		var navigation = rotation.querySelector( '.adzworld-navigation' );
+
+		if ( ! slides.length ) {
+			return;
+		}
+
+		rotation.classList.add( 'adzworld-enhanced' );
+
+		function show( position ) {
+			current = ( position + slides.length ) % slides.length;
+			slides.forEach(
+				function ( slide, index ) {
+					var active = index === current;
+
+					slide.hidden = ! active;
+					slide.classList.toggle( 'adzworld-active', active );
+					slide.setAttribute( 'aria-hidden', String( ! active ) );
+					slide.inert = ! active;
 				}
 			);
+			rotation.querySelectorAll( '[data-adzworld-position]' ).forEach(
+				function ( button ) {
+					button.setAttribute( 'aria-pressed', String( Number( button.dataset.adzworldPosition ) === current ) );
+				}
+			);
+		}
+
+		rotation.addEventListener(
+			'click',
+			function ( event ) {
+				var button = event.target.closest( 'button' );
+
+				if ( ! button ) {
+					return;
+				}
+				if ( button.hasAttribute( 'data-adzworld-step' ) ) {
+					show( current + Number( button.dataset.adzworldStep ) );
+				}
+				if ( button.hasAttribute( 'data-adzworld-position' ) ) {
+					show( Number( button.dataset.adzworldPosition ) );
+				}
+			}
+		);
+
+		if ( navigation ) {
 			navigation.addEventListener(
 				'keydown',
 				function ( event ) {
-					var positions = { ArrowLeft: current - 1, ArrowRight: current + 1, Home: 0, End: slides.length - 1 };
+					var positions = {
+						ArrowLeft: current - 1,
+						ArrowRight: current + 1,
+						End: slides.length - 1,
+						Home: 0
+					};
+
 					if ( Object.prototype.hasOwnProperty.call( positions, event.key ) ) {
 						event.preventDefault();
 						show( positions[ event.key ] );
 					}
 				}
 			);
-			rotation.querySelectorAll( '.adzworld-preference' ).forEach(
-				function ( form ) {
-					form.querySelector( 'button[type="submit"]' ).disabled = false;
-					form.addEventListener(
-						'submit',
-						function ( event ) {
-							event.preventDefault();
-							var input   = form.querySelector( 'textarea' );
-							var text    = input.value.trim();
-							var history = form.querySelector( '.adzworld-preference-history' );
-							var status  = form.querySelector( '.adzworld-preference-status' );
-							if ( ! text ) {
-								input.focus();
-								return;
-							}
-							if ( history.children.length >= 10 ) {
-									status.textContent = form.dataset.limit;
-									return;
-							}
-							var item         = document.createElement( 'li' );
-							item.textContent = text;
-							history.appendChild( item );
-							status.textContent = form.dataset.noted;
-							input.value        = '';
-						}
-					);
-				}
-			);
-			show( 0 );
 			navigation.hidden = slides.length < 2 || ! navigation.children.length;
 		}
-	);
+
+		show( 0 );
+	}
+
+	/**
+	 * Wire the invitation and refinement panel.
+	 *
+	 * @param {HTMLFormElement} form Preference form.
+	 */
+	function preparePanel( form ) {
+		var input = form.querySelector( '.adz-panel__input' );
+		var status = form.querySelector( '[data-adz-status]' );
+		var improveTarget = form.dataset.adzImproveTarget || '';
+
+		form.addEventListener(
+			'submit',
+			function ( event ) {
+				var mode = improveTarget ? 'improve' : ( event.submitter && event.submitter.value ? event.submitter.value : 'refine' );
+
+				event.preventDefault();
+				if ( ! input || ! input.value.trim() ) {
+					return;
+				}
+
+				post(
+					'adzworld_refine',
+					settings.preferenceNonce,
+					{
+						mode: mode,
+						refinement: input.value,
+						target: improveTarget
+					}
+				).then(
+					function ( payload ) {
+						if ( payload && payload.success ) {
+							window.location.reload();
+						} else if ( status ) {
+							status.textContent = payload && payload.data ? payload.data.message : '';
+						}
+					}
+				);
+			}
+		);
+
+		form.addEventListener(
+			'click',
+			function ( event ) {
+				var remove = event.target.closest( '.adz-panel__chipdrop' );
+				var category = event.target.closest( '.adz-panel__category' );
+
+				if ( category ) {
+					event.preventDefault();
+					post(
+						'adzworld_refine',
+						settings.preferenceNonce,
+						{
+							mode: 'select',
+							value: category.dataset.adzCategory || ''
+						}
+					).then(
+						function ( payload ) {
+							if ( payload && payload.success ) {
+								window.location.reload();
+							}
+						}
+					);
+					return;
+				}
+
+				if ( ! remove ) {
+					return;
+				}
+				event.preventDefault();
+				post(
+					'adzworld_refine',
+					settings.preferenceNonce,
+					{
+						facet: remove.dataset.adzFacet || '',
+						mode: 'drop',
+						value: remove.dataset.adzValue || ''
+					}
+				).then(
+					function ( payload ) {
+						if ( payload && payload.success ) {
+							window.location.reload();
+						}
+					}
+				);
+			}
+		);
+	}
+
+	/**
+	 * Human-readable label for immediate slider feedback.
+	 *
+	 * @param {number} score Evaluation score.
+	 * @return {string} Evaluation label.
+	 */
+	function evaluationLabel( score ) {
+		var labels = settings.labels || {};
+
+		if ( score <= -75 ) {
+			return labels.strongDislike || 'Strongly dislike';
+		}
+		if ( score <= -25 ) {
+			return labels.dislike || 'Dislike';
+		}
+		if ( score < 25 ) {
+			return labels.neutral || 'Neutral';
+		}
+		if ( score < 75 ) {
+			return labels.like || 'Like';
+		}
+		return labels.strongLike || 'Strongly like';
+	}
+
+	/**
+	 * Wire one explicit evaluation control.
+	 *
+	 * @param {HTMLElement} control Evaluation root.
+	 */
+	function prepareEvaluation( control ) {
+		var input = control.querySelector( 'input[type="range"]' );
+		var output = control.querySelector( 'output' );
+		var status = control.querySelector( '.adzworld-evaluation__status' );
+
+		if ( ! input ) {
+			return;
+		}
+
+		function reflect() {
+			var score = Number( input.value );
+			var scoreClass = 'is-score-' + String( score ).replace( '-', 'minus-' );
+
+			input.classList.toggle( 'is-negative', score < 0 );
+			input.classList.toggle( 'is-positive', score > 0 );
+			Array.from( input.classList ).forEach(
+				function ( className ) {
+					if ( 0 === className.indexOf( 'is-score-' ) ) {
+						input.classList.remove( className );
+					}
+				}
+			);
+			input.classList.add( scoreClass );
+			if ( output ) {
+				output.textContent = evaluationLabel( score );
+			}
+		}
+
+		input.addEventListener( 'input', reflect );
+		input.addEventListener(
+			'change',
+			function () {
+				post(
+					'adzworld_evaluate',
+					settings.feedbackNonce,
+					{
+						score: input.value,
+						target: control.dataset.adzworldFeedbackTarget || ''
+					}
+				).then(
+					function ( payload ) {
+						if ( output && payload && payload.success ) {
+							output.textContent = payload.data.label;
+						}
+						if ( status ) {
+							status.textContent = payload && payload.data ? payload.data.message : '';
+						}
+					}
+				);
+			}
+		);
+		reflect();
+	}
+
+	function init() {
+		if ( ! window.fetch || ! window.FormData || ! settings.ajaxUrl ) {
+			return;
+		}
+		document.querySelectorAll( '.adzworld-rotation' ).forEach( prepareRotation );
+		document.querySelectorAll( '[data-adz-panel]' ).forEach( preparePanel );
+		document.querySelectorAll( '[data-adzworld-feedback-target]' ).forEach( prepareEvaluation );
+	}
+
+	if ( 'loading' === document.readyState ) {
+		document.addEventListener( 'DOMContentLoaded', init );
+	} else {
+		init();
+	}
 }() );
