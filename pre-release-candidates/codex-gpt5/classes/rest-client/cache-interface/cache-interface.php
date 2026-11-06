@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Cache Interface - Provides consistent interface for WP and Non WP Cache
  */
 
-interface CacheInterface {
+interface Adzworld_Cache_Interface {
 	/**
 	 * Adds or updates value to the cache
 	 *

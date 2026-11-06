@@ -40,7 +40,6 @@ if ( ! class_exists( 'EOF_Loader' ) ) :
 
 			add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 			add_filter( 'plugin_row_meta', array( $this, 'donate_link' ), 10, 2 );
-			$this->i18n();
 			$this->require_files();
 		}
 
@@ -65,22 +64,15 @@ if ( ! class_exists( 'EOF_Loader' ) ) :
 		 * @return void
 		 */
 		public function enqueue_scripts() {
+			if ( ! function_exists( 'adzworld_is_plugin_admin_screen' ) || ! adzworld_is_plugin_admin_screen() ) {
+				return;
+			}
+
 			wp_enqueue_script( 'jquery' );
 			wp_enqueue_style( 'jquery-ui' );
-			wp_enqueue_style( 'eof-style', EOF_URL . 'css/eof-style.css' );
+			wp_enqueue_style( 'eof-style', EOF_URL . 'css/eof-style.css', array(), (string) filemtime( EOF_DIR . 'css/eof-style.css' ) );
 			wp_enqueue_script( 'eof_custom_js', EOF_URL . 'js/eof-custom.js', array( 'jquery', 'wp-color-picker' ), (string) filemtime( EOF_DIR . 'js/eof-custom.js' ), true );
 			wp_localize_script( 'eof_custom_js', 'adzworldSettings', array( 'ajaxUrl' => admin_url( 'admin-ajax.php' ) ) );
-		}
-
-		/**
-		 * Load the framework translation file.
-		 *
-		 * @since  1.0.0
-		 * @return void
-		 */
-		public function i18n() {
-			// set text domain.
-			load_textdomain( 'eof', EOF_DIR . 'languages/eof-' . get_locale() . '.mo' );
 		}
 
 		/**

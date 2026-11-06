@@ -19,15 +19,10 @@
 					current = ( position + slides.length ) % slides.length;
 					slides.forEach(
 						function ( slide, index ) {
-							var offset = ( index - current + slides.length ) % slides.length;
-							if ( offset > slides.length / 2 ) {
-								offset -= slides.length;
-							}
 							slide.hidden = ! depth && index !== current;
 							slide.classList.toggle( 'adzworld-active', index === current );
 							slide.setAttribute( 'aria-hidden', String( index !== current ) );
 							slide.inert = index !== current;
-							slide.style.setProperty( '--adzworld-offset', offset );
 						}
 					);
 					rotation.querySelectorAll( '[data-adzworld-position]' ).forEach(

@@ -32,12 +32,12 @@ function adzworld_test_configured_rotations() {
 	try {
 		update_option( 'adz_ad_options', array( 'ad_settings' => array() ) );
 		adzworld_test_assert( '' === adzworld_configured_rotation_id( $id ), 'Prefix alone does not establish a configured rotation' );
-		adzworld_test_assert( false === adz_update_rotation_state( $id, $state ), 'Unconfigured rotation state cannot be overwritten' );
+		adzworld_test_assert( false === adzworld_update_rotation_state( $id, $state ), 'Unconfigured rotation state cannot be overwritten' );
 		adzworld_test_assert( 'protected-probe' === get_option( $id ), 'Rejected write preserves existing option bytes' );
 
 		update_option( 'adz_ad_options', array( 'ad_settings' => array( array( 'rotation_id' => $id ) ) ) );
 		adzworld_test_assert( adzworld_configured_rotation_id( $id ) === $id, 'Saved rotation remains available' );
-		adzworld_test_assert( adz_update_rotation_state( $id, $state ), 'Configured rotation still accepts state updates' );
+		adzworld_test_assert( adzworld_update_rotation_state( $id, $state ), 'Configured rotation still accepts state updates' );
 		adzworld_test_assert( get_option( $id ) === $state, 'Configured rotation stores the intended state' );
 		adzworld_test_assert( '' === adzworld_configured_rotation_id( array( $id ) ), 'Array identifiers cannot select a rotation' );
 		adzworld_test_assert( '' === adzworld_configured_rotation_id( 'siteurl' ), 'Core option identifiers remain excluded' );

@@ -46,9 +46,10 @@ if ( ! class_exists( 'EOF_Views' ) ) :
 		 */
 		public function admin_options_page() {
 
-			$section_ids = array_keys( $this->parent->sections );
-			$active_tab  = isset( $_GET['tab'] ) && is_string( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : $section_ids[0];
-			$base_url    = menu_page_url( $this->parent->configs['page_slug'], false );
+			$section_ids   = array_keys( $this->parent->sections );
+			$requested_tab = filter_input( INPUT_GET, 'tab', FILTER_UNSAFE_RAW );
+			$active_tab    = is_string( $requested_tab ) ? sanitize_key( $requested_tab ) : $section_ids[0];
+			$base_url      = menu_page_url( $this->parent->configs['page_slug'], false );
 			if ( ! isset( $this->parent->sections[ $active_tab ] ) ) {
 				echo '<div class="notice notice-error"><p>' . esc_html__( 'The requested settings section does not exist.', 'adz-world' ) . '</p></div>';
 				return;
@@ -58,7 +59,7 @@ if ( ! class_exists( 'EOF_Views' ) ) :
 			<h2 class="nav-tab-wrapper">
 				<?php
 				foreach ( $this->parent->sections as $section ) {
-					$actived = ( $active_tab == $section['id'] ) ? 'nav-tab-active' : '';
+					$actived = ( $active_tab === $section['id'] ) ? 'nav-tab-active' : '';
 					if ( isset( $section['type'] ) && 'url' === $section['type'] ) {
 						printf(
 							'<a href="%1$s" title="%2$s" class="nav-tab %3$s">%4$s</a>',
@@ -82,7 +83,7 @@ if ( ! class_exists( 'EOF_Views' ) ) :
 			<!-- END .nav-tab-wrapper -->
 			<div id="tab_container">
 				<?php
-				if ( isset( $this->parent->sections[ $active_tab ]['type'] ) && 'blank' == $this->parent->sections[ $active_tab ]['type'] ) {
+				if ( isset( $this->parent->sections[ $active_tab ]['type'] ) && 'blank' === $this->parent->sections[ $active_tab ]['type'] ) {
 					do_action( 'eof_options_page_' . $this->parent->configs['opt_name'] . '_' . $this->parent->sections[ $active_tab ]['id'] );
 				} else {
 					?>

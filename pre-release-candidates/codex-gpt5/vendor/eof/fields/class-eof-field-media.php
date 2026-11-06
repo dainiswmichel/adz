@@ -69,7 +69,7 @@ if ( ! class_exists( 'EOF_field_media' ) ) :
 		 * @return void
 		 */
 		public static function admin_enqueue_scripts() {
-			if ( is_admin() ) {
+			if ( function_exists( 'adzworld_is_plugin_admin_screen' ) && adzworld_is_plugin_admin_screen() ) {
 				wp_enqueue_media();
 			}
 		}
@@ -105,7 +105,7 @@ if ( ! class_exists( 'EOF_field_media' ) ) :
 		<input class="button eof-media-delete-button" type="button" data-input-id="<?php echo esc_attr( $this->option_id ); ?>" value="<?php esc_html_e( 'Delete', 'adz-world' ); ?>" />
 		<br>
 				<?php if ( $preview ) : ?>
-			<p class="image-preview"><img src="<?php echo esc_attr( $this->value ); ?>" alt="" style="max-width:100%;"></p>
+			<p class="image-preview"><img class="eof-media-preview" src="<?php echo esc_url( $this->value ); ?>" alt=""></p>
 			<?php endif; ?>
 		<?php endif; ?>
 		<span class="description"><?php echo wp_kses_post( $this->field['desc'] ); ?></span>
@@ -119,7 +119,7 @@ if ( ! class_exists( 'EOF_field_media' ) ) :
 		 */
 		public function sanitize( $value ) {
 
-			$sanitize_value = strip_tags( $value );
+			$sanitize_value = wp_strip_all_tags( $value );
 
 			return $sanitize_value;
 		}

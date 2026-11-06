@@ -75,12 +75,12 @@ if ( ! class_exists( 'EOF_field_checkbox' ) ) :
 				<?php
 				foreach ( $this->field['options'] as $key => $label ) {
 					$enabled = null;
-					if ( in_array( $key, $values ) ) {
+					if ( in_array( $key, $values, true ) ) {
 						$enabled = 1;
 					}
 					if ( isset( $this->field['style'] ) && '2' === (string) $this->field['style'] ) {
 						?>
-				<label for="<?php echo esc_attr( $this->option_name . '[]' ); ?>" style="display:inline-block;margin-right:10px;">
+				<label class="eof-inline-option" for="<?php echo esc_attr( $this->option_name . '[]' ); ?>">
 				<input type="checkbox" name="<?php echo esc_attr( $this->option_name . '[]' ); ?>" id="<?php echo esc_attr( $this->option_id ); ?>" value="<?php echo esc_attr( $key ); ?>" <?php checked( 1, $enabled, true ); ?> >
 						<?php echo esc_html( $label ); ?></label>
 						<?php
@@ -92,7 +92,7 @@ if ( ! class_exists( 'EOF_field_checkbox' ) ) :
 						<?php
 					}
 				}
-				echo '<p class="description" style="margin-top:15px;">' . wp_kses_post( $this->field['desc'] ) . '</p>';
+				echo '<p class="description eof-description-spaced">' . wp_kses_post( $this->field['desc'] ) . '</p>';
 			} else {
 				?>
 			<input type="hidden" name="<?php echo esc_attr( $this->option_name ); ?>" value="0" />

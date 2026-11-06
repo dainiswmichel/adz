@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Register publisher advertisements.
  */
-function adz_ad_post_type_pub() {
+function adzworld_ad_post_type_pub() {
 
 	$labels = array(
 		'name'                  => _x( 'Adz.world', 'Post Type General Name', 'adz-world' ),
@@ -65,7 +65,7 @@ function adz_ad_post_type_pub() {
 	);
 	register_post_type( 'adz_ad', $args );
 }
-add_action( 'init', 'adz_ad_post_type_pub', 0 );
+add_action( 'init', 'adzworld_ad_post_type_pub', 0 );
 
 
 
@@ -75,7 +75,7 @@ add_action( 'init', 'adz_ad_post_type_pub', 0 );
  *
  * @param WP_Post $post Advertisement being edited.
  */
-function ad_network_meta_box_markup_pub( $post ) {
+function adzworld_network_meta_box_markup_pub( $post ) {
 
 	wp_nonce_field( basename( __FILE__ ), 'meta-box-nonce' );
 	$affiliation_network_name = get_post_meta( $post->ID, 'affiliation_network_name', true );
@@ -198,11 +198,11 @@ add_action( 'admin_notices', 'adzworld_render_network_notice' );
 /**
  * Register the advertisement's metadata editor.
  */
-function add_ad_network_meta_box_pub() {
-	add_meta_box( 'ad-network-meta-box', 'Settings for This Ad', 'ad_network_meta_box_markup_pub', 'adz_ad', 'normal', 'high', null );
+function adzworld_add_network_meta_box_pub() {
+	add_meta_box( 'ad-network-meta-box', 'Settings for This Ad', 'adzworld_network_meta_box_markup_pub', 'adz_ad', 'normal', 'high', null );
 }
 
-add_action( 'add_meta_boxes', 'add_ad_network_meta_box_pub' );
+add_action( 'add_meta_boxes', 'adzworld_add_network_meta_box_pub' );
 
 
 /**
@@ -211,13 +211,13 @@ add_action( 'add_meta_boxes', 'add_ad_network_meta_box_pub' );
  * @param array $columns Existing columns.
  * @return array Modified columns.
  */
-function set_network_adz_id_column( $columns ) {
+function adzworld_set_network_adz_id_column( $columns ) {
 	unset( $columns['author'] );
 	$columns['network_ad_id'] = 'Advertise Id';
 
 	return $columns;
 }
-add_filter( 'manage_adz_ad_posts_columns', 'set_network_adz_id_column' );
+add_filter( 'manage_adz_ad_posts_columns', 'adzworld_set_network_adz_id_column' );
 
 /**
  * Render the escaped network identifier.
@@ -225,7 +225,7 @@ add_filter( 'manage_adz_ad_posts_columns', 'set_network_adz_id_column' );
  * @param string $column Column key.
  * @param int    $post_id Advertisement identifier.
  */
-function network_adz_id_column( $column, $post_id ) {
+function adzworld_network_adz_id_column( $column, $post_id ) {
 	switch ( $column ) {
 
 		case 'network_ad_id':
@@ -237,7 +237,7 @@ function network_adz_id_column( $column, $post_id ) {
 	}
 }
 
-add_action( 'manage_adz_ad_posts_custom_column', 'network_adz_id_column', 10, 2 );
+add_action( 'manage_adz_ad_posts_custom_column', 'adzworld_network_adz_id_column', 10, 2 );
 
 /**
  * Position the network identifier before the date column.
@@ -245,7 +245,7 @@ add_action( 'manage_adz_ad_posts_custom_column', 'network_adz_id_column', 10, 2 
  * @param array $defaults Existing columns.
  * @return array Ordered columns.
  */
-function adz_ad_columns_head( $defaults ) {
+function adzworld_ad_columns_head( $defaults ) {
 	$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
 	if ( $screen && 'adz_ad' === $screen->post_type && isset( $defaults['network_ad_id'] ) ) {
 
@@ -265,11 +265,11 @@ function adz_ad_columns_head( $defaults ) {
 		return $defaults;
 	}
 }
-add_filter( 'manage_posts_columns', 'adz_ad_columns_head' );
+add_filter( 'manage_posts_columns', 'adzworld_ad_columns_head' );
 /**
  * Register advertisement categories.
  */
-function ad_taxonomy_pub() {
+function adzworld_ad_taxonomy_pub() {
 
 	$labels = array(
 		'name'                       => _x( 'Ad Types', 'Taxonomy General Name', 'adz-world' ),
@@ -306,7 +306,7 @@ function ad_taxonomy_pub() {
 	);
 	register_taxonomy( 'ad_taxonomy', array( 'adz_ad' ), $args );
 }
-add_action( 'init', 'ad_taxonomy_pub', 0 );
+add_action( 'init', 'adzworld_ad_taxonomy_pub', 0 );
 
 /* Sync with Server */
 /**
@@ -315,7 +315,7 @@ add_action( 'init', 'ad_taxonomy_pub', 0 );
  * @param int     $post_id Advertisement identifier.
  * @param WP_Post $post_after Updated advertisement.
  */
-function adz_sync_network_ads( $post_id, $post_after ) {
+function adzworld_sync_network_ads( $post_id, $post_after ) {
 	if ( 'adz_ad' === $post_after->post_type ) {
 		$result = Adz_NetworkAuthorization::update_ad( $post_id, $post_after );
 		if ( is_wp_error( $result ) ) {
@@ -324,7 +324,7 @@ function adz_sync_network_ads( $post_id, $post_after ) {
 	}
 }
 
-add_action( 'save_post_adz_ad', 'adz_sync_network_ads', 30, 2 );
+add_action( 'save_post_adz_ad', 'adzworld_sync_network_ads', 30, 2 );
 
 
 
@@ -333,7 +333,7 @@ add_action( 'save_post_adz_ad', 'adz_sync_network_ads', 30, 2 );
  *
  * @param int $post_id Advertisement identifier.
  */
-function adz_sync_network_ads_delete( $post_id ) {
+function adzworld_sync_network_ads_delete( $post_id ) {
 	if ( 'adz_ad' !== get_post_type( $post_id ) ) {
 			return;
 	}
@@ -343,40 +343,30 @@ function adz_sync_network_ads_delete( $post_id ) {
 	}
 }
 
-add_action( 'before_delete_post', 'adz_sync_network_ads_delete' );
+add_action( 'before_delete_post', 'adzworld_sync_network_ads_delete' );
 
 /**
  * Render the legacy iframe-insertion button.
  */
-function adz_ifram_button() {
-	echo '<a title="Insert Adz.world iFrame" class="button insert-media add_media" id="insert-adz-iframe-button" href="#">Adz.world iFrame</a>';
+function adzworld_iframe_button() {
+	if ( ! adzworld_is_plugin_admin_screen() ) {
+		return;
+	}
+
+	echo '<button type="button" title="' . esc_attr__( 'Insert an advertising iframe', 'adz-world' ) . '" class="button insert-media add_media" id="insert-adz-iframe-button">'
+		. esc_html__( 'Advertising iframe', 'adz-world' ) . '</button>';
 }
 
-add_action( 'media_buttons', 'adz_ifram_button', 11 );
-
-/**
- * Attach the legacy editor's iframe insertion behavior.
- */
-function adz_button_js() {
-		echo '<script type="text/javascript">
-	jQuery(document).ready(function(){
-	   jQuery("#insert-adz-iframe-button").click(function() {
-	      send_to_editor("[adzworld_iframe adz_url=\"http://adz.world\" height=\"600\" width=\"100%\" ]");
-	      return false;
-	   });
-	});
-	</script>';
-}
-add_action( 'admin_print_footer_scripts', 'adz_button_js', 199 );
+add_action( 'media_buttons', 'adzworld_iframe_button', 11 );
 
 
 /**
  * Register the template settings screen.
  */
-function adz_templates_setting_menu() {
-	add_submenu_page( 'edit.php?post_type=adz_ad', 'Adz Template Settings', 'Adz Template Settings', 'manage_options', 'adz-template-setting', 'adz_template_setting' );
+function adzworld_templates_setting_menu() {
+	add_submenu_page( 'edit.php?post_type=adz_ad', 'Adz Template Settings', 'Adz Template Settings', 'manage_options', 'adz-template-setting', 'adzworld_template_setting' );
 }
-add_action( 'admin_menu', 'adz_templates_setting_menu', 11 );
+add_action( 'admin_menu', 'adzworld_templates_setting_menu', 11 );
 
 
 /**
@@ -395,7 +385,7 @@ function adzworld_save_template_settings() {
 	}
 	$template = isset( $_POST['adz_template'] ) && is_string( $_POST['adz_template'] )
 		? sanitize_text_field( wp_unslash( $_POST['adz_template'] ) ) : '';
-	if ( '' === adz_resolve_template( $template ) ) {
+	if ( '' === adzworld_resolve_template( $template ) ) {
 		return new WP_Error( 'adzworld_template_unknown', __( 'A shipped advertising template must be selected.', 'adz-world' ) );
 	}
 	$settings = array(
@@ -417,7 +407,7 @@ function adzworld_save_template_settings() {
 /**
  * Render the advertising template settings form and explicit save result.
  */
-function adz_template_setting() {
+function adzworld_template_setting() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( esc_html__( 'Administrator permission is required.', 'adz-world' ), '', array( 'response' => 403 ) );
 	}
@@ -445,7 +435,7 @@ function adz_template_setting() {
 		}
 	}
 
-	echo "</select> <span class='loading_data' style='display:none'>Please Wait While its Loading...</span>";
+	echo "</select> <span class='loading_data adzworld-is-hidden'>Please Wait While its Loading...</span>";
 	echo '<br><label>Enter Header Text here.</label><br>';
 	echo '<textarea name="header_text" id="header_text"></textarea>';
 	echo '<br><label>Select Text Alignment For Header.</label><br>';
@@ -461,18 +451,18 @@ function adz_template_setting() {
 /**
  * Return a shipped template's settings to an authorized administrator.
  */
-function get_template_settings() {
+function adzworld_get_template_settings() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_send_json_error( array( 'message' => __( 'Administrator access is required.', 'adz-world' ) ), 403 );
 	}
 	check_ajax_referer( 'adzworld_template_settings', 'nonce' );
 	$template_name = isset( $_POST['selected_template'] ) && is_string( $_POST['selected_template'] )
 		? sanitize_file_name( wp_unslash( $_POST['selected_template'] ) ) : '';
-	if ( ! in_array( $template_name, adz_available_templates(), true ) ) {
+	if ( ! in_array( $template_name, adzworld_available_templates(), true ) ) {
 		wp_send_json_error( array( 'message' => __( 'Unknown ad template.', 'adz-world' ) ), 400 );
 	}
 	$template_data = get_option( 'template_' . $template_name );
-	$settings      = is_array( $template_data ) ? $template_data : ( is_string( $template_data ) ? unserialize( $template_data, array( 'allowed_classes' => false ) ) : array() );
+	$settings      = adzworld_template_settings( $template_data );
 	if ( ! is_array( $settings ) ) {
 		$settings = array();
 	}
@@ -488,4 +478,4 @@ function get_template_settings() {
 		)
 	);
 }
-add_action( 'wp_ajax_get_template_settings', 'get_template_settings' );
+add_action( 'wp_ajax_get_template_settings', 'adzworld_get_template_settings' );

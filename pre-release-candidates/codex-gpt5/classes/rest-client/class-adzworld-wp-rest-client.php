@@ -13,7 +13,7 @@ require_once __DIR__ . '/restclient-interface.php';
 /**
  * REST client with authentication-scoped caching and explicit transport errors.
  */
-class WPRestClient implements iRestClient {
+class Adzworld_WP_Rest_Client implements Adzworld_Rest_Client_Interface {
 
 	/**
 	 * Authentication mode.
@@ -34,12 +34,6 @@ class WPRestClient implements iRestClient {
 	 */
 	protected $base_url;
 	/**
-	 * Whether a trusted caller permits self-signed certificates.
-	 *
-	 * @var bool
-	 */
-	protected $accept_self_signed;
-	/**
 	 * Additional request headers.
 	 *
 	 * @var array
@@ -48,7 +42,7 @@ class WPRestClient implements iRestClient {
 	/**
 	 * Response cache.
 	 *
-	 * @var WPCacheImpl
+	 * @var Adzworld_WP_Cache
 	 */
 	protected $cache;
 
@@ -59,13 +53,12 @@ class WPRestClient implements iRestClient {
 	 * @param string $base_url Remote base URL.
 	 * @param string $authentication_scheme Authentication mode.
 	 * @param array  $authentication_parameters Authentication parameters.
-	 * @param mixed  $accept_self_signed Accept self signed.
+	 * @param mixed  $accept_self_signed Deprecated compatibility argument; ignored.
 	 */
-	public function __construct( $base_url, $authentication_scheme = 'Basic', $authentication_parameters = array(), $accept_self_signed = false ) {
-		$this->accept_self_signed = $accept_self_signed;
+	public function __construct( $base_url, $authentication_scheme = 'None', $authentication_parameters = array(), $accept_self_signed = false ) {
 		$this->update_connection( $base_url, $authentication_scheme, $authentication_parameters );
-		require_once __DIR__ . '/cache-interface/class-wpcacheimpl.php';
-		$this->cache = new WPCacheImpl( 'adzworld-rest' );
+		require_once __DIR__ . '/cache-interface/class-adzworld-wp-cache.php';
+		$this->cache = new Adzworld_WP_Cache( 'adzworld-rest' );
 	}
 
 	/**
@@ -75,7 +68,7 @@ class WPRestClient implements iRestClient {
 	 * @param string $authentication_scheme Authentication mode.
 	 * @param array  $authentication_parameters Authentication parameters.
 	 */
-	public function update_connection( $base_url, $authentication_scheme = 'Basic', $authentication_parameters = array() ) {
+	public function update_connection( $base_url, $authentication_scheme = 'None', $authentication_parameters = array() ) {
 		$this->authentication_scheme     = $authentication_scheme;
 		$this->authentication_parameters = $authentication_parameters;
 		$this->base_url                  = $base_url;
@@ -87,7 +80,7 @@ class WPRestClient implements iRestClient {
 	 * @param string $authentication_scheme Authentication mode.
 	 * @param array  $authentication_parameters Authentication parameters.
 	 */
-	public function update_authentication( $authentication_scheme = 'Basic', $authentication_parameters = array() ) {
+	public function update_authentication( $authentication_scheme = 'None', $authentication_parameters = array() ) {
 		$this->authentication_scheme     = $authentication_scheme;
 		$this->authentication_parameters = $authentication_parameters;
 	}
@@ -120,11 +113,11 @@ class WPRestClient implements iRestClient {
 			'method'      => 'PUT',
 			'body'        => $body,
 			'headers'     => $headers,
-			'sslverify'   => ! $this->accept_self_signed,
+			'sslverify'   => true,
 			'redirection' => 0,
 		);
 
-		$req_args = apply_filters( 'rest_put_args', $req_args );
+		$req_args = apply_filters( 'adzworld_rest_put_args', $req_args );
 
 		// A mutation invalidates cached reads even if the remote result is uncertain.
 		$this->cache->clear_cache();
@@ -151,11 +144,11 @@ class WPRestClient implements iRestClient {
 			'method'      => 'DELETE',
 			'body'        => $body,
 			'headers'     => $headers,
-			'sslverify'   => ! $this->accept_self_signed,
+			'sslverify'   => true,
 			'redirection' => 0,
 		);
 
-		$req_args = apply_filters( 'rest_delete_args', $req_args );
+		$req_args = apply_filters( 'adzworld_rest_delete_args', $req_args );
 		$this->cache->clear_cache();
 		$result = wp_remote_request( $api_url, $req_args );
 
@@ -179,12 +172,12 @@ class WPRestClient implements iRestClient {
 		$args = array(
 			'headers'     => $headers,
 			'body'        => $body,
-			'sslverify'   => ! $this->accept_self_signed,
+			'sslverify'   => true,
 			'redirection' => 0,
 
 		);
 
-		$args = apply_filters( 'rest_post_args', $args );
+		$args = apply_filters( 'adzworld_rest_post_args', $args );
 
 		$this->cache->clear_cache();
 		$results = wp_remote_post( $api_url, $args );
@@ -211,10 +204,10 @@ class WPRestClient implements iRestClient {
 			return $headers;
 		}
 		$args         = apply_filters(
-			'rest_get_args',
+			'adzworld_rest_get_args',
 			array(
 				'headers'     => $headers,
-				'sslverify'   => ! $this->accept_self_signed,
+				'sslverify'   => true,
 				'redirection' => 0,
 			)
 		);
@@ -258,15 +251,6 @@ class WPRestClient implements iRestClient {
 		}
 		$headers = array();
 		switch ( strtolower( $this->authentication_scheme ) ) {
-			case 'basic':
-				if ( ! isset( $this->authentication_parameters['username'], $this->authentication_parameters['password'] )
-					|| ! is_string( $this->authentication_parameters['username'] ) || ! is_string( $this->authentication_parameters['password'] ) ) {
-					return new WP_Error( 'adzworld_rest_credentials', __( 'Basic authentication requires a username and password.', 'adz-world' ) );
-				}
-				$username                 = $this->authentication_parameters['username'];
-				$password                 = $this->authentication_parameters['password'];
-				$headers['Authorization'] = 'Basic ' . base64_encode( "$username:$password" );
-				break;
 			case 'header':
 				$headers = $this->authentication_parameters;
 				break;
@@ -315,10 +299,10 @@ class WPRestClient implements iRestClient {
 		$response = wp_remote_request(
 			$url,
 			apply_filters(
-				'rest_authenticate_args',
+				'adzworld_rest_authenticate_args',
 				array(
 					'method'      => $method,
-					'sslverify'   => ! $this->accept_self_signed,
+					'sslverify'   => true,
 					'redirection' => 0,
 				)
 			)

@@ -1,49 +1,11 @@
 /**
- * The chosen library was removed: wordpress.org no longer permits bundling
- * libraries that are not maintained. Without it these calls become no-ops and
- * the fields stay as the browser's own multi-selects.
+ * Settings controls use the browser's native multi-selects.
  *
  * @package adz-world
  */
 
-if ( typeof jQuery !== 'undefined' && typeof jQuery.fn.chosen === 'undefined' ) {
-	jQuery.fn.chosen = function () {
-		return this; };
-}
-
 jQuery( document ).ready(
 	function ($) {
-
-		$( "select[name*='rotation_pages']" ).chosen(
-			{
-				placeholder_text_multiple : 'Select Pages',
-				hide_results_on_select : false,
-
-			}
-		);
-
-		$( "select[name*='rotation_categories']" ).chosen(
-			{
-				placeholder_text_multiple : 'Select Categories',
-				hide_results_on_select : false,
-
-			}
-		);
-
-		$( "select[name*='rotation_tags']" ).chosen(
-			{
-				placeholder_text_multiple : 'Select Tags',
-				hide_results_on_select : false,
-
-			}
-		);
-		$( "#adz_ad_options_exclude_pages_from_rotation" ).chosen(
-			{
-				placeholder_text_multiple : 'Select Tags',
-				hide_results_on_select : false,
-
-			}
-		);
 
 		$( "input[name*='adz_rotation']" ).each(
 			function () {
@@ -198,8 +160,8 @@ jQuery( document ).ready(
 				$( 'input.radioImageSelect' ).each(
 					function (e) {
 						$( this )
-						// First all we are need to hide the radio input.
-						.hide()
+							// Hide the original input with a reusable state class.
+							.addClass( 'adzworld-is-hidden' )
 						// And add new img element by data-image source.
 						.after( '<img src="' + $( this ).data( 'image' ) + '" alt="radio image" />' );
 
@@ -238,37 +200,13 @@ jQuery( document ).ready(
 					'click',
 					'.add-row',
 					function (event) {
-						$( "select[name*='rotation_pages']" ).chosen( 'destroy' );
-						$( "select[name*='rotation_categories']" ).chosen( 'destroy' );
-						$( "select[name*='rotation_tags']" ).chosen( 'destroy' );
 						event.preventDefault();
 						var count     = $( this ).data( 'count' );
-						var $new_item = $parent.find( 'tr.clone' ).clone().removeAttr( 'class' ).removeAttr( 'style' );
+						var $new_item = $parent.find( 'tr.clone' ).clone().removeAttr( 'class' );
 						var $item     = $new_item.wrap( '<div/>' ).parent().html().replace( /field_count/g, count );
 						$parent.find( 'tbody' ).append( $item );
 						count += 1;
 						$( this ).data( 'count', count );
-
-						$( "select[name*='rotation_pages']" ).chosen(
-							{
-								placeholder_text_multiple : 'Select Pages',
-								hide_results_on_select : false,
-							}
-						);
-
-						$( "select[name*='rotation_categories']" ).chosen(
-							{
-								placeholder_text_multiple : 'Select Categories',
-								hide_results_on_select : false,
-							}
-						);
-
-						$( "select[name*='rotation_tags']" ).chosen(
-							{
-								placeholder_text_multiple : 'Select Tags',
-								hide_results_on_select : false,
-							}
-						);
 
 					}
 				);
@@ -292,7 +230,7 @@ jQuery( document ).ready(
 						var count       = $( '.add-row' ).data( 'count' );
 						var clone_count = $( this ).data( 'number' );
 
-						var $new_item = $tr.clone().removeAttr( 'class' ).removeAttr( 'style' );
+						var $new_item = $tr.clone().removeAttr( 'class' );
 						var re        = new RegExp( clone_count,"g" );
 						var $item     = $new_item.wrap( '<div/>' ).parent().html().replace( re, count );
 						$parent.find( 'tbody' ).append( $item );

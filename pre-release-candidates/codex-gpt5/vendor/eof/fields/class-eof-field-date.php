@@ -96,7 +96,7 @@ if ( ! class_exists( 'EOF_field_date' ) ) :
 		 */
 		public function sanitize( $value ) {
 
-			$sanitize_value = strip_tags( $value );
+			$sanitize_value = wp_strip_all_tags( $value );
 
 			return $sanitize_value;
 		}

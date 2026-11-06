@@ -169,7 +169,7 @@ if ( ! class_exists( 'EOF' ) ) :
 				'menu_priority'      => 55,
 				// Specify a custom URL to an icon.
 				'menu_icon'          => 'dashicons-carrot',
-				// Order where the menu divider appears in the admin area. array(35,37).
+				// Order where the menu divider appears in the admin area.
 				'menu_divider'       => null,
 				// Permissions needed to access the options panel.
 				'page_permissions'   => 'manage_options',
@@ -179,7 +179,7 @@ if ( ! class_exists( 'EOF' ) ) :
 				'save_defaults'      => false,
 				// Shows the Import/Export panel when not used as a field.
 				'show_import_export' => true,
-				// Specify option page help tabs. array( array('id' => '', 'title' => '', 'content' => ''), ).
+				// Specify option page help tabs.
 				'help_tabs'          => null,
 				// Specify option page help sidebar content.
 				'help_sidebar'       => '',
@@ -209,21 +209,21 @@ if ( ! class_exists( 'EOF' ) ) :
 		 * Sort an array by a specific key.
 		 * Maintains index association.
 		 *
-		 * @param  array    $array     array which need be sort.
+		 * @param  array    $items     Array to sort.
 		 * @param  array    $on        specific key.
 		 * @param  constant $order  order type.
 		 * @return array            sortable array
 		 */
-		public function array_sort( $array, $on, $order = SORT_ASC ) {
+		public function array_sort( $items, $on, $order = SORT_ASC ) {
 			$new_array      = array();
 			$sortable_array = array();
 			$null_count     = 1001;
-			if ( count( $array ) > 0 ) {
-				foreach ( $array as $k => $v ) {
+			if ( count( $items ) > 0 ) {
+				foreach ( $items as $k => $v ) {
 					if ( is_array( $v ) ) {
 						$found = false;
 						foreach ( $v as $k2 => $v2 ) {
-							if ( $k2 == $on ) {
+							if ( $k2 === $on ) {
 								$sortable_array[ $k ] = $v2;
 								$found                = true;
 								break;
@@ -248,7 +248,7 @@ if ( ! class_exists( 'EOF' ) ) :
 				}
 
 				foreach ( $sortable_array as $k => $v ) {
-					$new_array[ $k ] = $array[ $k ];
+					$new_array[ $k ] = $items[ $k ];
 				}
 			}
 

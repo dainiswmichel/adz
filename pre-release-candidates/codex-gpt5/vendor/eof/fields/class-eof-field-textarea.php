@@ -99,12 +99,7 @@ if ( ! class_exists( 'EOF_field_textarea' ) ) :
 		 * @param mixed $input Submitted field value.
 		 */
 		public function sanitize( $input ) {
-			// global $allowedposttags;.
-
-			// $sanitize_input = wp_kses( $input, $allowedposttags );
-			$sanitize_input = $input;
-
-			return $sanitize_input;
+			return $input;
 		}
 	}
 

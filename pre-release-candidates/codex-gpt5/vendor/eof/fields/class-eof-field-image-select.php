@@ -75,16 +75,16 @@ if ( ! class_exists( 'EOF_field_image_select' ) ) :
 			foreach ( $options as $key => $option ) {
 				$enabled = null;
 				$values  = (array) $this->value;
-				if ( in_array( $key, $values ) ) {
+				if ( in_array( $key, $values, true ) ) {
 					$enabled = 1;
 				}
 				?>
-				<label for="<?php echo esc_attr( $this->option_name ); ?>" style="display:inline-block;margin-right:15px;">
+				<label class="eof-inline-option eof-image-option" for="<?php echo esc_attr( $this->option_name ); ?>">
 				<input type="radio" name="<?php echo esc_attr( $this->option_name ); ?>" id="<?php echo esc_attr( $this->option_id ); ?>" data-image="<?php echo esc_attr( $option['img_url'] ); ?>" class="radioImageSelect" value="<?php echo esc_attr( $key ); ?>" <?php checked( 1, $enabled, true ); ?> >
-				<p style="text-align:center;"><?php echo esc_html( $option['label'] ); ?></p></label>
+				<p class="eof-image-option-label"><?php echo esc_html( $option['label'] ); ?></p></label>
 				<?php
 			}
-			echo '<p class="description" style="margin-top:15px;">' . wp_kses_post( $this->field['desc'] ) . '</p>';
+			echo '<p class="description eof-description-spaced">' . wp_kses_post( $this->field['desc'] ) . '</p>';
 		}
 
 		/**

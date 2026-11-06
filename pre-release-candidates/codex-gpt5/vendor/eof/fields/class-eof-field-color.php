@@ -71,7 +71,7 @@ if ( ! class_exists( 'EOF_field_color' ) ) :
 		 */
 		public static function admin_enqueue_scripts() {
 
-			if ( is_admin() ) {
+			if ( function_exists( 'adzworld_is_plugin_admin_screen' ) && adzworld_is_plugin_admin_screen() ) {
 				wp_enqueue_style( 'wp-color-picker' );
 			}
 		}

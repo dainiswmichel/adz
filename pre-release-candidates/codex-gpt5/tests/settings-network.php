@@ -41,7 +41,7 @@ $adzworld_transport             = static function ( $preempt, $args, $url ) use 
 	);
 	return $adzworld_response;
 };
-add_filter( 'adz_ad_network_base_url', $adzworld_endpoint );
+add_filter( 'adzworld_ad_network_base_url', $adzworld_endpoint );
 add_filter( 'pre_option_adz_ad_options', $adzworld_options );
 add_filter( 'pre_http_request', $adzworld_transport, 10, 3 );
 $adzworld_post_id = 0;
@@ -180,7 +180,7 @@ try {
 	$_GET  = array();
 	wp_set_current_user( $adzworld_original_user );
 	remove_filter( 'pre_http_request', $adzworld_transport, 10 );
-	remove_filter( 'adz_ad_network_base_url', $adzworld_endpoint );
+	remove_filter( 'adzworld_ad_network_base_url', $adzworld_endpoint );
 	remove_filter( 'pre_option_adz_ad_options', $adzworld_options );
 }
 WP_CLI::success( 'Settings and synchronization contracts passed without remote traffic.' );

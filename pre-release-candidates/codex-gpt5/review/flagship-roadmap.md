@@ -1,7 +1,7 @@
 # adz-world: flagship, settlement, and legal review draft
 
-Status: candidate proposal, not an integrated release, deployed service, approved
-legal policy, or WordPress.org compliance statement.
+Status: remediated candidate, not an integrated release, deployed service,
+approved legal policy, or WordPress.org submission.
 
 ## Candidate baseline and executed verification
 
@@ -11,15 +11,72 @@ Later Claude work is not silently imported. PHP and JavaScript were formatted
 with the official WPCS PHPCBF tool; this produces a broad formatting diff in
 addition to the functional changes.
 
-**Release status: FAIL / in progress.** Nothing in this directory is a
-selected winner, production settlement service, or submission-ready build.
+**Release status: CODE GATES PASS / PRODUCT REJECTED / NOT RELEASE-READY.**
+Nothing in this directory is a selected winner or production settlement
+service. Dainis reviewed the 8098 result on 2026-11-06 and rejected its product
+quality and usability. The green code gates below are retained as engineering
+evidence only; they are not acceptance evidence and do not justify integration,
+packaging, a commit, or an SVN submission.
+
+### 2026-11-06 remediation re-audit
+
+The complete candidate now passes both the official WordPress PHPCS standard
+and the repository `phpcs.xml.dist` gate with zero errors and zero warnings;
+all 53 PHP files pass `php -l`, and all four JavaScript files pass
+`node --check`. Static searches find no PHP/HTML/JavaScript inline styles or
+runtime style mutation, no Chosen invocation, no deprecated `screen_icon()`,
+and no hard-coded `wp-admin/admin-ajax.php` path. `git diff --check` is clean.
+No diagnostic exclusion or suppression was added.
+
+View-frequency state now uses expiring WordPress transients keyed by a salted
+digest instead of a custom table containing raw visitor IP addresses. The
+unused cURL/client-certificate and payment-sandbox prototypes were removed.
+Official Plugin Check now completes with `Success: Checks complete. No errors
+found.` The local HTTP authorization, settings, and through-page journeys all
+pass against the disposable WordPress installation after the transient
+change. The exact first-close/second-close counter and preservation of an
+unrelated target-type record are covered by the HTTP suite.
+
+The disclosed `https://adz-world.com/terms/` and
+`https://adz-world.com/privacy/` pages were also inaccessible to the audit
+client on 2026-11-06 and had no search-engine results. WordPress.org stated
+that reviewers will verify those pages, so accessible, substantive legal pages
+remain an external release blocker.
+
+The final burner audit found and corrected one additional closure requirement
+that PHPCS and Plugin Check did not enforce: the legacy EOF and template assets
+had still been enqueued on unrelated administrator screens. The HTTP regression
+now proves those handles are absent from the dashboard and present on the
+adz-world settings screen. The iframe helper no longer supplies an external
+default URL, accepts only explicit HTTP/HTTPS URLs, and has permanent runtime
+assertions. A release-readme placeholder and an overbroad network-disconnect
+claim were also removed.
+
+The corrected candidate ZIP was installed on the authorized 8098 burner. Its
+SHA-256 is `34a2950313d5fab88628e167be6c10410d6f205d10911e6293ccbd09668f6a6b`.
+All 72 deployed files matched the local candidate byte for byte; the public,
+login, dashboard, and plugin administration requests returned HTTP 200; the
+two forbidden-pattern searches returned zero lines; the deployed core
+regression passed; and no `debug.log` was created. No browser instance was
+available in the audit environment, so this is not a visual or interactive
+browser-journey claim. The candidate ZIP contains tests and review material and
+is not the final stripped WordPress.org artifact.
+
+The rejected product journey is concrete: the burner front page manually
+hard-codes three post IDs in a shortcode; those advertisements are plain text;
+the preference form only appends text to the current DOM and does not search,
+rank, or refine advertisements; the advertisement taxonomy is hidden; the post
+type misspells `excerpt` support and omits featured-image support; and creating
+a rotation requires opaque shortcode syntax. These are product defects to
+replace, not behaviors to preserve for compatibility. There are no known active
+users whose stored configuration must constrain the redesign.
 
 Executed locally on WordPress 7.1.3, PHP 8.4.7, with `WP_DEBUG` and
 `WP_DEBUG_LOG` enabled:
 
 | Check | Observed result |
 | --- | --- |
-| PHP lint | All 46 PHP files passed. |
+| PHP lint | All 53 PHP files passed. |
 | JavaScript syntax | All candidate JavaScript files passed `node --check`. |
 | Deactivation and activation | Both succeeded. No activation fatal reproduced. |
 | Integer accounting and statement assertions | Passed, including integer-limit conservation, currency precision, stale/mismatched/unbalanced statements, and unsupported inputs. |
@@ -28,16 +85,20 @@ Executed locally on WordPress 7.1.3, PHP 8.4.7, with `WP_DEBUG` and
 | Template settings authorization | Administrator with a valid nonce succeeded; invalid nonce returned HTTP 403. |
 | Local advertising | Public ad rendered over real AJAX without registration or external-service consent. Drafts, password-protected ads, and ordinary posts were rejected by the local response helper. Local sequence uses actual post IDs. Empty-ad shortcode retains article content. |
 | Earnings page | Actual authenticated HTTP request displayed an explicit unconnected state. |
-| Provider contracts | Stripe and PayPal requests passed mocked WordPress HTTP tests. Exactly three mocked transport calls; conflicting retry and anonymous execution rejected. No real provider account contacted. |
-| Full WPCS | **FAIL: 1,083 errors, 314 warnings**, including JavaScript, legacy PHP, and review support. No diagnostic exclusions or suppressions added. |
-| New earnings module WPCS | Zero errors, zero warnings. |
-| New sandbox module WPCS | Zero errors, one warning for OAuth Basic-auth `base64_encode`; not suppressed. |
-| Official Plugin Check | **FAIL: 100 errors, 202 warnings**. Its process returned zero despite the findings; the findings, not that exit code, determine failure. |
+| REST-client contracts | All methods, TLS verification, redirect blocking, query encoding, cache isolation/invalidation, error handling, and digest behavior passed mocked WordPress HTTP tests without remote traffic. |
+| Full repository PHPCS (`phpcs.xml.dist`) | **PASS: zero errors, zero warnings** after the 2026-11-06 remediation. |
+| Official WordPress PHPCS | **PASS: zero errors, zero warnings** across the complete candidate. |
+| Payment sandbox | Removed from the release candidate; no payment-provider adapter ships. |
+| Official Plugin Check | **PASS: `Success: Checks complete. No errors found.`** |
+| Local HTTP authorization/dashboard suite | **PASS**, including request binding, close-count persistence, authorization, and explicit unconnected earnings state. |
+| Real settings HTTP suite | **PASS**, including authenticated save/export/import and rejection of bad nonces or anonymous requests. |
+| Through-page HTTP journey | **PASS**, including configured display, request tokens, close payload, and post-close article access. |
 
-Debug-log changes during the completed regression/activation cycle consisted
-only of WordPress automatic-update start/complete messages, not PHP diagnostics.
-Earlier isolated activation also left the log byte count unchanged. Historical
-diagnostics were retained rather than erased to manufacture a clean log.
+The debug log retains diagnostics from deliberately failing assertions found
+and corrected during remediation, including the pre-fix AJAX action mismatch
+and the cross-request transient-cache assertion. The final successful reruns
+and deactivate/activate cycle produced no additional PHP diagnostics. Earlier
+entries were retained rather than erased to manufacture a clean log.
 
 Reproducible checks from the repository root, with the candidate symlinked as
 `adz-world` in the test WordPress:
@@ -46,7 +107,6 @@ Reproducible checks from the repository root, with the candidate symlinked as
 find pre-release-candidates/codex-gpt5 -name '*.php' -exec php -l {} \;
 phpcs --standard=WordPress pre-release-candidates/codex-gpt5
 wp plugin check adz-world --path=/path/to/test-wordpress --format=json
-wp eval-file pre-release-candidates/codex-gpt5/tests/provider-contracts.php --path=/path/to/test-wordpress
 wp eval-file pre-release-candidates/codex-gpt5/tests/http-regression.php --path=/path/to/test-wordpress
 ```
 
@@ -55,10 +115,8 @@ create and clean disposable posts/options/auth sessions. The HTTP fixture
 requires external ad serving to be disabled. These tests are not a complete
 feature audit, SQL-injection proof, visual review, or provider certification.
 
-Remaining findings include output escaping, legacy request handling, global
-naming/documentation, and JavaScript formatting. The staged whitespace check
-also reports inherited template/text/style whitespace; it is not a clean check.
-The inherited shared
+Passing these gates is evidence for the checked code, not proof of every visual,
+accessibility, privacy, or remote-service behavior. The inherited shared
 `adz_session_option` is not a per-visitor session; VGM preferences below are
 proposed, not implemented. Remote ad delivery and real statement issuance,
 settlement, credentials, webhooks, payouts, and flagship UI remain unverified
@@ -97,11 +155,8 @@ differ from summing rounded receipt splits; the service must use receipt-level
 entries consistently. Dashboard totals validate conservation, not an incorrect
 aggregate rounding assumption.
 
-Sandbox-only Stripe transfers and PayPal Payouts request code is included.
-It has no public route, browser-triggered payment button, automatic cron job,
-or live execution mode. Execution requires an administrator, explicit
-server configuration, and test credentials. Persistent operation identity
-rejects changing a request's amount or recipient during a retry.
+No Stripe, PayPal, or other payment-provider adapter is included in this
+candidate. It cannot initiate a transfer or payout.
 
 These are provider adapters, NOT a production settlement backend. A successful
 test response means "sandbox submitted," not paid, bank-settled, or legally
@@ -263,15 +318,12 @@ with a new ID. Only verified final provider events/reconciliation affect
 paid balances. Authenticate signatures, deduplicate events, verify expected
 account/currency/amount, and handle out-of-order delivery.
 
-The sandbox adapters deliberately do not implement this state machine or
-promise long-term idempotency beyond provider retention. Reservations and
-durable final-state reconciliation must exist before live use.
+No provider adapter implements this state machine. Reservations and durable
+final-state reconciliation must exist before any live implementation.
 
 Accounting currently recognizes AUD, BHD, CAD, CHF, CLP, EUR, GBP, JPY, KRW,
-KWD, NZD, OMR, TND, and USD. The candidate's provider evaluation restricts
-payouts to AUD, CAD, CHF, EUR, GBP, JPY, NZD, and USD; account/country/provider
-eligibility still applies. Other currency payouts return errors, never
-automatic conversion. Currency coverage can expand through reviewed metadata.
+KWD, NZD, OMR, TND, and USD. Future provider eligibility and supported payout
+currencies remain undecided; no automatic conversion is implemented.
 
 Provider references:
 

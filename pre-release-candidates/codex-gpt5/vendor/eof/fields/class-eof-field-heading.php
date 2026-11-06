@@ -54,8 +54,6 @@ if ( ! class_exists( 'EOF_field_heading' ) ) :
 			if ( is_null( $this->value ) ) {
 				$this->value = $this->field['default'];
 			}
-
-			// parent::__construct($field);.
 		}
 
 		/**

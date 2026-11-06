@@ -161,7 +161,7 @@ if ( ! class_exists( 'EOF_Admin' ) ) :
 
 			$screen = get_current_screen();
 
-			if ( $screen->id == $this->options_page_id ) {
+			if ( $screen->id === $this->options_page_id ) {
 				$rate_text = sprintf(
 					/* translators: %s: Framework website URL. */
 					__( 'Thank you for using <a href="%1$s" target="_blank">Easy Options Framework</a>!', 'adz-world' ),

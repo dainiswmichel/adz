@@ -8,11 +8,11 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
-$template_name = basename( __FILE__ );
-$setting_data  = get_option( 'template_' . $template_name );
-$setting_array = is_array( $setting_data ) ? $setting_data : ( is_string( $setting_data ) ? unserialize( $setting_data, array( 'allowed_classes' => false ) ) : array() );
-$setting_array = wp_parse_args(
-	is_array( $setting_array ) ? $setting_array : array(),
+$adzworld_template_name = basename( __FILE__ );
+$adzworld_setting_data  = get_option( 'template_' . $adzworld_template_name );
+$adzworld_setting_array = adzworld_template_settings( $adzworld_setting_data );
+$adzworld_setting_array = wp_parse_args(
+	is_array( $adzworld_setting_array ) ? $adzworld_setting_array : array(),
 	array(
 		'header_text'  => '',
 		'footer_text'  => '',
@@ -21,28 +21,17 @@ $setting_array = wp_parse_args(
 	)
 );
 foreach ( array( 'header_style', 'footer_style' ) as $adzworld_style_key ) {
-	$setting_array[ $adzworld_style_key ] = in_array( $setting_array[ $adzworld_style_key ], array( 'left', 'right', 'center' ), true )
-		? $setting_array[ $adzworld_style_key ] : 'center';
+	$adzworld_setting_array[ $adzworld_style_key ] = in_array( $adzworld_setting_array[ $adzworld_style_key ], array( 'left', 'right', 'center' ), true )
+		? $adzworld_setting_array[ $adzworld_style_key ] : 'center';
 }
-
-$style = '<style>		
-			#adz_header_container { background:#4A7354; border:1px solid #104A1F;  left:0; position:fixed; width:100%; top:0; }		
-			#adz_header_content{  margin:0 auto; width:100%; text-align:center; }
-			#adz_container { margin:0 auto; overflow:auto; padding:80px 0; text-align:center; }
-			#adz_footer_container { background:#4A7354; border:1px solid #104A1F; bottom:0; height:60px; left:0; position:fixed; width:100%; }
-			#adz_footer_content { line-height:60px; margin:0 auto; width:100%; text-align:center !important; }
-			.adz_popup #adz_header_container,.adz-world-container #adz_header_container, .adz-world-category-wapper #adz_header_container{ position:inherit;  }
-			.adz_popup #adz_footer_container,.adz-world-container #adz_footer_container, .adz-world-category-wapper #adz_footer_container { position:inherit;  }
-			.adz_header_text, .adz_footer_text{color:#fff;}
-			.adz_timer{font-size:22px;}
-			.adz_popup #adz_container { max-height: 600px;overflow-y: scroll; } 
-	    </style>';
 
 if ( 'thru_page' === $display_type ) {
 
 	?>
 	<head>
 	<?php
+	wp_enqueue_style( 'adz_css' );
+	wp_print_styles( 'adz_css' );
 	wp_enqueue_script( 'jquery' );
 	wp_print_scripts( 'jquery' );
 	?>
@@ -57,7 +46,6 @@ if ( 'thru_page' === $display_type ) {
 				} else {
 					jQuery('.continue_reading').text('Continue >>');
 					jQuery('.continue_reading').addClass('close_adz');	
-					jQuery('.continue_reading').css('cusrsor','pointer');						       
 					clearInterval(adz_interval);
 				}
 			}, 1000);
@@ -67,7 +55,7 @@ if ( 'thru_page' === $display_type ) {
 					url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
 					type : 'post',
 					data: {
-						action :'adz_get_advertise_content',
+						action :'adzworld_get_advertise_content',
 						target_type : '<?php echo esc_js( $target_type ); ?>',
 						target : '<?php echo esc_js( $target ); ?>',
 						ad_visibility_interval : '<?php echo esc_js( $ad_visibility_interval ); ?>',
@@ -91,12 +79,11 @@ if ( 'thru_page' === $display_type ) {
 		});
 
 	</script>
-	<?php echo wp_kses( $style, array( 'style' => array() ) ); ?>
 	</head>
 	<!-- BEGIN: Sticky Header -->
 	<div id="adz_header_container">
-		<div id="adz_header_content" style="text-align: <?php echo esc_attr( $setting_array['header_style'] ); ?>" >
-			<a href="#" class="adz_header_text"><div class="continue_reading"><?php echo esc_html( $setting_array['header_text'] ); ?> <div> <span class="adz_timer" > </span> seconds</div></div></a>
+		<div id="adz_header_content" class="adzworld-align-<?php echo esc_attr( $adzworld_setting_array['header_style'] ); ?>">
+			<a href="#" class="adz_header_text"><div class="continue_reading"><?php echo esc_html( $adzworld_setting_array['header_text'] ); ?> <div> <span class="adz_timer" > </span> seconds</div></div></a>
 		</div>
 	</div>
 	<!-- END: Sticky Header -->
@@ -114,52 +101,18 @@ if ( 'thru_page' === $display_type ) {
 
 	<!-- BEGIN: Sticky Footer -->
 	<div id="adz_footer_container">
-		<div id="adz_footer_content" style="text-align: <?php echo esc_attr( $setting_array['footer_style'] ); ?>">
-			<a href="#" class="adz_footer_text"><p class="continue_reading"><?php echo esc_html( $setting_array['footer_text'] ); ?> <span class="adz_timer"> </span> seconds.</p></a>
+		<div id="adz_footer_content" class="adzworld-align-<?php echo esc_attr( $adzworld_setting_array['footer_style'] ); ?>">
+			<a href="#" class="adz_footer_text"><p class="continue_reading"><?php echo esc_html( $adzworld_setting_array['footer_text'] ); ?> <span class="adz_timer"> </span> seconds.</p></a>
 		</div>
 	</div>
 
 	<?php
 
-} elseif ( strpos( $ad_text, 'adzworld_iframe' ) !== false ) {
-
-
-		echo esc_html(
-			base64_encode(
-				'<!-- BEGIN: Sticky Header -->
-		<div id="adz_header_container">
-		    <div id="adz_header_content" style="text-align: ' . esc_attr( $setting_array['header_style'] ) . '">
-		        <a href="#" class="adz_header_text"><div class="continue_reading">' . esc_html( $setting_array['header_text'] ) . ' <div><span class="adz_timer" > </span> seconds</div></div></a>
-		    </div>
-		</div>
-		<!-- END: Sticky Header -->
-
-		<!-- BEGIN: Page Content -->
-		<div id="adz_container">
-		    <div id="content">
-		        ' . adzworld_ad_content( $ad_text ) . '
-		    </div>
-		</div>
-		<!-- END: Page Content -->
-
-		<!-- BEGIN: Sticky Footer -->
-		<div id="adz_footer_container">
-		    <div id="adz_footer_content" style="text-align: ' . esc_attr( $setting_array['footer_style'] ) . '">
-		       <a href="#" class="adz_footer_text"><p class="continue_reading">' . esc_html( $setting_array['footer_text'] ) . ' <span class="adz_timer"> </span> seconds.</p></a>
-		    </div>
-		</div>
-		' . $style
-			)
-		);
-
 } else {
-
-	echo esc_html(
-		base64_encode(
-			'<!-- BEGIN: Sticky Header -->
+	$adzworld_markup = '<!-- BEGIN: Sticky Header -->
 		<div id="adz_header_container">
-		    <div id="adz_header_content" style="text-align: ' . esc_attr( $setting_array['header_style'] ) . '">
-		        <a href="#" class="adz_header_text"><div class="continue_reading">' . esc_html( $setting_array['header_text'] ) . ' <div> <span class="adz_timer" > </span> seconds</div></div></a>
+		    <div id="adz_header_content" class="adzworld-align-' . esc_attr( $adzworld_setting_array['header_style'] ) . '">
+		        <a href="#" class="adz_header_text"><div class="continue_reading">' . esc_html( $adzworld_setting_array['header_text'] ) . ' <div><span class="adz_timer"> </span> seconds</div></div></a>
 		    </div>
 		</div>
 		<!-- END: Sticky Header -->
@@ -174,11 +127,11 @@ if ( 'thru_page' === $display_type ) {
 
 		<!-- BEGIN: Sticky Footer -->
 		<div id="adz_footer_container">
-		    <div id="adz_footer_content" style="text-align: ' . esc_attr( $setting_array['footer_style'] ) . '">
-		        <a href="#" class="adz_footer_text"><p class="continue_reading">' . esc_html( $setting_array['footer_text'] ) . '  <span class="adz_timer"> </span> seconds.</p></a>
+		    <div id="adz_footer_content" class="adzworld-align-' . esc_attr( $adzworld_setting_array['footer_style'] ) . '">
+		        <a href="#" class="adz_footer_text"><p class="continue_reading">' . esc_html( $adzworld_setting_array['footer_text'] ) . ' <span class="adz_timer"> </span> seconds.</p></a>
 		    </div>
 		</div>
-		' . $style
-		)
-	);
+		';
+
+	echo wp_kses( $adzworld_markup, adzworld_ad_allowed_html() );
 }

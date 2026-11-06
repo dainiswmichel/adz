@@ -90,7 +90,7 @@ class EOF_Settings {
 	 */
 	public function register_settings() {
 
-		if ( false == get_option( $this->parent->configs['opt_name'] ) ) {
+		if ( false === get_option( $this->parent->configs['opt_name'] ) ) {
 			add_option( $this->parent->configs['opt_name'] );
 
 			if ( $this->parent->configs['save_defaults'] ) {
@@ -101,7 +101,7 @@ class EOF_Settings {
 		foreach ( $this->parent->sections as $section ) {
 
 			// Avoiding blank and link section tab.
-			if ( isset( $section['type'] ) && ( 'blank' == $section['type'] || 'url' == $section['type'] ) ) {
+			if ( isset( $section['type'] ) && ( 'blank' === $section['type'] || 'url' === $section['type'] ) ) {
 				if ( ! empty( $section['callback'] ) ) {
 					add_action( 'eof_options_page_' . $this->parent->configs['opt_name'] . '_' . $section['id'], $section['callback'] );
 				}
@@ -204,7 +204,7 @@ class EOF_Settings {
 				add_settings_error( 'eof-' . $this->parent->configs['opt_name'] . '-notices', $value->get_error_code(), $value->get_error_message() );
 				return $old_options;
 			}
-			$value = apply_filters( "eof_settings_sanitize_{$this->parent->configs['opt_name']}[{$key}]", $value );
+			$value = apply_filters( "eof_settings_sanitize_{$this->parent->configs['opt_name']}_{$key}", $value );
 			$value = $this->sanitize_field( $field, $value );
 			if ( is_wp_error( $value ) ) {
 				add_settings_error( 'eof-' . $this->parent->configs['opt_name'] . '-notices', $value->get_error_code(), $value->get_error_message() );
@@ -420,21 +420,25 @@ class EOF_Settings {
 		foreach ( $this->parent->sections as $section ) {
 
 			// Avoiding blank section tab.
-			if ( isset( $section['type'] ) && ( 'blank' == $section['type'] || 'url' == $section['type'] ) ) {
+			if ( isset( $section['type'] ) && ( 'blank' === $section['type'] || 'url' === $section['type'] ) ) {
+				continue;
+			}
+			if ( empty( $section['fields'] ) || ! is_array( $section['fields'] ) ) {
 				continue;
 			}
 
 			foreach ( $section['fields'] as $key => $field ) {
 
-				$field['option_name'] = "{$this->parent->configs['opt_name']}[{$key}]";
-				$field['option_id']   = '';
-				$field['id']          = $key;
+				$field['option_name']   = "{$this->parent->configs['opt_name']}[{$key}]";
+				$field['sanitize_hook'] = "eof_settings_sanitize_{$this->parent->configs['opt_name']}_{$key}";
+				$field['option_id']     = '';
+				$field['id']            = $key;
 
 				if ( isset( $field['type'] ) ) {
 					$field_class = "EOF_field_{$field['type']}";
 					if ( class_exists( $field_class ) ) {
 						$value = '';
-						// $value  = isset ( $this->parent->options[ $field['id'] ] ) ? $this->parent->options[ $field['id'] ] : '';
+
 						$this->setting_fields[ $field['id'] ] = new $field_class( $field, $value, $this->parent );
 					}
 				}

@@ -57,10 +57,8 @@ if ( ! class_exists( 'EOF_field_dynamic' ) ) :
 			}
 
 			if ( isset( $this->field['callback'] ) ) {
-				add_filter( 'dyanmic_field_' . $this->option_id, $this->field['callback'] );
+				add_filter( 'adzworld_dynamic_field_' . $this->option_id, $this->field['callback'] );
 			}
-
-			// parent::__construct($field);.
 		}
 
 		/**
@@ -73,7 +71,7 @@ if ( ! class_exists( 'EOF_field_dynamic' ) ) :
 		 */
 		public function render_field() {
 
-			$html = do_shortcode( apply_filters( 'dyanmic_field_' . $this->option_id, $this->field['content'] ) );
+			$html = do_shortcode( apply_filters( 'adzworld_dynamic_field_' . $this->option_id, $this->field['content'] ) );
 			echo wp_kses(
 				$html,
 				array_merge(
