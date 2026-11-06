@@ -7,11 +7,9 @@
  * refinement adds to what came before rather than replacing it, so the
  * conversation accumulates the way a conversation does.
  *
- * What is parsed out of that text is shown back as removable chips. That is
- * deliberate. The parser here is deterministic pattern matching, not language
- * understanding, and it will sometimes read a phrase wrongly. Showing the
- * visitor exactly what was understood lets them correct it in one click, which
- * is both more honest than a confident guess and more useful than a black box.
+ * Categories and refinements remain the visitor's own search strings. The
+ * parser is deterministic pattern matching used only to rank possible adz; it
+ * does not rename the visitor's entries or present an inferred interpretation.
  *
  * Nothing here profiles anyone. The facets are what the visitor typed, held for
  * as long as they choose, and the plugin never infers an interest from
@@ -21,6 +19,38 @@
  */
 
 defined( 'ABSPATH' ) || exit; // Exit if accessed directly.
+
+/** Maximum number of words in a user-created adz category. */
+const ADZWORLD_CATEGORY_MAX_WORDS = 3;
+
+/** Maximum number of characters in a user-created adz category. */
+const ADZWORLD_CATEGORY_MAX_LENGTH = 48;
+
+/**
+ * Normalize a user-created category without interpreting it.
+ *
+ * @param string $category Category text.
+ * @return string Normalized category.
+ */
+function adzworld_normalize_category( $category ) {
+	$category = trim( sanitize_text_field( $category ) );
+
+	return preg_replace( '/\s+/u', ' ', $category );
+}
+
+/**
+ * Whether a category fits the short search-prefix contract.
+ *
+ * @param string $category Normalized category.
+ * @return bool Whether the category is valid.
+ */
+function adzworld_valid_category( $category ) {
+	$words = preg_split( '/\s+/u', $category, -1, PREG_SPLIT_NO_EMPTY );
+
+	return '' !== $category
+		&& mb_strlen( $category ) <= ADZWORLD_CATEGORY_MAX_LENGTH
+		&& count( $words ) <= ADZWORLD_CATEGORY_MAX_WORDS;
+}
 
 /**
  * An empty refinement set.
@@ -311,15 +341,8 @@ function adzworld_preference_chips( $pref ) {
 	}
 
 	foreach ( $pref['category_refinements'] as $category_refinement ) {
-		$parts = explode( '--', $category_refinement, 2 );
-		$label = isset( $parts[1] )
-			? sprintf(
-				/* translators: 1: category, 2: refinement. */
-				__( '%1$s — %2$s', 'adz-world' ),
-				$parts[0],
-				$parts[1]
-			)
-			: $parts[0];
+		$parts   = explode( '--', $category_refinement, 2 );
+		$label   = isset( $parts[1] ) ? $parts[1] : $parts[0];
 		$chips[] = array(
 			'facet' => 'category_refinements',
 			'value' => $category_refinement,
@@ -439,8 +462,19 @@ function adzworld_remove_facet( $pref, $facet, $value ) {
 
 	if ( in_array( $facet, array( 'categories', 'category_refinements', 'include', 'exclude', 'attributes' ), true ) ) {
 		$pref[ $facet ] = array_values( array_diff( $pref[ $facet ], array( (string) $value ) ) );
-		if ( 'categories' === $facet && $pref['active_category'] === $value ) {
-			$pref['active_category'] = isset( $pref['categories'][0] ) ? $pref['categories'][0] : '';
+		if ( 'categories' === $facet ) {
+			$prefix                       = (string) $value . '--';
+			$pref['category_refinements'] = array_values(
+				array_filter(
+					$pref['category_refinements'],
+					static function ( $refinement ) use ( $prefix ) {
+						return 0 !== strpos( $refinement, $prefix );
+					}
+				)
+			);
+			if ( $pref['active_category'] === $value ) {
+				$pref['active_category'] = isset( $pref['categories'][0] ) ? $pref['categories'][0] : '';
+			}
 		}
 
 		return $pref;
@@ -465,6 +499,47 @@ function adzworld_remove_facet( $pref, $facet, $value ) {
 	}
 
 	return $pref;
+}
+
+/**
+ * Rename a category and keep its refinements attached.
+ *
+ * @param array  $pref Preference hierarchy.
+ * @param string $old  Existing category.
+ * @param string $replacement Replacement category.
+ * @return array Updated preference hierarchy.
+ */
+function adzworld_rename_category( $pref, $old, $replacement ) {
+	$pref        = wp_parse_args( (array) $pref, adzworld_empty_preference() );
+	$old         = adzworld_normalize_category( $old );
+	$replacement = adzworld_normalize_category( $replacement );
+
+	foreach ( $pref['categories'] as $index => $category ) {
+		if ( $old === $category ) {
+			$pref['categories'][ $index ] = $replacement;
+		}
+	}
+	$pref['categories'] = array_values( array_unique( $pref['categories'] ) );
+
+	$old_prefix = $old . '--';
+	foreach ( $pref['category_refinements'] as $index => $refinement ) {
+		if ( 0 === strpos( $refinement, $old_prefix ) ) {
+			$pref['category_refinements'][ $index ] = $replacement . '--' . substr( $refinement, strlen( $old_prefix ) );
+		}
+	}
+	$pref['category_refinements'] = array_values( array_unique( $pref['category_refinements'] ) );
+
+	if ( $old === $pref['active_category'] ) {
+		$pref['active_category'] = $replacement;
+	}
+
+	$old_facets = adzworld_parse_refinement( $old );
+	foreach ( array( 'include', 'exclude', 'attributes' ) as $facet ) {
+		$pref[ $facet ] = array_values( array_diff( $pref[ $facet ], $old_facets[ $facet ] ) );
+	}
+	$pref['raw'] = array_values( array_diff( $pref['raw'], array( strtolower( $old ) ) ) );
+
+	return adzworld_parse_refinement( $replacement, $pref );
 }
 
 /**
