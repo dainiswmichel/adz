@@ -347,18 +347,9 @@ function adzworld_render_intro( $depth = 'full' ) {
  * @return void
  */
 function adzworld_render_preference_panel( $pref, $has_pref, $intro = 'full' ) {
-	$chips           = adzworld_preference_chips( $pref );
-	$input_id        = wp_unique_id( 'adz-panel-input-' );
-	$active_category = isset( $pref['active_category'] ) ? $pref['active_category'] : '';
-	$has_categories  = ! empty( $pref['categories'] );
-	$submit_mode     = $has_categories ? 'refine' : 'category';
-	$input_label     = $has_categories && '' !== $active_category
-		? sprintf(
-			/* translators: %s: selected advertising category. */
-			__( 'Refine “%s”', 'adz-world' ),
-			$active_category
-		)
-		: __( 'What are you looking to buy?', 'adz-world' );
+	$chips       = adzworld_preference_chips( $pref );
+	$input_id    = wp_unique_id( 'adz-panel-input-' );
+	$input_label = __( 'What are you looking to buy?', 'adz-world' );
 	?>
 	<form class="adz-panel" method="post" data-adz-panel>
 		<?php wp_nonce_field( 'adzworld_preference', 'adzworld_preference_nonce' ); ?>
@@ -382,14 +373,9 @@ function adzworld_render_preference_panel( $pref, $has_pref, $intro = 'full' ) {
 				rows="1"
 				placeholder="<?php esc_attr_e( 'a two-seater couch, light colour, not leather', 'adz-world' ); ?>"
 			></textarea>
-			<button type="submit" class="adz-panel__submit" value="<?php echo esc_attr( $submit_mode ); ?>" name="adzworld_mode">
-				<?php echo $has_categories ? esc_html__( 'Refine', 'adz-world' ) : esc_html__( 'Show me', 'adz-world' ); ?>
+			<button type="submit" class="adz-panel__submit" value="category" name="adzworld_mode">
+				<?php esc_html_e( 'Show me', 'adz-world' ); ?>
 			</button>
-			<?php if ( $has_categories ) : ?>
-				<button type="submit" class="adz-panel__submit adz-panel__submit--secondary" value="category" name="adzworld_mode">
-					<?php esc_html_e( 'Add another category', 'adz-world' ); ?>
-				</button>
-			<?php endif; ?>
 		</div>
 
 		<div class="adz-panel__chips" data-adz-chips>

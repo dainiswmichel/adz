@@ -199,18 +199,9 @@
 	flex: 0 0 auto;
 }
 
-.adzworld-rotation .adz-panel__submit:not(.adz-panel__submit--secondary) {
+.adzworld-rotation .adz-panel__submit {
 	background: var(--adzworld-accent);
 	color: #fff;
-}
-
-.adz-panel__submit--secondary {
-	background: #fff;
-	color: var(--adzworld-accent);
-}
-
-.adz-panel__submit--secondary:hover {
-	background: #f0f6fc;
 }
 
 .adz-panel__chiplist {
@@ -340,6 +331,21 @@
 	margin-block-start: 1rem;
 	padding-block-start: 0.75rem;
 	border-block-start: 1px solid #dcdcde;
+}
+
+.adzworld-hub-return {
+	margin-block-start: 0.75rem;
+	padding: 0.4rem 0.75rem;
+	color: var(--adzworld-accent);
+	font-weight: 600;
+	background: #f0f6fc;
+	border: 1px solid #72aee6;
+	border-radius: 999px;
+}
+
+.adzworld-hub-return:hover,
+.adzworld-hub-return:focus-visible {
+	background: #fff;
 }
 
 .adzworld-evaluation summary {

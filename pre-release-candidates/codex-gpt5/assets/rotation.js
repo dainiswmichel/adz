@@ -43,6 +43,17 @@
 	}
 
 	/**
+	 * Remember that the next render must visibly return to the user hub.
+	 */
+	function rememberHubReturn() {
+		try {
+			window.sessionStorage.setItem( 'adzworldReturnToHub', '1' );
+		} catch ( error ) {
+			// Navigation still works when browser storage is unavailable.
+		}
+	}
+
+	/**
 	 * Activate one slide. Positions wrap continuously at both ends.
 	 *
 	 * @param {HTMLElement} rotation Rotation root.
@@ -77,12 +88,27 @@
 			);
 		}
 
+		function showHub() {
+			var hubInput;
+
+			show( 0 );
+			hubInput = slides[ 0 ].querySelector( '.adz-panel__input' );
+			slides[ 0 ].scrollIntoView( { behavior: 'smooth', block: 'center' } );
+			if ( hubInput ) {
+				hubInput.focus( { preventScroll: true } );
+			}
+		}
+
 		rotation.addEventListener(
 			'click',
 			function ( event ) {
 				var button = event.target.closest( 'button' );
 
 				if ( ! button ) {
+					return;
+				}
+				if ( button.hasAttribute( 'data-adzworld-show-hub' ) ) {
+					showHub();
 					return;
 				}
 				if ( button.hasAttribute( 'data-adzworld-step' ) ) {
@@ -115,6 +141,14 @@
 		}
 
 		show( 0 );
+		try {
+			if ( '1' === window.sessionStorage.getItem( 'adzworldReturnToHub' ) ) {
+				window.sessionStorage.removeItem( 'adzworldReturnToHub' );
+				window.requestAnimationFrame( showHub );
+			}
+		} catch ( error ) {
+			// The hub remains the first slide when browser storage is unavailable.
+		}
 	}
 
 	/**
@@ -148,6 +182,7 @@
 				).then(
 					function ( payload ) {
 						if ( payload && payload.success ) {
+							rememberHubReturn();
 							window.location.reload();
 						} else if ( status ) {
 							status.textContent = payload && payload.data ? payload.data.message : '';
@@ -175,6 +210,7 @@
 					).then(
 						function ( payload ) {
 							if ( payload && payload.success ) {
+								rememberHubReturn();
 								window.location.reload();
 							}
 						}
@@ -197,6 +233,7 @@
 				).then(
 					function ( payload ) {
 						if ( payload && payload.success ) {
+							rememberHubReturn();
 							window.location.reload();
 						}
 					}
