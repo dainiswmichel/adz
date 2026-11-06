@@ -15,7 +15,7 @@
 .adzworld-rotation .adzworld-slide {
 	padding: 1rem;
 	background: #fff;
-	border-radius: 0.75rem;
+	border-radius: 0.3rem;
 }
 
 .adzworld-rotation--3d.adzworld-enhanced .adzworld-slides {
@@ -56,7 +56,7 @@
 	min-height: 44px;
 	padding: 0.5rem 0.75rem;
 	border: 1px solid var(--adzworld-accent);
-	border-radius: 0.5rem;
+	border-radius: 0.3rem;
 	background: #fff;
 	color: var(--adzworld-accent);
 	cursor: pointer;
@@ -80,7 +80,7 @@
 	color: inherit;
 	background: #fff;
 	border: 1px solid #647e8c;
-	border-radius: 0.5rem;
+	border-radius: 0.3rem;
 }
 
 .adzworld-rotation :focus-visible {
@@ -116,6 +116,8 @@
 }
 
 .adzworld-slide {
+	display: flex;
+	flex-direction: column;
 	min-height: 16rem;
 	border: 1px solid #dcdcde;
 }
@@ -150,10 +152,11 @@
 }
 
 .adz-panel {
+	width: 100%;
 	padding: 1rem;
 	background: #f6f7f7;
 	border: 1px solid #dcdcde;
-	border-radius: 0.75rem;
+	border-radius: 0.35rem;
 }
 
 .adz-panel__title {
@@ -236,13 +239,19 @@
 }
 
 .adz-panel__chip {
-	display: inline-flex;
+	display: flex;
+	flex-direction: column;
 	align-items: center;
 	gap: 0.25rem;
 	padding: 0.25rem 0.35rem 0.25rem 0.7rem;
 	background: #fff;
 	border: 1px solid #c3c4c7;
-	border-radius: 999px;
+	border-radius: 0.3rem;
+}
+
+.adz-panel__category-row {
+	display: flex;
+	align-items: center;
 }
 
 .adz-panel__chip--categories {
@@ -296,6 +305,109 @@
 	border: 0;
 	border-radius: 50%;
 	font-size: 0.85rem;
+}
+
+.adz-panel__category-slots,
+.adzworld-category-slots__positions {
+	display: flex;
+	gap: 0.15rem;
+	align-items: center;
+}
+
+.adzworld-rotation .adz-panel__category-slot,
+.adzworld-rotation .adzworld-category-slots__positions button {
+	position: relative;
+	width: 1.2rem;
+	min-width: 1.2rem;
+	height: 1.2rem;
+	min-height: 1.2rem;
+	padding: 0;
+	background: transparent;
+	border: 0;
+	border-radius: 50%;
+}
+
+.adzworld-rotation .adz-panel__category-slot::before,
+.adzworld-rotation .adzworld-category-slots__positions button::before {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 0.38rem;
+	height: 0.38rem;
+	background: #fff;
+	border: 1px solid var(--adzworld-accent);
+	border-radius: 50%;
+	content: "";
+	transform: translate(-50%, -50%);
+}
+
+.adzworld-rotation .adz-panel__category-slot[aria-pressed="true"],
+.adzworld-rotation .adzworld-category-slots__positions button[aria-pressed="true"] {
+	background: transparent;
+}
+
+.adzworld-rotation .adz-panel__category-slot[aria-pressed="true"]::before,
+.adzworld-rotation .adzworld-category-slots__positions button[aria-pressed="true"]::before {
+	background: var(--adzworld-accent);
+}
+
+.adz-panel__chip--categories.is-active .adz-panel__category-slot::before {
+	border-color: #fff;
+}
+
+.adz-panel__chip--categories.is-active .adz-panel__category-slot[aria-pressed="true"]::before {
+	background: #fff;
+}
+
+.adzworld-category-slots {
+	align-self: flex-start;
+	margin-block-start: auto;
+	padding-block-start: 1rem;
+}
+
+.adzworld-category-slots__heading {
+	display: flex;
+	width: max-content;
+	max-width: 100%;
+	overflow: hidden;
+	background: #f6f7f7;
+	border: 1px solid #8c8f94;
+	border-radius: 0.25rem;
+}
+
+.adzworld-rotation .adzworld-category-slots__heading button {
+	min-width: 0;
+	min-height: 2rem;
+	padding: 0.3rem 0.55rem;
+	background: transparent;
+	border: 0;
+	border-radius: 0;
+	color: #1d2327;
+}
+
+.adzworld-rotation .adzworld-category-slots__category {
+	font-weight: 600;
+}
+
+.adzworld-rotation .adzworld-category-slots__heading .adzworld-category-slots__add {
+	min-width: 2rem;
+	padding-inline: 0.45rem;
+	border-inline-start: 1px solid #8c8f94;
+	color: var(--adzworld-accent);
+	font-size: 1.15rem;
+	font-weight: 600;
+}
+
+.adzworld-category-slots__positions {
+	margin-block-start: 0.2rem;
+	padding-inline-start: 0.15rem;
+}
+
+.adzworld-category-slots__status {
+	display: block;
+	max-width: 16rem;
+	color: #646970;
+	font-size: 0.75rem;
 }
 
 .adz-panel__note,
@@ -727,7 +839,7 @@
 	font-weight: 400;
 	background: #f6f7f7;
 	border: 1px solid #dcdcde;
-	border-radius: 0.5rem;
+	border-radius: 0.3rem;
 }
 
 .adzworld-improve__row {

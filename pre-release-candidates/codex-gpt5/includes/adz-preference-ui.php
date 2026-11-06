@@ -37,6 +37,7 @@ function adzworld_cookie_facets() {
 	return array(
 		'categories'           => 'c',
 		'category_refinements' => 'cr',
+		'category_slots'       => 'cs',
 		'active_category'      => 'ac',
 		'include'              => 'i',
 		'exclude'              => 'x',
@@ -253,6 +254,19 @@ function adzworld_sanitize_preference( $pref ) {
 		$clean[ $list ] = array_values( array_unique( $terms ) );
 	}
 
+	if ( ! empty( $pref['category_slots'] ) && is_array( $pref['category_slots'] ) ) {
+		foreach ( array_slice( $pref['category_slots'], 0, 10 ) as $stored ) {
+			$parts = explode( '--', sanitize_text_field( (string) $stored ), 2 );
+			if ( 2 !== count( $parts ) || ! in_array( $parts[0], $clean['categories'], true ) ) {
+				continue;
+			}
+			$count = max( 1, min( ADZWORLD_CATEGORY_MAX_SLOTS, (int) $parts[1] ) );
+			if ( $count > 1 ) {
+				$clean['category_slots'][] = $parts[0] . '--' . $count;
+			}
+		}
+	}
+
 	if ( ! empty( $pref['active_category'] ) ) {
 		$active = mb_substr( sanitize_text_field( (string) $pref['active_category'] ), 0, ADZWORLD_CATEGORY_MAX_LENGTH );
 		if ( in_array( $active, $clean['categories'], true ) ) {
@@ -438,30 +452,60 @@ function adzworld_render_chips( $chips ) {
 			<summary><?php esc_html_e( 'Categories', 'adz-world' ); ?></summary>
 			<ul class="adz-panel__chiplist">
 				<?php foreach ( $categories as $chip ) : ?>
-					<?php $category_id = wp_unique_id( 'adz-category-' ); ?>
+					<?php
+					$category_id = wp_unique_id( 'adz-category-' );
+					$slots_label = sprintf(
+						/* translators: %s: category name. */
+						__( '%s adz slots', 'adz-world' ),
+						$chip['label']
+					);
+					?>
 					<li class="adz-panel__chip adz-panel__chip--categories<?php echo ! empty( $chip['active'] ) ? ' is-active' : ''; ?>">
-						<button type="button" class="adz-panel__category" data-adz-category="<?php echo esc_attr( $chip['value'] ); ?>">
-							<?php echo esc_html( $chip['label'] ); ?>
-						</button>
-						<button
-							type="button"
-							class="adz-panel__chipedit"
-							data-adz-edit-control="<?php echo esc_attr( $category_id ); ?>"
-							aria-controls="<?php echo esc_attr( $category_id ); ?>"
-							aria-expanded="false"
-						>
-							<span class="screen-reader-text"><?php esc_html_e( 'Edit category', 'adz-world' ); ?></span>
-							<span aria-hidden="true">&#9998;</span>
-						</button>
-						<input
-							id="<?php echo esc_attr( $category_id ); ?>"
-							class="adz-panel__category-name"
-							type="text"
-							value="<?php echo esc_attr( $chip['label'] ); ?>"
-							maxlength="48"
-							data-adz-category-original="<?php echo esc_attr( $chip['value'] ); ?>"
-							hidden
-						>
+						<div class="adz-panel__category-row">
+							<button type="button" class="adz-panel__category" data-adz-category="<?php echo esc_attr( $chip['value'] ); ?>">
+								<?php echo esc_html( $chip['label'] ); ?>
+							</button>
+							<button
+								type="button"
+								class="adz-panel__chipedit"
+								data-adz-edit-control="<?php echo esc_attr( $category_id ); ?>"
+								aria-controls="<?php echo esc_attr( $category_id ); ?>"
+								aria-expanded="false"
+							>
+								<span class="screen-reader-text"><?php esc_html_e( 'Edit category', 'adz-world' ); ?></span>
+								<span aria-hidden="true">&#9998;</span>
+							</button>
+							<input
+								id="<?php echo esc_attr( $category_id ); ?>"
+								class="adz-panel__category-name"
+								type="text"
+								value="<?php echo esc_attr( $chip['label'] ); ?>"
+								maxlength="48"
+								data-adz-category-original="<?php echo esc_attr( $chip['value'] ); ?>"
+								hidden
+							>
+						</div>
+						<div class="adz-panel__category-slots" aria-label="<?php echo esc_attr( $slots_label ); ?>">
+							<?php for ( $slot = 0; $slot < $chip['slots']; ++$slot ) : ?>
+								<?php
+								$slot_label = sprintf(
+									/* translators: 1: category name, 2: slot number. */
+									__( 'Show %1$s adz %2$d', 'adz-world' ),
+									$chip['label'],
+									$slot + 1
+								);
+								?>
+								<button
+									type="button"
+									class="adz-panel__category-slot"
+									data-adz-category-slot-category="<?php echo esc_attr( $chip['value'] ); ?>"
+									data-adz-category-slot="<?php echo esc_attr( (string) $slot ); ?>"
+									aria-label="<?php echo esc_attr( $slot_label ); ?>"
+								>
+									<span class="screen-reader-text"><?php echo esc_html( (string) ( $slot + 1 ) ); ?></span>
+								</button>
+							<?php endfor; ?>
+						</div>
 					</li>
 				<?php endforeach; ?>
 			</ul>
@@ -585,6 +629,31 @@ function adzworld_ajax_refine() {
 		$pref['category_refinements'] = array_values( array_unique( $pref['category_refinements'] ) );
 		adzworld_store_preference( $pref );
 		wp_send_json_success( array( 'message' => __( 'Refinement updated.', 'adz-world' ) ) );
+	}
+
+	if ( 'add_slot' === $action ) {
+		$category = isset( $_POST['value'] )
+			? adzworld_normalize_category( sanitize_text_field( wp_unslash( $_POST['value'] ) ) )
+			: '';
+
+		if ( ! in_array( $category, $pref['categories'], true ) ) {
+			wp_send_json_error( array( 'message' => __( 'That category is not available.', 'adz-world' ) ), 400 );
+		}
+
+		$count = adzworld_category_slot_count( $pref, $category );
+		if ( $count >= ADZWORLD_CATEGORY_MAX_SLOTS ) {
+			wp_send_json_error( array( 'message' => __( 'This category already has the maximum number of adz slots.', 'adz-world' ) ), 400 );
+		}
+
+		++$count;
+		$pref = adzworld_set_category_slot_count( $pref, $category, $count );
+		adzworld_store_preference( $pref );
+		wp_send_json_success(
+			array(
+				'count'   => $count,
+				'message' => __( 'Adz slot added.', 'adz-world' ),
+			)
+		);
 	}
 
 	if ( 'drop' === $action ) {

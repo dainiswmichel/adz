@@ -26,6 +26,9 @@ const ADZWORLD_CATEGORY_MAX_WORDS = 3;
 /** Maximum number of characters in a user-created adz category. */
 const ADZWORLD_CATEGORY_MAX_LENGTH = 48;
 
+/** Maximum number of visible result slots a category can request. */
+const ADZWORLD_CATEGORY_MAX_SLOTS = 8;
+
 /**
  * Normalize a user-created category without interpreting it.
  *
@@ -61,6 +64,7 @@ function adzworld_empty_preference() {
 	return array(
 		'categories'           => array(),
 		'category_refinements' => array(),
+		'category_slots'       => array(),
 		'active_category'      => '',
 		'include'              => array(),
 		'exclude'              => array(),
@@ -72,6 +76,53 @@ function adzworld_empty_preference() {
 		'intent'               => '',
 		'raw'                  => array(),
 	);
+}
+
+/**
+ * Return the requested number of result slots for a category.
+ *
+ * A missing entry means one slot, so existing preferences remain compact.
+ *
+ * @param array  $pref     Preference hierarchy.
+ * @param string $category Category.
+ * @return int Slot count.
+ */
+function adzworld_category_slot_count( $pref, $category ) {
+	foreach ( $pref['category_slots'] as $stored ) {
+		$parts = explode( '--', $stored, 2 );
+		if ( 2 === count( $parts ) && $category === $parts[0] ) {
+			return max( 1, min( ADZWORLD_CATEGORY_MAX_SLOTS, (int) $parts[1] ) );
+		}
+	}
+
+	return 1;
+}
+
+/**
+ * Set the requested number of result slots for a category.
+ *
+ * @param array  $pref     Preference hierarchy.
+ * @param string $category Category.
+ * @param int    $count    Requested slots.
+ * @return array Updated preference hierarchy.
+ */
+function adzworld_set_category_slot_count( $pref, $category, $count ) {
+	$count = max( 1, min( ADZWORLD_CATEGORY_MAX_SLOTS, (int) $count ) );
+
+	$pref['category_slots'] = array_values(
+		array_filter(
+			$pref['category_slots'],
+			static function ( $stored ) use ( $category ) {
+				return 0 !== strpos( $stored, $category . '--' );
+			}
+		)
+	);
+
+	if ( $count > 1 ) {
+		$pref['category_slots'][] = $category . '--' . $count;
+	}
+
+	return $pref;
 }
 
 /**
@@ -337,6 +388,7 @@ function adzworld_preference_chips( $pref ) {
 			'value'  => $category,
 			'label'  => $category,
 			'active' => $category === $pref['active_category'],
+			'slots'  => adzworld_category_slot_count( $pref, $category ),
 		);
 	}
 
@@ -472,6 +524,14 @@ function adzworld_remove_facet( $pref, $facet, $value ) {
 					}
 				)
 			);
+			$pref['category_slots']       = array_values(
+				array_filter(
+					$pref['category_slots'],
+					static function ( $stored ) use ( $prefix ) {
+						return 0 !== strpos( $stored, $prefix );
+					}
+				)
+			);
 			if ( $pref['active_category'] === $value ) {
 				$pref['active_category'] = isset( $pref['categories'][0] ) ? $pref['categories'][0] : '';
 			}
@@ -528,6 +588,11 @@ function adzworld_rename_category( $pref, $old, $replacement ) {
 		}
 	}
 	$pref['category_refinements'] = array_values( array_unique( $pref['category_refinements'] ) );
+	foreach ( $pref['category_slots'] as $index => $stored ) {
+		if ( 0 === strpos( $stored, $old_prefix ) ) {
+			$pref['category_slots'][ $index ] = $replacement . '--' . substr( $stored, strlen( $old_prefix ) );
+		}
+	}
 
 	if ( $old === $pref['active_category'] ) {
 		$pref['active_category'] = $replacement;

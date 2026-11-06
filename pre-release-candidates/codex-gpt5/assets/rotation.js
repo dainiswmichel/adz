@@ -54,6 +54,21 @@
 	}
 
 	/**
+	 * Remember the exact category slot that should remain visible after reload.
+	 *
+	 * @param {string} category Category name.
+	 * @param {number} slot     Zero-based category slot.
+	 */
+	function rememberCategoryReturn( category, slot ) {
+		try {
+			window.sessionStorage.setItem( 'adzworldReturnCategory', category );
+			window.sessionStorage.setItem( 'adzworldReturnCategorySlot', String( slot ) );
+		} catch ( error ) {
+			// The category remains reachable when browser storage is unavailable.
+		}
+	}
+
+	/**
 	 * Activate one slide. Positions wrap continuously at both ends.
 	 *
 	 * @param {HTMLElement} rotation Rotation root.
@@ -70,7 +85,12 @@
 		rotation.classList.add( 'adzworld-enhanced' );
 
 		function show( position ) {
+			var activeCategory;
+			var activeSlot;
+
 			current = ( position + slides.length ) % slides.length;
+			activeCategory = slides[ current ].dataset.adzworldCategory || '';
+			activeSlot = Number( slides[ current ].dataset.adzworldCategorySlot || 0 );
 			slides.forEach(
 				function ( slide, index ) {
 					var active = index === current;
@@ -86,6 +106,14 @@
 					button.setAttribute( 'aria-pressed', String( Number( button.dataset.adzworldPosition ) === current ) );
 				}
 			);
+			rotation.querySelectorAll( '[data-adzworld-category-slot-category], [data-adz-category-slot-category]' ).forEach(
+				function ( button ) {
+					var category = button.dataset.adzworldCategorySlotCategory || button.dataset.adzCategorySlotCategory || '';
+					var slot = Number( button.dataset.adzworldCategorySlot || button.dataset.adzCategorySlot || 0 );
+
+					button.setAttribute( 'aria-pressed', String( category === activeCategory && slot === activeSlot ) );
+				}
+			);
 		}
 
 		function showHub() {
@@ -99,14 +127,24 @@
 			}
 		}
 
-		function showCategory( category ) {
+		function showCategory( category, categorySlot ) {
+			var requestedSlot = Number.isFinite( Number( categorySlot ) ) ? Number( categorySlot ) : 0;
 			var position = slides.findIndex(
 				function ( slide ) {
-					return slide.dataset.adzworldCategory === category;
+					return slide.dataset.adzworldCategory === category &&
+						Number( slide.dataset.adzworldCategorySlot || 0 ) === requestedSlot;
 				}
 			);
 
-			if ( position > 0 ) {
+			if ( position < 0 ) {
+				position = slides.findIndex(
+					function ( slide ) {
+						return slide.dataset.adzworldCategory === category;
+					}
+				);
+			}
+
+			if ( position >= 0 ) {
 				show( position );
 				slides[ position ].scrollIntoView( { behavior: 'smooth', block: 'center' } );
 			}
@@ -115,7 +153,7 @@
 		rotation.addEventListener(
 			'adzworld:show-category',
 			function ( event ) {
-				showCategory( event.detail.category || '' );
+				showCategory( event.detail.category || '', event.detail.slot || 0 );
 			}
 		);
 
@@ -123,8 +161,49 @@
 			'click',
 			function ( event ) {
 				var button = event.target.closest( 'button' );
+				var category;
+				var categorySlot;
+				var status;
 
 				if ( ! button ) {
+					return;
+				}
+				if ( button.hasAttribute( 'data-adzworld-category-first' ) ) {
+					showCategory( button.dataset.adzworldCategoryFirst || '', 0 );
+					return;
+				}
+				if ( button.hasAttribute( 'data-adzworld-category-slot-category' ) ) {
+					showCategory(
+						button.dataset.adzworldCategorySlotCategory || '',
+						Number( button.dataset.adzworldCategorySlot || 0 )
+					);
+					return;
+				}
+				if ( button.hasAttribute( 'data-adzworld-add-category-slot' ) ) {
+					category = button.dataset.adzworldAddCategorySlot || '';
+					status = button.closest( '.adzworld-category-slots' ).querySelector( '[data-adzworld-category-slot-status]' );
+					button.disabled = true;
+					post(
+						'adzworld_refine',
+						settings.preferenceNonce,
+						{
+							mode: 'add_slot',
+							value: category
+						}
+					).then(
+						function ( payload ) {
+							if ( payload && payload.success ) {
+								categorySlot = Math.max( 0, Number( payload.data.count ) - 1 );
+								rememberCategoryReturn( category, categorySlot );
+								window.location.reload();
+								return;
+							}
+							button.disabled = false;
+							if ( status ) {
+								status.textContent = payload && payload.data ? payload.data.message : '';
+							}
+						}
+					);
 					return;
 				}
 				if ( button.hasAttribute( 'data-adzworld-step' ) ) {
@@ -165,6 +244,17 @@
 			if ( '1' === window.sessionStorage.getItem( 'adzworldReturnToHub' ) ) {
 				window.sessionStorage.removeItem( 'adzworldReturnToHub' );
 				window.requestAnimationFrame( showHub );
+			} else if ( window.sessionStorage.getItem( 'adzworldReturnCategory' ) ) {
+				window.requestAnimationFrame(
+					function () {
+						var category = window.sessionStorage.getItem( 'adzworldReturnCategory' ) || '';
+						var slot = Number( window.sessionStorage.getItem( 'adzworldReturnCategorySlot' ) || 0 );
+
+						window.sessionStorage.removeItem( 'adzworldReturnCategory' );
+						window.sessionStorage.removeItem( 'adzworldReturnCategorySlot' );
+						showCategory( category, slot );
+					}
+				);
 			}
 		} catch ( error ) {
 			// The hub remains the first slide when browser storage is unavailable.
@@ -296,15 +386,33 @@
 			'click',
 			function ( event ) {
 				var category = event.target.closest( '.adz-panel__category' );
+				var categorySlot = event.target.closest( '.adz-panel__category-slot' );
 				var edit = event.target.closest( '.adz-panel__chipedit' );
 				var control;
+				var rotation = form.closest( '.adzworld-rotation' );
+
+				if ( categorySlot ) {
+					event.preventDefault();
+					rotation.dispatchEvent(
+						new window.CustomEvent(
+							'adzworld:show-category',
+							{
+								detail: {
+									category: categorySlot.dataset.adzCategorySlotCategory || '',
+									slot: Number( categorySlot.dataset.adzCategorySlot || 0 )
+								}
+							}
+						)
+					);
+					return;
+				}
 
 				if ( category ) {
 					event.preventDefault();
-					form.closest( '.adzworld-rotation' ).dispatchEvent(
+					rotation.dispatchEvent(
 						new window.CustomEvent(
 							'adzworld:show-category',
-							{ detail: { category: category.dataset.adzCategory || '' } }
+							{ detail: { category: category.dataset.adzCategory || '', slot: 0 } }
 						)
 					);
 					post(

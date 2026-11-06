@@ -267,6 +267,93 @@ function adzworld_local_ad_slide( $ad ) {
 }
 
 /**
+ * Duplicate configured local adz into the number of slots requested per category.
+ *
+ * A duplicate is an intentional placeholder until category search supplies a
+ * distinct result for that slot. The category and slot index remain stable so
+ * the interface can return to the exact result the visitor selected.
+ *
+ * @param array $slots Configured rotation slots.
+ * @param array $pref  Current preference hierarchy.
+ * @return array Expanded rotation slots.
+ */
+function adzworld_expand_category_slots( $slots, $pref ) {
+	$expanded = array();
+
+	foreach ( $slots as $slot ) {
+		if ( 'ad' !== $slot['type'] ) {
+			$expanded[] = $slot;
+			continue;
+		}
+
+		$category = adzworld_ad_category( get_post( (int) $slot['value'] ), $pref );
+		$count    = in_array( $category, $pref['categories'], true )
+			? adzworld_category_slot_count( $pref, $category )
+			: 1;
+
+		for ( $index = 0; $index < $count; ++$index ) {
+			$copy                        = $slot;
+			$copy['category']            = $category;
+			$copy['category_slot']       = $index;
+			$copy['category_slot_count'] = $count;
+			$expanded[]                  = $copy;
+		}
+	}
+
+	return $expanded;
+}
+
+/**
+ * Render the compact category and sub-ad selector inside one category slide.
+ *
+ * @param string $category     Category represented by the slide.
+ * @param int    $count        Number of category slots.
+ * @param int    $current_slot Current zero-based slot.
+ * @return string Category slot controls.
+ */
+function adzworld_category_slot_control( $category, $count, $current_slot ) {
+	if ( '' === $category ) {
+		return '';
+	}
+
+	$count        = max( 1, min( ADZWORLD_CATEGORY_MAX_SLOTS, (int) $count ) );
+	$current_slot = max( 0, min( $count - 1, (int) $current_slot ) );
+	$label        = sprintf(
+		/* translators: %s: category name. */
+		__( '%s adz slots', 'adz-world' ),
+		$category
+	);
+
+	$markup = '<div class="adzworld-category-slots"><div class="adzworld-category-slots__heading">'
+		. '<button type="button" class="adzworld-category-slots__category" data-adzworld-category-first="' . esc_attr( $category ) . '">'
+		. esc_html( $category ) . '</button>'
+		. '<button type="button" class="adzworld-category-slots__add" data-adzworld-add-category-slot="' . esc_attr( $category ) . '" aria-label="'
+		. esc_attr(
+			sprintf(
+				/* translators: %s: category name. */
+				__( 'Add another %s adz slot', 'adz-world' ),
+				$category
+			)
+		) . '"><span aria-hidden="true">+</span></button></div>'
+		. '<div class="adzworld-category-slots__positions" aria-label="' . esc_attr( $label ) . '">';
+
+	for ( $index = 0; $index < $count; ++$index ) {
+		$markup .= '<button type="button" data-adzworld-category-slot-category="' . esc_attr( $category ) . '" data-adzworld-category-slot="'
+			. esc_attr( (string) $index ) . '" aria-pressed="' . ( $index === $current_slot ? 'true' : 'false' ) . '" aria-label="'
+			. esc_attr(
+				sprintf(
+					/* translators: 1: category name, 2: slot number. */
+					__( 'Show %1$s adz %2$d', 'adz-world' ),
+					$category,
+					$index + 1
+				)
+			) . '"><span class="screen-reader-text">' . esc_html( (string) ( $index + 1 ) ) . '</span></button>';
+	}
+
+	return $markup . '</div><span class="adzworld-category-slots__status" data-adzworld-category-slot-status role="status" aria-live="polite"></span></div>';
+}
+
+/**
  * Render only administrator-selected content with accessible navigation.
  *
  * Weighted selection applies to a single server-rendered presentation.
@@ -329,6 +416,8 @@ function adzworld_render_rotation( $attributes ) {
 			return '<p class="adzworld-rotation-error" role="alert">' . esc_html( $slot->get_error_message() ) . '</p>';
 		}
 		$slots = array( $slot );
+	} else {
+		$slots = adzworld_expand_category_slots( $slots, $pref );
 	}
 
 	$style_path  = dirname( __DIR__ ) . '/assets/rotation.css';
@@ -370,15 +459,22 @@ function adzworld_render_rotation( $attributes ) {
 	$rendering = true;
 	try {
 		foreach ( $slots as $index => $slot ) {
-			$slide_id = $id . '-slide-' . $index;
-			$category = '';
+			$slide_id      = $id . '-slide-' . $index;
+			$category      = isset( $slot['category'] ) ? (string) $slot['category'] : '';
+			$category_slot = isset( $slot['category_slot'] ) ? (int) $slot['category_slot'] : 0;
+			$slot_count    = isset( $slot['category_slot_count'] ) ? (int) $slot['category_slot_count'] : 1;
 			if ( 'intro' === $slot['type'] ) {
 				$html = adzworld_rotation_introduction( $slide_id );
 			} elseif ( 'ad' === $slot['type'] ) {
-				$ad       = get_post( (int) $slot['value'] );
-				$category = adzworld_ad_category( $ad, $pref );
-				$html     = adzworld_local_ad_slide( $ad )
+				$ad = get_post( (int) $slot['value'] );
+				if ( '' === $category ) {
+					$category = adzworld_ad_category( $ad, $pref );
+				}
+				$html = adzworld_local_ad_slide( $ad )
 					. adzworld_feedback_control( 'ad-' . $ad->ID, $category );
+				if ( in_array( $category, $pref['categories'], true ) ) {
+					$html .= adzworld_category_slot_control( $category, $slot_count, $category_slot );
+				}
 			} else {
 				$category = isset( $pref['active_category'] ) ? (string) $pref['active_category'] : '';
 				$html     = '<div class="adzworld-provider" aria-label="' . esc_attr( $sources[ $slot['value'] ]['label'] ) . '">'
@@ -387,7 +483,8 @@ function adzworld_render_rotation( $attributes ) {
 					. adzworld_feedback_control( 'source-' . $slot['value'], $category );
 			}
 			$category_attribute = '' !== $category ? ' data-adzworld-category="' . esc_attr( $category ) . '"' : '';
-			$slides            .= '<section class="adzworld-slide" id="' . esc_attr( $slide_id ) . '"' . $category_attribute . ' role="group" aria-roledescription="'
+			$slot_attribute     = '' !== $category ? ' data-adzworld-category-slot="' . esc_attr( (string) $category_slot ) . '"' : '';
+			$slides            .= '<section class="adzworld-slide" id="' . esc_attr( $slide_id ) . '"' . $category_attribute . $slot_attribute . ' role="group" aria-roledescription="'
 				. esc_attr__( 'slide', 'adz-world' ) . '" aria-label="' . esc_attr( ( $index + 1 ) . ' / ' . count( $slots ) ) . '">' . $html . '</section>';
 			if ( 'intro' === $slot['type'] ) {
 				$dot_class = ' class="adzworld-hub-position"';
