@@ -67,7 +67,9 @@ if ( ! class_exists( 'EOF_field' ) ) :
 		 */
 		public function __construct( $field = array() ) {
 			add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
-			add_filter( 'eof_settings_sanitize_' . $field['option_name'], array( $this, 'sanitize' ) );
+			if ( isset( $field['sanitize_hook'] ) ) {
+				add_filter( $field['sanitize_hook'], array( $this, 'sanitize' ) );
+			}
 		}
 
 		/**
@@ -104,7 +106,7 @@ if ( ! class_exists( 'EOF_field' ) ) :
 			$new_id = str_replace( '][', '_', $new_id );
 			$new_id = str_replace( '[', '_', $new_id );
 			$new_id = str_replace( ']', '_', $new_id );
-			if ( substr( $new_id, -1 ) == '_' ) {
+			if ( '_' === substr( $new_id, -1 ) ) {
 				$new_id = substr( $new_id, 0, -1 );
 			}
 			return $new_id;

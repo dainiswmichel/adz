@@ -11,9 +11,9 @@ if ( ! defined( 'WP_CLI' ) || ! WP_CLI ) {
 }
 
 require __DIR__ . '/regression.php';
-require_once dirname( __DIR__ ) . '/classes/rest-client/class-wprestclient.php';
-require_once dirname( __DIR__ ) . '/classes/rest-client/class-phprestclient.php';
-require_once dirname( __DIR__ ) . '/classes/rest-client/cache-interface/class-wpcacheimpl.php';
+require_once dirname( __DIR__ ) . '/classes/rest-client/class-adzworld-wp-rest-client.php';
+require_once dirname( __DIR__ ) . '/classes/rest-client/class-adzworld-php-rest-client.php';
+require_once dirname( __DIR__ ) . '/classes/rest-client/cache-interface/class-adzworld-wp-cache.php';
 
 $adzworld_requests = array();
 $adzworld_mock     = static function ( $preempt, $args, $url ) use ( &$adzworld_requests ) {
@@ -44,10 +44,10 @@ $adzworld_mock     = static function ( $preempt, $args, $url ) use ( &$adzworld_
 	);
 };
 add_filter( 'pre_http_request', $adzworld_mock, 10, 3 );
-$adzworld_cache = new WPCacheImpl( 'adzworld-rest' );
+$adzworld_cache = new Adzworld_WP_Cache( 'adzworld-rest' );
 $adzworld_cache->clear_cache();
 try {
-	$adzworld_client = new WPRestClient( 'https://rest-contract.invalid/api', 'Query', array( 'token' => 'first-fixture' ) );
+	$adzworld_client = new Adzworld_WP_Rest_Client( 'https://rest-contract.invalid/api', 'Query', array( 'token' => 'first-fixture' ) );
 	foreach ( array( 'get', 'put', 'post', 'delete' ) as $adzworld_method ) {
 		$adzworld_result = $adzworld_client->{ 'rest_' . $adzworld_method }( 'resource?existing=retained', array( 'field' => 'value' ) );
 		adzworld_test_assert( ! is_wp_error( $adzworld_result ), 'REST verb executes without a missing-method fatal: ' . $adzworld_method );
@@ -65,7 +65,7 @@ try {
 	$adzworld_request = end( $adzworld_requests );
 	parse_str( wp_parse_url( $adzworld_request['url'], PHP_URL_QUERY ), $adzworld_query );
 	adzworld_test_assert( 'fixture&scope=other +/' === $adzworld_query['token'] && 'a&b=c +' === $adzworld_query['search'] && ! isset( $adzworld_query['scope'] ), 'Query credentials and search fields remain single encoded values, not injected query keys' );
-	$adzworld_legacy = new PHPRestClient( 'https://rest-contract.invalid/api', 'Query', array( 'token' => 'legacy-fixture' ) );
+	$adzworld_legacy = new Adzworld_PHP_Rest_Client( 'https://rest-contract.invalid/api', 'Query', array( 'token' => 'legacy-fixture' ) );
 	foreach ( array( 'get', 'put', 'post', 'delete' ) as $adzworld_method ) {
 		$adzworld_result = $adzworld_legacy->{ 'rest_' . $adzworld_method }( 'legacy', array() );
 		adzworld_test_assert( 200 === $adzworld_result['code'] && is_array( $adzworld_result['headers'] ) && isset( $adzworld_result['body'] ), 'Legacy adapter preserves flat responses through the real shared transport: ' . $adzworld_method );
@@ -104,13 +104,9 @@ try {
 			'password' => 'test-password',
 		)
 	);
-	$adzworld_client->rest_put( 'basic', array() );
-	$adzworld_request = end( $adzworld_requests );
-	adzworld_test_assert( 'Basic Zml4dHVyZTp0ZXN0LXBhc3N3b3Jk' === $adzworld_request['args']['headers']['Authorization'], 'Basic authentication remains wire-compatible' );
-	$adzworld_client->update_authentication( 'Basic', array() );
 	$adzworld_before = count( $adzworld_requests );
-	adzworld_test_assert( is_wp_error( $adzworld_client->rest_get( 'invalid', array() ) ), 'Incomplete credentials fail explicitly before transport' );
-	adzworld_test_assert( count( $adzworld_requests ) === $adzworld_before, 'Missing credentials do not initiate an outbound request' );
+	adzworld_test_assert( is_wp_error( $adzworld_client->rest_get( 'unsupported-basic', array() ) ), 'Unsupported Basic authentication fails explicitly' );
+	adzworld_test_assert( count( $adzworld_requests ) === $adzworld_before, 'Unsupported authentication does not initiate an outbound request' );
 	$adzworld_client->update_authentication(
 		'Digest',
 		array(
@@ -136,8 +132,8 @@ try {
 		'Digest signs the actual method/path/query with the correct username and password, including quoted commas and equals'
 	);
 	adzworld_test_assert( is_wp_error( $adzworld_client->rest_get( 'digest-unsupported', array() ) ), 'Unsupported digest protection fails explicitly without an unauthenticated fallback' );
-	$adzworld_first_cache  = new WPCacheImpl( 'adzworld-test-first' );
-	$adzworld_second_cache = new WPCacheImpl( 'adzworld-test-second' );
+	$adzworld_first_cache  = new Adzworld_WP_Cache( 'adzworld-test-first' );
+	$adzworld_second_cache = new Adzworld_WP_Cache( 'adzworld-test-second' );
 	$adzworld_first_cache->set( 'same-key', 'first', 60 );
 	$adzworld_second_cache->set( 'same-key', 'second', 60 );
 	$adzworld_first_cache->clear_cache();

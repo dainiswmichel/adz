@@ -11,9 +11,14 @@
 z-index: 99;
 
 }
-.adz_overlay:target {
+.adz_overlay:target,
+.adz_overlay.adzworld-is-visible {
 	visibility: visible;
 	opacity: 1;
+}
+
+.close_adz {
+	cursor: pointer;
 }
 
 .adz_popup {

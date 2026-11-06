@@ -180,7 +180,11 @@ if ( ! class_exists( 'EOF_Import_Export' ) ) :
 			if ( ! $base || ! $file || 0 !== strpos( $file, $base . DIRECTORY_SEPARATOR ) || ! is_readable( $file ) ) {
 				wp_die( esc_html__( 'The local import file could not be read.', 'adz-world' ), '', array( 'back_link' => true ) );
 			}
-			$contents = file_get_contents( $file );
+			global $wp_filesystem;
+			if ( ! function_exists( 'WP_Filesystem' ) ) {
+				require_once ABSPATH . 'wp-admin/includes/file.php';
+			}
+			$contents = WP_Filesystem() ? $wp_filesystem->get_contents( $file ) : false;
 			wp_delete_file( $file );
 			if ( false === $contents ) {
 				wp_die( esc_html__( 'Reading the settings import failed.', 'adz-world' ), '', array( 'back_link' => true ) );

@@ -12,9 +12,7 @@ if ( ! defined( 'WP_CLI' ) || ! WP_CLI ) {
 
 require __DIR__ . '/regression.php';
 
-global $wpdb;
-
-adzworld_test_assert( '127.0.0.1' === wp_parse_url( home_url(), PHP_URL_HOST ) && ! adz_network_enabled(), 'Through-page checks use the local test site without a connected network' );
+adzworld_test_assert( '127.0.0.1' === wp_parse_url( home_url(), PHP_URL_HOST ) && ! adzworld_network_enabled(), 'Through-page checks use the local test site without a connected network' );
 $adzworld_options  = get_option( 'adz_ad_options', null );
 $adzworld_pool     = get_option( 'next_adz_pool', null );
 $adzworld_rotation = 'adz_rotation_' . time() . wp_rand( 1000, 9999 );
@@ -103,7 +101,7 @@ try {
 	}
 	delete_option( $adzworld_rotation );
 	if ( is_int( $adzworld_page ) && $adzworld_page > 0 ) {
-		$wpdb->delete( $wpdb->prefix . 'adz_views', array( 'targate_id' => $adzworld_page ), array( '%d' ) );
+		delete_transient( adzworld_view_key( '127.0.0.1', $adzworld_page, 'page' ) );
 		wp_delete_post( $adzworld_page, true );
 	}
 	if ( is_int( $adzworld_ad ) && $adzworld_ad > 0 ) {

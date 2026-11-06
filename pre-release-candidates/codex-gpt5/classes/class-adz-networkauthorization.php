@@ -22,7 +22,7 @@ class Adz_NetworkAuthorization {
 	 * @return bool
 	 */
 	public static function is_enabled() {
-		return function_exists( 'adz_network_enabled' ) && adz_network_enabled();
+		return function_exists( 'adzworld_network_enabled' ) && adzworld_network_enabled();
 	}
 
 
@@ -36,10 +36,10 @@ class Adz_NetworkAuthorization {
 			return null;
 		}
 
-		$adz_ad_network_base_url = untrailingslashit( adz_network_base_url() );
-		require_once __DIR__ . '/rest-client/class-wprestclient.php';
-		$ad_network_url        = $adz_ad_network_base_url . '/wp-json/adz_server/v1/';
-		$client                = new WPRestClient( $ad_network_url, 'None' );
+		$adzworld_network_base_url = untrailingslashit( adzworld_network_base_url() );
+		require_once __DIR__ . '/rest-client/class-adzworld-wp-rest-client.php';
+		$ad_network_url        = $adzworld_network_base_url . '/wp-json/adz_server/v1/';
+		$client                = new Adzworld_WP_Rest_Client( $ad_network_url, 'None' );
 		$adz_publisher_options = get_option( 'adz_publisher_options', array() );
 		$response              = null;
 		if ( isset( $adz_publisher_options['adz_registered'] ) ) {
@@ -66,7 +66,7 @@ class Adz_NetworkAuthorization {
 			return;
 		}
 
-		$adz_ad_network_base_url = untrailingslashit( adz_network_base_url() );
+		$adzworld_network_base_url = untrailingslashit( adzworld_network_base_url() );
 
 		$signature             = false;
 		$send_registration     = false;
@@ -76,19 +76,19 @@ class Adz_NetworkAuthorization {
 			$paypal_email      = isset( $adz_ad_options['paypal_email'] ) ? $adz_ad_options['paypal_email'] : '';
 			$adzdotworld_email = isset( $adz_ad_options['adzdotworld_email'] ) ? $adz_ad_options['adzdotworld_email'] : '';
 
-			$referral_code           = isset( $adz_ad_options['referral_code'] ) ? $adz_ad_options['referral_code'] : '';
-			$preferences             = isset( $adz_ad_options['type_of_adz'] ) ? $adz_ad_options['type_of_adz'] : array();
-			$url                     = get_bloginfo( 'url' );
-			$name                    = get_bloginfo( 'name' );
-			$email                   = get_bloginfo( 'admin_email' );
-			$adz_ad_network_base_url = untrailingslashit( adz_network_base_url() );
-			$signature               = hash( 'sha256', wp_json_encode( array( $paypal_email, $adzdotworld_email, $referral_code, $preferences, $url, $name, $email, $adz_ad_network_base_url ) ) );
+			$referral_code             = isset( $adz_ad_options['referral_code'] ) ? $adz_ad_options['referral_code'] : '';
+			$preferences               = isset( $adz_ad_options['type_of_adz'] ) ? $adz_ad_options['type_of_adz'] : array();
+			$url                       = get_bloginfo( 'url' );
+			$name                      = get_bloginfo( 'name' );
+			$email                     = get_bloginfo( 'admin_email' );
+			$adzworld_network_base_url = untrailingslashit( adzworld_network_base_url() );
+			$signature                 = hash( 'sha256', wp_json_encode( array( $paypal_email, $adzdotworld_email, $referral_code, $preferences, $url, $name, $email, $adzworld_network_base_url ) ) );
 		}
 
 		if ( isset( $adz_publisher_options['adz_registered'] ) && $adz_publisher_options['adz_registered'] ) {
 			if ( isset( $adz_publisher_options['signed'] ) ) {
 				$signed = $adz_publisher_options['signed'];
-				if ( $signed != $signature ) {
+				if ( $signed !== $signature ) {
 					$send_registration = true;
 				}
 			} else {
@@ -100,11 +100,11 @@ class Adz_NetworkAuthorization {
 
 		if ( $send_registration && $signature ) {
 
-			require_once __DIR__ . '/rest-client/class-wprestclient.php';
+			require_once __DIR__ . '/rest-client/class-adzworld-wp-rest-client.php';
 
-			$ad_network_url = $adz_ad_network_base_url . '/wp-json/adz_server/v1/';
+			$ad_network_url = $adzworld_network_base_url . '/wp-json/adz_server/v1/';
 
-			$client                                    = new WPRestClient( $ad_network_url, 'None' );
+			$client                                    = new Adzworld_WP_Rest_Client( $ad_network_url, 'None' );
 			$post_data['site_url']                     = get_bloginfo( 'url' );
 			$post_data['site_title']                   = get_bloginfo( 'name' );
 			$post_data['admin_email']                  = get_bloginfo( 'admin_email' );
@@ -168,11 +168,11 @@ class Adz_NetworkAuthorization {
 			return;
 		}
 
-		$adz_ad_network_base_url = untrailingslashit( adz_network_base_url() );
-		$ad_network_url          = $adz_ad_network_base_url . '/wp-json/adz_server/v1';
-		$network_ad_id           = get_post_meta( $ad_post_id, 'network_ad_id', true );
+		$adzworld_network_base_url = untrailingslashit( adzworld_network_base_url() );
+		$ad_network_url            = $adzworld_network_base_url . '/wp-json/adz_server/v1';
+		$network_ad_id             = get_post_meta( $ad_post_id, 'network_ad_id', true );
 		if ( $network_ad_id ) {
-				require_once __DIR__ . '/rest-client/class-wprestclient.php';
+				require_once __DIR__ . '/rest-client/class-adzworld-wp-rest-client.php';
 				$registration = self::registration();
 			if ( is_wp_error( $registration ) ) {
 				return $registration;
@@ -182,7 +182,7 @@ class Adz_NetworkAuthorization {
 				$authentication_parameters['ad_id']    = $network_ad_id;
 				$authentication_parameters['token']    = $adz_publisher_options['adz_registered']['post_token'];
 				$authentication_parameters['nettoken'] = $adz_publisher_options['adz_registered']['network_token'];
-				$client                                = new WPRestClient( $ad_network_url, 'Query', $authentication_parameters );
+				$client                                = new Adzworld_WP_Rest_Client( $ad_network_url, 'Query', $authentication_parameters );
 				$id                                    = rawurlencode( (string) $registration['ID'] );
 				$res                                   = $client->rest_delete( "ads/{$id}" );
 				if ( is_wp_error( $res ) ) {
@@ -212,8 +212,8 @@ class Adz_NetworkAuthorization {
 		}
 
 		if ( 'publish' === $ad_post->post_status ) {
-			$adz_ad_network_base_url = untrailingslashit( adz_network_base_url() );
-			require_once __DIR__ . '/rest-client/class-wprestclient.php';
+			$adzworld_network_base_url = untrailingslashit( adzworld_network_base_url() );
+			require_once __DIR__ . '/rest-client/class-adzworld-wp-rest-client.php';
 			$registration = self::registration();
 			if ( is_wp_error( $registration ) ) {
 				return $registration;
@@ -222,14 +222,14 @@ class Adz_NetworkAuthorization {
 			if ( isset( $adz_publisher_options['adz_registered'] ) ) {
 				$authentication_parameters['token']    = $adz_publisher_options['adz_registered']['post_token'];
 				$authentication_parameters['nettoken'] = $adz_publisher_options['adz_registered']['network_token'];
-				$ad_network_url                        = $adz_ad_network_base_url . '/wp-json/adz_server/v1';
-				$client                                = new WPRestClient( $ad_network_url, 'Query', $authentication_parameters );
+				$ad_network_url                        = $adzworld_network_base_url . '/wp-json/adz_server/v1';
+				$client                                = new Adzworld_WP_Rest_Client( $ad_network_url, 'Query', $authentication_parameters );
 			} else {
 				return;
 			}
 			$ad               = array();
 			$ad['post_title'] = $ad_post->post_title;
-			$ad['content']    = base64_encode( $ad_post->post_content );
+			$ad['content']    = $ad_post->post_content;
 			$terms            = get_the_terms( $ad_post, 'ad_taxonomy' );
 			$preferences      = array();
 			if ( is_wp_error( $terms ) ) {
@@ -288,11 +288,11 @@ class Adz_NetworkAuthorization {
 			return array();
 		}
 
-		$adz_ad_network_base_url = untrailingslashit( adz_network_base_url() );
-		require_once __DIR__ . '/rest-client/class-wprestclient.php';
+		$adzworld_network_base_url = untrailingslashit( adzworld_network_base_url() );
+		require_once __DIR__ . '/rest-client/class-adzworld-wp-rest-client.php';
 
-		$ad_network_url = $adz_ad_network_base_url . '/wp-json/adz_server/v1/';
-		$client         = new WPRestClient( $ad_network_url, 'None' );
+		$ad_network_url = $adzworld_network_base_url . '/wp-json/adz_server/v1/';
+		$client         = new Adzworld_WP_Rest_Client( $ad_network_url, 'None' );
 		$response       = $client->rest_get( 'categories', array() );
 
 		$body = self::response_body( $response, array( 200 ) );
@@ -324,8 +324,8 @@ class Adz_NetworkAuthorization {
 			return null;
 		}
 
-		$adz_ad_network_base_url = untrailingslashit( adz_network_base_url() );
-		require_once __DIR__ . '/rest-client/class-wprestclient.php';
+		$adzworld_network_base_url = untrailingslashit( adzworld_network_base_url() );
+		require_once __DIR__ . '/rest-client/class-adzworld-wp-rest-client.php';
 
 		if ( ! isset( $premium_setting['adz_serving_from'] ) || ! is_string( $premium_setting['adz_serving_from'] ) ) {
 			return new WP_Error( 'adzworld_premium_settings', __( 'An advertisement source preference is required.', 'adz-world' ) );
@@ -339,8 +339,8 @@ class Adz_NetworkAuthorization {
 		if ( isset( $adz_publisher_options['adz_registered'] ) ) {
 			$authentication_parameters['token']    = $adz_publisher_options['adz_registered']['post_token'];
 			$authentication_parameters['nettoken'] = $adz_publisher_options['adz_registered']['network_token'];
-			$ad_network_url                        = $adz_ad_network_base_url . '/wp-json/adz_server/v1';
-			$client                                = new WPRestClient( $ad_network_url, 'Query', $authentication_parameters );
+			$ad_network_url                        = $adzworld_network_base_url . '/wp-json/adz_server/v1';
+			$client                                = new Adzworld_WP_Rest_Client( $ad_network_url, 'Query', $authentication_parameters );
 			$id                                    = rawurlencode( (string) $registration['ID'] );
 		} else {
 			return;

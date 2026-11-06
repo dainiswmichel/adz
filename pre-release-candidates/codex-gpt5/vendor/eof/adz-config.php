@@ -8,7 +8,7 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
-add_action( 'init', 'adz_check_post_function' );
+add_action( 'init', 'adzworld_check_post' );
 /**
  * Clear the stored rotation state for rotations submitted on the settings page.
  *
@@ -25,7 +25,7 @@ add_action( 'init', 'adz_check_post_function' );
  *
  * @return void
  */
-function adz_check_post_function() {
+function adzworld_check_post() {
 
 	if ( ! is_admin() || ! current_user_can( 'manage_options' ) ) {
 		return;
@@ -49,7 +49,7 @@ function adz_check_post_function() {
 			continue;
 		}
 
-		$rotation_id = adz_validate_rotation_id( $value['rotation_id'] );
+		$rotation_id = adzworld_validate_rotation_id( $value['rotation_id'] );
 
 		if ( '' === $rotation_id ) {
 			continue;
@@ -71,33 +71,45 @@ function adz_check_post_function() {
  *
  * @return void
  */
-function adz_reset_registration() {
+function adzworld_reset_registration() {
 
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_send_json_error( 'forbidden', 403 );
 	}
 
-	check_ajax_referer( 'adz_reset_registration', 'adz_nonce' );
+	check_ajax_referer( 'adzworld_reset_registration', 'adz_nonce' );
 
 	delete_option( 'adz_publisher_options' );
 
 	wp_send_json_success( 'continue' );
 }
-add_action( 'wp_ajax_adz_reset_registration', 'adz_reset_registration' );
+add_action( 'wp_ajax_adz_reset_registration', 'adzworld_reset_registration' );
 
 /**
  * Read the bundled settings help document.
  *
  * @param mixed $file File.
  */
-function adz_get_data_from_file( $file ) {
+function adzworld_get_data_from_file( $file ) {
+	global $wp_filesystem;
 
-	return file_get_contents( __DIR__ . '/' . $file );
+	if ( ! function_exists( 'WP_Filesystem' ) ) {
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+	}
+
+	$base_path = realpath( __DIR__ );
+	$file_path = realpath( __DIR__ . '/' . ltrim( (string) $file, '/' ) );
+	if ( ! $base_path || ! $file_path || 0 !== strpos( $file_path, $base_path . DIRECTORY_SEPARATOR ) || ! WP_Filesystem() ) {
+		return '';
+	}
+
+	$contents = $wp_filesystem->get_contents( $file_path );
+	return false === $contents ? '' : $contents;
 }
 /**
  * Configure the advertisement settings sections.
  */
-function adz_setings_setup() {
+function adzworld_settings_setup() {
 
 	$sections       = array();
 	$configs        = array();
@@ -112,7 +124,7 @@ function adz_setings_setup() {
 				'id'    => 'tos_heading',
 				'type'  => 'heading',
 				'title' => 'Terms of Service',
-				'desc'  => adz_get_data_from_file( 'tos.html' ),
+				'desc'  => adzworld_get_data_from_file( 'tos.html' ),
 
 			),
 			'accept_tos_checkbox'           => array(
@@ -153,7 +165,7 @@ function adz_setings_setup() {
 			'type_of_adz'                   => array(
 				'id'       => 'type_of_adz',
 				'type'     => 'select',
-				'options'  => adz_list_all_adz_type(),
+				'options'  => adzworld_list_all_ad_types(),
 				'title'    => 'Types of Advertise',
 				'content'  => '',
 				'multiple' => 'yes',
@@ -175,7 +187,7 @@ function adz_setings_setup() {
 			'exclude_pages_from_rotation'   => array(
 				'title'    => 'Select the Pages which you not want to show in Rotation.',
 				'type'     => 'select',
-				'options'  => adz_get_all_pages(),
+				'options'  => adzworld_get_all_pages(),
 				'multiple' => 'yes',
 
 			),
@@ -185,7 +197,7 @@ function adz_setings_setup() {
 				'type'     => 'dynamic',
 				'title'    => 'Registration Status',
 				'content'  => '',
-				'callback' => 'adz_registration_status',
+				'callback' => 'adzworld_registration_status',
 			),
 
 		),
@@ -195,7 +207,7 @@ function adz_setings_setup() {
 		'title'    => 'Create Adz Rotation',
 		'id'       => 'ad_management',
 		'priority' => 2,
-		'fields'   => adz_rotation_setting_array(),
+		'fields'   => adzworld_rotation_setting_array(),
 	);
 
 	add_action( 'updated_option', 'adz_check_registration', 10, 3 );
@@ -232,8 +244,7 @@ function adz_setings_setup() {
 		'menu_title'         => 'Adz Settings',
 		// Page title of admin menu page.
 		'page_title'         => 'Adz Settings',
-		// For a full list of options, visit: http://codex.wordpress.org/Function_Reference/add_submenu_page#Parameters
-		// 'page_parent'       => 'themes.php',
+		// For a full list of options, visit the WordPress add_submenu_page documentation.
 		// Order where the menu appears in the admin area. If there is any conflict, something will not show. Warning.
 		'menu_priority'      => 10,
 		// Specify a custom URL to an icon.
@@ -241,7 +252,7 @@ function adz_setings_setup() {
 		// Order where the menu divider appears in the admin area.
 		'menu_divider'       => null,
 		// Permissions needed to access the options panel.
-		'page_permissions'   => /*in_array( 'adz_world_manager', $user->roles ) ? 'adz_world_manager' :*/ 'manage_options',
+		'page_permissions'   => 'manage_options',
 		// Page slug used to denote the panel.
 		'page_slug'          => '_adz_ad_options',
 		// Show the panel pages on the admin bar.
@@ -252,7 +263,7 @@ function adz_setings_setup() {
 		'save_defaults'      => false,
 		// Shows the Import/Export panel when not used as a field.
 		'show_import_export' => true,
-		// Specify option page help tabs. array( array('id' => '', 'title' => '', 'content' => ''), ).
+		// Specify option page help tabs.
 		'help_tabs'          => array(
 			array(
 				'id'      => 'help',
@@ -276,7 +287,7 @@ function adz_setings_setup() {
 		);
 	}
 }
-add_action( 'init', 'adz_setings_setup' );
+add_action( 'init', 'adzworld_settings_setup' );
 
 
 // Function to create adz rotation setting form.
@@ -284,8 +295,8 @@ add_action( 'init', 'adz_setings_setup' );
 /**
  * Define the configured legacy rotation fields.
  */
-function adz_rotation_setting_array() {
-	global $adz_ad_network_base_url;
+function adzworld_rotation_setting_array() {
+	global $adzworld_network_base_url;
 	$adz_publisher_options = get_option( 'adz_publisher_options' );
 	$publisher_user_id     = isset( $adz_publisher_options['adz_registered']['publisher_user_id'] ) ? absint( $adz_publisher_options['adz_registered']['publisher_user_id'] ) : 0;
 
@@ -293,13 +304,7 @@ function adz_rotation_setting_array() {
 			'ad_settings_head' => array(
 				'type'  => 'heading',
 				'title' => 'Instructions',
-				'desc'  => adz_get_data_from_file( 'instructions.html' ),
-			),
-			'adz_html'         => array(
-				'id'      => 'eof_html',
-				'type'    => 'html',
-				'title'   => '',
-				'content' => '<div style="width:99%; padding: 5px;" class="updated below-h2"><a class="button button-primary" href="' . $adz_ad_network_base_url . 'shop/premium-plugin-membership/" target="_blank">Try the Premium version Click to Purchase. </a></div>',
+				'desc'  => adzworld_get_data_from_file( 'instructions.html' ),
 			),
 			'ad_settings'      => array(
 				'title'      => 'Ad Settings',
@@ -316,7 +321,7 @@ function adz_rotation_setting_array() {
 					'rotation_pages'      => array(
 						'title'    => 'Page(s)/Post(s)',
 						'type'     => 'select',
-						'options'  => adz_get_filterd_pages(),
+						'options'  => adzworld_get_filtered_pages(),
 						'multiple' => 'yes',
 
 					),
@@ -324,14 +329,14 @@ function adz_rotation_setting_array() {
 					'rotation_categories' => array(
 						'title'    => 'Categories',
 						'type'     => 'select',
-						'options'  => adz_get_all_categories( 'category' ),
+						'options'  => adzworld_get_all_categories( 'category' ),
 						'multiple' => 'yes',
 
 					),
 					'rotation_tags'       => array(
 						'title'    => 'Tag(s)',
 						'type'     => 'select',
-						'options'  => adz_get_all_categories( 'post_tag' ),
+						'options'  => adzworld_get_all_categories( 'post_tag' ),
 						'multiple' => 'yes',
 
 					),
@@ -340,7 +345,7 @@ function adz_rotation_setting_array() {
 						'title'   => 'Show Adz to',
 						'desc'    => '',
 						'default' => '',
-						'options' => adz_get_membership_level(),
+						'options' => adzworld_get_membership_level(),
 
 					),
 
@@ -359,7 +364,7 @@ function adz_rotation_setting_array() {
 					'ad_sequences'        => array(
 						'type'     => 'select',
 						'title'    => 'Adz to show',
-						'options'  => adz_get_all_adz(),
+						'options'  => adzworld_get_all_ads(),
 						'sizes'    => 'small',
 						'multiple' => 'yes',
 					),
@@ -414,7 +419,7 @@ function adz_rotation_setting_array() {
 						'desc'    => '',
 						'default' => '',
 						'sizes'   => 'small',
-						'options' => adz_get_adz_template(),
+						'options' => adzworld_get_ad_template(),
 					),
 				),
 			),
@@ -428,7 +433,7 @@ function adz_rotation_setting_array() {
 /**
  * List published advertisements for the settings selectors.
  */
-function adz_get_all_adz() {
+function adzworld_get_all_ads() {
 	$adz_list  = array();
 	$args      = array(
 		'posts_per_page' => -1,
@@ -449,7 +454,7 @@ function adz_get_all_adz() {
 /**
  * Return escaped registration status and its reset control.
  */
-function adz_registration_status() {
+function adzworld_registration_status() {
 	$adz_publisher_options = get_option( 'adz_publisher_options' );
 	$reg                   = 'Not Registered';
 	if ( isset( $adz_publisher_options['adz_registered'] ) ) {
@@ -460,7 +465,7 @@ function adz_registration_status() {
 		if ( isset( $reg['date'] ) && is_string( $reg['date'] ) ) {
 			$reg  = esc_html__( 'Registered Since:', 'adz-world' ) . ' ' . esc_html( $reg['date'] );
 			$reg .= ' <a href="#" class="adz-reset-registration">' . esc_html__( 'Reset the linked account.', 'adz-world' ) . '</a>'
-				. '<input type="hidden" value="' . esc_attr( wp_create_nonce( 'adz_reset_registration' ) ) . '" id="adz_nonce">';
+				. '<input type="hidden" value="' . esc_attr( wp_create_nonce( 'adzworld_reset_registration' ) ) . '" id="adz_nonce">';
 		} else {
 			$reg = 'Not Registered';
 		}
@@ -473,7 +478,7 @@ function adz_registration_status() {
 /**
  * List available remote advertisement categories.
  */
-function adz_list_all_adz_type() {
+function adzworld_list_all_ad_types() {
 	$select_box = array();
 
 	$caetgories = Adz_NetworkAuthorization::get_ad_types();
@@ -494,7 +499,7 @@ function adz_list_all_adz_type() {
 /**
  * List optional membership plans and the guest audience.
  */
-function adz_get_membership_level() {
+function adzworld_get_membership_level() {
 	$level_list = array();
 	if ( function_exists( 'wc_memberships' ) ) {
 
@@ -520,7 +525,7 @@ function adz_get_membership_level() {
 /**
  * List published posts and pages for settings selection.
  */
-function adz_get_all_pages() {
+function adzworld_get_all_pages() {
 
 	$page_list   = array();
 	$args        = array(
@@ -542,7 +547,7 @@ function adz_get_all_pages() {
 /**
  * List pages not excluded from legacy rotations.
  */
-function adz_get_filterd_pages() {
+function adzworld_get_filtered_pages() {
 
 	$ad_settings_options = get_option( 'adz_ad_options' );
 	$exclude_array       = array();
@@ -560,7 +565,7 @@ function adz_get_filterd_pages() {
 	if ( ! empty( $posts_array ) ) {
 		foreach ( $posts_array as $page ) {
 			$page_list[''] = '';
-			if ( ! in_array( $page->ID, $exclude_array ) ) {
+			if ( ! in_array( $page->ID, $exclude_array, true ) ) {
 				$page_list[ $page->ID ] = $page->post_title;
 			}
 		}
@@ -574,7 +579,7 @@ function adz_get_filterd_pages() {
  *
  * @param mixed $taxonomy Taxonomy.
  */
-function adz_get_all_categories( $taxonomy ) {
+function adzworld_get_all_categories( $taxonomy ) {
 	$term_list = array();
 	$terms     = get_terms(
 		array(
@@ -599,7 +604,7 @@ function adz_get_all_categories( $taxonomy ) {
 /**
  * List WordPress roles and the guest audience.
  */
-function adz_list_all_user_roles() {
+function adzworld_list_all_user_roles() {
 	global $wp_roles;
 
 	$roles          = $wp_roles->get_names();
@@ -611,7 +616,7 @@ function adz_list_all_user_roles() {
 /**
  * List shipped advertisement templates.
  */
-function adz_get_adz_template() {
+function adzworld_get_ad_template() {
 	$adz_template_list = array();
 	$dir               = ADZ_WORLD . 'adz-templates';
 	$templates         = scandir( $dir, 1 );

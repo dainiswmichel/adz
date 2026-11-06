@@ -102,7 +102,7 @@ if ( ! class_exists( 'EOF_field_repeat' ) ) :
 					</tr>
 				</thead>
 				<tbody>
-					<tr class="clone" style="display: none;">
+					<tr class="clone">
 					<?php
 						$i = 0;
 					foreach ( $this->field['sub_fields'] as $key => $sub_field ) {

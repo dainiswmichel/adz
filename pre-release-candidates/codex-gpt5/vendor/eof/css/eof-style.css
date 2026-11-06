@@ -21,6 +21,32 @@ select.eof-large-select {
 	padding: 2px;
 }
 
+.eof-inline-option {
+	display: inline-block;
+	margin-right: 10px;
+}
+
+.eof-image-option {
+	margin-right: 15px;
+}
+
+.eof-image-option-label {
+	text-align: center;
+}
+
+.eof-description-spaced {
+	margin-top: 15px;
+}
+
+.eof-media-preview {
+	max-width: 100%;
+}
+
+.eof-repeat-table .clone,
+.adzworld-is-hidden {
+	display: none;
+}
+
 .eof-form-table > tbody > tr > th {
 	width: 150px;
 }
@@ -41,12 +67,6 @@ select.eof-large-select {
 .regular-table {
 	width: 620px !important;
 }
-.chosen-container {
-	width: 500px !important;
-}
-
-
-
 	/*  Define the background color for all the ODD table columns  */
 	#ad_settings tr td:nth-child(odd), #ad_settings th:nth-child(odd){
 	background: #FFFFFF;
@@ -60,10 +80,6 @@ select.eof-large-select {
 	}
 	input[type="number"].small-text{
 	width:90px !important;
-	}
-	.chosen-container-multi .chosen-choices{
-	height: 320px !important;
-	overflow-y: scroll !important;
 	}
 	#ad_settings .description {
 	width: 150px;

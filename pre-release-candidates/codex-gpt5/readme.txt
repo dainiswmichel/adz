@@ -41,11 +41,13 @@ Carousel slides other than the active slide become hidden or inert. Providers
 that prohibit hidden placements must use single mode, not a carousel. No provider
 tag is automatically refreshed or re-requested as a slide changes.
 
-The introduction accepts up to ten refinements as plain text held in this
-page's memory only. It does not send them, persist a profile, interpret natural
-language, or change ad matching. Clearing or leaving the page discards them.
-Account-backed preferences and semantic product matching are not implemented
-by this display feature.
+The invitation accepts categories and refinements in the visitor's own words.
+Logged-out preferences use a browser-session cookie; signed-in preferences use
+user metadata. Visible removable pills show what was understood, matching local
+adz are prioritised, and explicit -100 to 100 evaluations add positive or
+negative weight. Untouched adz remain distinct from an explicit neutral rating.
+Configured provider sources remain responsible for their own inventory,
+targeting, consent rules, and request behavior.
 
 Legacy page, popup, and gated-content requests now carry a configuration-bound
 nonce as well as the public advertising nonce. Changing the target, rotation,
@@ -103,13 +105,10 @@ publisher credentials. Settings imports are administrator-only, read their
 uploaded JSON locally, and use the same configured-field validation as normal
 saves. Exports require both administrative permission and an export nonce.
 
-The legacy flat-response REST adapter now reuses WordPress HTTP transport,
-including Basic, Header, Query and Digest authentication. Its optional client
-certificate mode uses the documented http_api_curl hook and requires the
-Requests cURL transport, HTTPS and a readable PEM bundle. Real mutual-TLS
-verification remains outstanding; this is not a certificate-compatibility
-certification. The native certificate option call is retained openly for
-review, not hidden behind a diagnostic exclusion.
+The legacy flat-response REST adapter now reuses WordPress HTTP transport.
+The plugin's network connection uses query credentials; the adapter also
+supports explicitly supplied headers and Digest authentication. It does not
+implement client-certificate or hand-built Basic authentication.
 
 Candidate earnings statement connection: an administrator may separately opt
 in on Adz.world > Earnings and configure a publisher ID and a read-only token.
@@ -127,12 +126,10 @@ or referral identifiers with explicit publisher consent. adz-world retains
 rewritten. Actual affiliate accounts and settlement ingestion remain launch
 dependencies; no account codes are fabricated by this candidate.
 
-This candidate includes disabled-by-default Stripe/PayPal sandbox adapters for
-administrator-operated service evaluation only. No hook, public route, or
-dashboard action initiates a transfer. No live payment or payout mode exists.
-Real-money eligibility, provider choice, fees, tax handling, and legal review
-remain unresolved. Review support under tests/ and review/ is not intended
-for the release-plugin payload.
+This candidate contains no payment-provider adapter and cannot initiate a
+payment or payout. Real-money eligibility, provider choice, fees, tax handling,
+and legal review remain unresolved. Review support under tests/ and review/ is
+not intended for the release-plugin payload.
 
 By default this plugin connects to no external service. Your site serves only
 the adz you create on it, and no visitor data leaves your server.
@@ -155,7 +152,15 @@ With it switched on:
 * **Terms and privacy.** Terms of Service: https://adz-world.com/terms/ ,
   Privacy Policy: https://adz-world.com/privacy/
 
-Switching the setting off stops all of it. Nothing is contacted again.
+Switching the network setting off stops network ad delivery and synchronization.
+The separate earnings connection makes a request only when an administrator
+explicitly requests a statement; disconnecting it removes its stored token.
+
+The optional adzworld_iframe shortcode connects a visitor's browser to the
+HTTP or HTTPS URL explicitly entered by the site owner. That destination can
+receive normal web-request data such as the visitor's IP address and browser
+headers. The shortcode has no default URL and renders nothing until a site
+owner supplies one. The destination's own terms and privacy policy apply.
 
 == Installation ==
 
@@ -163,9 +168,10 @@ WordPress Installation Instructions:
 
 1. Upload the adz.world plugin to your /wp-content/plugins/ directory
 2. Activate the plugin through the 'Plugins' menu in WordPress
-3. Agree to our TOS and Data Protection Mandate (fill in exact names)
-4. Configure your desired settings via the adz.world settings page
-5. Done :-)
+3. Create a local advertisement and configure where it should appear
+4. Review the external-service disclosure before optionally enabling the
+   adz-world.com network or earnings connection
+5. Save the desired ad rotation and display settings
 
 
 
@@ -182,8 +188,10 @@ Instead of charging for access or creating a physical product, Dainis developed 
 
 One of the first websites to deploy the adz.world plugin is https://www.bible-experts.com, where visitors can increase their knowledge of the Bible while experiencing faith-related advertisements that help finance the website. As is one of the fundamental purposes of the adz.world plugin, while learning about the Bible, if visitors have expressed interest in other products in their adz.world accounts, then bible-experts.com can receive affiliate commissions for the purchase of really any products purchased while visiting bible-experts.com.  
 
-= What is the difference between the free and premium versions =
-The only difference is revenue sharing. With the free plugin, you share advertising space and revenue with our network. With the premium version, you have the option to share revenue with our network or not in your adz rotations. 
+= Does the plugin require the adz-world.com service? =
+No. Local advertisements and rotations work without registration or an
+external-service connection. The network and earnings connections are separate,
+administrator-controlled opt-ins.
 
 
 
@@ -194,8 +202,21 @@ The only difference is revenue sharing. With the free plugin, you share advertis
 3. Set where to display your adz rotation
 4. Set adz rotation display timing and type
 
+== Changelog ==
+
+= 1.0.9 =
+* Remediated the WordPress.org closure findings: portable AJAX URLs, current metadata, five tags, matching text domain, escaped shortcodes, configured rotation identifiers, and removal of deprecated Chosen and screen-icon code.
+* Removed PHP/HTML/JavaScript inline styling and runtime style mutation in favor of enqueued styles and state classes.
+* Replaced raw-IP custom-table view tracking with expiring, salted-key WordPress transients.
+* Removed unused direct-cURL, client-certificate, Basic-auth, and payment-sandbox prototypes.
+* Scoped administrator assets to adz-world screens, removed the iframe's external default URL, and added explicit local/network consent boundaries.
+* Added safer template settings and WPCS-clean code and tests.
+
 
 == Upgrade Notice ==
+= 1.0.9 =
+Security, privacy, compatibility, and WordPress coding-standards remediation.
+
 = 1.0.1 =
 * https tweaks
 

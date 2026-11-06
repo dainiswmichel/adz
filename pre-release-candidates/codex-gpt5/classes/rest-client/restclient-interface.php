@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Methods shared by the legacy PHP and WordPress HTTP adapters.
  */
-interface IRestClient {
+interface Adzworld_Rest_Client_Interface {
 
 	/**
 	 * Initialize the remote endpoint and authentication.
@@ -19,9 +19,9 @@ interface IRestClient {
 	 * @param string $base_url Remote base URL.
 	 * @param string $authentication_scheme Authentication mode.
 	 * @param array  $authentication_parameters Mode-specific credentials.
-	 * @param bool   $accept_self_signed Whether to skip certificate verification.
+	 * @param bool   $accept_self_signed Deprecated compatibility argument; ignored.
 	 */
-	public function __construct( $base_url, $authentication_scheme = 'Basic', $authentication_parameters = array(), $accept_self_signed = false );
+	public function __construct( $base_url, $authentication_scheme = 'None', $authentication_parameters = array(), $accept_self_signed = false );
 	/**
 	 * Change the connection settings.
 	 *
@@ -29,14 +29,14 @@ interface IRestClient {
 	 * @param string $authentication_scheme Authentication mode.
 	 * @param array  $authentication_parameters Mode-specific credentials.
 	 */
-	public function update_connection( $base_url, $authentication_scheme = 'Basic', $authentication_parameters = array() );
+	public function update_connection( $base_url, $authentication_scheme = 'None', $authentication_parameters = array() );
 	/**
 	 * Change authentication without changing the endpoint.
 	 *
 	 * @param string $authentication_scheme Authentication mode.
 	 * @param array  $authentication_parameters Mode-specific credentials.
 	 */
-	public function update_authentication( $authentication_scheme = 'Basic', $authentication_parameters = array() );
+	public function update_authentication( $authentication_scheme = 'None', $authentication_parameters = array() );
 	/**
 	 * Set additional request headers.
 	 *

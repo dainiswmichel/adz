@@ -49,6 +49,19 @@ Upcoming Tasks:
 == Current Release ==
 The top version is the latest, most up-to-date software release. 
 
+= 1.0.9 =
+
+1.0.9 | 2026-11m-06d-01 | Free
+-------------------------------------
+- remediated the WordPress.org closure findings and standardized metadata
+- removed inline style output, runtime style mutation, Chosen, and deprecated APIs
+- replaced raw-IP custom-table view tracking with expiring salted-key transients
+- removed unused cURL, client-certificate, Basic-auth, and payment-sandbox prototypes
+- scoped administrator assets to adz-world screens and removed the iframe shortcode's external default URL
+- made the permission-based invitation the first carousel position and attached looping controls to the carousel
+- added session and account preference storage, removable refinement pills, local adz matching, and explicit weighted evaluation
+- completed a zero-error, zero-warning repository PHPCS gate
+
 = 1.0.1 =
 
 1.0.1 | 2018-06m-11d-01 | Free
@@ -74,8 +87,8 @@ Formatting Key
 
 * list item
 
-date format example: 2018-06m-11d-01 
+date format example: 2018-06m-11d-01
 date format explanation: yyyy-mm(+letter “m” to indicate month)-dd(+letter “d” to indicate day)-incremental integer
 
 Free: Free version available at wordpress.org
-Premium: Premium version available at www.adz.world 
+Premium: Premium version available at www.adz.world

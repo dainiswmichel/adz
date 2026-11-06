@@ -12,20 +12,20 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Provides "Session Support" for WordPress.    In normal PHP, this is handled with
  * native session variables.
  */
-function start_adz_session() {
+function adzworld_start_session() {
 	add_option( 'adz_session_option', array() );
 }
-add_action( 'init', 'start_adz_session' );
+add_action( 'init', 'adzworld_start_session' );
 
 /**
  * Clear the legacy shared plugin cache.
  */
-function adz_end_session() {
+function adzworld_end_session() {
 	delete_option( 'adz_session_option' );
 }
 
-add_action( 'wp_logout', 'adz_end_session' );
-add_action( 'wp_login', 'adz_end_session' );
+add_action( 'wp_logout', 'adzworld_end_session' );
+add_action( 'wp_login', 'adzworld_end_session' );
 
 /**
  * Update an entry in the legacy shared plugin cache.
@@ -33,7 +33,7 @@ add_action( 'wp_login', 'adz_end_session' );
  * @param string $key Storage key.
  * @param mixed  $value Current field value.
  */
-function update_adz_session( $key, $value ) {
+function adzworld_update_session( $key, $value ) {
 	$session_array         = get_option( 'adz_session_option', array() );
 	$session_array[ $key ] = $value;
 	update_option( 'adz_session_option', $session_array );
@@ -45,7 +45,7 @@ function update_adz_session( $key, $value ) {
  * @param string $key Storage key.
  * @param mixed  $default_value Value returned when the key is absent.
  */
-function get_adz_session( $key, $default_value = false ) {
+function adzworld_get_session( $key, $default_value = false ) {
 	$session_array = get_option( 'adz_session_option', array() );
 	return isset( $session_array[ $key ] ) ? $session_array[ $key ] : $default_value;
 }

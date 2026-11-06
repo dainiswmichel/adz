@@ -14,7 +14,7 @@ require_once __DIR__ . '/cache-interface.php';
  *
  * Values stay in WordPress's object cache, not the plugin's shared session option.
  */
-class WPCacheImpl implements CacheInterface {
+class Adzworld_WP_Cache implements Adzworld_Cache_Interface {
 
 	/**
 	 * Cache group identifier.
