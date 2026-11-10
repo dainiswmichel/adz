@@ -461,7 +461,69 @@ function adzworld_rotation_admin_page() {
 		/* translators: %d: maximum number of slots. */
 		esc_html__( 'Rotations support up to %d ordered slots.', 'adz-world' ),
 		absint( ADZWORLD_ROTATION_MAX_SLOTS )
-	) . '</p></div>';
+	) . '</p>';
+	adzworld_admin_format_gallery( $key );
+	echo '</div>';
+}
+
+/**
+ * The display format reference on the Rotation screen.
+ *
+ * Every format and every fixed size the shortcode accepts, grouped, each with
+ * the exact shortcode to copy. It is generated from the two allowlists, so a
+ * format cannot appear here that the shortcode would reject, and a format
+ * cannot be added without appearing here.
+ *
+ * @param string $key Rotation key to write into the sample shortcodes, if any.
+ * @return void
+ */
+function adzworld_admin_format_gallery( $key = '' ) {
+	$formats = adzworld_rotation_display_formats();
+	$sizes   = adzworld_rotation_size_presets();
+	// Built as plain text and escaped at the echo, so the escaping is visible
+	// at the point of output rather than carried in a pre-built string.
+	$name = '' === $key ? '' : ' name="' . $key . '"';
+
+	$grouped = array();
+	foreach ( $formats as $format => $meta ) {
+		$grouped[ $meta['group'] ][ $format ] = $meta;
+	}
+
+	echo '<section class="adzworld-format-gallery">';
+	echo '<h2>' . esc_html__( 'Display formats', 'adz-world' ) . '</h2>';
+	echo '<p class="adzworld-format-intro">' . esc_html__( 'Each format changes only the frame. The slots, their order, the preference matching and the escaping are the same in all of them, so a format can be changed at any time without touching a rotation.', 'adz-world' ) . '</p>';
+
+	foreach ( $grouped as $group => $members ) {
+		echo '<h3 class="adzworld-format-group">' . esc_html( $group ) . '</h3>';
+		echo '<ul class="adzworld-format-list">';
+		foreach ( $members as $format => $meta ) {
+			echo '<li class="adzworld-format">';
+			echo '<span class="adzworld-format-swatch adzworld-format-swatch--' . esc_attr( $format ) . '" aria-hidden="true"></span>';
+			echo '<span class="adzworld-format-body">';
+			echo '<strong class="adzworld-format-name">' . esc_html( $meta['label'] ) . '</strong>';
+			echo '<span class="adzworld-format-note">' . esc_html( $meta['note'] ) . '</span>';
+			echo '<code class="adzworld-format-code">' . esc_html( '[adz_rotation' . $name . ' display="' . $format . '"]' ) . '</code>';
+			echo '</span></li>';
+		}
+		echo '</ul>';
+	}
+
+	echo '<h3 class="adzworld-format-group">' . esc_html__( 'Fixed sizes', 'adz-world' ) . '</h3>';
+	echo '<p class="adzworld-format-intro">' . esc_html__( 'Add a size to hold the frame to a standard creative size. Each one caps its width at the space available, so a wide size in a narrow column shrinks instead of overflowing. Leave the size out for a fluid frame, which is what responsive provider units expect.', 'adz-world' ) . '</p>';
+	echo '<table class="adzworld-format-sizes"><thead><tr>';
+	echo '<th scope="col">' . esc_html__( 'Size', 'adz-world' ) . '</th>';
+	echo '<th scope="col">' . esc_html__( 'Name', 'adz-world' ) . '</th>';
+	echo '<th scope="col">' . esc_html__( 'Shortcode', 'adz-world' ) . '</th>';
+	echo '</tr></thead><tbody>';
+	foreach ( $sizes as $size => $meta ) {
+		echo '<tr>';
+		echo '<td><code>' . esc_html( $size ) . '</code></td>';
+		echo '<td>' . esc_html( $meta['label'] ) . '</td>';
+		echo '<td><code>' . esc_html( '[adz_rotation' . $name . ' size="' . $size . '"]' ) . '</code></td>';
+		echo '</tr>';
+	}
+	echo '</tbody></table>';
+	echo '</section>';
 }
 
 /**
@@ -738,6 +800,207 @@ function adzworld_category_slot_control( $category, $count, $current_slot ) {
 }
 
 /**
+ * Display formats a rotation may be rendered in.
+ *
+ * Every format is presentation only: the markup, the slot ordering, the
+ * preference matching and the escaping are identical in all of them. A format
+ * is a modifier class on the container, so adding one changes a stylesheet and
+ * this allowlist and touches no security surface.
+ *
+ * Keys are emitted as `adzworld-rotation--<key>` and must stay restricted to
+ * lowercase letters, digits and hyphens.
+ *
+ * @return array<string,array{label:string,group:string,note:string}>
+ */
+function adzworld_rotation_display_formats() {
+	return array(
+		'single'      => array(
+			'label' => __( 'Single', 'adz-world' ),
+			'group' => __( 'Carousel', 'adz-world' ),
+			'note'  => __( 'One slot at a time, the rest hidden. The safest default.', 'adz-world' ),
+		),
+		'flat'        => array(
+			'label' => __( 'Flat carousel', 'adz-world' ),
+			'group' => __( 'Carousel', 'adz-world' ),
+			'note'  => __( 'Slides move sideways in a straight line.', 'adz-world' ),
+		),
+		'3d'          => array(
+			'label' => __( '3D carousel', 'adz-world' ),
+			'group' => __( 'Carousel', 'adz-world' ),
+			'note'  => __( 'The active slot faces the reader; neighbours angle away.', 'adz-world' ),
+		),
+		'coverflow'   => array(
+			'label' => __( 'Coverflow', 'adz-world' ),
+			'group' => __( 'Carousel', 'adz-world' ),
+			'note'  => __( 'Neighbours stay visible at the edges, scaled back.', 'adz-world' ),
+		),
+		'fade'        => array(
+			'label' => __( 'Crossfade', 'adz-world' ),
+			'group' => __( 'Carousel', 'adz-world' ),
+			'note'  => __( 'Slots occupy one frame and fade between each other.', 'adz-world' ),
+		),
+		'stack'       => array(
+			'label' => __( 'Card stack', 'adz-world' ),
+			'group' => __( 'Carousel', 'adz-world' ),
+			'note'  => __( 'Layered cards; the depth shows how many remain.', 'adz-world' ),
+		),
+		'filmstrip'   => array(
+			'label' => __( 'Filmstrip', 'adz-world' ),
+			'group' => __( 'Multiple', 'adz-world' ),
+			'note'  => __( 'A scrollable strip that snaps to each slot.', 'adz-world' ),
+		),
+		'grid'        => array(
+			'label' => __( 'Grid', 'adz-world' ),
+			'group' => __( 'Multiple', 'adz-world' ),
+			'note'  => __( 'All slots at once, reflowing by available width.', 'adz-world' ),
+		),
+		'banner'      => array(
+			'label' => __( 'Banner', 'adz-world' ),
+			'group' => __( 'Banner', 'adz-world' ),
+			'note'  => __( 'One wide horizontal strip, for above or below content.', 'adz-world' ),
+		),
+		'billboard'   => array(
+			'label' => __( 'Billboard', 'adz-world' ),
+			'group' => __( 'Banner', 'adz-world' ),
+			'note'  => __( 'A taller full-width banner for the top of a page.', 'adz-world' ),
+		),
+		'inline-card' => array(
+			'label' => __( 'In-article card', 'adz-world' ),
+			'group' => __( 'Widget', 'adz-world' ),
+			'note'  => __( 'A bordered card sized to the text column it sits in.', 'adz-world' ),
+		),
+		'sidebar'     => array(
+			'label' => __( 'Sidebar widget', 'adz-world' ),
+			'group' => __( 'Widget', 'adz-world' ),
+			'note'  => __( 'A narrow card for a sidebar or widget area.', 'adz-world' ),
+		),
+		'rail-left'   => array(
+			'label' => __( 'Left rail', 'adz-world' ),
+			'group' => __( 'Vertical', 'adz-world' ),
+			'note'  => __( 'A vertical bar that sticks to the left of the viewport.', 'adz-world' ),
+		),
+		'rail-right'  => array(
+			'label' => __( 'Right rail', 'adz-world' ),
+			'group' => __( 'Vertical', 'adz-world' ),
+			'note'  => __( 'A vertical bar that sticks to the right of the viewport.', 'adz-world' ),
+		),
+		'skyscraper'  => array(
+			'label' => __( 'Skyscraper', 'adz-world' ),
+			'group' => __( 'Vertical', 'adz-world' ),
+			'note'  => __( 'A tall in-flow column, for a wide sidebar.', 'adz-world' ),
+		),
+		'dock-bottom' => array(
+			'label' => __( 'Bottom dock', 'adz-world' ),
+			'group' => __( 'Anchored', 'adz-world' ),
+			'note'  => __( 'A dismissible bar anchored to the bottom of the viewport.', 'adz-world' ),
+		),
+		'dock-top'    => array(
+			'label' => __( 'Top dock', 'adz-world' ),
+			'group' => __( 'Anchored', 'adz-world' ),
+			'note'  => __( 'A dismissible bar anchored to the top of the viewport.', 'adz-world' ),
+		),
+		'corner'      => array(
+			'label' => __( 'Corner card', 'adz-world' ),
+			'group' => __( 'Anchored', 'adz-world' ),
+			'note'  => __( 'A dismissible card that settles in the bottom corner.', 'adz-world' ),
+		),
+	);
+}
+
+/**
+ * Standard advertising sizes a rotation frame can be fixed to.
+ *
+ * These are the common IAB and Google Ad Manager fixed sizes publishers are
+ * given creative for. The dimensions live in the stylesheet, one class per
+ * size, because a size written into a style attribute would be an inline
+ * style; this allowlist only names them.
+ *
+ * An empty size means the frame is fluid and takes the width it is given,
+ * which is what responsive network units expect.
+ *
+ * @return array<string,array{label:string,width:int,height:int}>
+ */
+function adzworld_rotation_size_presets() {
+	return array(
+		'300x250' => array(
+			'label'  => __( 'Medium rectangle', 'adz-world' ),
+			'width'  => 300,
+			'height' => 250,
+		),
+		'336x280' => array(
+			'label'  => __( 'Large rectangle', 'adz-world' ),
+			'width'  => 336,
+			'height' => 280,
+		),
+		'250x250' => array(
+			'label'  => __( 'Square', 'adz-world' ),
+			'width'  => 250,
+			'height' => 250,
+		),
+		'200x200' => array(
+			'label'  => __( 'Small square', 'adz-world' ),
+			'width'  => 200,
+			'height' => 200,
+		),
+		'180x150' => array(
+			'label'  => __( 'Small rectangle', 'adz-world' ),
+			'width'  => 180,
+			'height' => 150,
+		),
+		'728x90'  => array(
+			'label'  => __( 'Leaderboard', 'adz-world' ),
+			'width'  => 728,
+			'height' => 90,
+		),
+		'970x90'  => array(
+			'label'  => __( 'Super leaderboard', 'adz-world' ),
+			'width'  => 970,
+			'height' => 90,
+		),
+		'970x250' => array(
+			'label'  => __( 'Billboard', 'adz-world' ),
+			'width'  => 970,
+			'height' => 250,
+		),
+		'468x60'  => array(
+			'label'  => __( 'Full banner', 'adz-world' ),
+			'width'  => 468,
+			'height' => 60,
+		),
+		'234x60'  => array(
+			'label'  => __( 'Half banner', 'adz-world' ),
+			'width'  => 234,
+			'height' => 60,
+		),
+		'300x600' => array(
+			'label'  => __( 'Half page', 'adz-world' ),
+			'width'  => 300,
+			'height' => 600,
+		),
+		'160x600' => array(
+			'label'  => __( 'Wide skyscraper', 'adz-world' ),
+			'width'  => 160,
+			'height' => 600,
+		),
+		'120x600' => array(
+			'label'  => __( 'Skyscraper', 'adz-world' ),
+			'width'  => 120,
+			'height' => 600,
+		),
+		'320x50'  => array(
+			'label'  => __( 'Mobile banner', 'adz-world' ),
+			'width'  => 320,
+			'height' => 50,
+		),
+		'320x100' => array(
+			'label'  => __( 'Large mobile banner', 'adz-world' ),
+			'width'  => 320,
+			'height' => 100,
+		),
+	);
+}
+
+/**
  * Render only administrator-selected content with accessible navigation.
  *
  * Weighted selection applies to a single server-rendered presentation.
@@ -757,6 +1020,7 @@ function adzworld_render_rotation( $attributes ) {
 			'slots'    => '',
 			'display'  => 'single',
 			'controls' => 'both',
+			'size'     => '',
 			'label'    => __( 'Advertising', 'adz-world' ),
 		),
 		$attributes,
@@ -773,12 +1037,16 @@ function adzworld_render_rotation( $attributes ) {
 	if ( is_wp_error( $slots ) ) {
 		return '<p class="adzworld-rotation-error" role="alert">' . esc_html( $slots->get_error_message() ) . '</p>';
 	}
-	if ( ! in_array( $attributes['display'], array( 'single', 'flat', '3d' ), true )
-		|| ! in_array( $attributes['controls'], array( 'arrows', 'dots', 'both', 'none' ), true ) ) {
-		return '<p class="adzworld-rotation-error" role="alert">' . esc_html__( 'The rotation display or controls setting is not supported.', 'adz-world' ) . '</p>';
+	$formats = adzworld_rotation_display_formats();
+	$sizes   = adzworld_rotation_size_presets();
+	if ( ! isset( $formats[ $attributes['display'] ] )
+		|| ! in_array( $attributes['controls'], array( 'arrows', 'dots', 'both', 'none' ), true )
+		|| ( '' !== $attributes['size'] && ! isset( $sizes[ $attributes['size'] ] ) ) ) {
+		return '<p class="adzworld-rotation-error" role="alert">' . esc_html__( 'The rotation display, size or controls setting is not supported.', 'adz-world' ) . '</p>';
 	}
 	$display  = $attributes['display'];
 	$controls = $attributes['controls'];
+	$size     = $attributes['size'];
 	$pref     = adzworld_preference_with_catalog( adzworld_current_preference() );
 	if ( adzworld_has_preference( $pref ) ) {
 		foreach ( $slots as $index => $candidate ) {
@@ -876,9 +1144,33 @@ function adzworld_render_rotation( $attributes ) {
 	if ( count( $slots ) > 1 && in_array( $controls, array( 'dots', 'both' ), true ) ) {
 		$navigation .= '<div class="adzworld-dots">' . $dots . '</div>';
 	}
-	return '<div class="adzworld-rotation adzworld-rotation--' . esc_attr( $display ) . '" id="' . esc_attr( $id )
-		. '" role="region" aria-label="' . esc_attr( $attributes['label'] ) . '"><div class="adzworld-carousel"><div class="adzworld-slides">' . $slides
-		. '</div><div class="adzworld-navigation" hidden>' . $navigation . '</div></div></div>';
+	$classes = 'adzworld-rotation adzworld-rotation--' . $display;
+	if ( '' !== $size ) {
+		$classes .= ' adzworld-rotation--size-' . $size;
+	}
+
+	/*
+	 * Formats that place every slot on screen at once. The script reads this to
+	 * keep sibling slots visible instead of hiding them; every other format
+	 * keeps the one-at-a-time behaviour unchanged.
+	 */
+	$multiple = in_array( $display, array( 'grid', 'filmstrip', 'coverflow', 'stack' ), true ) ? ' data-adzworld-multiple="1"' : '';
+
+	/*
+	 * The anchored formats cover part of the viewport, so each one carries a
+	 * dismiss control. Without it a reader has no way to clear the frame, which
+	 * is the usual complaint about docked and corner advertising.
+	 */
+	$dismiss = '';
+	if ( in_array( $display, array( 'dock-bottom', 'dock-top', 'corner' ), true ) ) {
+		$dismiss = '<button class="adzworld-dismiss" type="button" data-adzworld-dismiss="1">'
+			. '<span aria-hidden="true">&#215;</span><span class="screen-reader-text">'
+			. esc_html__( 'Dismiss this advertising', 'adz-world' ) . '</span></button>';
+	}
+
+	return '<div class="' . esc_attr( $classes ) . '" id="' . esc_attr( $id )
+		. '"' . $multiple . ' role="region" aria-label="' . esc_attr( $attributes['label'] ) . '"><div class="adzworld-carousel"><div class="adzworld-slides">' . $slides
+		. '</div><div class="adzworld-navigation" hidden>' . $navigation . '</div>' . $dismiss . '</div></div>';
 }
 
 /**

@@ -181,6 +181,16 @@
 
 		rotation.classList.add( 'adzworld-enhanced' );
 
+		/*
+		 * Most formats show one slot at a time, so the rest are hidden, marked
+		 * aria-hidden and made inert. The multi-slot formats (grid, filmstrip,
+		 * coverflow, card stack) show every slot at once: there the slots are
+		 * real visible content, so none of them may be hidden from assistive
+		 * technology and only "current" moves. PHP sets the flag from its
+		 * format allowlist; with the flag absent this path is unchanged.
+		 */
+		var showsEverySlot = '1' === rotation.dataset.adzworldMultiple;
+
 		function show( position ) {
 			var activeCategory;
 			var activeSlot;
@@ -192,10 +202,10 @@
 				function ( slide, index ) {
 					var active = index === current;
 
-					slide.hidden = ! active;
+					slide.hidden = showsEverySlot ? false : ! active;
 					slide.classList.toggle( 'adzworld-active', active );
-					slide.setAttribute( 'aria-hidden', String( ! active ) );
-					slide.inert = ! active;
+					slide.setAttribute( 'aria-hidden', showsEverySlot ? 'false' : String( ! active ) );
+					slide.inert = showsEverySlot ? false : ! active;
 				}
 			);
 			rotation.querySelectorAll( '[data-adzworld-position]' ).forEach(
@@ -203,7 +213,12 @@
 					button.setAttribute( 'aria-pressed', String( Number( button.dataset.adzworldPosition ) === current ) );
 				}
 			);
-			mountNetworkUnit( slides[ current ] );
+			if ( showsEverySlot ) {
+				// Every slot is on screen, so every provider unit must mount.
+				slides.forEach( mountNetworkUnit );
+			} else {
+				mountNetworkUnit( slides[ current ] );
+			}
 			rotation.querySelectorAll( '[data-adzworld-category-slot-category], [data-adz-category-slot-category]' ).forEach(
 				function ( button ) {
 					var category = button.dataset.adzworldCategorySlotCategory || button.dataset.adzCategorySlotCategory || '';
@@ -316,6 +331,50 @@
 				}
 			}
 		);
+
+		/*
+		 * The anchored formats (bottom dock, top dock, corner card) can be
+		 * dismissed. Dismissal sets the element's hidden property rather than
+		 * writing a style, and is remembered for the tab only, so a reader who
+		 * clears the frame does not meet it again on the next page. Storage can
+		 * be unavailable or throw in a private window, so a failure there just
+		 * means the frame returns on the next page.
+		 */
+		( function () {
+			var dismiss = rotation.querySelector( '[data-adzworld-dismiss]' );
+			var key = 'adzworld-dismissed-' + ( rotation.id || 'rotation' );
+
+			if ( ! dismiss ) {
+				return;
+			}
+
+			try {
+				if ( '1' === window.sessionStorage.getItem( key ) ) {
+					rotation.hidden = true;
+					return;
+				}
+			} catch ( error ) {
+				// Storage unavailable, so the frame shows. The reason is left on
+				// the element, matching how this file records provider errors,
+				// so a publisher can see why dismissal is not remembered.
+				rotation.dataset.adzworldDismissStore = error && error.name ? String( error.name ) : 'unavailable';
+			}
+
+			dismiss.addEventListener(
+				'click',
+				function () {
+					rotation.hidden = true;
+
+					try {
+						window.sessionStorage.setItem( key, '1' );
+					} catch ( error ) {
+						// The frame is dismissed for this page either way; it
+						// returns on the next one.
+						rotation.dataset.adzworldDismissStore = error && error.name ? String( error.name ) : 'unavailable';
+					}
+				}
+			);
+		}() );
 
 		if ( navigation ) {
 			navigation.addEventListener(
