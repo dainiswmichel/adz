@@ -160,7 +160,8 @@ function adzworld_feedback_control( $target, $category ) {
 	$score        = isset( $feedback[ $target ]['score'] ) ? (int) $feedback[ $target ]['score'] : 0;
 	$input_id     = wp_unique_id( 'adzworld-evaluation-' );
 	$refine_id    = wp_unique_id( 'adzworld-refine-' );
-	$can_refine   = in_array( $category, $preference['categories'], true );
+	$known        = adzworld_preference_with_catalog( $preference );
+	$can_refine   = '' !== $category && in_array( $category, $known['categories'], true );
 	$refine_label = '' !== $category
 		? sprintf(
 			/* translators: %s: selected advertising category. */

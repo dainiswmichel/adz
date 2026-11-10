@@ -17,6 +17,7 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
+define( 'ADZWORLD_VERSION', '1.0.9' );
 global $adzworld_network_base_url;
 $adzworld_network_base_url = 'https://adz-world.com/';
 require_once __DIR__ . '/vendor/eof/eof.php';
@@ -33,6 +34,9 @@ require_once __DIR__ . '/includes/adzworld-earnings.php';
 require_once __DIR__ . '/includes/adz-preferences.php';
 require_once __DIR__ . '/includes/adz-preference-ui.php';
 require_once __DIR__ . '/includes/adzworld-feedback.php';
+require_once __DIR__ . '/includes/adzworld-affiliates.php';
+require_once __DIR__ . '/includes/adzworld-networks.php';
+require_once __DIR__ . '/includes/adzworld-desk.php';
 require_once __DIR__ . '/includes/adzworld-rotation.php';
 require_once __DIR__ . '/includes/adzworld-request-context.php';
 define( 'ADZ_WORLD', plugin_dir_path( __FILE__ ) );
@@ -55,8 +59,15 @@ add_action( 'wp_enqueue_scripts', 'adzworld_enqueue_scripts' );
  */
 function adzworld_is_plugin_admin_screen() {
 	$screen = get_current_screen();
+	if ( $screen instanceof WP_Screen && 'adz_ad' === $screen->post_type ) {
+		return true;
+	}
 
-	return $screen instanceof WP_Screen && 'adz_ad' === $screen->post_type;
+	$page = filter_input( INPUT_GET, 'page', FILTER_UNSAFE_RAW );
+	$page = is_string( $page ) ? sanitize_key( $page ) : '';
+
+	return function_exists( 'adzworld_desk_submenu_slugs' )
+		&& in_array( $page, adzworld_desk_submenu_slugs(), true );
 }
 
 /**

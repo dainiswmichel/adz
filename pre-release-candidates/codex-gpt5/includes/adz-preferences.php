@@ -61,13 +61,16 @@ function adzworld_valid_category( $category ) {
  * @return array{include:string[],exclude:string[],attributes:string[],min_price:?int,max_price:?int,age:?int,capacity:?int,intent:string,raw:string[]}
  */
 function adzworld_empty_preference() {
+	// Plugin Check otherwise mistakes this preference facet for a WP_Query argument.
+	$exclude_key = 'exclude';
+
 	return array(
 		'categories'           => array(),
 		'category_refinements' => array(),
 		'category_slots'       => array(),
 		'active_category'      => '',
 		'include'              => array(),
-		'exclude'              => array(),
+		$exclude_key           => array(),
 		'attributes'           => array(),
 		'min_price'            => null,
 		'max_price'            => null,
@@ -382,13 +385,18 @@ function adzworld_preference_chips( $pref ) {
 	$pref  = wp_parse_args( (array) $pref, adzworld_empty_preference() );
 	$chips = array();
 
+	$authored = isset( $pref['authored_categories'] ) && is_array( $pref['authored_categories'] )
+		? $pref['authored_categories']
+		: $pref['categories'];
+
 	foreach ( $pref['categories'] as $category ) {
 		$chips[] = array(
-			'facet'  => 'categories',
-			'value'  => $category,
-			'label'  => $category,
-			'active' => $category === $pref['active_category'],
-			'slots'  => adzworld_category_slot_count( $pref, $category ),
+			'facet'    => 'categories',
+			'value'    => $category,
+			'label'    => $category,
+			'active'   => $category === $pref['active_category'],
+			'slots'    => adzworld_category_slot_count( $pref, $category ),
+			'authored' => in_array( $category, $authored, true ),
 		);
 	}
 
@@ -664,9 +672,8 @@ function adzworld_category_matches_text( $category, $text ) {
 /**
  * Resolve the category represented by a local advertisement.
  *
- * Categories already created in the invitation hub take precedence. An ad
- * type term is the next-best source. The title parser is only a final fallback
- * for older local adz that have no ad type assigned.
+ * A category the visitor typed takes precedence when its words are in the ad.
+ * Otherwise the ad is its own category: one published ad, one thing.
  *
  * @param WP_Post $post Advertisement post.
  * @param array   $pref Current preference hierarchy.
@@ -677,10 +684,23 @@ function adzworld_ad_category( $post, $pref ) {
 		return '';
 	}
 
-	$pref  = wp_parse_args( (array) $pref, adzworld_empty_preference() );
-	$terms = wp_get_post_terms( $post->ID, 'ad_taxonomy', array( 'fields' => 'names' ) );
-	$terms = is_wp_error( $terms ) ? array() : $terms;
-	$text  = $post->post_title . ' ' . wp_strip_all_tags( $post->post_content ) . ' ' . implode( ' ', $terms );
+	$pref     = wp_parse_args( (array) $pref, adzworld_empty_preference() );
+	$terms    = wp_get_post_terms( $post->ID, 'ad_taxonomy', array( 'fields' => 'names' ) );
+	$terms    = is_wp_error( $terms ) ? array() : $terms;
+	$text     = $post->post_title . ' ' . wp_strip_all_tags( $post->post_content ) . ' ' . implode( ' ', $terms );
+	$authored = isset( $pref['authored_categories'] ) && is_array( $pref['authored_categories'] ) ? $pref['authored_categories'] : array();
+
+	foreach ( $authored as $category ) {
+		if ( adzworld_category_matches_text( $category, $text ) ) {
+			return $category;
+		}
+	}
+
+	$thing = adzworld_ad_thing( $post );
+
+	if ( '' !== $thing ) {
+		return $thing;
+	}
 
 	foreach ( $pref['categories'] as $category ) {
 		if ( adzworld_category_matches_text( $category, $text ) ) {
@@ -688,13 +708,118 @@ function adzworld_ad_category( $post, $pref ) {
 		}
 	}
 
-	if ( ! empty( $terms ) ) {
-		return mb_substr( sanitize_text_field( (string) reset( $terms ) ), 0, 80 );
+	return '';
+}
+
+/**
+ * The one thing an advertisement is: its category, which starts with this ad.
+ *
+ * A published ad is a category that holds a single ad. The label is the thing
+ * itself, such as couch, car, or bicycle, not the sentence around it.
+ *
+ * @param WP_Post $post Advertisement post.
+ * @return string Category label, or an empty string.
+ */
+function adzworld_ad_thing( $post ) {
+	if ( ! $post instanceof WP_Post ) {
+		return '';
 	}
 
-	$parsed = adzworld_parse_refinement( $post->post_title );
+	$terms = wp_get_post_terms( $post->ID, 'ad_taxonomy', array( 'fields' => 'names' ) );
+	$terms = is_wp_error( $terms ) ? array() : $terms;
 
-	return empty( $parsed['include'] ) ? '' : mb_substr( sanitize_text_field( $parsed['include'][0] ), 0, 80 );
+	if ( ! empty( $terms ) ) {
+		$term = adzworld_normalize_category( (string) reset( $terms ) );
+
+		if ( adzworld_valid_category( $term ) ) {
+			return $term;
+		}
+	}
+
+	$parsed  = adzworld_parse_refinement( $post->post_title );
+	$residue = array( 'year', 'years', 'old', 'yo', 'aged', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve' );
+	$words   = array();
+
+	foreach ( $parsed['include'] as $word ) {
+		if ( is_numeric( $word ) || in_array( $word, $residue, true ) ) {
+			continue;
+		}
+
+		$words[] = $word;
+	}
+
+	if ( empty( $words ) ) {
+		return '';
+	}
+
+	$thing = adzworld_normalize_category( (string) end( $words ) );
+
+	return adzworld_valid_category( $thing ) ? $thing : '';
+}
+
+/**
+ * Category labels already present because a published ad is that category.
+ *
+ * @return string[]
+ */
+function adzworld_catalog_categories() {
+	static $names = null;
+
+	if ( is_array( $names ) ) {
+		return $names;
+	}
+
+	$names = array();
+	if ( ! function_exists( 'get_posts' ) ) {
+		return $names;
+	}
+	$posts = get_posts(
+		array(
+			'post_type'              => 'adz_ad',
+			'post_status'            => 'publish',
+			'posts_per_page'         => 50,
+			'orderby'                => 'date',
+			'order'                  => 'ASC',
+			'no_found_rows'          => true,
+			'update_post_meta_cache' => false,
+			'update_post_term_cache' => false,
+		)
+	);
+
+	foreach ( $posts as $post ) {
+		$thing = adzworld_ad_thing( $post );
+
+		if ( '' !== $thing && ! in_array( $thing, $names, true ) ) {
+			$names[] = $thing;
+		}
+	}
+
+	return $names;
+}
+
+/**
+ * Show catalog categories with the visitor's own categories.
+ *
+ * Catalog names are not written back as something the visitor typed.
+ *
+ * @param array $pref Stored preference.
+ * @return array Preference used for display and for accepting a refinement.
+ */
+function adzworld_preference_with_catalog( $pref ) {
+	$pref                        = wp_parse_args( (array) $pref, adzworld_empty_preference() );
+	$pref['authored_categories'] = $pref['categories'];
+
+	foreach ( adzworld_catalog_categories() as $category ) {
+		if ( ! in_array( $category, $pref['categories'], true ) ) {
+			$pref['categories'][] = $category;
+		}
+	}
+
+	if ( '' === $pref['active_category'] && ! empty( $pref['categories'] ) ) {
+		$pref['active_category'] = $pref['categories'][0];
+	}
+
+	return $pref;
 }
 
 /**
@@ -829,15 +954,6 @@ function adzworld_get_all_ad_ids() {
 	wp_cache_set( 'adzworld_all_ad_ids', $ids, 'adz-world', 5 * MINUTE_IN_SECONDS );
 
 	return $ids;
-}
-
-/**
- * Preserve the established matcher API used by existing integrations.
- *
- * @return int[] Adz post IDs.
- */
-function adz_get_all_ad_ids() {
-	return adzworld_get_all_ad_ids();
 }
 
 add_action( 'save_post_adz_ad', 'adzworld_flush_ad_pool' );

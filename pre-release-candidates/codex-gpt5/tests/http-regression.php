@@ -221,15 +221,45 @@ try {
 		'Plugin assets are absent from unrelated administrator screens'
 	);
 	$adzworld_response   = wp_remote_get(
-		admin_url( 'edit.php?post_type=adz_ad&page=_adz_ad_options' ),
+		admin_url( 'admin.php?page=adzworld' ),
 		array( 'headers' => $adzworld_headers )
 	);
 	$adzworld_admin_body = wp_remote_retrieve_body( $adzworld_response );
 	adzworld_test_assert(
 		! is_wp_error( $adzworld_response ) && 200 === wp_remote_retrieve_response_code( $adzworld_response )
 		&& false !== strpos( $adzworld_admin_body, 'eof-style-css' )
-		&& false !== strpos( $adzworld_admin_body, 'adz_admin_script-js' ),
-		'Plugin assets load on the adz-world settings screen'
+		&& false !== strpos( $adzworld_admin_body, 'adz_admin_script-js' )
+		&& false !== strpos( $adzworld_admin_body, 'adzworld-settings-tabs' )
+		&& 6 === substr_count( $adzworld_admin_body, '<a class="nav-tab' ),
+		'Unified adz-world dashboard loads its assets and six FLOSC-style tabs'
+	);
+	adzworld_test_assert(
+		false !== strpos( $adzworld_admin_body, 'admin.php?page=adzworld' )
+		&& false !== strpos( $adzworld_admin_body, 'edit.php?post_type=adz_ad' ),
+		'Adz.world sidebar exposes the dashboard and native ad list without the broken Settings shortcut'
+	);
+	adzworld_test_assert( false === strpos( $adzworld_admin_body, '>Settings</a>' ), 'The unnecessary Settings tab is absent' );
+	$adzworld_response         = wp_remote_get( admin_url( 'admin.php?page=adzworld&tab=networks' ), array( 'headers' => $adzworld_headers ) );
+	$adzworld_connections_body = wp_remote_retrieve_body( $adzworld_response );
+	adzworld_test_assert(
+		! is_wp_error( $adzworld_response ) && 200 === wp_remote_retrieve_response_code( $adzworld_response )
+		&& false !== strpos( $adzworld_connections_body, 'Advertising connections' )
+		&& false !== strpos( $adzworld_connections_body, 'Google AdSense' )
+		&& false !== strpos( $adzworld_connections_body, 'Outbrain' )
+		&& false !== strpos( $adzworld_connections_body, 'Amazon Publisher Services' )
+		&& false !== strpos( $adzworld_connections_body, 'Connect another established provider' )
+		&& false !== strpos( $adzworld_connections_body, 'Amazon Associates' )
+		&& false !== strpos( $adzworld_connections_body, 'eBay Partner Network' ),
+		'Connections combines direct units, managed networks, provider shortcodes, and affiliate programs'
+	);
+	$adzworld_response      = wp_remote_get( admin_url( 'admin.php?page=adzworld&tab=rotation' ), array( 'headers' => $adzworld_headers ) );
+	$adzworld_rotation_body = wp_remote_retrieve_body( $adzworld_response );
+	adzworld_test_assert(
+		! is_wp_error( $adzworld_response ) && 200 === wp_remote_retrieve_response_code( $adzworld_response )
+		&& false !== strpos( $adzworld_rotation_body, 'data-adzworld-admin-slots' )
+		&& false !== strpos( $adzworld_rotation_body, 'Refresh this adz preview' )
+		&& false !== strpos( $adzworld_rotation_body, 'adzworld-admin-rotation-js' ),
+		'Rotation tab renders vertical populated slots with refresh controls and its editor script'
 	);
 	$adzworld_response = wp_remote_post(
 		admin_url( 'admin-ajax.php' ),
@@ -256,7 +286,7 @@ try {
 		)
 	);
 	adzworld_test_assert( ! is_wp_error( $adzworld_response ) && 403 === wp_remote_retrieve_response_code( $adzworld_response ), 'Administrator without valid nonce is rejected' );
-	$adzworld_response = wp_remote_get( admin_url( 'edit.php?post_type=adz_ad&page=adzworld-earnings' ), array( 'headers' => $adzworld_headers ) );
+	$adzworld_response = wp_remote_get( admin_url( 'admin.php?page=adzworld&tab=earnings' ), array( 'headers' => $adzworld_headers ) );
 	adzworld_test_assert(
 		! is_wp_error( $adzworld_response ) && 200 === wp_remote_retrieve_response_code( $adzworld_response )
 		&& false !== strpos( wp_remote_retrieve_body( $adzworld_response ), 'Not connected.' ),

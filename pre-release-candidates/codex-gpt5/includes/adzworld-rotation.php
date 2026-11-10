@@ -10,6 +10,10 @@ defined( 'ABSPATH' ) || exit;
 add_shortcode( 'adz_rotation', 'adzworld_render_rotation' );
 add_action( 'admin_menu', 'adzworld_rotation_admin_menu' );
 
+if ( ! defined( 'ADZWORLD_ROTATION_MAX_SLOTS' ) ) {
+	define( 'ADZWORLD_ROTATION_MAX_SLOTS', 200 );
+}
+
 /**
  * Register a publisher's existing shortcode as a rotation source.
  *
@@ -59,7 +63,8 @@ function adzworld_rotation_sources() {
 	}
 	$registered = isset( $GLOBALS['adzworld_rotation_sources'] ) && is_array( $GLOBALS['adzworld_rotation_sources'] )
 		? $GLOBALS['adzworld_rotation_sources'] : array();
-	return array_merge( $saved, $registered );
+	$networks   = function_exists( 'adzworld_network_rotation_sources' ) ? adzworld_network_rotation_sources() : array();
+	return array_merge( $saved, $registered, $networks );
 }
 
 /**
@@ -123,6 +128,270 @@ function adzworld_save_rotation_source() {
 }
 
 /**
+ * Sources an administrator may place in a named rotation.
+ *
+ * @return array<string,string>
+ */
+function adzworld_rotation_slot_choices() {
+	$choices = array(
+		'intro' => __( 'Adz invitation and user hub', 'adz-world' ),
+	);
+	$ads     = get_posts(
+		array(
+			'fields'           => 'ids',
+			'numberposts'      => -1,
+			'order'            => 'ASC',
+			'orderby'          => 'title',
+			'post_status'      => 'publish',
+			'post_type'        => 'adz_ad',
+			'suppress_filters' => false,
+		)
+	);
+	foreach ( $ads as $ad_id ) {
+		$choices[ 'ad:' . $ad_id ] = sprintf(
+			/* translators: 1: advertisement id, 2: advertisement title. */
+			__( 'Local adz #%1$d — %2$s', 'adz-world' ),
+			$ad_id,
+			get_the_title( $ad_id )
+		);
+	}
+	foreach ( adzworld_rotation_sources() as $key => $source ) {
+		$choices[ 'source:' . $key ] = sprintf(
+			/* translators: %s: advertising source label. */
+			__( 'Provider — %s', 'adz-world' ),
+			$source['label']
+		);
+	}
+	return $choices;
+}
+
+/**
+ * Validate one stored rotation slot against currently available content.
+ *
+ * @param mixed                     $slot    Candidate slot reference.
+ * @param array<string,string>|null $choices Available choices, when already loaded.
+ * @return string Valid reference, or an empty string.
+ */
+function adzworld_sanitize_rotation_slot( $slot, $choices = null ) {
+	$slot    = is_scalar( $slot ) ? sanitize_text_field( (string) $slot ) : '';
+	$choices = is_array( $choices ) ? $choices : adzworld_rotation_slot_choices();
+	return isset( $choices[ $slot ] ) ? $slot : '';
+}
+
+/**
+ * Sanitize all named rotation definitions.
+ *
+ * @param mixed $raw Stored rotations.
+ * @return array<string,array<string,mixed>>
+ */
+function adzworld_sanitize_named_rotations( $raw ) {
+	$clean   = array();
+	$choices = adzworld_rotation_slot_choices();
+	if ( ! is_array( $raw ) ) {
+		return $clean;
+	}
+	foreach ( array_slice( $raw, 0, 50, true ) as $key => $rotation ) {
+		$key = sanitize_key( $key );
+		if ( '' === $key || ! is_array( $rotation ) ) {
+			continue;
+		}
+		$name        = isset( $rotation['name'] ) ? sanitize_text_field( $rotation['name'] ) : '';
+		$slots       = isset( $rotation['slots'] ) && is_array( $rotation['slots'] ) ? $rotation['slots'] : array();
+		$slots       = array_slice( $slots, 0, ADZWORLD_ROTATION_MAX_SLOTS );
+		$clean_slots = array();
+		foreach ( $slots as $slot ) {
+			$slot = adzworld_sanitize_rotation_slot( $slot, $choices );
+			if ( '' !== $slot ) {
+				$clean_slots[] = $slot;
+			}
+		}
+		if ( '' !== $name && ! empty( $clean_slots ) ) {
+			$clean[ $key ] = array(
+				'name'  => $name,
+				'slots' => $clean_slots,
+			);
+		}
+	}
+	return $clean;
+}
+
+/**
+ * Read named rotations.
+ *
+ * @return array<string,array<string,mixed>>
+ */
+function adzworld_named_rotations() {
+	return adzworld_sanitize_named_rotations( get_option( 'adzworld_named_rotations', array() ) );
+}
+
+/**
+ * Starter rotation shown until an administrator saves the first rotation.
+ *
+ * @return array<string,mixed>
+ */
+function adzworld_starter_rotation() {
+	$slots = array_keys( adzworld_rotation_slot_choices() );
+	return array(
+		'name'  => __( 'Main rotation', 'adz-world' ),
+		'slots' => empty( $slots ) ? array( 'intro' ) : $slots,
+	);
+}
+
+/**
+ * Return the slot list for a named rotation.
+ *
+ * @param string $name Rotation key.
+ * @return array<int,string>
+ */
+function adzworld_named_rotation_slots( $name ) {
+	$name      = sanitize_key( $name );
+	$rotations = adzworld_named_rotations();
+	return isset( $rotations[ $name ] ) ? $rotations[ $name ]['slots'] : array();
+}
+
+/**
+ * Save one named rotation.
+ *
+ * @return void
+ */
+function adzworld_save_named_rotation() {
+	check_admin_referer( 'adzworld_save_named_rotation', 'adzworld_rotation_nonce' );
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( esc_html__( 'Administrator permission is required.', 'adz-world' ), '', array( 'response' => 403 ) );
+	}
+	$key      = isset( $_POST['rotation_key'] ) && is_string( $_POST['rotation_key'] ) ? sanitize_key( wp_unslash( $_POST['rotation_key'] ) ) : '';
+	$original = isset( $_POST['original_rotation_key'] ) && is_string( $_POST['original_rotation_key'] ) ? sanitize_key( wp_unslash( $_POST['original_rotation_key'] ) ) : '';
+	$name     = isset( $_POST['rotation_name'] ) && is_string( $_POST['rotation_name'] ) ? sanitize_text_field( wp_unslash( $_POST['rotation_name'] ) ) : '';
+	$slots    = isset( $_POST['rotation_slots'] ) && is_array( $_POST['rotation_slots'] ) ? map_deep( wp_unslash( $_POST['rotation_slots'] ), 'sanitize_text_field' ) : array();
+	$stored   = adzworld_named_rotations();
+	$error    = '';
+	$delete   = isset( $_POST['delete_rotation'] ) && is_string( $_POST['delete_rotation'] ) ? sanitize_text_field( wp_unslash( $_POST['delete_rotation'] ) ) : '';
+
+	if ( '1' === $delete && '' !== $original ) {
+		unset( $stored[ $original ] );
+		update_option( 'adzworld_named_rotations', $stored, false );
+		set_transient( 'adzworld_rotation_notice_' . get_current_user_id(), __( 'Rotation deleted.', 'adz-world' ), MINUTE_IN_SECONDS );
+		wp_safe_redirect( adzworld_desk_url( 'rotation' ) );
+		exit;
+	}
+	if ( '' === $key || ! preg_match( '/^[a-z][a-z0-9_-]{0,49}$/D', $key ) ) {
+		$error = __( 'The rotation key must begin with a letter and use only lowercase letters, numbers, underscores, or hyphens.', 'adz-world' );
+	} elseif ( '' === $name ) {
+		$error = __( 'A rotation name is required.', 'adz-world' );
+	} elseif ( count( $slots ) > ADZWORLD_ROTATION_MAX_SLOTS ) {
+		$error = sprintf(
+			/* translators: %d: maximum number of slots. */
+			__( 'A rotation can contain up to %d slots.', 'adz-world' ),
+			ADZWORLD_ROTATION_MAX_SLOTS
+		);
+	} else {
+		$choices     = adzworld_rotation_slot_choices();
+		$clean_slots = array();
+		foreach ( $slots as $slot ) {
+			$slot = adzworld_sanitize_rotation_slot( $slot, $choices );
+			if ( '' !== $slot ) {
+				$clean_slots[] = $slot;
+			}
+		}
+		if ( empty( $clean_slots ) || count( $clean_slots ) !== count( $slots ) ) {
+			$error = __( 'Every rotation slot must refer to an available invitation, local adz, or provider source.', 'adz-world' );
+		}
+	}
+	if ( '' !== $error ) {
+		set_transient( 'adzworld_rotation_error_' . get_current_user_id(), $error, MINUTE_IN_SECONDS );
+		wp_safe_redirect( adzworld_desk_url( 'rotation' ) );
+		exit;
+	}
+	if ( '' !== $original && $original !== $key ) {
+		unset( $stored[ $original ] );
+	}
+	$stored[ $key ] = array(
+		'name'  => $name,
+		'slots' => $clean_slots,
+	);
+	update_option( 'adzworld_named_rotations', $stored, false );
+	set_transient( 'adzworld_rotation_notice_' . get_current_user_id(), __( 'Rotation saved.', 'adz-world' ), MINUTE_IN_SECONDS );
+	wp_safe_redirect( add_query_arg( 'rotation', $key, adzworld_desk_url( 'rotation' ) ) );
+	exit;
+}
+add_action( 'admin_post_adzworld_save_named_rotation', 'adzworld_save_named_rotation' );
+
+/**
+ * Render the live content for one administrator rotation slot.
+ *
+ * @param string $slot Valid slot reference.
+ * @return string
+ */
+function adzworld_admin_rotation_slot_preview( $slot ) {
+	$slot = adzworld_sanitize_rotation_slot( $slot );
+	if ( '' === $slot ) {
+		return '<p role="alert">' . esc_html__( 'This slot is no longer available.', 'adz-world' ) . '</p>';
+	}
+	if ( 'intro' === $slot ) {
+		ob_start();
+		echo '<div class="adz-panel"><h3 class="adz-panel__title">' . esc_html__( 'Advertising by invitation', 'adz-world' ) . '</h3>';
+		adzworld_render_intro( 'full' );
+		echo '</div>';
+		$content = (string) ob_get_clean();
+	} elseif ( 0 === strpos( $slot, 'ad:' ) ) {
+		$content = adzworld_local_ad_slide( get_post( (int) substr( $slot, 3 ) ) );
+	} else {
+		$key     = substr( $slot, 7 );
+		$sources = adzworld_rotation_sources();
+		$content = '<div class="adzworld-provider">' . do_shortcode( $sources[ $key ]['shortcode'] ) . '</div>'
+			. '<p class="adzworld-match-label">' . esc_html( $sources[ $key ]['label'] ) . '</p>';
+	}
+	return '<div class="adzworld-rotation adzworld-admin-slot-preview">' . $content . '</div>';
+}
+
+/**
+ * Refresh one administrator preview without changing the saved rotation.
+ *
+ * @return void
+ */
+function adzworld_refresh_admin_rotation_slot() {
+	check_ajax_referer( 'adzworld_refresh_rotation_slot', 'nonce' );
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( array( 'message' => __( 'Administrator permission is required.', 'adz-world' ) ), 403 );
+	}
+	$slot = isset( $_POST['slot'] ) && is_string( $_POST['slot'] ) ? sanitize_text_field( wp_unslash( $_POST['slot'] ) ) : '';
+	$slot = adzworld_sanitize_rotation_slot( $slot );
+	if ( '' === $slot ) {
+		wp_send_json_error( array( 'message' => __( 'That rotation slot is not available.', 'adz-world' ) ), 400 );
+	}
+	wp_send_json_success( array( 'html' => adzworld_admin_rotation_slot_preview( $slot ) ) );
+}
+add_action( 'wp_ajax_adzworld_refresh_rotation_slot', 'adzworld_refresh_admin_rotation_slot' );
+
+/**
+ * Render one editable vertical rotation slot.
+ *
+ * @param int                  $index   Zero-based position.
+ * @param string               $slot    Slot reference.
+ * @param array<string,string> $choices Available choices.
+ * @param string               $form_id Save form id.
+ * @return void
+ */
+function adzworld_admin_rotation_slot_row( $index, $slot, $choices, $form_id ) {
+	echo '<article class="adzworld-admin-slot" data-adzworld-admin-slot><header><strong data-adzworld-slot-number>';
+	printf(
+		/* translators: %d: rotation slot number. */
+		esc_html__( 'Slot %d', 'adz-world' ),
+		absint( $index + 1 )
+	);
+	echo '</strong><div class="adzworld-admin-slot__actions"><button type="button" class="button" data-adzworld-slot-up aria-label="' . esc_attr__( 'Move slot up', 'adz-world' ) . '">&#8593;</button>';
+	echo '<button type="button" class="button" data-adzworld-slot-down aria-label="' . esc_attr__( 'Move slot down', 'adz-world' ) . '">&#8595;</button>';
+	echo '<button type="button" class="button" data-adzworld-slot-remove>' . esc_html__( 'Remove', 'adz-world' ) . '</button></div></header>';
+	echo '<label>' . esc_html__( 'Slot content', 'adz-world' ) . '<select name="rotation_slots[]" form="' . esc_attr( $form_id ) . '" data-adzworld-slot-select>';
+	foreach ( $choices as $value => $label ) {
+		echo '<option value="' . esc_attr( $value ) . '"' . selected( $slot, $value, false ) . '>' . esc_html( $label ) . '</option>';
+	}
+	echo '</select></label><div class="adzworld-admin-slot__preview" data-adzworld-slot-preview><div data-adzworld-slot-preview-body>';
+	echo wp_kses_post( adzworld_admin_rotation_slot_preview( $slot ) );
+	echo '</div><button type="button" class="button" data-adzworld-refresh-slot>' . esc_html__( 'Refresh this adz preview', 'adz-world' ) . '</button><span class="spinner" data-adzworld-slot-spinner></span></div></article>';
+}
+
+/**
  * Render the administrator's source registration and shortcode instructions.
  *
  * @return void
@@ -131,28 +400,68 @@ function adzworld_rotation_admin_page() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( esc_html__( 'Administrator permission is required.', 'adz-world' ), '', array( 'response' => 403 ) );
 	}
-	echo '<div class="wrap"><h1>' . esc_html__( 'Rotation sources', 'adz-world' ) . '</h1>';
-	if ( isset( $_POST['adzworld_source_nonce'] ) ) {
-		check_admin_referer( 'adzworld_rotation_source', 'adzworld_source_nonce' );
-		$result = adzworld_save_rotation_source();
-		echo '<div class="notice ' . ( is_wp_error( $result ) ? 'notice-error' : 'notice-success' ) . '"><p>'
-			. esc_html( is_wp_error( $result ) ? $result->get_error_message() : __( 'Source configuration saved.', 'adz-world' ) ) . '</p></div>';
+	$rotations = adzworld_named_rotations();
+	$requested = filter_input( INPUT_GET, 'rotation', FILTER_UNSAFE_RAW );
+	$requested = is_string( $requested ) ? sanitize_key( $requested ) : '';
+	if ( 'new' === $requested ) {
+		$key      = '';
+		$rotation = array(
+			'name'  => __( 'New rotation', 'adz-world' ),
+			'slots' => array( 'intro' ),
+		);
+	} elseif ( isset( $rotations[ $requested ] ) ) {
+		$key      = $requested;
+		$rotation = $rotations[ $requested ];
+	} elseif ( ! empty( $rotations ) ) {
+		$key      = array_key_first( $rotations );
+		$rotation = $rotations[ $key ];
+	} else {
+		$key      = 'main';
+		$rotation = adzworld_starter_rotation();
 	}
-	echo '<p>' . esc_html__( 'Use the shortcode supplied by an advertising plugin already installed on this site. This does not create a provider account or certify provider approval. No source or adz is inserted unless selected in your rotation.', 'adz-world' ) . '</p>';
-	echo '<ul>';
-	foreach ( adzworld_rotation_sources() as $key => $source ) {
-		echo '<li><code>' . esc_html( $key ) . '</code>: ' . esc_html( $source['label'] ) . ' <code>' . esc_html( $source['shortcode'] ) . '</code></li>';
+	$form_id = 'adzworld-rotation-editor';
+	$choices = adzworld_rotation_slot_choices();
+	$notice  = 'adzworld_rotation_notice_' . get_current_user_id();
+	$error   = 'adzworld_rotation_error_' . get_current_user_id();
+
+	echo '<div class="wrap adzworld-rotation-admin"><h2>' . esc_html__( 'Rotations', 'adz-world' ) . '</h2>';
+	if ( get_transient( $notice ) ) {
+		echo '<div class="notice notice-success"><p>' . esc_html( get_transient( $notice ) ) . '</p></div>';
+		delete_transient( $notice );
 	}
-	echo '</ul><form method="post">';
-	wp_nonce_field( 'adzworld_rotation_source', 'adzworld_source_nonce' );
-	echo '<p><label for="adzworld-source-key">' . esc_html__( 'Source key', 'adz-world' ) . '</label><br><input id="adzworld-source-key" name="source_key" maxlength="50" required></p>'
-		. '<p><label for="adzworld-source-label">' . esc_html__( 'Label', 'adz-world' ) . '</label><br><input id="adzworld-source-label" name="source_label" maxlength="200"></p>'
-		. '<p><label for="adzworld-source-shortcode">' . esc_html__( 'Existing provider shortcode', 'adz-world' ) . '</label><br><textarea id="adzworld-source-shortcode" name="source_shortcode" maxlength="2000" rows="3" class="large-text"></textarea></p>'
-		. '<p><label><input type="checkbox" name="remove_source" value="yes"> ' . esc_html__( 'Remove this source instead of saving it', 'adz-world' ) . '</label></p>';
-	submit_button( __( 'Save source configuration', 'adz-world' ) );
-	echo '</form><h2>' . esc_html__( 'Examples', 'adz-world' ) . '</h2><p><code>[adz_rotation slots="source:existing:9,ad:123:1" display="single"]</code></p>'
-		. '<p><code>[adz_rotation slots="ad:123,ad:456,intro" display="3d" controls="both"]</code></p>'
-		. '<p>' . esc_html__( 'Replace example keys and IDs with your own. Single display uses the weights for a random choice per uncached page render, not a guaranteed quota per ten accesses. Page caches also cache that choice. Flat and 3D displays show the configured ordered slides with manual controls; they do not refresh ad-network units.', 'adz-world' ) . '</p></div>';
+	if ( get_transient( $error ) ) {
+		echo '<div class="notice notice-error"><p>' . esc_html( get_transient( $error ) ) . '</p></div>';
+		delete_transient( $error );
+	}
+	echo '<p>' . esc_html__( 'Each named rotation is an ordered vertical list of actual adz slots. Local adz, the invitation hub, and enabled provider units render below. Provider delivery still depends on that provider approving and returning an ad for this administrator page.', 'adz-world' ) . '</p>';
+	echo '<nav class="adzworld-rotation-picker" aria-label="' . esc_attr__( 'Named rotations', 'adz-world' ) . '">';
+	foreach ( $rotations as $rotation_key => $saved_rotation ) {
+		echo '<a class="button' . ( $rotation_key === $key ? ' button-primary' : '' ) . '" href="' . esc_url( add_query_arg( 'rotation', $rotation_key, adzworld_desk_url( 'rotation' ) ) ) . '">' . esc_html( $saved_rotation['name'] ) . '</a> ';
+	}
+	echo '<a class="button" href="' . esc_url( add_query_arg( 'rotation', 'new', adzworld_desk_url( 'rotation' ) ) ) . '">' . esc_html__( 'Add rotation', 'adz-world' ) . '</a></nav>';
+	echo '<form id="' . esc_attr( $form_id ) . '" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="adzworld_save_named_rotation"><input type="hidden" name="original_rotation_key" value="' . esc_attr( $key ) . '">';
+	wp_nonce_field( 'adzworld_save_named_rotation', 'adzworld_rotation_nonce' );
+	echo '</form><section class="adzworld-rotation-meta"><p><label for="adzworld-rotation-name">' . esc_html__( 'Rotation name', 'adz-world' ) . '</label><br><input id="adzworld-rotation-name" name="rotation_name" form="' . esc_attr( $form_id ) . '" value="' . esc_attr( $rotation['name'] ) . '" maxlength="100" required></p>';
+	echo '<p><label for="adzworld-rotation-key">' . esc_html__( 'Rotation key', 'adz-world' ) . '</label><br><input id="adzworld-rotation-key" name="rotation_key" form="' . esc_attr( $form_id ) . '" value="' . esc_attr( $key ) . '" maxlength="50" pattern="[a-z][a-z0-9_-]{0,49}" required></p>';
+	if ( '' !== $key && isset( $rotations[ $key ] ) ) {
+		echo '<p class="adzworld-rotation-shortcode"><span>' . esc_html__( 'Widget shortcode', 'adz-world' ) . '</span><br><code>[adz_rotation name=&quot;' . esc_html( $key ) . '&quot; display=&quot;flat&quot; controls=&quot;both&quot;]</code></p>';
+	}
+	echo '</section><div class="adzworld-admin-slots" data-adzworld-admin-slots>';
+	foreach ( $rotation['slots'] as $index => $slot ) {
+		adzworld_admin_rotation_slot_row( $index, $slot, $choices, $form_id );
+	}
+	echo '</div><template id="adzworld-slot-template">';
+	adzworld_admin_rotation_slot_row( 0, array_key_first( $choices ), $choices, $form_id );
+	echo '</template><p class="adzworld-rotation-controls"><button type="button" class="button" data-adzworld-add-slot>' . esc_html__( 'Add slot', 'adz-world' ) . '</button> ';
+	echo '<button type="submit" class="button button-primary" form="' . esc_attr( $form_id ) . '">' . esc_html__( 'Save rotation', 'adz-world' ) . '</button></p>';
+	if ( '' !== $key && isset( $rotations[ $key ] ) ) {
+		echo '<p><label><input type="checkbox" name="delete_rotation" value="1" form="' . esc_attr( $form_id ) . '"> ' . esc_html__( 'Delete this rotation when saving', 'adz-world' ) . '</label></p>';
+	}
+	echo '<p>' . sprintf(
+		/* translators: %d: maximum number of slots. */
+		esc_html__( 'Rotations support up to %d ordered slots.', 'adz-world' ),
+		absint( ADZWORLD_ROTATION_MAX_SLOTS )
+	) . '</p></div>';
 }
 
 /**
@@ -162,7 +471,7 @@ function adzworld_rotation_admin_page() {
  * @return array|WP_Error Validated slots.
  */
 function adzworld_parse_rotation( $specification ) {
-	if ( ! is_string( $specification ) || '' === trim( $specification ) || strlen( $specification ) > 4096 ) {
+	if ( ! is_string( $specification ) || '' === trim( $specification ) || strlen( $specification ) > 20000 ) {
 		return new WP_Error( 'adzworld_rotation_empty', __( 'The rotation needs an explicit slot list.', 'adz-world' ) );
 	}
 
@@ -178,7 +487,7 @@ function adzworld_parse_rotation( $specification ) {
 			return new WP_Error( 'adzworld_rotation_weight', __( 'Each slot weight must be an integer from 1 to 100.', 'adz-world' ) );
 		}
 		$weight = (int) $raw;
-		if ( $weight > 100 || count( $slots ) >= 24 || $total + $weight > 1000 ) {
+		if ( $weight > 100 || count( $slots ) >= ADZWORLD_ROTATION_MAX_SLOTS || $total + $weight > 20000 ) {
 			return new WP_Error( 'adzworld_rotation_limit', __( 'The rotation exceeds its slot or weight limit.', 'adz-world' ) );
 		}
 		if ( 'ad' === $type ) {
@@ -218,6 +527,81 @@ function adzworld_parse_rotation( $specification ) {
 	$slots = array_merge( $invitations, $advertising );
 	return $slots;
 }
+
+/**
+ * Load the common rotation presentation assets.
+ *
+ * @return void
+ */
+function adzworld_enqueue_rotation_assets() {
+	$style_path  = dirname( __DIR__ ) . '/assets/rotation.css';
+	$script_path = dirname( __DIR__ ) . '/assets/rotation.js';
+	wp_enqueue_style(
+		'adzworld-rotation',
+		plugins_url( 'assets/rotation.css', dirname( __DIR__ ) . '/adz-world.php' ),
+		array(),
+		(string) filemtime( $style_path )
+	);
+	wp_enqueue_script(
+		'adzworld-rotation',
+		plugins_url( 'assets/rotation.js', dirname( __DIR__ ) . '/adz-world.php' ),
+		array(),
+		(string) filemtime( $script_path ),
+		true
+	);
+	wp_localize_script(
+		'adzworld-rotation',
+		'adzworldRotation',
+		array(
+			'ajaxUrl'         => admin_url( 'admin-ajax.php' ),
+			'taboolaBase'     => 'https://cdn.taboola.com/libtrc/',
+			'preferenceNonce' => wp_create_nonce( 'adzworld_preference' ),
+			'feedbackNonce'   => wp_create_nonce( 'adzworld_feedback' ),
+			'labels'          => array(
+				'strongDislike' => __( 'Strongly dislike', 'adz-world' ),
+				'dislike'       => __( 'Dislike', 'adz-world' ),
+				'neutral'       => __( 'Neutral', 'adz-world' ),
+				'like'          => __( 'Like', 'adz-world' ),
+				'strongLike'    => __( 'Strongly like', 'adz-world' ),
+			),
+		)
+	);
+}
+
+/**
+ * Load the vertical rotation editor only on its administrator tab.
+ *
+ * @return void
+ */
+function adzworld_rotation_admin_assets() {
+	if ( ! function_exists( 'adzworld_desk_tab' ) || 'rotation' !== adzworld_desk_tab() ) {
+		return;
+	}
+	adzworld_enqueue_rotation_assets();
+	$path = dirname( __DIR__ ) . '/assets/admin-rotation.js';
+	wp_enqueue_script(
+		'adzworld-admin-rotation',
+		plugins_url( 'assets/admin-rotation.js', dirname( __DIR__ ) . '/adz-world.php' ),
+		array( 'adzworld-rotation' ),
+		(string) filemtime( $path ),
+		true
+	);
+	wp_localize_script(
+		'adzworld-admin-rotation',
+		'adzworldAdminRotation',
+		array(
+			'ajaxUrl'  => admin_url( 'admin-ajax.php' ),
+			'nonce'    => wp_create_nonce( 'adzworld_refresh_rotation_slot' ),
+			'maxSlots' => ADZWORLD_ROTATION_MAX_SLOTS,
+			'labels'   => array(
+				'loading' => __( 'Refreshing…', 'adz-world' ),
+				'refresh' => __( 'Refresh this adz preview', 'adz-world' ),
+				'failed'  => __( 'The preview could not be refreshed.', 'adz-world' ),
+			),
+		)
+	);
+}
+add_action( 'admin_enqueue_scripts', 'adzworld_rotation_admin_assets', 20 );
 
 /**
  * Resolve one random draw against the configured integer weights.
@@ -369,6 +753,7 @@ function adzworld_render_rotation( $attributes ) {
 	}
 	$attributes = shortcode_atts(
 		array(
+			'name'     => '',
 			'slots'    => '',
 			'display'  => 'single',
 			'controls' => 'both',
@@ -377,7 +762,14 @@ function adzworld_render_rotation( $attributes ) {
 		$attributes,
 		'adz_rotation'
 	);
-	$slots      = adzworld_parse_rotation( $attributes['slots'] );
+	if ( '' !== $attributes['name'] ) {
+		$named_slots = adzworld_named_rotation_slots( $attributes['name'] );
+		if ( empty( $named_slots ) ) {
+			return '<p class="adzworld-rotation-error" role="alert">' . esc_html__( 'The named rotation is not available.', 'adz-world' ) . '</p>';
+		}
+		$attributes['slots'] = implode( ',', $named_slots );
+	}
+	$slots = adzworld_parse_rotation( $attributes['slots'] );
 	if ( is_wp_error( $slots ) ) {
 		return '<p class="adzworld-rotation-error" role="alert">' . esc_html( $slots->get_error_message() ) . '</p>';
 	}
@@ -387,7 +779,7 @@ function adzworld_render_rotation( $attributes ) {
 	}
 	$display  = $attributes['display'];
 	$controls = $attributes['controls'];
-	$pref     = adzworld_current_preference();
+	$pref     = adzworld_preference_with_catalog( adzworld_current_preference() );
 	if ( adzworld_has_preference( $pref ) ) {
 		foreach ( $slots as $index => $candidate ) {
 			$slots[ $index ]['order'] = $index;
@@ -420,37 +812,7 @@ function adzworld_render_rotation( $attributes ) {
 		$slots = adzworld_expand_category_slots( $slots, $pref );
 	}
 
-	$style_path  = dirname( __DIR__ ) . '/assets/rotation.css';
-	$script_path = dirname( __DIR__ ) . '/assets/rotation.js';
-	wp_enqueue_style(
-		'adzworld-rotation',
-		plugins_url( 'assets/rotation.css', dirname( __DIR__ ) . '/adz-world.php' ),
-		array(),
-		(string) filemtime( $style_path )
-	);
-	wp_enqueue_script(
-		'adzworld-rotation',
-		plugins_url( 'assets/rotation.js', dirname( __DIR__ ) . '/adz-world.php' ),
-		array(),
-		(string) filemtime( $script_path ),
-		true
-	);
-	wp_localize_script(
-		'adzworld-rotation',
-		'adzworldRotation',
-		array(
-			'ajaxUrl'         => admin_url( 'admin-ajax.php' ),
-			'preferenceNonce' => wp_create_nonce( 'adzworld_preference' ),
-			'feedbackNonce'   => wp_create_nonce( 'adzworld_feedback' ),
-			'labels'          => array(
-				'strongDislike' => __( 'Strongly dislike', 'adz-world' ),
-				'dislike'       => __( 'Dislike', 'adz-world' ),
-				'neutral'       => __( 'Neutral', 'adz-world' ),
-				'like'          => __( 'Like', 'adz-world' ),
-				'strongLike'    => __( 'Strongly like', 'adz-world' ),
-			),
-		)
-	);
+	adzworld_enqueue_rotation_assets();
 	$id        = wp_unique_id( 'adzworld-rotation-' );
 	$sources   = adzworld_rotation_sources();
 	$slides    = '';
@@ -474,6 +836,9 @@ function adzworld_render_rotation( $attributes ) {
 					. adzworld_feedback_control( 'ad-' . $ad->ID, $category );
 				if ( in_array( $category, $pref['categories'], true ) ) {
 					$html .= adzworld_category_slot_control( $category, $slot_count, $category_slot );
+					if ( 0 === $category_slot ) {
+						$html .= adzworld_affiliate_markup( $pref, $category );
+					}
 				}
 			} else {
 				$category = isset( $pref['active_category'] ) ? (string) $pref['active_category'] : '';
@@ -524,7 +889,7 @@ function adzworld_render_rotation( $attributes ) {
  */
 function adzworld_rotation_introduction( $id ) {
 	unset( $id );
-	$preference = adzworld_current_preference();
+	$preference = adzworld_preference_with_catalog( adzworld_current_preference() );
 	ob_start();
 	adzworld_render_preference_panel( $preference, adzworld_has_preference( $preference ), 'full' );
 	return (string) ob_get_clean();

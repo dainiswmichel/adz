@@ -163,6 +163,29 @@ function adzworld_earnings_menu() {
 add_action( 'admin_menu', 'adzworld_earnings_menu' );
 
 /**
+ * Public donation page for voluntary plugin support.
+ *
+ * The plugin does not request this URL. The administrator's browser visits it
+ * only after the administrator clicks the support button.
+ *
+ * @return string
+ */
+function adzworld_donation_url() {
+	return 'https://dainis.net/donate/';
+}
+
+/**
+ * Render a restrained, settings-page-only support panel.
+ *
+ * @return void
+ */
+function adzworld_support_panel() {
+	echo '<section class="card adzworld-support-card"><h2>' . esc_html__( 'Support adz.world', 'adz-world' ) . '</h2>';
+	echo '<p>' . esc_html__( 'adz.world is free software. If it helps your site, a small voluntary contribution supports continued maintenance and WordPress.org updates.', 'adz-world' ) . '</p>';
+	echo '<p><a class="button button-primary" href="' . esc_url( adzworld_donation_url() ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Buy Dainis a coffee', 'adz-world' ) . '</a></p></section>';
+}
+
+/**
  * Render connection controls and authenticated currency-separated statements.
  *
  * @return void
@@ -201,16 +224,42 @@ function adzworld_earnings_page() {
 		}
 	}
 	?>
-	<div class="wrap">
-		<h1><?php esc_html_e( 'adz-world earnings', 'adz-world' ); ?></h1>
-		<p><?php esc_html_e( 'The plugin is free. For the optional adz-world monetization service, adz-world retains 10% of settled affiliate commissions and the publisher receives 90%. This is not a percentage of product sales. Statements are authoritative only at adz-world.com.', 'adz-world' ); ?></p>
-		<p><?php esc_html_e( 'Service ads use adz-world affiliate/referral codes with publisher consent. Existing publisher links are not rewritten. Stripe and PayPal selection is TBD; this candidate does not initiate payments.', 'adz-world' ); ?></p>
+	<div class="wrap adzworld-desk adzworld-earnings">
+		<h1><?php esc_html_e( 'Earnings', 'adz-world' ); ?></h1>
+		<p><?php esc_html_e( 'Choose established earning methods that pay the site owner through accounts the site owner already controls. adz.world does not create a new payment network.', 'adz-world' ); ?></p>
 		<?php if ( $notice ) : ?>
 			<div class="notice notice-info"><p><?php echo esc_html( $notice ); ?></p></div>
 		<?php endif; ?>
 		<?php if ( is_wp_error( $statement ) ) : ?>
 			<div class="notice notice-error"><p><?php echo esc_html( $statement->get_error_message() ); ?></p></div>
 		<?php endif; ?>
+		<div class="adzworld-desk-grid adzworld-earnings-grid">
+			<section class="adzworld-desk-card">
+				<h2><?php esc_html_e( 'Affiliate earnings', 'adz-world' ); ?></h2>
+				<?php
+				/* translators: %d: number of enabled publisher affiliate accounts. */
+				$affiliate_count = sprintf( _n( '%d account enabled', '%d accounts enabled', adzworld_affiliate_connected_count(), 'adz-world' ), adzworld_affiliate_connected_count() );
+				?>
+				<strong><?php echo esc_html( $affiliate_count ); ?></strong>
+				<p><?php esc_html_e( 'Affiliate networks attribute qualifying activity to the publisher identifiers saved on this site and pay that publisher account under their terms.', 'adz-world' ); ?></p>
+				<a class="button" href="<?php echo esc_url( adzworld_desk_url( 'affiliates' ) ); ?>"><?php esc_html_e( 'Manage affiliate attribution', 'adz-world' ); ?></a>
+			</section>
+			<section class="adzworld-desk-card">
+				<h2><?php esc_html_e( 'Ad-network earnings', 'adz-world' ); ?></h2>
+				<?php
+				/* translators: %d: number of enabled publisher ad-network units. */
+				$network_count = sprintf( _n( '%d unit enabled', '%d units enabled', adzworld_enabled_network_count(), 'adz-world' ), adzworld_enabled_network_count() );
+				?>
+				<strong><?php echo esc_html( $network_count ); ?></strong>
+				<p><?php esc_html_e( 'Connected display networks use the site owner’s account identifiers and handle their own reporting and payments.', 'adz-world' ); ?></p>
+				<a class="button" href="<?php echo esc_url( adzworld_desk_url( 'networks' ) ); ?>"><?php esc_html_e( 'Manage ad networks', 'adz-world' ); ?></a>
+			</section>
+		</div>
+		<?php adzworld_support_panel(); ?>
+		<section class="adzworld-desk-section adzworld-service-statements">
+			<h2><?php esc_html_e( 'Optional adz-world service statements', 'adz-world' ); ?></h2>
+			<p><?php esc_html_e( 'For the optional adz-world monetization service, adz-world retains 10% of settled affiliate commissions and the publisher receives 90%. This is not a percentage of product sales. Statements are authoritative only at adz-world.com.', 'adz-world' ); ?></p>
+			<p><?php esc_html_e( 'Service ads use adz-world affiliate or referral codes only with publisher consent. Existing publisher links are not rewritten. This connection retrieves read-only statements and does not initiate a payment.', 'adz-world' ); ?></p>
 		<?php if ( empty( $options['consent'] ) ) : ?>
 			<p><?php esc_html_e( 'Not connected. The settlement service and account provisioning must be operational before this connection can return statements. No earnings are assumed to be zero.', 'adz-world' ); ?></p>
 			<form method="post">
@@ -250,6 +299,7 @@ function adzworld_earnings_page() {
 				</dl>
 			<?php endforeach; ?>
 		<?php endif; ?>
+		</section>
 	</div>
 	<?php
 }

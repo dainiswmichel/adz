@@ -1,6 +1,6 @@
 === adz.world ===
 Contributors: dainismichel
-Donate link: http://www.dainiswmichel.com/donate/
+Donate link: https://dainis.net/donate/
 Tags: advertising, consent, privacy, ads, ad management
 Requires at least: 6.2
 Tested up to: 7.1
@@ -40,6 +40,14 @@ configuration still apply; no claim of universal network compatibility is made.
 Carousel slides other than the active slide become hidden or inert. Providers
 that prohibit hidden placements must use single mode, not a carousel. No provider
 tag is automatically refreshed or re-requested as a slide changes.
+
+The Dashboard keeps Connections, Affiliate programs, Rotation, Earnings, and
+Templates on one administrator screen. Connections accepts the site owner's
+existing Google AdSense, Google Ad Manager, Taboola, or Outbrain unit
+identifiers. A complete, explicitly enabled unit becomes a named Rotation
+source. Other providers remain available through their official WordPress
+plugin or existing provider shortcode; adz.world does not recreate their
+account, inventory, auction, reporting, or payment system.
 
 The invitation accepts categories and refinements in the visitor's own words.
 Logged-out preferences use a browser-session cookie; signed-in preferences use
@@ -123,8 +131,20 @@ The plugin is free. Optional adz-world monetization uses adz-world's affiliate
 or referral identifiers with explicit publisher consent. adz-world retains
 10% of settled affiliate commission actually received; the publisher receives
 90%. It is not 10% of product sales. Existing publisher links are not silently
-rewritten. Actual affiliate accounts and settlement ingestion remain launch
-dependencies; no account codes are fabricated by this candidate.
+rewritten. Actual settlement ingestion remains a launch dependency. No account
+code is fabricated. When an administrator saves and enables an affiliate account
+under Adz.world > Affiliate programs, a public page that is
+showing a category includes a sponsored link. The link query is that
+category text plus the refinement text attached to it. The visitor's
+browser sends that query to the network when the link is followed.
+The public link contains the publisher's tracking identifiers and does
+not contain a secret token. No affiliate request runs on activation or
+on a page view. Amazon Associates, Walmart Affiliates through Impact,
+Awin (ShareASale closed on 6 October 2025), CJ Affiliate, Rakuten
+Advertising, and the eBay Partner Network are the networks with a
+builder. The affiliate network attributes qualifying activity to the site
+owner's own account and pays that account under its existing terms. adz.world
+does not receive or redistribute commission from these direct publisher links.
 
 This candidate contains no payment-provider adapter and cannot initiate a
 payment or payout. Real-money eligibility, provider choice, fees, tax handling,
@@ -135,7 +155,7 @@ By default this plugin connects to no external service. Your site serves only
 the adz you create on it, and no visitor data leaves your server.
 
 The plugin can optionally be connected to the adz-world.com advertising
-network. This is off unless you switch it on, under Adz Settings, by ticking
+network. This is off unless you switch it on under Adz.world > Connections by ticking
 "Connect to the adz-world.com network".
 
 With it switched on:
@@ -155,6 +175,12 @@ With it switched on:
 Switching the network setting off stops network ad delivery and synchronization.
 The separate earnings connection makes a request only when an administrator
 explicitly requests a statement; disconnecting it removes its stored token.
+
+The Earnings tab contains a voluntary support link to
+https://dainis.net/donate/. The plugin does not request that page, load its
+assets, or send administrator data in the background. The administrator's
+browser visits it only after the “Buy Dainis a coffee” button is clicked. The
+link contains no affiliate, referral, or tracking parameters.
 
 The optional adzworld_iframe shortcode connects a visitor's browser to the
 HTTP or HTTPS URL explicitly entered by the site owner. That destination can

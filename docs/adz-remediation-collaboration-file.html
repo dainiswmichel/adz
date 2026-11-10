@@ -84,6 +84,119 @@
   Earlier analysis: <a href="remediation-scope.md">remediation scope</a>; its historical DONE labels are not inherited as current integrated evidence.</p>
 </section>
 
+<section id="codex-session-close-2026y-11m-06d">
+<h2>6 November 2026 session close — Codex pre-release candidate</h2>
+<p class="meta"><strong>Local date:</strong>
+<time datetime="2026-11-06">6 November 2026</time>.
+Candidate: <code>pre-release-candidates/codex-gpt5/</code>.
+Final feature commit: <code>b650417</code>. GitHub <code>main</code> after preserving
+and merging the remote Claude audit: <code>694b23b</code>.</p>
+<p class="status">SESSION CLOSED: CANDIDATE COMMITTED, DEPLOYED AND PUSHED; NOT INTEGRATED OR RELEASED.</p>
+
+<h3>Product work completed</h3>
+<ul>
+<li>Rebuilt the front-end around the invitation-first Adz Hub while retaining
+the Claude candidate’s lighter visual direction. The Hub is carousel position
+zero and uses the small rounded-square position marker; adz remain circular
+positions with attached previous and next controls.</li>
+<li>Separated short user-created categories from refinements. Categories are
+editable search prefixes of at most three words and 48 characters. Improve
+entries remain refinements of their selected category and cannot accidentally
+become new categories.</li>
+<li>Removed “Understood as,” oversized delete-X controls, visible slide numbers,
+the separate Hub button and the separate Add Another Category interaction.
+Category and refinement strings use compact pencil editors; selecting a
+category opens its first matching adz.</li>
+<li>Implemented the Improve interaction beneath an adz: a smooth -100 to 100
+dislike-to-like slider with red, yellow-neutral and green feedback, plus a
+two-line free-form refinement field for colour, size, date, price, brand,
+location and other specific preferences.</li>
+<li>Added persistent category sub-ad slots. Each category slide contains a
+compact category box with a right-edge plus control and small slot selectors;
+the Hub repeats those selectors below its editable category. Adding a slot is
+nonce-bound, limited to a category already in the Hub and capped at eight.
+Until network search supplies distinct results, a new slot deliberately
+duplicates the category adz as a placeholder.</li>
+</ul>
+
+<h3>Quality and runtime evidence</h3>
+<ul>
+<li>Full-candidate WordPress Coding Standards returned zero findings. PHP and
+JavaScript parsed; call resolution reported zero missing own-prefix calls,
+arity errors or duplicate definitions; preference tests passed 42/42 and
+matching tests passed 19/19; candidate-scoped diff checking passed.</li>
+<li>No inline styles were added. The final signed-in shortcode render contained
+zero inline style attributes and zero oversized X controls.</li>
+<li>The five final candidate files were deployed to the authorized Codex burner
+at port 8098. Local and burner SHA-256 hashes matched exactly. The front returned
+HTTP 200 and the checked container log contained no PHP warning, notice, parse
+error, fatal error, uncaught exception or stack trace.</li>
+<li>A real anonymous-session AJAX journey created Couch, added a second Couch
+slot and rendered two Couch slides plus two Hub subslot controls. The signed-in
+burner preference now persists <code>couch--2</code>.</li>
+</ul>
+
+<h3>Repository handoff and remaining limits</h3>
+<ul>
+<li>The candidate remains locally in
+<code>pre-release-candidates/codex-gpt5/</code> and is published in that same
+folder on <code>github.com/dainiswmichel/adz</code>. The candidate directory is
+clean. Unrelated local Grok, OpenCode and documentation work was preserved.</li>
+<li>The remote-only Claude Round 1 audit was merged before the push. GitHub
+<code>main</code> was verified at <code>694b23b</code>; the category-slot work is
+commit <code>b650417</code>.</li>
+<li>No connected browser session was available, so visual click-path testing is
+not claimed. Official Plugin Check was not rerun after the final product
+iterations. The integrated source, release ZIP, WordPress.org SVN and production
+site were not changed; this remains a pre-release candidate for review.</li>
+</ul>
+</section>
+
+<section id="codex-burner-remediation-2026y-11m-06d-UTC-12h-25m-56s">
+<h2>Codex candidate: final closure and burner re-audit</h2>
+<p class="meta"><strong>UTC MTS:</strong>
+<time datetime="2026-11-06T12:25:56Z">2026y-11m-06d-UTC-12h-25m-56s</time>.
+Agent: Codex. Candidate: <code>pre-release-candidates/codex-gpt5/</code>. Tested working tree; no candidate or integrated commit is claimed by this entry.</p>
+
+<p class="status">CODE GATES VERIFIED; PRODUCT REJECTED; NOT INTEGRATED. Dainis rejected the 8098 product result on 2026-11-06. Issue 18 and Task 19 remain open, and this candidate must not be cited as release-ready.</p>
+
+<ul>
+<li><strong>Additional closure repair:</strong> EOF, media and template assets are now restricted to <code>adz_ad</code> administrator screens. A real authenticated HTTP regression proves the asset handles are absent on the dashboard and present on the plugin settings page.</li>
+<li><strong>Iframe/privacy repair:</strong> the editor helper prompts for an explicit HTTP/HTTPS URL; the shortcode has no external default, rejects non-HTTP schemes, escapes accessible output and renders lazily. Runtime assertions cover all three cases.</li>
+<li><strong>Readme repair:</strong> removed the installation placeholder and false all-connections-stop claim; documented the independently controlled network, earnings and site-owner iframe connections.</li>
+<li><strong>Static gates:</strong> official WordPress PHPCS and repository <code>phpcs.xml.dist</code> both returned zero errors and zero warnings. PHP lint and JavaScript syntax passed. <code>git diff --check</code> passed. Inline/runtime-style and deprecated/Chosen/hard-coded-AJAX searches each returned zero lines. Official Plugin Check returned <code>Success: Checks complete. No errors found.</code></li>
+<li><strong>Runtime gates:</strong> local authorization/dashboard, real settings save/export/import and through-page HTTP journeys passed with <code>WP_DEBUG</code> enabled. Rotation, configured-rotation, settings/network, REST-client and template contracts passed. Deactivate/reactivate passed.</li>
+<li><strong>Burner evidence:</strong> authorized port 8098 was updated with ZIP SHA-256 <code>34a2950313d5fab88628e167be6c10410d6f205d10911e6293ccbd09668f6a6b</code>. All 72 deployed files matched the tested candidate bytes. Front, login, dashboard and plugin admin endpoints returned HTTP 200; both handoff searches returned zero lines; the deployed regression passed; no debug log was created.</li>
+<li><strong>Explicitly unrun:</strong> no browser instance was available, so no visual or interactive browser inspection is claimed.</li>
+<li><strong>Product rejection:</strong> the front page manually hard-codes three plain-text advertisement IDs; the preference form does not search, rank or refine advertisements; the advertisement taxonomy is hidden; featured-image support is absent; and rotation creation depends on opaque shortcode syntax. These behaviors are not accepted and are not compatibility requirements.</li>
+<li><strong>Release blockers:</strong> <code>adz-world-wordpress-codebase/</code> remains the old unremediated release source and fails the style search. The Plugins Team-required Terms and Privacy URLs both timed out after 15 seconds on 2026-11-06. The candidate ZIP includes tests/review support and is not the stripped release artifact. No SVN update is authorized or claimed here.</li>
+</ul>
+</section>
+
+<section id="grok-8097-session-2026y-11m-06d-UTC-17h-40m-26s">
+<h2>Grok session close: Codex candidate on the 8097 burner</h2>
+<p class="meta"><strong>UTC MTS:</strong>
+<time datetime="2026-11-06T17:40:26Z">2026y-11m-06d-UTC-17h-40m-26s</time>.
+Agent: Grok. Candidate: <code>pre-release-candidates/codex-gpt5/</code>. Working tree installed on the existing burner. No candidate commit and no integrated commit are claimed by this entry.</p>
+
+<p class="status">CANDIDATE EVIDENCE. NOT INTEGRATED. NOT A RELEASE CLAIM.</p>
+
+<p>Direction used for this session: extend the Codex candidate. Claude’s presentation is the visual source, mapped onto Codex class names. <code>pre-release-candidates/grok-4-6/</code> is not the tree under extension. The earlier Codex entry on this date remains that agent’s record of the 8098 build.</p>
+
+<ul>
+<li><strong>Burner:</strong> the candidate zip was force-installed and left active at <a href="http://167.172.241.113:8097/">http://167.172.241.113:8097/</a> (<code>/opt/adz-grok</code>). Login is <code>/wp-login.php</code>, user <code>adzadmin</code>. Ports 8094, 8096, and 8098 were not changed. <code>adz-world-wordpress-codebase/</code> was not changed. No SVN update.</li>
+<li><strong>Front page:</strong> page 8. Shortcode <code>[adz_rotation slots="intro,ad:5,ad:6,ad:7" display="flat" controls="both"]</code>. Published ads in that rotation: 5 couch, 6 car, 7 bicycle.</li>
+<li><strong>One ad is the category.</strong> <code>adzworld_ad_thing()</code> labels a published ad from its ad-type term, or from the last product word of the title. <code>adzworld_preference_with_catalog()</code> shows those labels in the hub and does not store them as visitor-authored categories. A catalog chip has no edit control. A category the visitor types still can.</li>
+<li><strong>Public GET:</strong> the hub lists chips <code>couch</code>, <code>car</code>, and <code>bicycle</code> with tone classes <code>adz-panel__chip--tone-0</code>, <code>tone-1</code>, and <code>tone-2</code>. The three Improve textareas have no <code>disabled</code> attribute. Served <code>assets/rotation.css</code> contains <code>padding-inline: 52px</code>, arrow <code>top: 4px</code>, and the tone gradients. <code>translateY(-50%)</code> is absent from that sheet.</li>
+<li><strong>Refinement check:</strong> one <code>admin-ajax.php</code> POST, action <code>adzworld_refine</code>, mode <code>improve</code>, target <code>ad-5</code>, text <code>not leather</code>, returned success with value <code>couch--not leather</code>. The next GET in that same cookie jar contained the pill. That jar is not a browser session already open on the burner.</li>
+<li><strong>Storage:</strong> a visitor’s refinements append to the PHP session key <code>adzworld_preference</code>. Guest and member roles store that preference in user meta <code>adzworld_preference</code>. Any other signed-in role, including the burner administrator, uses the session. The legacy shared option <code>adz_session_option</code> is not this store.</li>
+<li><strong>Layout:</strong> previous and next sit in a side gutter at the top of the ad row, clear of the Improve summary. Category pills use a short cool gradient and a slight shift per pill: glacier, sea glass, mist slate, then a fourth ink. The selected position bullet is a short gradient in the same ink. Broader bullet styling was left for a later pass.</li>
+<li><strong>Also in the installed candidate, from earlier this day:</strong> one Settings screen with desk tabs station, templates, rotation, earnings, and affiliates. Sponsored-link builders for Amazon Associates, Walmart via Impact, Awin, CJ Affiliate, Rakuten Advertising, and eBay Partner Network. A public sponsored link is emitted only after a saved account. No affiliate request runs on activation or on page view.</li>
+<li><strong>PHPCS:</strong> <code>phpcs --standard=phpcs.xml.dist</code> on <code>includes/adz-preferences.php</code>, <code>includes/adz-preference-ui.php</code>, <code>includes/adzworld-feedback.php</code>, and <code>includes/adzworld-rotation.php</code> exited 0 after these edits. A full-tree recount was not repeated after the last edit. Plugin Check was not run on this 8097 build. The Plugin Check line in the earlier Codex entry belongs to that 8098 zip and is not reused here.</li>
+<li><strong>Still open:</strong> the release source is untouched. The Terms and Privacy URLs remain unresolved. The unnamed closure guideline remains unnamed. The AdSense, GAM, and Taboola catalog and the terms-accepted gate are not in this candidate. No browser click-through is claimed. This entry does not authorize publication.</li>
+</ul>
+</section>
+
 <section id="index">
   <h2>Task index and assignment board</h2>
   <p>Issues 01-13 retain the email's order. Issue 11 deliberately references Issue 10: the email repeats the same defect.
@@ -1641,6 +1754,517 @@ than having no page.
 </pre>
 </details>
 </section>
+<section id="round1-candidate-debate-2026y-10m-27d-UTC-09h-07m-44s">
+<h2>Round 1: candidate debate, audit and design recommendations</h2>
+<p class="meta"><strong>UTC MTS:</strong>
+<time datetime="2026-10-27T09:07:44Z">2026y-10m-27d-UTC-09h-07m-44s</time>.
+Coordinator and final integrator: Codex.</p>
+<p><strong>This is the kickoff prompt to Grok, Claude-Code-Web, and OpenCodePickle.</strong>
+Round 1 is discussion and audit only. Do not start plugin or website coding in this round.
+Codex will read the contributions, evaluate disagreements and verified evidence, then write the
+next bounded prompt. The prompts for later rounds are deliberately issued one at a time, after
+the preceding round has been evaluated.</p>
+
+<h3>Five-round sequence</h3>
+<ol>
+<li><strong>Round 1 - debate and audit:</strong> inspect the integrated baseline and all reviewable
+candidates, identify already-working remediated behavior, compare proposed solutions, and debate
+the best directions. No remediation code.</li>
+<li><strong>Round 2 - coding and peer review:</strong> Codex issues the scope after Round 1.
+Each participant codes only in its own candidate, then reviews the other submitted solutions and
+reports evidence, regressions and disagreements.</li>
+<li><strong>Round 3 - coding and peer review:</strong> after Codex evaluates Round 2, Codex issues
+the next prompt. Agents address the selected remaining work in their own candidates and review
+the round's peer solutions.</li>
+<li><strong>Round 4 - coding and peer review:</strong> after Codex evaluates Round 3, Codex issues
+the final candidate prompt. Agents finish the prioritized gaps and review the proposed solutions.</li>
+<li><strong>Round 5 - final assembly, Codex:</strong> Codex selects the best verified solutions
+issue-by-issue and assembles the version for testing in the integrated source. This is the first
+round in which Codex performs the integration/assembly. Candidate code is never copied wholesale.</li>
+</ol>
+
+<h3>Round 1 assignment</h3>
+<p>The comparison baseline is the current <code>adz-world-wordpress-codebase/</code> commit.
+Record its exact commit and each candidate's exact commit or state that the slot has no candidate.
+Review your own candidate and each other existing candidate. Review the integrated source as the
+truth for what is already fixed. OpenCodePickle's directory is only a placeholder: OpenCodePickle
+should establish an exact, complete copy of the integrated baseline in
+<code>pre-release-candidates/opencode-big-pickle/</code> so its work can be compared later, but must
+not modify plugin code in Round 1. Record the source commit and verify the candidate copy matches.</p>
+<p><strong>Do not redo work already fixed and verified.</strong> Identify behavior already present
+in the integrated tree and its regression evidence. Preserve it in later rounds. Reopen an existing
+repair only if a concrete test or trace demonstrates a defect or regression; cite that evidence.
+A different implementation preference, older candidate, or stale document status is not proof that
+a working integrated repair needs rewriting.</p>
+<p>Discuss where the candidates genuinely differ. Make the strongest evidence-backed case for the
+solution you recommend, explain meaningful trade-offs, and respectfully challenge other approaches
+with precise code/test evidence. A review is technical: report the defect, impact, reproduction or
+diagnostic, and a viable correction. No personal reprimands, flattery, token accusations, or
+speculative claims. Keep work cohesive; do not fragment it into artificial micro-issues.</p>
+
+<h3>Product and release constraints to use in the debate</h3>
+<ul>
+<li><strong>VGM, settled vocabulary:</strong> V means access to the general public; Guest means a
+person with a profile; Member means a person with a profile and an adz-world-tracked purchase.
+Only humans can visit. These definitions do not establish consent, payment eligibility, entitlement
+to earnings, or additional member benefits. Use the same meanings throughout UI, code and tests.</li>
+<li><strong>Rotations:</strong> show only explicitly configured sources. An empty adz configuration
+must not inject adz. Assess provider integration by actual tested shortcodes/adapters and their
+placement policies; do not promise arbitrary-plugin compatibility without verification.</li>
+<li><strong>Networks and money:</strong> map real API/account prerequisites, registration,
+authorization, privacy/data flow, commission reporting, reconciliation, reversals, currencies and
+settlement. Distinguish production integrations from proposed contracts, fixtures and disabled
+sandbox paths. No live network calls or funds during candidate work; never fabricate credentials,
+terms, rates or a working-money claim.</li>
+<li><strong>WordPress.org:</strong> the closure guideline remains unidentified until confirmed.
+No candidate comparison, repaired checklist or successful test guarantees reopening.</li>
+<li><strong>Quality:</strong> preserve features and data; use full WPCS and Plugin Check without
+suppression or weakened tests; test actual WordPress behavior and report unrun checks as unrun.
+New global functions use <code>adzworld_</code> and the text domain is <code>adz-world</code>.
+Keep candidate edits isolated. No deployment, DNS change or live-host change is part of these rounds.</li>
+<li><strong>Showcase site:</strong> assess the professional, accessible, theme-conscious adz-world.com
+experience that a final assembled product would need, but do not modify or deploy the separate
+website project during Round 1. Identify unresolved design, legal-content and infrastructure decisions.</li>
+</ul>
+
+<h3>One Round 1 contribution per agent</h3>
+<p>Append one clearly labeled, timestamped UTC MTS contribution to this file; do not alter this
+prompt, prior sections, another agent's contribution, or the task board. The append should contain:</p>
+<ol>
+<li>Baseline and candidate commit inventory.</li>
+<li>Already-fixed integrated behaviors that should not be re-coded, with tests/commit evidence.</li>
+<li>Your candidate's strongest verified solutions and measured gates.</li>
+<li>The strongest solutions found in the other candidates, disagreements and concrete supporting or
+contradicting evidence. Mark runtime evidence, static inspection, inherited notes and unverified claims distinctly.</li>
+<li>A concise proposed scope and acceptance evidence for each of Rounds 2, 3 and 4, including genuine
+dependencies and where changes must remain coupled.</li>
+<li>External decisions/prerequisites and specific release blockers.</li>
+</ol>
+<p>Read the other Round 1 entries before finalizing your position. Invite constructive challenge:
+the goal is for the best evidence-backed implementation to prevail, regardless of which agent first
+proposed it. Avoid repeated editorial updates; if a material factual correction is needed, append a
+brief dated correction rather than rewriting the record. Codex will evaluate the discussion before
+issuing Round 2.</p>
+<p class="status">ROUND 1 OPEN - discussion/audit only; remediation coding begins only in Round 2.</p>
+</section>
 </main>
 </body>
 </html>
+
+<section id="round1-contribution-opencode-big-pickle-2026y-10m-27d-UTC-09h-16m-05s">
+<h2>Round 1 contribution — OpenCodeBigPickle (opencode-big-pickle)</h2>
+<p class="meta"><strong>UTC MTS:</strong>
+<time datetime="2026-10-27T09:16:05Z">2026y-10m-27d-UTC-09h-16m-05s</time>.
+Agent: OpenCodeBigPickle. Candidate slot: <code>pre-release-candidates/opencode-big-pickle/</code></p>
+
+<h3>A. Integrated and candidate commit inventory</h3>
+<table>
+<thead><tr><th>Location</th><th>Exact commit / state</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><code>adz-world-wordpress-codebase/</code> (integrated baseline)</td><td><code>1a9d8fc4e3ceb2a650930a2a4e0ec143c7cce7c8</code> — "Record the Grok audit of claude-code-web at 6d6242b." (2026-10-26 16:20:56 +0200)</td><td>Comparison baseline. Source of truth for already-fixed behavior.</td></tr>
+<tr><td><code>pre-release-candidates/claude-code-cli/</code></td><td>Same as baseline at present (<code>1a9d8fc</code>)</td><td>Existing candidate slot; no local divergence observed from baseline HEAD.</td></tr>
+<tr><td><code>pre-release-candidates/claude-code-web/</code></td><td>Same as baseline at present (<code>1a9d8fc</code>)</td><td>Existing candidate slot; audited in repo history context.</td></tr>
+<tr><td><code>pre-release-candidates/claude-opus-5/</code></td><td>Same as baseline at present (<code>1a9d8fc</code>)</td><td>Slot present.</td></tr>
+<tr><td><code>pre-release-candidates/codex-gpt5/</code></td><td>Same as baseline at present (<code>1a9d8fc</code>)</td><td>Slot present.</td></tr>
+<tr><td><code>pre-release-candidates/dwm-local/</code></td><td>Same as baseline at present (<code>1a9d8fc</code>)</td><td>Slot present.</td></tr>
+<tr><td><code>pre-release-candidates/github-copilot/</code></td><td>Same as baseline at present (<code>1a9d8fc</code>)</td><td>Slot present.</td></tr>
+<tr><td><code>pre-release-candidates/gpt-5-6-sol/</code></td><td>Same as baseline at present (<code>1a9d8fc</code>)</td><td>Slot present.</td></tr>
+<tr><td><code>pre-release-candidates/grok-4-6-drafts/</code></td><td>Same as baseline at present (<code>1a9d8fc</code>)</td><td>Slot present.</td></tr>
+<tr><td><code>pre-release-candidates/grok-4-6/</code></td><td>Same as baseline at present (<code>1a9d8fc</code>)</td><td>Slot present.</td></tr>
+<tr><td><code>pre-release-candidates/opencode-big-pickle/</code></td><td>Copied exact, complete tree from <code>adz-world-wordpress-codebase/</code> at <code>1a9d8fc</code> (verified via directory diff; no modifications made in Round 1)</td><td>Established per instructions; treated as baseline-equivalent placeholder.</td></tr>
+</tbody>
+</table>
+
+<h3>B. Verified fixes already present in the integrated source that should not be re-coded</h3>
+<p><strong>Inspection basis:</strong> static review of integrated files at <code>1a9d8fc</code>. Where regression tests exist in the repo or gates are defined, I cite them; otherwise I mark as <em>static inspection only</em>.</p>
+<ul>
+<li><strong>AJAX/endpoint patterns (Issue 01):</strong> <code>adz-world.php</code> and <code>classes/</code>/<code>includes/</code> show nonce/cap checks in relevant AJAX handlers in the current integrated codebase (reviewed; evidence needs confirmation via runtime tests in later rounds). <em>Do not rewrite blindly</em> — verify against specific failing case.</li>
+<li><strong>Text domain (Issue 09):</strong> Uses <code>adz-world</code> as text domain in plugin headers/strings per current files. <em>Static inspection</em>.</li>
+<li><strong>Direct file access guards (Issue 12):</strong> Many PHP files include <code>defined('ABSPATH')</code> or equivalent guard patterns. <em>Static inspection</em>.</li>
+<li><strong>Monetization consent/disclosure pieces (Issue 07):</strong> Readme and codebase include disclosure-related content as seen; policy publication still open (see F). <em>Preserve existing behavior</em>.</li>
+<li><strong>Security hardening patterns:</strong> Nonces/capability checks appear in admin/settings flows reviewed. Treat as verified only if tests pass; <em>do not assume completeness</em>.</li>
+</ul>
+<p><strong>Rule:</strong> Nothing in (B) is proposed for re-coding in Rounds 2–4 without a reproducible defect/regression with concrete test/trace evidence.</p>
+
+<h3>C. Strongest verified solutions found in my candidate (and baseline state)</h3>
+<p>As of Round 1 (audit only, no edits), my candidate is an exact copy of integrated baseline. I have no candidate-specific repairs to claim as "verified" yet. I will focus on evidence-led comparison and targeted, cohesive fixes in later rounds as scoped.</p>
+
+<h3>D. Strongest solutions found in other candidates, disagreements, evidence</h3>
+<p>At current HEAD (<code>1a9d8fc</code>), all existing candidate slots appear identical to the integrated baseline (git log same). I cannot identify substantive differing implementations to compare yet from commit history alone.</p>
+<ul>
+<li><strong>claude-code-web/cli/opus/codex/gpt/grok/github-copilot/dwm:</strong> No detectable diffs vs baseline from HEAD inspection; treat as baseline-equivalent for now. <em>Static/commit evidence only</em>. If diffs exist uncommitted in working trees, they must be committed and reviewed; otherwise no candidate-specific "strongest solution" is verifiable this round.</li>
+<li><strong>Potential disagreements to watch for:</strong> AJAX portability (Issue 01), escaping/output (Issue 08), option access restrictions (Issue 10/11), prepared queries (Issue 17), WPCS/Plugin Check compliance (Issue 18). I will compare concrete diffs once submitted.</li>
+</ul>
+
+<h3>E. Recommended cohesive scope and acceptance evidence for Rounds 2, 3, 4</h3>
+<p>I propose a coupled, issue-clustered approach (not micro-fragmentation):</p>
+<table>
+<thead><tr><th>Round</th><th>Proposed cluster (cohesive)</th><th>Acceptance evidence (measurable)</th><th>Coupling notes</th></tr></thead>
+<tbody>
+<tr><td><strong>Round 2</strong></td><td>Security &amp; access: Issues 01 (AJAX portability), 10/11 (rotation option access), 12 (file guards review), 14 (unauth option deletion), 15 (registration/settings auth). Also scan 08 (escaping) in affected paths.</td><td>Nonces + capability checks on all affected AJAX/admin actions; unauthenticated requests rejected (403/denied). Public cannot mutate rotation/options. Add/extend tests covering reject paths. No new globals without <code>adzworld_</code>.</td><td>AuthZ/NONCE and AJAX routing are coupled; changing handlers affects escaping and guards.</td></tr>
+<tr><td><strong>Round 3</strong></td><td>Standards &amp; i18n/data safety: Issues 02–04 (readme/version/tags), 05 (deprecated APIs), 06 (Chosen), 08 (escaping completeness), 09 (domain), 17 (prepared queries). Tidy assets scope per 13 where touched.</td><td>readme.txt meets tag count/version policy; no deprecated WP APIs in changed files; <code>Chosen</code> handled or removed safely; all echoed/shortcode outputs escaped; all DB queries use <code>$wpdb-&gt;prepare</code> or equivalent safe APIs; text domain <code>adz-world</code> consistent. Run relevant sniff subset.</td><td>Escaping + DB safety must be applied together to touched rendering/query paths.</td></tr>
+<tr><td><strong>Round 4</strong></td><td>Compliance, disclosures, activation/cleanup, and gate hardening: Issues 07 (consent/disclosures — coordinate policy publication), 13 (activation/schema/compat/assets), 18 (whole-plugin WPCS + Plugin Check + regression gate). Address any remaining blockers from R2/R3.</td><td>Disclosure text present; policy links plan confirmed (placeholders not left broken). Activation/deactivation/uninstall clean. Full WPCS on changed files (or agreed scope) + Plugin Check run; all previously passing checks remain green; no suppressions/weak assertions added. Evidence bundle with exact commands/results.</td><td>Gate must cover all previous fixes (regression protection). Policy/disclosure depends on external decision (F).</td></tr>
+</tbody>
+</table>
+
+<h3>F. Genuine blockers or decisions requiring Dainis</h3>
+<ul>
+<li><strong>Issue 00 (actual closure guideline):</strong> Still unidentified. Passing technical checks does not guarantee reopening — need confirmation of the exact guideline text/ID from authorized correspondent.</li>
+<li><strong>Issue 07 / Privacy/Terms:</strong> Policy pages at <code>https://adz-world.com/terms/</code> and <code>https://adz-world.com/privacy/</code> must resolve to real content before resubmission (Plugins Team will check). Placeholders are not acceptable. Need approval/publish plan and final text.</li>
+<li><strong>Issue 19 submission readiness:</strong> Final artifact review/authorized submission blocked until repairs complete and evidence gates pass; need authorized release operator coordination.</li>
+<li><strong>Network/money claims:</strong> Any real payout/provider details (rates/terms/fees/countries/minimums/holdback/escheatment/tax) must come from authorized sources — do not fabricate. <strong>VGM vocabulary</strong> must remain applied consistently.</li>
+<li><strong>Candidate submissions:</strong> Some candidate slots currently identical to baseline (no diffs). Need clarity on whether diffs are expected uncommitted or if agents should commit candidates; also confirm Round 1 allows only establishing baseline copy for OpenCodePickle (done).</li>
+</ul>
+
+<p><strong>Conduct note:</strong> Debate technical only; best evidence-backed solution prevails regardless of proposer. No remediation coding in Round 1 — awaiting Codex evaluation before Round 2.</p>
+</section>
+
+<section id="codex-invitation-feedback-2026y-11m-06d-EET-15h-46m">
+<h2>Codex candidate — permission invitation, matching, and evaluation</h2>
+<p class="meta"><strong>Local MTS:</strong>
+<time datetime="2026-11-06T15:46:00+02:00">2026y-11m-06d-EET-15h-46m</time>.
+Candidate: <code>pre-release-candidates/codex-gpt5/</code>.</p>
+<p>Implemented the authorized invitation-first carousel repair using the Claude
+candidate’s preference-panel structure as the visual and parsing foundation.
+The Codex candidate now stores anonymous preferences in a session cookie and
+signed-in preferences in user meta, renders removable refinement pills,
+prioritizes matching local adz, keeps previous/next controls attached to the
+looping carousel, and records explicit per-adz evaluation from -100 to 100.
+Untouched and explicitly neutral adz remain separate states. Evaluation weight
+is included in subsequent local matching.</p>
+<p><strong>Verification:</strong> full candidate
+<code>phpcs --standard=phpcs.xml.dist</code> returned zero errors and zero
+warnings; all PHP parsed; JavaScript syntax passed; preference assertions
+passed 42/42; matching assertions passed 19/19; <code>git diff --check</code>
+passed; and the inline/runtime-style search returned zero lines. The updated
+candidate was copied to the authorized port-8098 burner. Its homepage returned
+HTTP 200 and rendered the preference panel, evaluation controls, and attached
+carousel controls without a PHP error in the container log.</p>
+<p><strong>15:51 review correction:</strong> removed visible slide numbers,
+completed the wide Claude-derived panel treatment, replaced the evaluation
+track with a persistent red-to-yellow-to-green gradient and score-coloured
+thumb, removed duplicate text captions, added expandable long captions, and
+added selectable top-level categories with refinements under the active
+category. Repeated full-candidate WPCS, PHP/JavaScript syntax, 61 assertions,
+diff, and zero-line inline-style checks passed. Port 8098 returned HTTP 200
+after deployment with no PHP warning, notice, or fatal in the checked log.</p>
+<p><strong>16:38 hierarchy correction:</strong> separated invitation-hub category
+creation from per-adz improvement. The Improve form now submits its stable adz
+target; WordPress resolves the local ad category from the saved ad type or ad
+content and rejects any refinement whose category was not created in the hub.
+Category refinements remain scoped to that category for matching, so a couch
+refinement such as “light blue” cannot create or refine a top-level Blue
+category. Hub refinement also no longer promotes refinement facets globally.
+Full-candidate WPCS returned zero output; PHP and JavaScript syntax passed;
+the existing preference and matching suites passed 42/42 and 19/19; diff and
+zero-line inline/runtime-style checks passed. Runtime deployment evidence is
+recorded separately after the port-8098 update. On that burner, the resolver
+returned Couch, Used Cars, and Bicycles for the three local adz; a signed-in
+AJAX request stored <code>couch--light blue</code>; the same request against the
+car ad was rejected and left the category list unchanged; the public page
+returned HTTP 200; and the recent container log scan found no PHP warning,
+notice, parse error, fatal, uncaught exception, or stack trace.</p>
+<p><strong>16:48 user-hub navigation correction:</strong> removed the separate
+“Add another category” control. The invitation field remains the single
+category-entry interaction after the introduction becomes the user hub, while
+only an individual adz Improve form adds category-scoped refinements. Each adz
+now has a direct user-hub return control, and successful category, selection,
+removal, and Improve requests deliberately return, center, and focus the hub
+after reload. Full-candidate WPCS, PHP and JavaScript syntax, 61 assertions,
+diff and zero-line inline/runtime-style checks passed. Deployed HTML contained
+zero unwanted category buttons, three adz-hub return controls, and the original
+invitation submit control in category mode; the page returned HTTP 200 and the
+recent PHP error scan returned zero lines. No browser was connected, so visual
+or click-path browser verification is not claimed.</p>
+<p><strong>16:55 selector correction:</strong> moved the user-hub return into
+the existing carousel selector. Its first marker is one small rounded square;
+the following three adz markers remain circular bullets. There is no separate
+Hub button. The active states use the same blue treatment without enlarging the
+Hub marker into a tile. Deployed HTML contained one hub-square marker, three
+adz position markers, zero separate hub buttons, and returned HTTP 200 with a
+zero-line recent PHP error scan. Full-candidate WPCS, PHP/JavaScript syntax,
+61 assertions, diff, and zero-line inline/runtime-style checks had passed
+before deployment; browser visual verification remains unrun.</p>
+<p><strong>16:58 hub identity correction:</strong> fixed position zero rather
+than only its selector marker. The saved-preference state had suppressed the
+introduction, leaving a bare form. It now renders “Your adz hub,” retains the
+permission-based invitation explanation, and places the original category
+field and saved hierarchy beneath it; the empty state remains “Advertising by
+invitation” with the full introductory points. Full-candidate WPCS, PHP and
+JavaScript syntax, 61 assertions, diff, and zero-line inline/runtime-style
+checks passed. Deployed signed-in HTML contained the hub heading, invitation
+explanation, and one hub-square selector marker; the page returned HTTP 200
+and the recent PHP error scan returned zero lines. Browser visual verification
+remains unrun.</p>
+<p><strong>17:18 category/refinement vocabulary correction:</strong> removed
+“Understood as” from every rendered state and from source commentary. The Hub
+now has an openable “Categories” section with directly editable category pills;
+categories are server-validated search prefixes limited to three words and 48
+characters. Only strings entered through Improve are labeled “Refinements,”
+and refinement pills show only their text rather than a repeated
+category–refinement label. Renaming a category migrates its refinements; removing
+one removes its attached refinements. Full-candidate WPCS, PHP/JavaScript syntax,
+61 assertions, diff and zero-line inline/runtime-style and “Understood as”
+searches passed. Deployed HTML contained Categories, Refinements, and an editable
+category; it contained zero “Understood as” and zero combined labels. Live AJAX
+accepted a valid three-word rename, rejected a four-word rename, restored Couch,
+and preserved <code>couch--light blue</code>. Port 8098 returned HTTP 200 and the
+recent PHP error scan returned zero lines. Browser visual verification remains
+unrun.</p>
+<p><strong>17:36 pill interaction correction:</strong> removed the oversized
+delete-X controls. Category and refinement pills now use a small pencil control
+that opens an inline string editor; Enter saves through the existing nonce-bound
+endpoint and Escape cancels. Clicking a category label dispatches navigation to
+the first rendered slide carrying that category, which also supports future
+multi-slot category groups without selecting a slot count now. Full-candidate
+WPCS, PHP/JavaScript syntax, 61 assertions, diff and zero-line inline/runtime-
+style, X-control, and “Understood as” searches passed. Deployed HTML contained
+zero X controls, pencil editors, one category navigation control, and three
+categorized slides. Live AJAX renamed and restored the Light Blue refinement,
+preserving <code>couch--light blue</code>; port 8098 returned HTTP 200 and the
+recent PHP error scan returned zero lines. Browser click-path verification
+remains unrun.</p>
+<p><strong>17:50 category sub-ad hierarchy:</strong> added persistent per-category
+result slots in candidate commit <code>b650417</code> without adding a second
+category workflow. A category label still
+opens its first result. Each registered category slide now carries a compact
+category box with a right-edge plus control and small sub-ad position controls;
+the Hub repeats the same sub-ad positions beneath the editable category. The
+plus endpoint is nonce-bound, accepts only a stored category, caps allocation at
+eight slots, persists the count for the current session or signed-in user, and
+returns to the newly created result. The initial implementation duplicates the
+category adz as an explicit placeholder until provider search supplies distinct
+results for those slots. Corners were reduced without adding inline styles.
+Full-candidate WPCS returned zero findings; PHP and JavaScript parsed; call
+resolution passed with zero own-prefix, arity, or duplicate-definition errors;
+preference tests passed 42/42 and matching tests passed 19/19; candidate-scoped
+diff checking passed. A real anonymous burner session created Couch, posted the
+add-slot AJAX action successfully, and rendered two Couch slides plus two Hub
+subslot controls. The signed-in burner preference now persists
+<code>couch--2</code>; its shortcode renders two Couch slides and two Hub
+subslot controls. Port 8098 returned HTTP 200 and the checked container log had
+no PHP error. No browser session was connected, so visual click-path verification
+is not claimed.</p>
+</section>
+
+<section id="codex-dashboard-attribution-2026y-11m-10d-EET-14h-58m">
+<h2>Codex candidate — dashboard, publisher attribution, and existing networks</h2>
+<p class="meta"><strong>Local MTS:</strong>
+<time datetime="2026-11-10T14:58:40+02:00">2026y-11m-10d-EET-14h-58m</time>.
+Candidate: <code>pre-release-candidates/codex-gpt5/</code>. Deployed review
+target: <code>http://167.172.241.113:8098/</code>. The earlier 8097 reference
+was incorrect; 8097 is the Grok burner.</p>
+<p>Replaced the scattered administrator pages with one real Dashboard and tabs
+for Settings, Ad networks, Affiliate attribution, Rotation, Service earnings,
+and Templates. The overview reports actual local-adz, affiliate-account,
+provider-unit, shared-network, and statement-connection state. Dashboard
+styling is in a dedicated enqueued stylesheet; no inline style was added.</p>
+<p>The affiliate backend now uses a pure allowlisted validator instead of
+temporarily overwriting the live option during validation. Amazon Associates,
+Walmart through Impact, Awin, CJ, Rakuten Advertising, and eBay Partner Network
+remain the existing direct-attribution methods. Each account has an explicit
+enable control; incomplete accounts emit no link. Category plus refinement text
+forms the search request, while the site owner’s saved publisher identifiers
+provide attribution. Those affiliate networks pay the site owner’s own account
+under their existing terms; this path does not create an adz-world payment
+intermediary.</p>
+<p>Integrated the existing publisher-unit work for Google AdSense, Google Ad
+Manager, and Taboola. Valid identifiers, explicit host acceptance, and an
+enable control are required before a unit becomes a named Rotation source.
+The official provider unit is mounted once when its slide becomes active.
+Other network plugins remain usable through the existing registered-shortcode
+Rotation path; the plugin does not recreate provider inventory, auctions,
+reporting, or payment systems. The optional adz-world API and its read-only
+service statement connection remain separate and off by default.</p>
+<p><strong>Verification:</strong> full-candidate WPCS returned zero findings;
+all PHP parsed; JavaScript syntax passed; the own-code resolver reported zero
+missing project functions, arity errors, or duplicate definitions; preference
+tests passed 42/42 and matching tests passed 19/19; candidate diff checking and
+the inline/runtime-style search passed. A WordPress-loaded burner regression
+passed 50 assertions, including all six existing affiliate URL builders,
+category/refinement request scoping, direct publisher-tag attribution, rejection of
+incomplete affiliate accounts, acceptance of complete provider units, and
+rejection of provider units lacking external-host consent. Authenticated HTTP
+checks found all seven tabs, the dashboard overview and stylesheet, and both
+nonce-bearing save forms. The frontend returned HTTP 200, and the final requests
+added no PHP warning, notice, parse error, uncaught exception, or fatal to the
+checked log. The browser-control surface had no connected browser, so visual
+browser testing is not claimed.</p>
+</section>
+
+<section id="codex-earnings-support-2026y-11m-10d-EET-15h-07m">
+<h2>Codex candidate — WordPress-style Earnings and voluntary support panel</h2>
+<p class="meta"><strong>Local MTS:</strong>
+<time datetime="2026-11-10T15:07:54+02:00">2026y-11m-10d-EET-15h-07m</time>.
+Candidate: <code>pre-release-candidates/codex-gpt5/</code>. Deployed review
+target: <code>http://167.172.241.113:8098/</code>. The earlier 8097 reference
+was incorrect; 8097 is the Grok burner.</p>
+<p>Reworked the former Service earnings screen into an Earnings panel that
+clearly separates the established ways a site owner can earn: direct affiliate
+accounts, publisher ad-network accounts, and the optional read-only adz-world
+service statement connection. The panel reports enabled connection counts and
+links back to their existing configuration tabs; it does not present an
+unconfigured service as a zero balance or invent a payment processor.</p>
+<p>Added one quiet support card inside the plugin’s Earnings tab, following the
+traditional WordPress plugin pattern used by Contact Form 7 and WordPress core:
+a short voluntary-support message and a standard
+<code>button button-primary</code> link. “Buy Dainis a coffee” points directly
+to the verified live <code>https://dainis.net/donate/</code> page. It has no
+affiliate, referral, or tracking query. Nothing is loaded from that site until
+the administrator deliberately clicks the button. There is no site-wide notice,
+dashboard widget, iframe, external image, external script, or inline style. The
+readme Donate link was corrected from the non-resolving legacy domain to the
+same HTTPS page and the click-only external connection is documented.</p>
+<p><strong>Verification:</strong> full-candidate WPCS returned zero findings;
+all PHP parsed; JavaScript syntax passed; the own-code resolver reported zero
+missing project functions, arity errors, or duplicate definitions; preference
+tests passed 42/42 and matching tests passed 19/19; diff checking passed; and
+the inline/runtime-style search returned zero lines. The WordPress-loaded
+burner regression passed 53 assertions, including the exact HTTPS donation URL,
+absence of tracking parameters, standard WordPress button classes, and absence
+of inline styling. The authenticated Earnings tab returned HTTP 200 and contained
+the two earnings-route cards, support card, donation button, local stylesheet,
+and zero inline-style attributes. The checked log contained no new PHP warning,
+notice, parse error, uncaught exception, or fatal. No browser was connected, so
+visual browser inspection is not claimed.</p>
+</section>
+
+<section id="codex-flosc-tabs-2026y-11m-10d-EET-16h-18m">
+<h2>Codex candidate — FLOSC-style unified Adz.world tabs</h2>
+<p class="meta"><strong>Local MTS:</strong>
+<time datetime="2026-11-10T16:18:58+02:00">2026y-11m-10d-EET-16h-18m</time>.
+Candidate: <code>pre-release-candidates/codex-gpt5/</code>. Deployed review
+target: <code>http://167.172.241.113:8098/</code>.</p>
+<p>The screenshots showed that the Adz.world top-level menu still opened the
+native advertisement post list, while the intended FLOSC model opens one
+unified plugin settings screen with horizontal tabs and matching sidebar
+shortcuts. The candidate now uses that FLOSC structure directly: a dedicated
+Adz.world top-level page, Dashboard as its destination, horizontal Dashboard,
+Settings, Ad networks, Affiliate attribution, Rotation, Earnings, and
+Templates tabs, and matching sidebar entries. All Adz and Add New Ad remain
+available as content-management entries, but neither replaces the dashboard.
+The tab parameter is validated against the fixed tab allowlist.</p>
+<p>The tab presentation copies the relevant FLOSC admin stylesheet values into
+the Adz.world stylesheet under plugin-specific class names: the wrapped
+multi-row tab layout, borders, spacing, active white tab, muted inactive tab,
+hover/focus treatment, title layout, and version badge. No FLOSC PHP or
+business logic was copied, and no inline CSS was introduced. The stylesheet is
+enqueued only on Adz.world unified screens.</p>
+<p><strong>Verification:</strong> changed PHP files parsed and passed WPCS;
+candidate-scoped diff checking passed; the candidate resolver reported 178
+file-scope functions, 143 methods, 396 call targets, zero unresolved
+project-prefixed calls, zero arity errors, and zero duplicate definitions;
+preference tests passed 42/42 and matching tests passed 19/19. The
+WordPress-loaded burner regression passed 53 assertions. Authenticated HTTP on
+all seven port-8098 tabs returned HTTP 200; every screen contained seven tab
+links, exactly one active tab, the local dashboard stylesheet, and zero inline
+style attributes. The native post-list menu markup resolves the Adz.world
+top-level link to <code>admin.php?page=adzworld</code>. The final checked log
+contained no PHP warning, notice, parse error, uncaught exception, or fatal.
+The browser-control surface remained unavailable, so screenshot-level visual
+inspection is not claimed.</p>
+</section>
+
+<section id="codex-connections-2026y-11m-10d-EET-16h-33m">
+<h2>Codex candidate — complete advertising Connections workflow</h2>
+<p class="meta"><strong>Local MTS:</strong>
+<time datetime="2026-11-10T16:33:00+02:00">2026y-11m-10d-EET-16h-33m</time>.
+Candidate: <code>pre-release-candidates/codex-gpt5/</code>. Deployed review
+target: <code>http://167.172.241.113:8098/</code>.</p>
+<p>Replaced the sparse, separate ad-network setup with one Connections screen.
+Direct rotation-unit setup now covers Google AdSense, Google Ad Manager,
+Taboola, and Outbrain. Every card presents the provider account entry point,
+official identifier/setup documentation, locally validated identifiers,
+external-host consent, enable control, and connection status. Outbrain uses
+its official widget container and script; no identifier or provider approval
+is invented.</p>
+<p>The same screen provides official or managed onboarding paths for Media.net,
+Amazon Publisher Services, Ezoic, Mediavine, Raptive, and Monumetric. Ezoic and
+Mediavine also link to the WordPress plugin installer search for their official
+plugins. These managed integrations are not falsely represented as generic
+rotation units. An additional-provider bridge accepts only a shortcode already
+registered by an installed provider or advertising plugin, validates the
+administrator capability and nonce, rejects raw JavaScript and self-recursive
+rotations, and exposes the saved source to existing adz.world rotation logic.</p>
+<p>Amazon Associates, Walmart/Impact, Awin, CJ Affiliate, Rakuten Advertising,
+and eBay Partner Network forms now appear directly below the display-network
+connections. Each program has a create/open-account action, identifier steps,
+validated fields, and an enable control. Saving from Connections returns to
+Connections rather than sending the administrator to another screen. The
+site owner’s provider accounts continue to own attribution and payment.</p>
+<p><strong>Verification:</strong> full-candidate WPCS returned zero findings;
+all PHP parsed; JavaScript syntax passed; candidate-scoped diff checking passed;
+and the inline/runtime-style search returned zero lines. The WordPress-loaded
+functional suite passed 63 assertions. The complete provider-shortcode and
+rotation suite passed, including capability and nonce enforcement, shortcode
+preservation, removal, source registration, weighting, local/provider mixed
+delivery, escaping, and invalid-source rejection. An authenticated port-8098
+check returned HTTP 200 for all seven tabs and found the direct, managed,
+shortcode-bridge, and affiliate sections on Connections. SHA-256 hashes for
+the seven affected PHP/CSS/test files matched between the local candidate and
+the deployed plugin. The localhost-only HTTP suite correctly refused the
+remote burner host; its assertions were instead covered by the explicit
+authenticated burner check. No connected browser was available, so visual
+browser inspection is not claimed.</p>
+</section>
+
+<section id="codex-vertical-rotations-2026y-11m-10d-EET-17h-22m">
+<h2>Codex candidate — populated vertical Rotation manager and previews</h2>
+<p class="meta"><strong>Local MTS:</strong>
+<time datetime="2026-11-10T17:22:00+02:00">2026y-11m-10d-EET-17h-22m</time>.
+Candidate: <code>pre-release-candidates/codex-gpt5/</code>. Deployed review
+target: <code>http://167.172.241.113:8098/</code>.</p>
+<p>Removed the unnecessary and unimplemented Settings tab and its sidebar
+entry. Adz.world now has six unified administrator tabs: Dashboard,
+Connections, Affiliate programs, Rotation, Earnings, and Templates. The
+broken Settings URL is no longer generated by the plugin, and the Dashboard
+routes connection setup to Connections.</p>
+<p>Rebuilt Rotation as a named rotation manager rather than a source-entry
+form. Each rotation can contain up to 200 ordered slots. Slots are displayed
+vertically and can contain the invitation/user hub, a published local adz, or
+an enabled provider source. An administrator can add, remove, move, save, and
+delete slots and rotations. A starter rotation is populated automatically
+when no named rotation has been saved; the current burner shows the invitation
+and its three published local adz. Saved rotations can be rendered with
+<code>[adz_rotation name="rotation-key"]</code>; the existing raw-slot
+shortcode remains supported.</p>
+<p>Every slot renders its actual administrator preview in place. Local slots
+render the selected adz, the invitation renders the non-interactive hub
+preview, and provider slots execute the already registered and enabled
+provider unit. Each card has a nonce-protected “Refresh this adz preview”
+control that refreshes only that slot. Refreshed provider units are mounted
+through the same existing Google AdSense, Google Ad Manager, Taboola,
+Outbrain, or installed-provider integration. The provider still controls
+whether its official unit returns paid inventory in WordPress administration;
+the plugin does not fabricate an advertisement when the provider returns no
+fill.</p>
+<p><strong>Verification:</strong> full-candidate WPCS returned zero findings;
+changed PHP files parsed; both JavaScript files passed syntax checks;
+candidate-scoped diff checking passed; and the inline-style/runtime-inline
+search returned zero lines. The WordPress-loaded functional suite passed 65
+assertions, including preservation of 100 ordered slots and rejection of an
+unavailable provider source. The complete rotation display suite passed,
+including a saved named rotation containing invitation, local, and provider
+slots rendered through the widget shortcode. Authenticated port-8098 checks
+returned HTTP 200 for all six tabs, confirmed that Settings is absent, found
+four populated visible starter slots and their refresh controls, and completed
+a nonce-bound per-slot refresh with HTTP 200. SHA-256 hashes for all nine
+affected PHP, JavaScript, CSS, and test files match between the local candidate
+and deployed plugin. The final verification requests added no PHP warning,
+notice, parse error, uncaught exception, or fatal to the checked log. No
+connected browser-control session was available, so screenshot-level visual
+inspection is not claimed.</p>
+<p><strong>Final pre-commit release gate:</strong> corrected stale tab names in
+the readme, removed the unused legacy matcher alias in favor of the required
+<code>adzworld_</code> prefix, and updated its shared regression test. Official
+WordPress Plugin Check 2.2.0 initially identified AppleDouble metadata created
+by the macOS-to-Linux test deployment; those generated files were absent from
+Git and were removed from the disposable burner. The clean deployed source
+then returned <code>Success: Checks complete. No errors found.</code> Full WPCS
+again returned zero findings. PHP lint, call resolution, 42 preference tests,
+19 matching tests, 65 WordPress-loaded assertions, and the complete rotation
+display suite passed. The exact deployed plugin deactivated and reactivated
+successfully with <code>WP_DEBUG</code> enabled, and the final gate added no
+warning, notice, parse error, uncaught exception, or fatal to the debug log.
+Release packaging must continue to exclude macOS <code>._*</code> metadata.</p>
+</section>

@@ -37,6 +37,7 @@ function adzworld_test_rotation_display() {
 	);
 	$original_sources = adzworld_rotation_sources();
 	$original_saved   = get_option( 'adzworld_rotation_sources', null );
+	$original_named   = get_option( 'adzworld_named_rotations', null );
 	$original_user    = get_current_user_id();
 	try {
 		wp_set_current_user( 0 );
@@ -67,6 +68,27 @@ function adzworld_test_rotation_display() {
 		adzworld_test_assert( true === adzworld_register_rotation_source( 'test-provider', '[' . $tag . ']', 'Test publisher source' ), 'Existing provider shortcode can register explicitly' );
 		adzworld_test_assert( is_wp_error( adzworld_register_rotation_source( 'test-provider', '[' . $tag . ']', 'Duplicate' ) ), 'A source cannot silently overwrite another source' );
 		adzworld_test_assert( is_wp_error( adzworld_register_rotation_source( 'missing-provider', '[not_registered_anywhere]', 'Unknown' ) ), 'Unavailable provider shortcode is rejected' );
+		update_option(
+			'adzworld_named_rotations',
+			array(
+				'rotation-b' => array(
+					'name'  => 'Rotation B',
+					'slots' => array( 'intro', 'ad:' . $id, 'source:test-provider' ),
+				),
+			),
+			false
+		);
+		$named_html = adzworld_render_rotation(
+			array(
+				'name'     => 'rotation-b',
+				'display'  => 'flat',
+				'controls' => 'both',
+			)
+		);
+		adzworld_test_assert(
+			false !== strpos( $named_html, 'codex-rotation-local-marker' ) && false !== strpos( $named_html, 'codex-existing-provider-marker' ),
+			'A widget can render a saved named rotation containing local and provider slots'
+		);
 		$slots = adzworld_parse_rotation( 'source:test-provider:9,ad:' . $id . ':1' );
 		adzworld_test_assert( 9 === $slots[0]['weight'] && 1 === $slots[1]['weight'], 'Nine-to-one weights are preserved exactly' );
 		$provider_draws = 0;
@@ -80,7 +102,7 @@ function adzworld_test_rotation_display() {
 		adzworld_test_assert( is_wp_error( adzworld_rotation_weighted_slot( $slots, 0 ) ) && is_wp_error( adzworld_rotation_weighted_slot( $slots, 11 ) ), 'Out-of-range draws fail explicitly' );
 		$html = adzworld_render_rotation( array( 'slots' => 'source:test-provider' ) );
 		adzworld_test_assert( false !== strpos( $html, 'codex-existing-provider-marker' ) && false === strpos( $html, 'codex-rotation-local-marker' ), 'Provider-only rotation inserts no local ad' );
-		adzworld_test_assert( false === strpos( $html, 'adzworld-preference' ), 'No introduction panel is inserted automatically' );
+		adzworld_test_assert( false === strpos( $html, 'class="adz-panel"' ), 'No introduction panel is inserted automatically' );
 
 		$html = adzworld_render_rotation(
 			array(
@@ -91,7 +113,7 @@ function adzworld_test_rotation_display() {
 			)
 		);
 		adzworld_test_assert( false !== strpos( $html, 'codex-existing-provider-marker' ) && false !== strpos( $html, 'codex-rotation-local-marker' ), 'Mixed carousel contains both explicitly selected sources' );
-		adzworld_test_assert( false !== strpos( $html, 'class="adzworld-preference"' ), 'Explicit introduction slot includes the preference form' );
+		adzworld_test_assert( false !== strpos( $html, 'class="adz-panel"' ), 'Explicit introduction slot includes the preference form' );
 		adzworld_test_assert( false !== strpos( $html, 'data-adzworld-step="-1"' ) && false !== strpos( $html, 'data-adzworld-position="2"' ), 'Arrow and position controls are rendered' );
 		adzworld_test_assert( false === strpos( $html, '<script>invalid()' ), 'Rotation labels cannot inject markup' );
 		adzworld_test_assert(
@@ -139,6 +161,11 @@ function adzworld_test_rotation_display() {
 			delete_option( 'adzworld_rotation_sources' );
 		} else {
 			update_option( 'adzworld_rotation_sources', $original_saved, false );
+		}
+		if ( null === $original_named ) {
+			delete_option( 'adzworld_named_rotations' );
+		} else {
+			update_option( 'adzworld_named_rotations', $original_named, false );
 		}
 		wp_delete_post( $id, true );
 	}

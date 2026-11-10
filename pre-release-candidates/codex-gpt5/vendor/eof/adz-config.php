@@ -281,10 +281,11 @@ function adzworld_settings_setup() {
 	);
 
 	if ( class_exists( 'eof' ) ) {
-		$settings_configs = new eof(
+		$settings_configs        = new eof(
 			$configs,
 			$sections
 		);
+		$GLOBALS['adzworld_eof'] = $settings_configs;
 	}
 }
 add_action( 'init', 'adzworld_settings_setup' );

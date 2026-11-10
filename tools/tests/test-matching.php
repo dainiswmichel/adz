@@ -55,7 +55,7 @@ function get_post( $id = 0 ) {
 	$p->post_content = '';
 	return $p;
 }
-// adz_get_all_ad_ids() is NOT stubbed. Stubbing it is what hid a fatal: the
+// adzworld_get_all_ad_ids() is NOT stubbed. Stubbing it is what hid a fatal: the
 // plugin called it, nothing defined it, and these tests passed anyway. The
 // plugin's own implementation now runs here, against stubs for the WordPress
 // functions it depends on.
@@ -144,16 +144,16 @@ for ( $i = 0; $i < 25; $i++ ) {
 }
 check( 'ordering is deterministic', count( array_unique( $runs ) ), 1 );
 
-echo "\n=== the plugin's own adz_get_all_ad_ids() runs, not a stub ===\n";
+echo "\n=== the plugin's own adzworld_get_all_ad_ids() runs, not a stub ===\n";
 $GLOBALS['adz_cache']        = array();
 $GLOBALS['adz_cache_writes'] = 0;
-$ids = adz_get_all_ad_ids();
+$ids = adzworld_get_all_ad_ids();
 check( 'returns the published adz', $ids, array( 11, 12, 13, 14, 15, 16 ) );
 check( 'caches on first call', $GLOBALS['adz_cache_writes'], 1 );
-adz_get_all_ad_ids();
+adzworld_get_all_ad_ids();
 check( 'second call served from cache', $GLOBALS['adz_cache_writes'], 1 );
 adzworld_flush_ad_pool();
-adz_get_all_ad_ids();
+adzworld_get_all_ad_ids();
 check( 'flush forces a refetch', $GLOBALS['adz_cache_writes'], 2 );
 check( 'pool size is capped', $GLOBALS['adz_get_posts_args']['posts_per_page'], 200 );
 check( 'asks for published adz only', $GLOBALS['adz_get_posts_args']['post_status'], 'publish' );

@@ -10,6 +10,103 @@
 	var settings = window.adzworldRotation || {};
 
 	/**
+	 * Push one AdSense unit only once.
+	 *
+	 * @param {HTMLElement} unit AdSense element.
+	 */
+	function pushAdsense( unit ) {
+		if ( '1' === unit.dataset.adzworldPushed ) {
+			return;
+		}
+		unit.dataset.adzworldPushed = '1';
+		try {
+			( window.adsbygoogle = window.adsbygoogle || [] ).push( {} );
+		} catch ( error ) {
+			unit.dataset.adzworldError = error && error.message ? String( error.message ).slice( 0, 180 ) : '1';
+		}
+	}
+
+	/**
+	 * Mount an enabled publisher ad-network unit when its slide becomes active.
+	 *
+	 * @param {HTMLElement} slide Active carousel slide.
+	 */
+	function mountNetworkUnit( slide ) {
+		var unit = slide.querySelector( '[data-adzworld-mount]' );
+		var kind;
+
+		if ( ! unit || '1' === unit.dataset.adzworldMounted ) {
+			return;
+		}
+		kind = unit.dataset.adzworldMount || '';
+
+		if ( 'adsense' === kind ) {
+			var ins = document.createElement( 'ins' );
+
+			ins.className = 'adsbygoogle';
+			ins.setAttribute( 'data-ad-client', unit.dataset.client || '' );
+			ins.setAttribute( 'data-ad-slot', unit.dataset.slot || '' );
+			ins.setAttribute( 'data-ad-format', 'auto' );
+			ins.setAttribute( 'data-full-width-responsive', 'true' );
+			unit.appendChild( ins );
+			unit.dataset.adzworldMounted = '1';
+			pushAdsense( ins );
+			return;
+		}
+
+		if ( 'gam' === kind ) {
+			window.googletag = window.googletag || { cmd: [] };
+			unit.dataset.adzworldMounted = '1';
+			window.googletag.cmd.push(
+				function () {
+					window.googletag.defineSlot(
+						unit.dataset.path || '',
+						[ Number( unit.dataset.width ), Number( unit.dataset.height ) ],
+						unit.id
+					).addService( window.googletag.pubads() );
+					if ( ! window.adzworldGamServices ) {
+						window.googletag.enableServices();
+						window.adzworldGamServices = true;
+					}
+					window.googletag.display( unit.id );
+				}
+			);
+			return;
+		}
+
+		if ( 'taboola' === kind && 'https://cdn.taboola.com/libtrc/' === settings.taboolaBase &&
+			/^[a-z0-9][a-z0-9-]{1,48}$/.test( unit.dataset.publisher || '' ) ) {
+			var script;
+
+			unit.dataset.adzworldMounted = '1';
+			window._taboola = window._taboola || [];
+			window._taboola.push(
+				{
+					container: unit.id,
+					mode: unit.dataset.mode || 'thumbnails-a',
+					placement: unit.dataset.placement || '',
+					target_type: 'mix'
+				}
+			);
+			if ( ! document.getElementById( 'adzworld-taboola-loader' ) ) {
+				script = document.createElement( 'script' );
+				script.id = 'adzworld-taboola-loader';
+				script.async = true;
+				script.src = settings.taboolaBase + encodeURIComponent( unit.dataset.publisher ) + '/loader.js';
+				document.head.appendChild( script );
+			}
+			return;
+		}
+
+		if ( 'outbrain' === kind ) {
+			unit.dataset.adzworldMounted = '1';
+			if ( window.OBR && window.OBR.extern && 'function' === typeof window.OBR.extern.researchWidget ) {
+				window.OBR.extern.researchWidget();
+			}
+		}
+	}
+
+	/**
 	 * Post a small, nonce-protected request to WordPress.
 	 *
 	 * @param {string} action AJAX action.
@@ -106,6 +203,7 @@
 					button.setAttribute( 'aria-pressed', String( Number( button.dataset.adzworldPosition ) === current ) );
 				}
 			);
+			mountNetworkUnit( slides[ current ] );
 			rotation.querySelectorAll( '[data-adzworld-category-slot-category], [data-adz-category-slot-category]' ).forEach(
 				function ( button ) {
 					var category = button.dataset.adzworldCategorySlotCategory || button.dataset.adzCategorySlotCategory || '';
@@ -552,6 +650,16 @@
 		document.querySelectorAll( '.adzworld-rotation' ).forEach( prepareRotation );
 		document.querySelectorAll( '[data-adz-panel]' ).forEach( preparePanel );
 		document.querySelectorAll( '[data-adzworld-feedback-target]' ).forEach( prepareEvaluation );
+		document.addEventListener(
+			'adzworld:mount-network',
+			function ( event ) {
+				var root = event.detail && event.detail.root ? event.detail.root : event.target;
+
+				if ( root && root.querySelector ) {
+					mountNetworkUnit( root );
+				}
+			}
+		);
 	}
 
 	if ( 'loading' === document.readyState ) {
