@@ -84,6 +84,91 @@
   Earlier analysis: <a href="remediation-scope.md">remediation scope</a>; its historical DONE labels are not inherited as current integrated evidence.</p>
 </section>
 
+<section id="claude-design-handoff-2026y-11m-10d-EET">
+<h2>Handoff to Claude Code — focused design pass on the remediated baseline</h2>
+<p class="meta"><strong>GitHub baseline:</strong> branch <code>main</code> at
+<code>418ca92</code>. Tested feature commit: <code>8a24eb0</code>. Selected
+plugin tree: <code>pre-release-candidates/codex-gpt5/</code>. Do not begin from
+the older <code>pre-release-candidates/claude-code-web/</code> tree; it does not
+contain the complete remediated functionality.</p>
+
+<div class="notice"><strong>Claude Code assignment:</strong> perform a focused
+design and usability pass on the selected plugin tree while preserving its
+security, data model, external-service controls, rotations, network
+connections, affiliate attribution, tests, and WordPress coding standards.
+Work from a new branch based on current GitHub <code>main</code>. Do not replace
+the candidate wholesale, copy an older candidate over it, or modify the
+integrated release tree.</div>
+
+<h3>Baseline review status against the 29 September WordPress.org notice</h3>
+<table>
+<thead><tr><th>Notice item</th><th>Current selected-candidate status</th><th>Evidence</th></tr></thead>
+<tbody>
+<tr><td>Portable Ajax URL</td><td><strong>Remediated</strong></td><td>No static <code>/wp-admin/admin-ajax.php</code> path remains. PHP uses <code>admin_url( 'admin-ajax.php' )</code>; external JavaScript receives the URL through localized settings.</td></tr>
+<tr><td><code>Requires at least</code></td><td><strong>Remediated</strong></td><td>Plugin header and readme both declare major version <code>6.2</code>.</td></tr>
+<tr><td><code>Tested up to</code></td><td><strong>Remediated for the tested burner</strong></td><td>Readme declares major version <code>7.1</code>; the dedicated burner runs WordPress 7.1 and the exact candidate activated and passed its WordPress-loaded tests with <code>WP_DEBUG</code> enabled.</td></tr>
+<tr><td>Readme tags</td><td><strong>Remediated</strong></td><td>Exactly five tags.</td></tr>
+<tr><td>Deprecated <code>screen_icon()</code></td><td><strong>Remediated</strong></td><td>The call is absent.</td></tr>
+<tr><td>Unmaintained Chosen library</td><td><strong>Remediated</strong></td><td>The Chosen asset and invocation are absent; native controls remain.</td></tr>
+<tr><td>External-service disclosure</td><td><strong>Not fully closed</strong></td><td>The adz-world service data/when/purpose disclosure exists in <code>readme.txt</code>, and direct network cards contain provider Terms and Privacy links. However, the disclosed <code>https://adz-world.com/terms/</code> and <code>/privacy/</code> URLs timed out during the 10 November verification, and the readme still needs explicit what/data/when/Terms/Privacy disclosure for the optional Google AdSense, Google Ad Manager, Taboola, and Outbrain browser connections. Do not claim this review item is complete until both conditions are corrected and rechecked.</td></tr>
+<tr><td>Shortcode/output escaping</td><td><strong>Remediated</strong></td><td>Iframe URL, dimensions and title are validated/escaped; legacy shortcode attributes are typed and escaped; ad content is allowlisted. Runtime tests reject non-HTTP iframe URLs, script content and unrelated shortcodes.</td></tr>
+<tr><td>Text domain</td><td><strong>Remediated</strong></td><td>Plugin header and gettext calls use <code>adz-world</code>; official Plugin Check is clean.</td></tr>
+<tr><td>Arbitrary option access through <code>rotations_id</code></td><td><strong>Remediated</strong></td><td>Rotation identifiers must match the plugin format and a saved rotation. Public requests cannot choose core/foreign option names. HTTP and WordPress-loaded regressions cover rejected reads, writes and deletion.</td></tr>
+<tr><td>Repeated arbitrary-option warning</td><td><strong>Remediated with the preceding repair</strong></td><td>The same allowlist and state helper protect every option access path.</td></tr>
+</tbody>
+</table>
+
+<p><strong>Gate state before the design pass:</strong> full WPCS returned zero
+findings; inline-style/runtime-inline search returned zero lines; PHP and all
+JavaScript parsed; call resolution found zero own-prefix misses, arity errors,
+or duplicate definitions; preference tests passed 42/42; matching tests passed
+19/19; WordPress-loaded regression passed 65 assertions; the rotation display
+suite passed; the exact plugin deactivated/reactivated successfully; and
+official WordPress Plugin Check 2.2.0 returned
+<code>Success: Checks complete. No errors found.</code></p>
+
+<h3>Focused design brief</h3>
+<ul>
+<li>Preserve the invitation-first Adz Hub, category/refinement hierarchy,
+square Hub position marker, circular adz markers, attached carousel controls,
+Improve slider/refinement workflow, category subslots, and actual provider/local
+adz rendering.</li>
+<li>Preserve the six-tab administrator structure: Dashboard, Connections,
+Affiliate programs, Rotation, Earnings, and Templates. Do not restore the
+removed Settings tab.</li>
+<li>Improve hierarchy, spacing, typography, responsive behavior, focus states,
+and visual consistency using the established light-blue Claude-inspired palette.
+The Rotation tab must retain its vertical populated slot previews and per-slot
+refresh controls.</li>
+<li>Use the existing enqueued stylesheets. Add no <code>style</code> attributes,
+PHP <code>&lt;style&gt;</code> blocks, <code>wp_add_inline_style()</code>, or runtime
+style mutation. Do not hide design defects with hard-coded post IDs, fixed
+fixture content, or browser-specific positioning.</li>
+<li>Keep semantic controls, keyboard access, visible focus, accessible names,
+reduced-motion behavior, and useful narrow-screen layouts. A visual change must
+not weaken nonce, capability, validation, escaping, provider-consent, session,
+or 24-hour visitor-data behavior.</li>
+<li>Run full candidate WPCS, PHP lint, JavaScript syntax checks, the repository
+test harness, <code>git diff --check</code>, and the inline-style search. Report
+checks that cannot run as unrun; do not convert them into passes.</li>
+</ul>
+
+<h3>GitHub-only delivery and burner handback</h3>
+<p>Claude Code has GitHub access but no burner access. Commit and push the
+design branch without claiming deployment or browser testing. The final handoff
+must identify the branch, commit SHA, exact changed files, migrations or cache
+steps, and whether deployment requires the whole candidate or only a file
+manifest. It must explicitly remind Codex:</p>
+<blockquote><strong>“Codex: install this exact Claude design commit on the
+Claude burner at <code>http://167.172.241.113:8096/</code>, preserve the existing
+burner database unless the change explicitly requires otherwise, rerun WPCS,
+Plugin Check and runtime tests, clear only the relevant caches, and return the
+visual review URL to Dainis.”</strong></blockquote>
+<p>Include exact installation guidance derived from the committed diff so
+Codex does not have to guess which GitHub files belong on the burner. Do not
+put burner credentials or secrets into GitHub.</p>
+</section>
+
 <section id="codex-session-close-2026y-11m-06d">
 <h2>6 November 2026 session close — Codex pre-release candidate</h2>
 <p class="meta"><strong>Local date:</strong>
