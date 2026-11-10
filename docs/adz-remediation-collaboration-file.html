@@ -319,6 +319,177 @@ Outbrain connections. Nothing in this commit closes that, and this design pass
 should not be read as closing the review.</p>
 </section>
 
+<section id="claude-design-final-2026y-11m-10d-UTC-16h-45m-48s">
+<h2>Claude Code design branch, final state — MTS 2026-11-10T16:45:48Z</h2>
+<p class="meta"><strong>Branch:</strong> <code>claude/design-display-library</code>.
+<strong>Commit to install:</strong> <code>e90cf7ec72ed79f0c544cb805a4056da3d079711</code>.
+<strong>Based on:</strong> <code>main</code> at <code>5aafe52</code>, which has not moved since.
+Supersedes the manifest in <a href="#claude-design-return-2026y-11m-10d-UTC-15h-52m-06s">the 15:52 return</a>, which covered only the first commit. Nothing in that entry is withdrawn; this one carries four more commits.</p>
+
+<h3>The five commits</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Commit</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td><code>cdc81ed</code></td><td>18 display formats, 15 fixed sizes, the admin format reference, the design pass.</td></tr>
+<tr><td><code>088023d</code></td><td>Records that work in this file.</td></tr>
+<tr><td><code>0d75f19</code></td><td>Self-audit: removes an accessibility defect I introduced, removes a dead declaration, and implements the <code>flat</code> format, which had no CSS at all and rendered identically to <code>single</code>.</td></tr>
+<tr><td><code>e881ba4</code></td><td>The Starter packs tab and the showcase-page pack.</td></tr>
+<tr><td><code>e90cf7e</code></td><td>ClickBank, and six packs for real network combinations.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Deviation from the handoff brief, recorded deliberately</h3>
+<p>The 10 November brief says to preserve exactly six administrator tabs. This
+branch adds a <strong>seventh</strong>, <code>Starter packs</code>, because
+Dainis asked for it directly in session. The removed Settings tab is still not
+restored, and nothing about the six existing tabs changed. Flagging it here so
+Codex does not meet it as a surprise during integration.</p>
+
+<h3>Starter packs</h3>
+<p>Each pack is a combination publishers run, not a permutation the plugin
+allows. A pack whose provider is not connected states what is missing and links
+to Connections or Affiliate programs, rather than creating a rotation with a
+slot that cannot render.</p>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Pack</th><th>Requires</th><th>Placements it tells the publisher to make</th></tr></thead>
+<tbody>
+<tr><td>Display format showcase</td><td>&mdash;</td><td>Creates a draft page holding every format</td></tr>
+<tr><td>AdSense and adz</td><td>AdSense</td><td><code>banner</code> 728x90 above content; <code>inline-card</code> 300x250 inside</td></tr>
+<tr><td>Ad Manager and adz</td><td>Ad Manager</td><td><code>billboard</code> 970x250 top; <code>sidebar</code> 300x600</td></tr>
+<tr><td>Content recommendation and adz</td><td>Taboola <em>or</em> Outbrain</td><td><code>grid</code> below the article</td></tr>
+<tr><td>Mobile first</td><td>AdSense</td><td><code>dock-bottom</code> 320x50; <code>inline-card</code> 300x250</td></tr>
+<tr><td>Affiliate links and adz</td><td>Any affiliate program</td><td><code>inline-card</code>; <code>sidebar</code> 300x250</td></tr>
+<tr><td>ClickBank product and adz</td><td>Any affiliate program</td><td><code>inline-card</code>; <code>corner</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>ClickBank, and one privacy decision</h3>
+<p>ClickBank was absent; the plugin had Amazon, Walmart, Awin, CJ, Rakuten and
+eBay. It also works differently from all six: the others turn what a visitor
+asked for into a search on the merchant, while ClickBank is a marketplace of
+single products, so a HopLink promotes one vendor's product and cannot be built
+from a request. The link is the documented subdomain form
+<code>https://NICKNAME.VENDOR.hop.clickbank.net</code> with <code>?tid=</code>
+when set; a vendor's own page with <code>?hop=nickname</code> is not used
+because ClickBank does not track it.</p>
+<p>The tracking id carries the publisher's own static value and nothing else. A
+token of the visitor's request there would have let a publisher see which
+request produced a click, which is effectively what the other networks do by
+searching, but sending a visitor's own words into a third party's reporting is
+the behaviour this plugin exists to avoid. Verified: a request of "two seater
+couch light" produces a HopLink containing none of those words.</p>
+
+<h3>Defects found by auditing this branch's own work</h3>
+<ul>
+<li><strong>Mine, accessibility.</strong> <code>.adzworld-rotation::before</code>
+rendered the container's <code>aria-label</code> as visible text with
+<code>content: attr(aria-label)</code>. Many screen readers announce CSS
+generated content, so the region's accessible name would be read again as body
+text, and it put a visible label on every rotation that previously had none.
+Removed.</li>
+<li><strong>Mine, dead code.</strong> <code>--corner</code> declared
+<code>bottom</code> twice as an <code>env()</code> fallback, which could never
+apply. Removed; the stylesheet now has zero duplicate declarations.</li>
+<li><strong>Pre-existing.</strong> The <code>flat</code> format had no CSS in
+this branch or in the <code>5aafe52</code> baseline. With
+<code>.adzworld-slides</code> at <code>display:block</code> and the script
+hiding every inactive slot, it rendered identically to <code>single</code> while
+the administrator's own shortcode example offered <code>display="flat"</code> as
+the alternative to pick. It now has an entry animation, and the reduced-motion
+block stops animations as well as transitions, which it did not before.</li>
+<li><strong>Mine, consequential.</strong> <code>do_shortcode()</code> runs over
+the whole post, the inside of a code block included, so the 33 code blocks on
+the generated showcase page meant to <em>show</em> a shortcode would each have
+rendered another ad rotation. The page would have carried 33 unintended
+rotations and shown nothing to copy. Fixed with WordPress' own escape: the code
+blocks emit <code>[[adz_rotation …]]</code>, which displays as the literal
+single-bracketed form.</li>
+</ul>
+
+<h3>Deployment</h3>
+<p><strong>A file manifest is sufficient; the whole candidate is not required.</strong>
+Eight files, which must go together because the stylesheet classes, the script
+flag and the tab registration are emitted by the PHP. The one-line change to
+<code>adz-world.php</code> is the easiest to miss and the most damaging to omit:
+without it the Starter packs tab is registered and its page callback does not
+exist, so the tab fatals when opened.</p>
+<div class="table-wrap">
+<table>
+<thead><tr><th>File</th><th>Change</th></tr></thead>
+<tbody>
+<tr><td><code>adz-world.php</code></td><td>+1. One <code>require_once</code> for the new file. <strong>Omitting this one line fatals the new tab.</strong></td></tr>
+<tr><td><code>includes/adzworld-starter.php</code></td><td><strong>new</strong>, +725</td></tr>
+<tr><td><code>includes/adzworld-rotation.php</code></td><td>+306 / −6</td></tr>
+<tr><td><code>includes/adzworld-affiliates.php</code></td><td>+51 / −5</td></tr>
+<tr><td><code>includes/adzworld-desk.php</code></td><td>+8</td></tr>
+<tr><td><code>assets/rotation.css</code></td><td>+610</td></tr>
+<tr><td><code>assets/admin-desk.css</code></td><td>+481</td></tr>
+<tr><td><code>assets/rotation.js</code></td><td>+67 / −5</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>No migration.</strong> No option is renamed or removed and no table
+is touched. Two options are written only when an administrator presses a button:
+<code>adzworld_showcase_page</code>, holding the generated page id, and a new
+entry inside the existing <code>adzworld_named_rotations</code>.</p>
+<p><strong>No asset cache step.</strong> Both stylesheets and the script are
+enqueued with <code>filemtime()</code> as the version, so copying the files
+refetches them. A full-page cache in front of the site should still be
+cleared.</p>
+<p><strong>Rollback:</strong> <code>git checkout 5aafe52 -- </code> those seven
+paths plus <code>adz-world.php</code>.</p>
+
+<blockquote><strong>“Codex: install this exact Claude design commit
+<code>e90cf7ec72ed79f0c544cb805a4056da3d079711</code> from branch
+<code>claude/design-display-library</code> on the Claude burner at
+<code>http://167.172.241.113:8096/</code>, preserve the existing burner database
+(this change requires no migration), rerun WPCS, Plugin Check and runtime tests,
+clear only the relevant caches, and return the visual review URL to
+Dainis.”</strong></blockquote>
+
+<h3>Checks on the final commit</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Check</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Full WPCS, WordPress standard, 60 PHP files</td><td><strong>Zero findings.</strong></td></tr>
+<tr><td>The five security sniff groups</td><td><strong>Zero findings.</strong></td></tr>
+<tr><td><code>php -l</code> 60 files; <code>node --check</code> all scripts</td><td>All parse.</td></tr>
+<tr><td>Suppressions, inline styles, <code>&lt;style&gt;</code> blocks, <code>.style</code> mutation</td><td>None.</td></tr>
+<tr><td>Stylesheet braces; every styled class emitted by PHP</td><td>Balanced; all emitted.</td></tr>
+<tr><td><code>tools/resolve-calls.php</code></td><td>0 unresolved own-prefix calls, 0 arity, 0 duplicate.</td></tr>
+<tr><td>Repository harness</td><td>61 assertions pass. <code>test-rotation</code> skipped: that harness targets a filename this candidate does not use.</td></tr>
+<tr><td>Format and size coverage, both directions</td><td>All 18 formats styled (<code>single</code> excepted and documented as deliberate), all 18 have an admin swatch, all 15 sizes styled, no dead classes.</td></tr>
+<tr><td>Generated showcase content, parsed</td><td>12540 bytes, 96 block comments opening and closing, every block closing with its own type, 15 live shortcode blocks, 33 escaped code blocks, 7 h2, 18 h3. (An earlier draft of this entry said 12474, which was the measurement before the bracket escaping added 66 bytes.)</td></tr>
+<tr><td>Pack consistency, in isolation</td><td>7 packs, rotation keys distinct and prefixed, every placement's format and size validates against the allowlists.</td></tr>
+<tr><td>ClickBank URL builder</td><td>Four input cases including two that must refuse; no visitor text reaches the URL.</td></tr>
+<tr><td><code>git diff --check</code></td><td>Clean.</td></tr>
+<tr><td>ESLint</td><td>3 errors, which is exactly the baseline's 3 pre-existing unused catch bindings, confirmed by linting the stashed baseline in place.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Not run, and not claimed</h3>
+<p>No browser and no WordPress. The Starter packs tab has not been opened, no
+pack has been set up, no rotation created by one, no generated page rendered by
+WordPress, no format seen moving, and no ClickBank link followed. Plugin Check
+was not run here. The block markup, the bracket escaping and the ClickBank URL
+format were checked by generating output and parsing it, not by loading it.</p>
+<p>The external-service disclosure item from the 29 September notice
+<strong>remains open</strong>: the <code>adz-world.com</code> terms and privacy
+URLs timed out on 10 November, and <code>readme.txt</code> still needs
+what/data/when and Terms and Privacy disclosure for the optional Google AdSense,
+Google Ad Manager, Taboola and Outbrain connections. Adding ClickBank adds a
+seventh affiliate network whose links leave the site, so it belongs in that
+disclosure too. Nothing on this branch closes the review.</p>
+<p>A review prompt for an independent pass over this branch is at
+<code>docs/claude-design-review-prompt-2026-11m-10d.md</code>.</p>
+</section>
+
 <section id="codex-session-close-2026y-11m-06d">
 <h2>6 November 2026 session close — Codex pre-release candidate</h2>
 <p class="meta"><strong>Local date:</strong>
