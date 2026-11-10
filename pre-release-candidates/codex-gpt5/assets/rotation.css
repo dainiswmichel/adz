@@ -1030,31 +1030,50 @@
 }
 
 /*
- * A label that tells the reader this is advertising. Every format inherits it,
- * because a frame a reader cannot identify is the thing publishers get
- * complaints about.
+ * No advertising label is generated here. An earlier version of this file
+ * rendered the container's aria-label with content: attr(aria-label), which was
+ * wrong twice over: many screen readers announce CSS generated content, so the
+ * region's accessible name would be read a second time as body text, and it
+ * put a visible label on every rotation that previously had none, which is a
+ * product change rather than a design pass. The plugin already discloses
+ * sources through .adzworld-match-label and the invitation panel heading, both
+ * of which are real translatable markup.
  */
-.adzworld-rotation::before {
-	content: attr(aria-label);
-	display: block;
-	margin-bottom: 6px;
-	color: var(--adz-muted);
-	font-size: 11px;
-	font-weight: 600;
-	letter-spacing: 0.08em;
-	text-transform: uppercase;
+
+/*
+ * Flat carousel. This format had no rules of its own: with
+ * .adzworld-slides set to display:block and the script hiding every inactive
+ * slot, it rendered identically to "single" while the administrator's own
+ * shortcode example offered it as the alternative. The movement it advertises
+ * is restored here.
+ *
+ * The motion is an entry animation on the slot that becomes active rather than
+ * a translated track, because a track needs its siblings present and the
+ * one-at-a-time formats deliberately keep them hidden. An element moving from
+ * hidden to shown restarts the animation, so each step is visible.
+ */
+@keyframes adzworld-slide-in {
+
+	from {
+		opacity: 0;
+		transform: translateX(14%);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
 }
 
-.adzworld-rotation--dock-bottom::before,
-.adzworld-rotation--dock-top::before,
-.adzworld-rotation--corner::before,
-.adzworld-rotation--rail-left::before,
-.adzworld-rotation--rail-right::before {
-	margin: 0 0 4px;
-	font-size: 10px;
+.adzworld-rotation--flat.adzworld-enhanced .adzworld-active {
+	animation: adzworld-slide-in var(--adz-duration) var(--adz-ease) both;
 }
 
-/* --------------------------------------------------------- Carousel group */
+/*
+ * Single. Intentionally has no rules of its own: it is the plain one-at-a-time
+ * frame the base styles already produce. Listed here so the absence is a
+ * decision on the record rather than an omission.
+ */
 
 /*
  * Coverflow. The active slot sits forward and square to the reader; its
@@ -1391,7 +1410,8 @@
 .adzworld-rotation--corner {
 	position: fixed;
 	right: 16px;
-	bottom: 16px;
+
+	/* env() carries its own fallback, so no second declaration is needed. */
 	bottom: calc(16px + env(safe-area-inset-bottom, 0px));
 	z-index: 90;
 	width: min(320px, calc(100vw - 32px));
@@ -1544,6 +1564,7 @@
 	.adzworld-rotation .adzworld-slide,
 	.adzworld-rotation .adzworld-slides {
 		transition: none !important;
+		animation: none !important;
 	}
 
 	.adzworld-rotation--filmstrip .adzworld-slides {
