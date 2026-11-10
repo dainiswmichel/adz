@@ -169,6 +169,156 @@ Codex does not have to guess which GitHub files belong on the burner. Do not
 put burner credentials or secrets into GitHub.</p>
 </section>
 
+<section id="claude-design-return-2026y-11m-10d-UTC-15h-52m-06s">
+<h2>Claude Code design return — display format library, MTS 2026-11-10T15:52:06Z</h2>
+<p class="meta"><strong>Branch:</strong> <code>claude/design-display-library</code>.
+<strong>Commit:</strong> <code>cdc81ed21e62ef13d04a2657395c779313868898</code>.
+<strong>Based on:</strong> <code>main</code> at <code>5aafe52</code>.
+<strong>Tree:</strong> <code>pre-release-candidates/codex-gpt5/</code>. Pushed to GitHub; not deployed, not opened in a browser.</p>
+
+<h3>What was added</h3>
+<p>The central decision: a display format changes only the frame. The markup,
+the slot ordering, the preference matching, the capability checks and the
+escaping are identical in every format, so a format is a modifier class plus an
+allowlist entry. That is why 18 formats and 15 fixed sizes come to four changed
+files and no new render path, and why none of them touches a security
+surface.</p>
+
+<div class="table-wrap">
+<table>
+<thead><tr><th>Group</th><th>Formats</th></tr></thead>
+<tbody>
+<tr><td>Carousel</td><td><code>single</code>, <code>flat</code>, <code>3d</code>, <code>coverflow</code>, <code>fade</code>, <code>stack</code></td></tr>
+<tr><td>Multiple</td><td><code>filmstrip</code>, <code>grid</code></td></tr>
+<tr><td>Banner</td><td><code>banner</code>, <code>billboard</code></td></tr>
+<tr><td>Widget</td><td><code>inline-card</code>, <code>sidebar</code></td></tr>
+<tr><td>Vertical</td><td><code>rail-left</code>, <code>rail-right</code>, <code>skyscraper</code></td></tr>
+<tr><td>Anchored</td><td><code>dock-bottom</code>, <code>dock-top</code>, <code>corner</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<p>Fixed sizes, the standard IAB and Ad Manager creative sizes:
+<code>300x250</code>, <code>336x280</code>, <code>250x250</code>,
+<code>200x200</code>, <code>180x150</code>, <code>728x90</code>,
+<code>970x90</code>, <code>970x250</code>, <code>468x60</code>,
+<code>234x60</code>, <code>300x600</code>, <code>160x600</code>,
+<code>120x600</code>, <code>320x50</code>, <code>320x100</code>. Dimensions
+live in the stylesheet, one class per size, because a size written into a
+<code>style</code> attribute is an inline style. Each frame caps its width at
+the space available, so a 970px billboard in a 320px column shrinks rather than
+overflowing, and the height is a minimum so a creative is never cropped.</p>
+
+<p>Usage: <code>[adz_rotation name="…" display="grid" size="300x250"]</code>.
+Both attributes are optional; omitting <code>size</code> gives a fluid frame,
+which is what responsive provider units expect.</p>
+
+<h3>Two findings that shaped the work</h3>
+<p><strong>The script hid every inactive slot.</strong>
+<code>assets/rotation.js</code> set <code>slide.hidden</code> on each non-active
+slot, so <code>grid</code>, <code>filmstrip</code>, <code>coverflow</code> and
+<code>stack</code> could not work as pure CSS: their slots would all be
+<code>display:none</code>. Forcing them visible from CSS would have left
+<code>aria-hidden="true"</code> on visible content, which is an accessibility
+defect, so that was not done. The script now reads
+<code>data-adzworld-multiple</code>, which PHP sets only for those four
+formats, and for them keeps siblings visible with <code>aria-hidden</code>
+false and every provider unit mounted. Every other format takes the original
+path unchanged.</p>
+<p><strong>The anchored formats cover the viewport,</strong> so each carries a
+dismiss control. Dismissal sets the element's <code>hidden</code> property
+rather than writing a style, and is remembered in <code>sessionStorage</code>
+for the tab only. Both storage calls are wrapped, because storage throws in a
+private window.</p>
+
+<h3>Administrator changes, Rotation tab</h3>
+<ul>
+<li>A display format reference generated from the two allowlists, so it cannot
+list a format the shortcode would reject and a format cannot be added without
+appearing there. Each entry has a CSS-drawn swatch whose shape is the shape of
+the frame, a note on when to use it, and the exact shortcode to copy.</li>
+<li>A visible focus ring on every interactive control in the desk. The
+WordPress default is easy to lose against this plugin's light panels, and
+keyboard operation of the rotation editor depends on seeing focus.</li>
+<li>Slot rows read as units with the populated preview attached to its row. The
+vertical populated slot previews and per-slot refresh controls are unchanged.</li>
+<li>Long shortcode strings wrap instead of widening the page; reduced motion is
+respected; the format list collapses to one column at WordPress' own 782px
+admin breakpoint.</li>
+</ul>
+
+<h3>Changed files — the complete manifest</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>File</th><th>Change</th></tr></thead>
+<tbody>
+<tr><td><code>includes/adzworld-rotation.php</code></td><td>+306 / −6. Adds <code>adzworld_rotation_display_formats()</code>, <code>adzworld_rotation_size_presets()</code> and <code>adzworld_admin_format_gallery()</code>; widens the <code>display</code> validation to the allowlist; adds the optional <code>size</code> attribute; emits the size modifier, the multi-slot flag and the dismiss control.</td></tr>
+<tr><td><code>assets/rotation.css</code></td><td>+589. The format library and the fixed sizes.</td></tr>
+<tr><td><code>assets/admin-desk.css</code></td><td>+377. Gallery styling and the design pass.</td></tr>
+<tr><td><code>assets/rotation.js</code></td><td>+67 / −5. The multi-slot gate and the dismiss handler.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Deployment</h3>
+<p><strong>A file manifest is sufficient; the whole candidate is not required.</strong>
+Those four files are the entire change and they must go together, because the
+stylesheet classes and the script flag are emitted by the PHP.</p>
+<p><strong>No migration.</strong> No option is added, renamed or removed; no
+table is touched; no stored rotation changes shape. An existing rotation keeps
+working and simply gains the new <code>display</code> and <code>size</code>
+values as choices.</p>
+<p><strong>No cache step is needed for the assets.</strong> Both stylesheets and
+the script are enqueued with <code>filemtime()</code> as the version, so copying
+the files changes the version string and the browser refetches them. Any
+full-page cache in front of the site should still be cleared so the new
+container classes reach visitors.</p>
+<p><strong>Rollback</strong> is <code>git checkout 5aafe52 -- </code> those four
+paths; nothing else was touched.</p>
+
+<blockquote><strong>“Codex: install this exact Claude design commit
+<code>cdc81ed21e62ef13d04a2657395c779313868898</code> from branch
+<code>claude/design-display-library</code> on the Claude burner at
+<code>http://167.172.241.113:8096/</code>, preserve the existing burner database
+(this change requires no migration), rerun WPCS, Plugin Check and runtime tests,
+clear only the relevant caches, and return the visual review URL to
+Dainis.”</strong></blockquote>
+
+<h3>Checks run, with results</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Check</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td>Full WPCS, WordPress standard, 59 PHP files</td><td><strong>Zero findings.</strong> The gate state in the handoff was zero and it still is.</td></tr>
+<tr><td>The five security sniff groups</td><td><strong>Zero findings.</strong></td></tr>
+<tr><td><code>php -l</code>, 59 files; <code>node --check</code>, 4 scripts</td><td>All parse.</td></tr>
+<tr><td><code>tools/resolve-calls.php</code></td><td>0 unresolved own-prefix calls, 0 arity mismatches, 0 duplicate definitions.</td></tr>
+<tr><td>Repository harness</td><td>61 assertions pass (42 preference, 19 matching). <code>test-rotation</code> skipped: that harness targets a filename this candidate does not use.</td></tr>
+<tr><td>Inline styles, <code>&lt;style&gt;</code> blocks, <code>wp_add_inline_style</code>, <code>.style</code> mutation</td><td>None in <code>includes/</code> or <code>assets/</code>.</td></tr>
+<tr><td>Suppressions</td><td>None.</td></tr>
+<tr><td><code>git diff --check</code>; stylesheet braces</td><td>Clean; balanced in both files.</td></tr>
+<tr><td>ESLint</td><td>3 errors, which is exactly the baseline's 3 pre-existing unused catch bindings, confirmed by linting the stashed baseline in place. A first version of this work added 2 more; those were fixed. The 3 pre-existing ones are left alone rather than widening this diff.</td></tr>
+</tbody>
+</table>
+</div>
+
+<h3>Not run, and not claimed</h3>
+<p>No browser. No format has been looked at on a screen, no admin page opened,
+no dismissal clicked, no provider unit mounted. The <code>coverflow</code>,
+<code>grid</code>, <code>filmstrip</code> and <code>stack</code> formats depend
+on the script change above and have not been seen working. Plugin Check was not
+run here. The <code>rail-left</code> and <code>rail-right</code> formats become
+fixed only above 1280px and fall back into the flow below that; this was
+reasoned from the stylesheet, not observed.</p>
+<p>The external-service disclosure item from the 29 September notice
+<strong>remains open</strong>, exactly as the handoff recorded: the
+<code>adz-world.com</code> terms and privacy URLs timed out on 10 November, and
+<code>readme.txt</code> still needs what/data/when and Terms and Privacy
+disclosure for the optional Google AdSense, Google Ad Manager, Taboola and
+Outbrain connections. Nothing in this commit closes that, and this design pass
+should not be read as closing the review.</p>
+</section>
+
 <section id="codex-session-close-2026y-11m-06d">
 <h2>6 November 2026 session close — Codex pre-release candidate</h2>
 <p class="meta"><strong>Local date:</strong>
