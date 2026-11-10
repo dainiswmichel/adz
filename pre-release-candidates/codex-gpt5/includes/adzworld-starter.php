@@ -279,19 +279,219 @@ function adzworld_create_showcase() {
 /**
  * The starter packs available to an administrator.
  *
- * A registry rather than a single hard-coded pack, so a later pack is an entry
- * here and a render callback, not another tab.
+ * Each pack is a combination publishers actually run, not every permutation the
+ * plugin allows. The display providers the plugin implements are AdSense,
+ * Google Ad Manager, Taboola, Outbrain, Media.net and Amazon Publisher
+ * Services; the affiliate networks are Amazon, Walmart, Awin, CJ, Rakuten, eBay
+ * and ClickBank. A pack names the ones it needs and says so when they are not
+ * connected, rather than building a rotation with a slot that cannot render.
  *
- * @return array<string,array{label:string,note:string,render:callable}>
+ * `requires` holds network ids from the provider catalogue. `slots` is built at
+ * run time from what is actually connected, so a pack never stores a slot the
+ * rotation validator would reject.
+ *
+ * @return array<string,array<string,mixed>>
  */
 function adzworld_starter_packs() {
 	return array(
-		'showcase' => array(
+		'showcase'  => array(
 			'label'  => __( 'Display format showcase', 'adz-world' ),
 			'note'   => __( 'One page holding a live example of every display format, so a format can be chosen by looking at it rather than by reading a list. Created as a draft: nothing reaches the public until it is published.', 'adz-world' ),
 			'render' => 'adzworld_starter_showcase_pack',
 		),
+		'adsense'   => array(
+			'label'      => __( 'AdSense and adz', 'adz-world' ),
+			'note'       => __( 'The common starting point for a newer or smaller site: one AdSense unit in the header and adz alongside it in the content, rotating. AdSense needs no traffic minimum, so this is usually the first money a site makes.', 'adz-world' ),
+			'requires'   => array( 'adsense' ),
+			'rotation'   => 'adzworld_pack_adsense',
+			'name'       => __( 'AdSense and adz', 'adz-world' ),
+			'placements' => array(
+				array(
+					'where'   => __( 'Header or above the content', 'adz-world' ),
+					'display' => 'banner',
+					'size'    => '728x90',
+				),
+				array(
+					'where'   => __( 'In the content', 'adz-world' ),
+					'display' => 'inline-card',
+					'size'    => '300x250',
+				),
+			),
+		),
+		'admanager' => array(
+			'label'      => __( 'Ad Manager and adz', 'adz-world' ),
+			'note'       => __( 'The step up from AdSense, and the biggest change in a publisher\'s ad setup: Google Ad Manager delivers the inventory and AdSense can backfill what it does not sell. A billboard at the top, adz in the sidebar.', 'adz-world' ),
+			'requires'   => array( 'gam' ),
+			'rotation'   => 'adzworld_pack_admanager',
+			'name'       => __( 'Ad Manager and adz', 'adz-world' ),
+			'placements' => array(
+				array(
+					'where'   => __( 'Top of the page', 'adz-world' ),
+					'display' => 'billboard',
+					'size'    => '970x250',
+				),
+				array(
+					'where'   => __( 'Sidebar', 'adz-world' ),
+					'display' => 'sidebar',
+					'size'    => '300x600',
+				),
+			),
+		),
+		'discovery' => array(
+			'label'        => __( 'Content recommendation and adz', 'adz-world' ),
+			'note'         => __( 'Taboola or Outbrain sit below an article, where a reader has finished and is deciding what to do next. A grid puts adz in the same place, so the recommendations and the adz a reader asked for compete on equal terms.', 'adz-world' ),
+			'requires'     => array( 'taboola', 'outbrain' ),
+			'requires_any' => true,
+			'rotation'     => 'adzworld_pack_discovery',
+			'name'         => __( 'Below-article discovery', 'adz-world' ),
+			'placements'   => array(
+				array(
+					'where'   => __( 'Below the article', 'adz-world' ),
+					'display' => 'grid',
+					'size'    => '',
+				),
+			),
+		),
+		'mobile'    => array(
+			'label'      => __( 'Mobile first', 'adz-world' ),
+			'note'       => __( 'For a site read mostly on a phone: a dismissible 320 by 50 bar docked at the bottom and a 300 by 250 in the content. The dock is the only format that covers part of the screen, so it carries a dismiss control and stays dismissed for the visit.', 'adz-world' ),
+			'requires'   => array( 'adsense' ),
+			'rotation'   => 'adzworld_pack_mobile',
+			'name'       => __( 'Mobile first', 'adz-world' ),
+			'placements' => array(
+				array(
+					'where'   => __( 'Anywhere on the page; it docks itself', 'adz-world' ),
+					'display' => 'dock-bottom',
+					'size'    => '320x50',
+				),
+				array(
+					'where'   => __( 'In the content', 'adz-world' ),
+					'display' => 'inline-card',
+					'size'    => '300x250',
+				),
+			),
+		),
+		'affiliate' => array(
+			'label'      => __( 'Affiliate links and adz', 'adz-world' ),
+			'note'       => __( 'For a site that reviews things: the affiliate networks turn what a visitor asked for into a search on the merchant, and adz rotate beside them. Connect at least one affiliate program on the Affiliate programs tab first.', 'adz-world' ),
+			'affiliates' => true,
+			'rotation'   => 'adzworld_pack_affiliate',
+			'name'       => __( 'Affiliate and adz', 'adz-world' ),
+			'placements' => array(
+				array(
+					'where'   => __( 'In the content, after the verdict', 'adz-world' ),
+					'display' => 'inline-card',
+					'size'    => '',
+				),
+				array(
+					'where'   => __( 'Sidebar', 'adz-world' ),
+					'display' => 'sidebar',
+					'size'    => '300x250',
+				),
+			),
+		),
+		'clickbank' => array(
+			'label'      => __( 'ClickBank product and adz', 'adz-world' ),
+			'note'       => __( 'ClickBank is a marketplace of single products, so a HopLink promotes one product rather than searching a catalogue. This pack puts that one promotion in a card and rotates adz with it. Nothing a visitor typed is ever added to a HopLink.', 'adz-world' ),
+			'affiliates' => true,
+			'rotation'   => 'adzworld_pack_clickbank',
+			'name'       => __( 'ClickBank and adz', 'adz-world' ),
+			'placements' => array(
+				array(
+					'where'   => __( 'In the content', 'adz-world' ),
+					'display' => 'inline-card',
+					'size'    => '',
+				),
+				array(
+					'where'   => __( 'Bottom corner, dismissible', 'adz-world' ),
+					'display' => 'corner',
+					'size'    => '',
+				),
+			),
+		),
 	);
+}
+
+/**
+ * Whether a pack's prerequisites are met, and what is missing.
+ *
+ * @param array $pack Pack definition.
+ * @return array{ready:bool,missing:string[]}
+ */
+function adzworld_starter_requirements( $pack ) {
+	$missing = array();
+
+	if ( ! empty( $pack['affiliates'] ) ) {
+		$connected = function_exists( 'adzworld_affiliate_connected_count' ) ? (int) adzworld_affiliate_connected_count() : 0;
+
+		if ( $connected < 1 ) {
+			$missing[] = __( 'an affiliate program', 'adz-world' );
+		}
+	}
+
+	if ( empty( $pack['requires'] ) ) {
+		return array(
+			'ready'   => empty( $missing ),
+			'missing' => $missing,
+		);
+	}
+
+	$sources = adzworld_rotation_sources();
+	$catalog = function_exists( 'adzworld_network_catalog' ) ? adzworld_network_catalog() : array();
+	$present = array();
+
+	foreach ( $pack['requires'] as $network ) {
+		if ( isset( $sources[ 'network_' . $network ] ) ) {
+			$present[] = $network;
+			continue;
+		}
+
+		$label     = isset( $catalog[ $network ]['label'] ) ? $catalog[ $network ]['label'] : $network;
+		$missing[] = $label;
+	}
+
+	// A pack marked requires_any needs one of its providers, not all of them.
+	if ( ! empty( $pack['requires_any'] ) && ! empty( $present ) ) {
+		$missing = array();
+	}
+
+	return array(
+		'ready'   => empty( $missing ),
+		'missing' => $missing,
+	);
+}
+
+/**
+ * Slots for a network pack: the invitation hub, the pack's providers, and the
+ * first local adz if the site has one.
+ *
+ * @param array $pack Pack definition.
+ * @return string[]
+ */
+function adzworld_starter_slots( $pack ) {
+	$choices = adzworld_rotation_slot_choices();
+	$slots   = array();
+
+	if ( isset( $choices['intro'] ) ) {
+		$slots[] = 'intro';
+	}
+
+	foreach ( (array) ( isset( $pack['requires'] ) ? $pack['requires'] : array() ) as $network ) {
+		$slot = 'source:network_' . $network;
+
+		if ( isset( $choices[ $slot ] ) ) {
+			$slots[] = $slot;
+		}
+	}
+
+	foreach ( array_keys( $choices ) as $choice ) {
+		if ( 0 === strpos( $choice, 'ad:' ) ) {
+			$slots[] = $choice;
+			break;
+		}
+	}
+
+	return $slots;
 }
 
 /**
@@ -321,8 +521,10 @@ function adzworld_starter_page() {
 		echo '<h3 class="adzworld-starter-pack__name">' . esc_html( $meta['label'] ) . '</h3>';
 		echo '<p class="adzworld-starter-pack__note">' . esc_html( $meta['note'] ) . '</p>';
 
-		if ( is_callable( $meta['render'] ) ) {
+		if ( isset( $meta['render'] ) && is_callable( $meta['render'] ) ) {
 			call_user_func( $meta['render'] );
+		} else {
+			adzworld_starter_rotation_pack( $pack, $meta );
 		}
 
 		echo '</section>';
@@ -370,5 +572,154 @@ function adzworld_starter_showcase_pack() {
 	echo '<input type="hidden" name="action" value="adzworld_create_showcase">';
 	wp_nonce_field( 'adzworld_create_showcase', 'adzworld_showcase_nonce' );
 	echo '<p class="adzworld-starter-actions"><button type="submit" class="button button-primary">' . esc_html__( 'Create the showcase page', 'adz-world' ) . '</button></p>';
+	echo '</form>';
+}
+
+add_action( 'admin_post_adzworld_create_pack', 'adzworld_create_pack' );
+/**
+ * Create a network pack's rotation.
+ *
+ * The pack id arrives in the request, so it is validated against the registry
+ * before anything is read from it. The rotation key is then taken from the
+ * registry entry, never from the request: no request value becomes an option
+ * name or a stored key, which is the fault the 29 September review notice
+ * raised against the rotation handler.
+ *
+ * @return void
+ */
+function adzworld_create_pack() {
+	check_admin_referer( 'adzworld_create_pack', 'adzworld_pack_nonce' );
+
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( esc_html__( 'Administrator permission is required.', 'adz-world' ), '', array( 'response' => 403 ) );
+	}
+
+	$notice    = 'adzworld_rotation_notice_' . get_current_user_id();
+	$requested = isset( $_POST['pack'] ) && is_string( $_POST['pack'] ) ? sanitize_key( wp_unslash( $_POST['pack'] ) ) : '';
+	$packs     = adzworld_starter_packs();
+
+	if ( '' === $requested || ! isset( $packs[ $requested ] ) || empty( $packs[ $requested ]['rotation'] ) ) {
+		set_transient( $notice, __( 'That starter pack does not exist.', 'adz-world' ), MINUTE_IN_SECONDS );
+		wp_safe_redirect( adzworld_desk_url( 'starter' ) );
+		exit;
+	}
+
+	$pack = $packs[ $requested ];
+	$key  = $pack['rotation'];
+	$ok   = adzworld_starter_requirements( $pack );
+
+	if ( ! $ok['ready'] ) {
+		set_transient(
+			$notice,
+			sprintf(
+				/* translators: %s: comma-separated list of what is not connected. */
+				__( 'This pack needs %s before it can be set up.', 'adz-world' ),
+				implode( ', ', $ok['missing'] )
+			),
+			MINUTE_IN_SECONDS
+		);
+		wp_safe_redirect( adzworld_desk_url( 'starter' ) );
+		exit;
+	}
+
+	$rotations = adzworld_named_rotations();
+
+	if ( isset( $rotations[ $key ] ) ) {
+		set_transient( $notice, __( 'That rotation already exists; it was left as it is.', 'adz-world' ), MINUTE_IN_SECONDS );
+		wp_safe_redirect( adzworld_desk_url( 'starter' ) );
+		exit;
+	}
+
+	$slots = adzworld_starter_slots( $pack );
+
+	if ( empty( $slots ) ) {
+		set_transient( $notice, __( 'This pack found nothing to put in a rotation.', 'adz-world' ), MINUTE_IN_SECONDS );
+		wp_safe_redirect( adzworld_desk_url( 'starter' ) );
+		exit;
+	}
+
+	$rotations[ $key ] = array(
+		'name'  => $pack['name'],
+		'slots' => $slots,
+	);
+
+	// Stored through the shared sanitiser, so the shape matches every other path.
+	$rotations = adzworld_sanitize_named_rotations( $rotations );
+
+	if ( ! isset( $rotations[ $key ] ) ) {
+		set_transient( $notice, __( 'The rotation this pack built was not valid and was not saved.', 'adz-world' ), MINUTE_IN_SECONDS );
+		wp_safe_redirect( adzworld_desk_url( 'starter' ) );
+		exit;
+	}
+
+	update_option( 'adzworld_named_rotations', $rotations, false );
+
+	set_transient( $notice, __( 'The rotation was created. Place the shortcodes below where you want them.', 'adz-world' ), MINUTE_IN_SECONDS );
+	wp_safe_redirect( adzworld_desk_url( 'starter' ) );
+	exit;
+}
+
+/**
+ * One network pack's state, controls and placements.
+ *
+ * @param string $pack Pack id.
+ * @param array  $meta Pack definition.
+ * @return void
+ */
+function adzworld_starter_rotation_pack( $pack, $meta ) {
+	$rotations = adzworld_named_rotations();
+	$key       = isset( $meta['rotation'] ) ? $meta['rotation'] : '';
+	$exists    = '' !== $key && isset( $rotations[ $key ] );
+	$ok        = adzworld_starter_requirements( $meta );
+
+	if ( ! empty( $meta['placements'] ) ) {
+		echo '<ul class="adzworld-starter-placements">';
+
+		foreach ( $meta['placements'] as $placement ) {
+			$shortcode = '[adz_rotation name="' . $key . '" display="' . $placement['display'] . '"';
+
+			if ( '' !== $placement['size'] ) {
+				$shortcode .= ' size="' . $placement['size'] . '"';
+			}
+
+			$shortcode .= ']';
+
+			echo '<li class="adzworld-starter-placement">';
+			echo '<span class="adzworld-starter-placement__where">' . esc_html( $placement['where'] ) . '</span>';
+			echo '<code class="adzworld-starter-placement__code">' . esc_html( $shortcode ) . '</code>';
+			echo '</li>';
+		}
+
+		echo '</ul>';
+	}
+
+	if ( $exists ) {
+		echo '<p class="adzworld-starter-state">' . esc_html__( 'Set up. The rotation exists and can be edited on the Rotation tab.', 'adz-world' ) . '</p>';
+		echo '<p class="adzworld-starter-actions"><a class="button" href="' . esc_url( adzworld_desk_url( 'rotation' ) ) . '">' . esc_html__( 'Edit the rotation', 'adz-world' ) . '</a></p>';
+
+		return;
+	}
+
+	if ( ! $ok['ready'] ) {
+		echo '<p class="adzworld-starter-state adzworld-starter-state--blocked">';
+		printf(
+			/* translators: %s: comma-separated list of what is not connected. */
+			esc_html__( 'Not connected yet: %s.', 'adz-world' ),
+			esc_html( implode( ', ', $ok['missing'] ) )
+		);
+		echo '</p>';
+		echo '<p class="adzworld-starter-actions">';
+		echo '<a class="button" href="' . esc_url( adzworld_desk_url( 'networks' ) ) . '">' . esc_html__( 'Connections', 'adz-world' ) . '</a> ';
+		echo '<a class="button" href="' . esc_url( adzworld_desk_url( 'affiliates' ) ) . '">' . esc_html__( 'Affiliate programs', 'adz-world' ) . '</a>';
+		echo '</p>';
+
+		return;
+	}
+
+	echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+	echo '<input type="hidden" name="action" value="adzworld_create_pack">';
+	echo '<input type="hidden" name="pack" value="' . esc_attr( $pack ) . '">';
+	wp_nonce_field( 'adzworld_create_pack', 'adzworld_pack_nonce' );
+	echo '<p class="adzworld-starter-actions"><button type="submit" class="button button-primary">' . esc_html__( 'Set up this pack', 'adz-world' ) . '</button></p>';
 	echo '</form>';
 }

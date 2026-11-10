@@ -803,3 +803,38 @@
 		grid-template-columns: 1fr;
 	}
 }
+
+/* Placements inside a starter pack card: where it goes, and what to paste. */
+.adzworld-starter-placements {
+	display: grid;
+	gap: 8px;
+	margin: 0 0 14px;
+	padding: 0;
+	list-style: none;
+}
+
+.adzworld-starter-placement {
+	display: grid;
+	gap: 3px;
+	min-width: 0;
+	padding: 9px 11px;
+	background: #f4f7f9;
+	border-radius: 4px;
+}
+
+.adzworld-starter-placement__where {
+	color: #50575e;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.adzworld-starter-placement__code {
+	overflow-wrap: anywhere;
+	font-size: 11.5px;
+	background: transparent;
+}
+
+.adzworld-starter-state--blocked {
+	background: #fdf6e3;
+	border-left: 3px solid #dba617;
+}
