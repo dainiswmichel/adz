@@ -44,12 +44,43 @@ require_once __DIR__ . '/includes/adzworld-request-context.php';
 define( 'ADZ_WORLD', plugin_dir_path( __FILE__ ) );
 
 /**
+ * Determine whether the current request uses the legacy advertising display.
+ *
+ * The modern rotation renderer loads its own scoped assets. Loading the legacy
+ * presentation assets on every public page adds unused CSS and a blocking
+ * script, so they are limited to legacy shortcodes and configured legacy
+ * page rotations.
+ *
+ * @return bool Whether the legacy frontend assets are required.
+ */
+function adzworld_request_uses_legacy_assets() {
+	global $adzworld_publisher_rotations;
+
+	if ( ! empty( $adzworld_publisher_rotations ) ) {
+		return true;
+	}
+
+	if ( ! is_singular() ) {
+		return false;
+	}
+
+	$post = get_queried_object();
+
+	return $post instanceof WP_Post && has_shortcode( $post->post_content, 'Adzworld' );
+}
+
+/**
  * Enqueue the legacy frontend's styles and required script dependencies.
  */
 function adzworld_enqueue_scripts() {
+	if ( ! adzworld_request_uses_legacy_assets() ) {
+		return;
+	}
+
 	wp_enqueue_style( 'adz_custombox', plugin_dir_url( __FILE__ ) . 'css/overlay.css', array(), '1.0.9' );
 	wp_enqueue_style( 'adz_css', plugin_dir_url( __FILE__ ) . 'css/styles.css', array(), '1.0.9' );
-	wp_enqueue_script( 'adzworld-legacy', plugin_dir_url( __FILE__ ) . 'assets/legacy.js', array( 'jquery' ), '1.0.9', false );
+	wp_enqueue_script( 'jquery' );
+	wp_enqueue_script( 'adzworld-legacy', plugin_dir_url( __FILE__ ) . 'assets/legacy.js', array( 'jquery' ), '1.0.9', true );
 }//end adzworld_enqueue_scripts()
 
 add_action( 'wp_enqueue_scripts', 'adzworld_enqueue_scripts' );
