@@ -1,0 +1,264 @@
+/*
+ * adz.world 2026 -- shared mechanics.
+ *
+ * This file contains no colour. Every value it paints with is a custom
+ * property that theme.json emits, so switching a style variation in
+ * Appearance > Editor > Styles repaints the entire site and this file never
+ * changes. Nothing here is written inline, and nothing requires JavaScript.
+ *
+ * Performance is a design constraint, not an afterthought:
+ *   - no web font is requested by this theme; the families degrade to the
+ *     system stack, so there is no render-blocking fetch and no FOUT
+ *   - no image is used for texture; the one texture is a 190-byte inline SVG
+ *   - shadows used for structure carry a zero blur radius, which the
+ *     compositor fills as a plain rectangle rather than rasterising a blur
+ *   - below-the-fold sections are skipped at paint time with
+ *     content-visibility, with their height reserved so nothing jumps
+ */
+
+/* ==========================================================================
+   Page surface
+   ========================================================================== */
+
+/*
+ * Two very large, very dim lamps. They are gradients, not images, and they
+ * paint once. In OKLCH the midpoint of a gradient keeps its luminance instead
+ * of sliding through grey, which is the difference between a glow and a smear.
+ */
+body {
+	background-color: var(--wp--preset--color--base);
+	background-image: var(--wp--custom--adz--ambience, none);
+	background-attachment: fixed;
+	background-repeat: no-repeat;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+}
+
+/*
+ * Grain. A large soft gradient bands into visible steps on an 8-bit display;
+ * a trace of noise dissolves the banding completely. Inline, so it costs no
+ * request, and pointer-events none so it never intercepts a click.
+ */
+body::after {
+	content: "";
+	position: fixed;
+	inset: 0;
+	z-index: 0;
+	opacity: var(--wp--custom--adz--grain-opacity, 0);
+	pointer-events: none;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+	mix-blend-mode: var(--wp--custom--adz--grain-blend, overlay);
+}
+
+.wp-site-blocks {
+	position: relative;
+	z-index: 1;
+}
+
+/* ==========================================================================
+   Typography
+   ========================================================================== */
+
+/*
+ * Tracking is an optical correction, so it belongs to size, not to the face.
+ * Large type needs tightening; small type needs none. Applying one value to
+ * every heading is the usual mistake.
+ */
+h1, .has-display-font-size { letter-spacing: -0.03em; }
+h2 { letter-spacing: -0.022em; }
+h3 { letter-spacing: -0.015em; }
+
+:is(h1, h2, h3, h4) {
+	/* Stops a heading leaving one orphaned word on its last line. */
+	text-wrap: balance;
+	max-width: 22ch;
+}
+
+:is(h1, h2, h3, h4).alignwide,
+:is(h1, h2, h3, h4).alignfull { max-width: none; }
+
+p { text-wrap: pretty; }
+
+/* A lead paragraph sets measure by character count, not by pixels. */
+.is-style-lead {
+	max-width: 58ch;
+	font-size: var(--wp--preset--font-size--x-large);
+	line-height: 1.38;
+	color: var(--wp--custom--adz--text-quiet);
+}
+
+/* An eyebrow: the one place where wide tracking is correct. */
+.is-style-eyebrow {
+	font-size: var(--wp--preset--font-size--small);
+	font-weight: 600;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--wp--custom--adz--text-quiet);
+}
+
+/* ==========================================================================
+   Surfaces
+   ========================================================================== */
+
+/*
+ * A gradient border with no extra element and no pseudo-element: two
+ * backgrounds, one clipped to the padding box and one to the border box, with
+ * a transparent border between them. The border becomes the gradient.
+ */
+.is-style-card {
+	position: relative;
+	padding: var(--wp--preset--spacing--30);
+	border: var(--wp--custom--stroke--hair) solid transparent;
+	border-radius: var(--wp--custom--radius--md);
+	background:
+		linear-gradient(var(--wp--custom--adz--surface), var(--wp--custom--adz--surface)) padding-box,
+		var(--wp--custom--adz--edge, linear-gradient(var(--wp--custom--adz--line), var(--wp--custom--adz--line))) border-box;
+	box-shadow: var(--wp--custom--adz--lift, none);
+}
+
+/*
+ * Depth in a dark interface comes from light, not from shadow -- a shadow on a
+ * dark ground is invisible. A single bright hairline along the top edge reads
+ * as a surface catching a light source above it, which is what actually
+ * creates elevation. Variations that want it set --wp--custom--adz--sheen.
+ */
+.is-style-card::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	box-shadow: var(--wp--custom--adz--sheen, none);
+	pointer-events: none;
+}
+
+/* ==========================================================================
+   The stroke system
+   ==========================================================================
+   Concentric frames at 1 / 2 / 3 / 5 / 7px. Every shadow here has a zero blur
+   radius, so each ring is a solid rectangle the compositor fills directly --
+   no blur kernel is rasterised, at any size. This is why the effect is free.
+   A single 24px-blur shadow costs more than all five of these together. */
+
+.is-style-framed {
+	box-shadow:
+		0 0 0 var(--wp--custom--stroke--hair) var(--wp--custom--adz--stroke-inner),
+		0 0 0 var(--wp--custom--stroke--edge) var(--wp--custom--adz--stroke-mid),
+		0 0 0 var(--wp--custom--stroke--frame) var(--wp--custom--adz--stroke-outer);
+}
+
+.is-style-framed-tight {
+	box-shadow:
+		0 0 0 var(--wp--custom--stroke--hair) var(--wp--custom--adz--stroke-inner),
+		0 0 0 var(--wp--custom--stroke--fine) var(--wp--custom--adz--stroke-mid);
+}
+
+/*
+ * A hairline grid drawn as a repeating gradient: one paint, no image, no
+ * request, and no element per line. Pinned to the background so it reads as
+ * paper the content sits on rather than as a layer that scrolls with it.
+ */
+.is-style-ruled {
+	background-image:
+		repeating-linear-gradient(
+			to bottom,
+			var(--wp--custom--adz--rule) 0 var(--wp--custom--stroke--hair),
+			transparent var(--wp--custom--stroke--hair) var(--wp--custom--adz--rule-gap, 8px)
+		);
+}
+
+/* ==========================================================================
+   Controls
+   ========================================================================== */
+
+.wp-block-button__link {
+	padding-block: 0.7em;
+	padding-inline: 1.5em;
+	border-radius: var(--wp--custom--radius--sm);
+	font-weight: 600;
+	letter-spacing: -0.005em;
+	transition:
+		transform var(--wp--custom--motion--fast) var(--wp--custom--motion--ease),
+		filter var(--wp--custom--motion--fast) var(--wp--custom--motion--ease);
+}
+
+.wp-block-button__link:hover { filter: brightness(1.08); }
+
+/* Translating by a third of a pixel is below the threshold of being seen as
+   movement and above the threshold of being felt as a press. */
+.wp-block-button__link:active { transform: translateY(0.5px); }
+
+/*
+ * One focus ring for the whole site, visible on any background because it is
+ * drawn twice: the accent, and a contrasting halo behind it.
+ */
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+	outline: var(--wp--custom--stroke--fine) solid var(--wp--custom--adz--focus);
+	outline-offset: var(--wp--custom--stroke--fine);
+	border-radius: var(--wp--custom--radius--sm);
+}
+
+/* ==========================================================================
+   Paint budget
+   ========================================================================== */
+
+/*
+ * Sections below the fold are not painted until they approach the viewport.
+ * contain-intrinsic-size reserves their height in advance, so the scrollbar
+ * does not jump as they are realised -- the usual reason this technique gets
+ * abandoned.
+ */
+.wp-block-group.is-style-deferred {
+	content-visibility: auto;
+	contain-intrinsic-size: auto 600px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}
+
+/* Readers who ask for more contrast lose the decoration, not the content. */
+@media (prefers-contrast: more) {
+	body { background-image: none; }
+	body::after { opacity: 0; }
+
+	.is-style-card {
+		background: var(--wp--custom--adz--surface) padding-box;
+		border-color: currentColor;
+	}
+}
+
+/* ==========================================================================
+   The adz.world rotation
+   ==========================================================================
+   The plugin derives its own appearance from whatever surrounds it, and that
+   path is what every other site uses -- it needs nothing from a theme and is
+   not changed by anything here.
+
+   This theme happens to know its own colours exactly, so it hands them over
+   instead of leaving the plugin to infer them from the text colour. That is
+   the whole integration: a handful of custom properties. Delete this block and
+   the rotation still renders correctly, just inferred rather than told. */
+
+/*
+ * `:root` raises specificity to (0,2,0) against the plugin's own (0,1,0), so
+ * this wins whichever stylesheet the page happens to load second. Relying on
+ * enqueue order here would work locally and break on a site with a caching or
+ * concatenating plugin.
+ */
+:root .adzworld-rotation {
+	--adz-surface: var(--wp--custom--adz--surface);
+	--adz-surface-raised: color-mix(in oklab, var(--wp--custom--adz--surface) 92%, var(--wp--preset--color--contrast));
+	--adz-surface-sunken: color-mix(in oklab, var(--wp--custom--adz--surface) 86%, var(--wp--preset--color--contrast));
+	--adz-line: var(--wp--custom--adz--line);
+	--adz-line-strong: color-mix(in oklab, var(--wp--preset--color--contrast) 38%, transparent);
+	--adz-muted: var(--wp--custom--adz--text-quiet);
+	--adz-accent: var(--wp--preset--color--accent-1);
+	--adz-ring: var(--wp--preset--color--base);
+}

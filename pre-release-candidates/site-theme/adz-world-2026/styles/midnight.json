@@ -1,0 +1,64 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/theme.json",
+	"version": 3,
+	"title": "Midnight",
+	"description": "Rich dark blues. Depth comes from light rather than shadow: a shadow laid on a dark ground is invisible, so every raised surface instead catches a bright hairline along its top edge, as though lit from above. Two very large, very dim lamps sit behind the page. Cyan carries the structure; brass answers it so the palette is not uniformly cold.",
+	"settings": {
+		"color": {
+			"palette": [
+				{ "slug": "base",     "name": "Midnight",   "color": "#080e1e" },
+				{ "slug": "contrast", "name": "Starlight",  "color": "#e9eefb" },
+				{ "slug": "surface",  "name": "Deep",       "color": "#111b33" },
+				{ "slug": "accent-1", "name": "Cyan",       "color": "#4cc3e0" },
+				{ "slug": "accent-2", "name": "Brass",      "color": "#d9a441" },
+				{ "slug": "accent-3", "name": "Periwinkle", "color": "#8fa3d8" }
+			],
+			"gradients": [
+				{
+					"slug": "cyan-brass",
+					"name": "Cyan to brass",
+					"gradient": "linear-gradient(135deg, #4cc3e0 0%, #8fa3d8 48%, #d9a441 100%)"
+				},
+				{
+					"slug": "deep-fade",
+					"name": "Deep fade",
+					"gradient": "linear-gradient(180deg, #111b33 0%, #080e1e 100%)"
+				}
+			]
+		},
+		"custom": {
+			"adz": {
+				"surface": "var(--wp--preset--color--surface)",
+				"line": "color-mix(in oklab, var(--wp--preset--color--contrast) 16%, transparent)",
+				"textQuiet": "color-mix(in oklab, var(--wp--preset--color--contrast) 68%, transparent)",
+				"focus": "var(--wp--preset--color--accent-1)",
+				"rule": "color-mix(in oklab, var(--wp--preset--color--contrast) 10%, transparent)",
+				"ruleGap": "9px",
+				"strokeInner": "color-mix(in oklab, var(--wp--preset--color--accent-1) 55%, transparent)",
+				"strokeMid": "color-mix(in oklab, var(--wp--preset--color--accent-1) 22%, transparent)",
+				"strokeOuter": "color-mix(in oklab, var(--wp--preset--color--accent-1) 8%, transparent)",
+				"ambience": "radial-gradient(60rem 40rem at 12% -8%, color-mix(in oklab, #4cc3e0 16%, transparent), transparent 70%), radial-gradient(52rem 38rem at 94% 6%, color-mix(in oklab, #d9a441 11%, transparent), transparent 72%)",
+				"grainOpacity": "0.04",
+				"grainBlend": "overlay",
+				"edge": "linear-gradient(135deg, color-mix(in oklab, #4cc3e0 70%, transparent), transparent 45%, color-mix(in oklab, #d9a441 45%, transparent))",
+				"sheen": "inset 0 1px 0 color-mix(in oklab, #ffffff 16%, transparent)",
+				"lift": "0 1px 2px rgba(3, 7, 18, 0.5), 0 16px 40px -18px rgba(3, 7, 18, 0.9)"
+			}
+		}
+	},
+	"styles": {
+		"color": {
+			"background": "var(--wp--preset--color--base)",
+			"text": "var(--wp--preset--color--contrast)"
+		},
+		"elements": {
+			"link": { "color": { "text": "var(--wp--preset--color--accent-1)" } },
+			"button": {
+				"color": {
+					"background": "var(--wp--preset--color--accent-1)",
+					"text": "var(--wp--preset--color--base)"
+				}
+			}
+		}
+	}
+}
