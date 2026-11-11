@@ -1,58 +1,124 @@
-# Codex task: put the Claude build on the live site
+# Codex task: finish the adz-world.com install
 
-## What this is
+## Where things stand
 
-`adz-world.com` currently runs the **grok** candidate. This replaces it with the
-Claude build and installs the new site theme. The work is already written,
-committed and pushed. Your job is to deploy it, create two missing pages, and
-report what you actually observe.
+The theme **is** installed and active — the "Theme" switcher is visible at the
+bottom right of the live site, which only renders when the child theme's
+`functions.php` is running. The plugin is serving; the rotation panel appears.
 
-Everything below is on branch **`claude/design-display-library`**, not on `main`:
+What is wrong is not your install. Two defects were in the committed theme and
+are now fixed:
+
+1. **The theme carried no default appearance.** Every colour lived in
+   `styles/*.json`, and WordPress emits only the variation an administrator has
+   selected. With none selected the child theme contributed no palette, so the
+   site fell through to Twenty Twenty-Five — white ground, yellow button. The
+   yellow "Show me" button was not a plugin bug; it was the plugin correctly
+   inheriting Twenty Twenty-Five's `accent-1`, the only accent on the page.
+2. **No page content was ever shipped.** The homepage had a site title and a
+   rotation and nothing else, because the designs existed only in a test
+   harness.
+
+`theme.json` now carries a full default palette and token set, and the content
+ships as block patterns plus a ready-to-publish file. Pull and re-deploy.
+
+## Step 1 — pull
+
+```bash
+git fetch origin claude/design-display-library
+git checkout claude/design-display-library
+git log --oneline -1    # expect 245e6fd or later
+```
+
+If `git log` shows an older commit, stop — you are on a stale checkout and
+everything below will reproduce the same result.
+
+## Step 2 — re-copy the theme
+
+Only the theme changed. The plugin at `pre-release-candidates/dwm-local/` is
+unchanged; leave it alone if you already installed it.
+
+```bash
+rm -rf wp-content/themes/adz-world-2026
+cp -r pre-release-candidates/site-theme/adz-world-2026 wp-content/themes/
+wp theme activate adz-world-2026
+```
+
+**Verify before continuing.** WordPress caches merged `theme.json` output:
+
+```bash
+wp cache flush
+wp transient delete --all
+```
+
+Then load the front page and check:
+
+```bash
+curl -s https://adz-world.com/ | grep -o '\-\-wp--preset--color--base: *#[0-9a-f]*' | head -1
+```
+
+- **Expected:** `--wp--preset--color--base: #080e1e`
+- If it returns nothing or a different colour, the merged `theme.json` is
+  stale: flush again, and confirm `wp theme list` shows `adz-world-2026` as
+  active with `twentytwentyfive` still installed (it is the parent; removing it
+  breaks the child).
+
+The page should now be dark navy with a cyan accent, not white with yellow.
+
+## Step 3 — build the homepage
+
+The content ships two ways. Either is fine.
+
+**From WP-CLI**, fastest:
+
+```bash
+wp post create docs/site-pages/home.html \
+  --post_type=page --post_status=publish --post_title="adz.world"
+wp option update show_on_front page
+wp option update page_on_front <ID returned above>
+```
+
+**Or from the editor**, if you want to see them: create a page and insert the
+three patterns from the inserter under **adz.world** — "adz.world hero",
+"adz.world three cards", "adz.world live rotation".
+
+### The one thing you must edit
+
+`home.html` contains a deliberate placeholder:
 
 ```
-origin/claude/design-display-library   c39adbf
-  c39adbf  Make the rotation theme-independent; add the adz.world 2026 site theme
-  7012482  Promote dwm-local to production and move rotation parameters off the shortcode
+[adz_rotation name="REPLACE_WITH_A_REAL_ROTATION_KEY"]
 ```
 
-Two directories matter:
+It is a placeholder rather than a guess because a shortcode naming a rotation
+that does not exist renders a visible error, which is worse on a front page.
+Replace it with a rotation that actually exists:
 
-| Path | Goes to |
-|---|---|
-| `pre-release-candidates/dwm-local/` | `wp-content/plugins/adz-world/` |
-| `pre-release-candidates/site-theme/adz-world-2026/` | `wp-content/themes/adz-world-2026/` |
+```bash
+wp eval 'print_r( array_keys( adzworld_named_rotations() ) );'
+```
 
-## Do this first — it is blocking the WordPress.org review
+If that returns an empty array, create one first: **Adz → Starter packs →
+Display format showcase**, which builds one rotation per display format, then
+re-run the command and pick a key from the list.
 
-`https://adz-world.com/terms/` and `https://adz-world.com/privacy/` both return
-**404**. Those two URLs are named in the plugin's `readme.txt` under
-`== External services ==`, and the plugins team wrote *"We will verify that the
-terms and privacy links exist and they have the proper content. We will check
-those links in the next review."*
+## Step 4 — terms and privacy
 
-The content is written and committed. It is deliberately specific: every claim
-in it matches what `readme.txt` says the plugin sends, because the reviewer
-compares the two.
+Both URLs currently return **404**, and they are named in the plugin's
+`readme.txt` under `== External services ==`. The plugins team wrote: *"We will
+verify that the terms and privacy links exist and they have the proper content.
+We will check those links in the next review."* This is the one item blocking
+the WordPress.org review.
+
+The content is written and committed:
 
 ```
 docs/site-pages/terms.html
 docs/site-pages/privacy.html
 ```
 
-Both are Gutenberg block markup, ready to publish:
-
-```bash
-wp post create docs/site-pages/terms.html \
-  --post_type=page --post_status=publish \
-  --post_title="Terms of Service" --post_name=terms
-
-wp post create docs/site-pages/privacy.html \
-  --post_type=page --post_status=publish \
-  --post_title="Privacy Policy" --post_name=privacy
-```
-
-**Before publishing, replace four placeholders in both files.** Ask Dainis for
-these — do not invent them, they are legal identifiers:
+**Ask Dainis for four values and replace them in both files before publishing.**
+Do not invent them — they are legal identifiers:
 
 | Placeholder | What it is |
 |---|---|
@@ -61,111 +127,71 @@ these — do not invent them, they are legal identifiers:
 | `[JURISDICTION]` | the governing law for the terms |
 | `[CONTACT EMAIL]` | the address for privacy requests |
 
-Then confirm `curl -I` returns `200` for both URLs, and that each page's
-content actually renders rather than showing raw block comments.
-
-## Install
+Then:
 
 ```bash
-git fetch origin claude/design-display-library
-git checkout claude/design-display-library
+wp post create docs/site-pages/terms.html \
+  --post_type=page --post_status=publish --post_title="Terms of Service" --post_name=terms
+wp post create docs/site-pages/privacy.html \
+  --post_type=page --post_status=publish --post_title="Privacy Policy" --post_name=privacy
+
+curl -o /dev/null -s -w '%{http_code}\n' https://adz-world.com/terms/
+curl -o /dev/null -s -w '%{http_code}\n' https://adz-world.com/privacy/
 ```
 
-Plugin — replace whatever is installed now:
+Both must return `200`, and the pages must render as formatted content, not as
+raw `<!-- wp:paragraph -->` comments. Raw comments mean the file was imported
+as plain text rather than as block markup.
 
-```bash
-# Back up the current (grok) install before removing it.
-wp plugin deactivate adz-world
-mv wp-content/plugins/adz-world wp-content/plugins/adz-world.grok.$(date +%Y%m%d)
-cp -r pre-release-candidates/dwm-local wp-content/plugins/adz-world
-rm -rf wp-content/plugins/adz-world/tests wp-content/plugins/adz-world/review
-wp plugin activate adz-world
-```
+## Step 5 — tidy the default install
 
-`tests/` and `review/` are listed in `.distignore` and must not be on a live
-site: `tests/` calls `wp_set_current_user()` sixteen times.
+The site is still partly stock: the footer menu is eight `#` placeholder links,
+and there is a Sample Page. Remove both, set a real tagline, and remove the
+"Designed with WordPress" footer credit.
 
-Theme:
+## Acceptance checklist
 
-```bash
-cp -r pre-release-candidates/site-theme/adz-world-2026 wp-content/themes/
-wp theme activate adz-world-2026
-```
+Run each and report the actual result. Do not report a check you did not run.
 
-It is a child of Twenty Twenty-Five, so Twenty Twenty-Five must stay installed.
-
-## Verify, and report what you actually see
-
-Activate with `WP_DEBUG` and `WP_DEBUG_LOG` on, then check each of these and
-say which passed, which failed, and paste the output. Do not report a check you
-did not run.
-
-1. **Activation is clean.** No fatal, warning or notice in `debug.log`, and no
-   output printed during activation.
-2. **The three style variations appear** in Appearance → Editor → Styles →
-   Browse styles: **Midnight**, **Atelier**, **Hairline**. Switch between them
-   and confirm the whole page repaints, including the rotation panel.
-   Screenshot each.
-3. **The reader-facing switcher works.** A pill sits at the bottom right of the
-   front end reading "Theme", with four options: Site default, Midnight,
-   Atelier, Hairline. Confirm that choosing one repaints the page, that the
-   choice survives a reload, that there is **no flash of the previous palette**
-   on that reload, and that "Site default" returns to the administrator's
-   choice. It is built by `assets/style-switcher.js` and keyed on a
-   `data-adz-style` attribute on `<html>`; with JavaScript off the control is
-   never shown and the administrator's variation applies.
-4. **The shortcode is name-only.** Adz → Rotation should now print
-   `[adz_rotation name="..."]` with no `display` or `controls` attribute. The
-   display format, creative size, navigation and region name are settings on
-   that screen. Confirm changing the format there changes the front end.
-5. **A creative is not clipped or resized.** Place a rotation holding a real
-   provider slot, then in devtools confirm the injected unit has the width and
-   height the network set, and that no ancestor has `overflow: hidden`. This is
-   the point of the change — a resized or clipped unit is a policy violation.
-6. **Narrow container.** Put the same rotation in a sidebar or a column under
-   300px. It should stack, the button should match the input width, and the
-   category chips should wrap inside the panel.
-7. **Legal pages resolve.** `curl -I` both URLs, expect `200`.
-
-## Site content
-
-The site is still a default install: the title is "adz dwm release test", the
-footer menu is eight `#` placeholder links, and the WordPress credit is in the
-footer. Set a real title and tagline, remove the placeholder menu items, and
-remove the Sample Page. Leave the homepage layout alone for now — Dainis is
-choosing between the three variations first.
+| # | Check | Pass looks like |
+|---|---|---|
+| 1 | `wp theme list` | `adz-world-2026` active, `twentytwentyfive` installed |
+| 2 | Front page colour | dark navy ground, cyan accents — not white and yellow |
+| 3 | Appearance → Editor → Styles → Browse styles | Midnight, Atelier, Hairline all listed |
+| 4 | Front-end switcher | pill bottom right; each option repaints the page; the choice survives a reload with **no flash** of the previous palette; "Site default" returns to Midnight |
+| 5 | Homepage | hero, three cards, and a live rotation that renders rather than showing an error |
+| 6 | Adz → Rotation | shortcode shown is `[adz_rotation name="..."]` with **no** `display=` or `controls=` |
+| 7 | Creative integrity | with a real provider slot placed, devtools shows the injected unit at the network's own width and height, and no ancestor has `overflow: hidden` |
+| 8 | Narrow container | same rotation in a sub-300px column: stacks, button matches input width, chips wrap inside the panel |
+| 9 | `wp plugin check adz-world` | paste the full output |
+| 10 | `debug.log` with `WP_DEBUG` on | no fatal, warning or notice from adz-world |
+| 11 | `/terms/` and `/privacy/` | both `200`, both rendering formatted content |
 
 ## When you are done
 
 - Commit anything you changed under
-  `https://github.com/dainiswmichel/adz/tree/main/pre-release-candidates`,
-  on your own branch. Do not force-push and do not touch
+  `https://github.com/dainiswmichel/adz/tree/main/pre-release-candidates`, on
+  your own branch. Do not force-push, and do not modify
   `pre-release-candidates/dwm-local/` or
   `pre-release-candidates/site-theme/` — those are the Claude candidate.
-- Add your result to `docs/adz-remediation-collaboration-file.html` with a UTC
-  timestamp: what you installed, what each check above actually returned, and
-  anything that failed.
-- If a check fails, say so plainly with the output. Do not report a pass you
-  did not observe.
+- Record the result in `docs/adz-remediation-collaboration-file.html` with a UTC
+  timestamp: what you installed and what each of the eleven checks returned.
+- **If a check fails, say so with the output.** A half-finished install that is
+  reported as done costs more than one reported as blocked.
 
-## What has not been verified yet, and needs to be
+## Still unverified, so do not inherit it as fact
 
-Stated so you do not inherit a claim as fact:
-
-- **Plugin Check has never run** on this tree. Run `wp plugin check adz-world`
-  and paste the result.
-- **The theme has never been installed on a WordPress site.** The three
-  variations were rendered by generating the custom properties `theme.json`
-  emits, not by WordPress itself. If a variation does not appear in the Site
-  Editor, the likely cause is the `styles/*.json` schema or the child theme
-  header in `style.css`.
-- The reader-facing switcher **was** driven end to end in a headless browser:
-  every option applied, the choice persisted, and the attribute was already set
-  before paint after a reload. That was against a generated harness, not
-  against WordPress, so the part still unproven is whether `functions.php`
-  enqueues and prints correctly inside a real theme.
-- `assets/variations.css` is generated from `styles/*.json` by
-  `tools/build-variations.py`. If you change a variation, re-run that script;
-  do not hand-edit the generated file.
-- The plugin's PHP passes `php -l` and PHPCS with the WordPress standard at
-  exit 0, and `release-gate.sh` passes. Those were run; the two above were not.
+- **Plugin Check has never run** on this plugin tree. Check 9 is its first run.
+- **No part of the theme has been exercised inside WordPress.** The default
+  palette, the three variations and the three patterns were all verified by
+  generating the custom properties `theme.json` emits and rendering them in a
+  browser — not by WordPress itself. If a variation is missing from the Site
+  Editor, suspect the `styles/*.json` schema or the `Template:` line in
+  `style.css`. If a pattern is missing from the inserter, suspect the header
+  comment block in `patterns/*.php`.
+- The front-end switcher **was** driven end to end in a headless browser: every
+  option applied, the choice persisted, and the attribute was set before paint
+  after a reload. That was against a generated harness, not WordPress.
+- `assets/variations.css` is generated by `tools/build-variations.py` from
+  `styles/*.json`. If you change a variation, re-run that script. Do not
+  hand-edit the generated file.
