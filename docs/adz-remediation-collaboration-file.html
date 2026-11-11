@@ -84,6 +84,60 @@
   Earlier analysis: <a href="remediation-scope.md">remediation scope</a>; its historical DONE labels are not inherited as current integrated evidence.</p>
 </section>
 
+<section id="codex-live-release-baseline-2026y-11m-11d-EET-17h-02m">
+<h2>Codex — verified 1.0.9 production baseline and adz.world theme deployment</h2>
+<p class="meta"><strong>Local MTS:</strong>
+<time datetime="2026-11-11T17:02:51+02:00">2026y-11m-11d-EET-17h-02m</time>.
+Production source: <code>pre-release-candidates/dwm-local/</code>. Live target:
+<code>https://adz-world.com/</code>. GitHub commit: <code>77d9426</code>.</p>
+<p>Installed the exact packaged 1.0.9 plugin on adz-world.com and activated the
+<code>adz.world 2026</code> child theme. The site title, tagline, front-page
+title, footer, and home rotation now use the adz.world identity. The Sample
+Page was moved to the WordPress trash rather than permanently deleted. All
+eight unified administrator tabs returned HTTP 200 while authenticated:
+Dashboard, Manual, Connections, Affiliate programs, Rotation, Earnings,
+Templates, and Starter packs. The Rotation screen rendered its named rotations,
+four populated vertical slots, live preview markup, per-slot refresh controls,
+display formats, navigation settings, and fixed-size options.</p>
+<p>The Claude theme assets were integrated without replacing the newer
+production plugin. The first live theme pass exposed a real integration defect:
+the theme's default mode did not define the custom palette variables that its
+plugin bridge referenced. That left the invitation panel and inactive category
+chips partially unstyled and allowed the parent theme's yellow accent to leak
+into controls. The defect was corrected by defining a complete default
+blue/neutral palette, adding a compact front-page template, replacing the
+parent demonstration footer, and bumping the theme to 1.0.1 so browsers fetch
+the corrected assets. A user-provided live screenshot then showed the Midnight
+variation repainting the page, invitation panel, input, button, category chips,
+arrows, dots, footer, and switcher coherently.</p>
+<p>The production plugin release ZIP has SHA-256
+<code>209c2e8895e474be1f31248dc76bc00cb495c1c3b6dfd9914d8f3c21055e1f89</code>.
+Its 73 installed live files matched the archive byte-for-byte under aggregate
+SHA-256 <code>b3756b0d8c79ee4f925a8fd6cd748132da2ea453f093aecb92fc040742cb8452</code>.
+The final theme ZIP has SHA-256
+<code>6b2be2c465f80943b212579de95ee7ce47d83b43b595a68d20b08888e75774a1</code>;
+its 11 installed files matched under aggregate SHA-256
+<code>52d15bd8ac5fb74de1541ab2a8a299c834c7838a714793873a6033b5a5ec62b3</code>.</p>
+<p><strong>Verification:</strong> local full WPCS returned zero findings for
+the production plugin and theme; every PHP, JavaScript, and JSON file parsed;
+the inline/runtime-style and diagnostic-suppression searches returned zero
+lines; release metadata agrees at 1.0.9; preference tests passed 42/42;
+matching tests passed 19/19; and own-code resolution found zero missing internal
+calls, arity errors, or duplicate functions. Official Plugin Check returned
+<code>Success: Checks complete. No errors found.</code> on the exact live plugin.
+The independent GitHub production gate also passed every step, including full
+WPCS and strict official Plugin Check. The quality gate now covers the site
+theme's PHP, JavaScript, JSON, WPCS, inline-style ban, suppression ban, and
+trailing whitespace as well as the plugin.</p>
+<p><strong>Open legal publication item:</strong> the repository contains
+Terms and Privacy Gutenberg templates with <code>[LEGAL ENTITY]</code> and
+<code>[PUBLIC CONTACT EMAIL]</code> placeholders. An obsolete residential
+address found in earlier material was removed and was not published or
+committed. The live legal pages remain unpublished until current public legal
+contact details are supplied. The plugin and theme deployment does not depend
+on those details, but WordPress.org review requires the final public URLs.</p>
+</section>
+
 <section id="dwm-local-front-page-and-gate-2026y-11m-11d-UTC-09h-11m">
 <h2><code>dwm-local</code> visual burner front page and enforced quality gate</h2>
 <p class="meta"><strong>Verification MTS:</strong>
