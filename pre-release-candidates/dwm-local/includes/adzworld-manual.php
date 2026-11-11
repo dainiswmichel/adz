@@ -269,8 +269,6 @@ function adzworld_manual_phase_label( $phase ) {
  */
 function adzworld_manual_unoffered_providers() {
 	return array(
-		'Carbon'       => __( 'The creative replaces the script element, so it is not a rotation slot.', 'adz-world' ),
-		'MGID'         => __( 'The site script is a path, not one checked identifier.', 'adz-world' ),
 		'Infolinks'    => __( 'Infolinks writes into article text. It is not a rotation slot.', 'adz-world' ),
 		'Publift'      => __( 'The contract places tags for the whole page. Those tags are not put inside a rotation.', 'adz-world' ),
 		'PropellerAds' => __( 'Pop and push formats are not a content slot.', 'adz-world' ),
@@ -297,6 +295,28 @@ function adzworld_manual_provider_rows() {
 				'note'   => __( 'Official unit. It becomes a rotation slot when the connection is enabled. Visitor words are not sent to the network.', 'adz-world' ),
 				'desk'   => 'networks',
 			);
+		}
+		if ( function_exists( 'adzworld_network_rows' ) ) {
+			foreach ( adzworld_network_rows() as $row ) {
+				if ( ! is_array( $row ) || 'custom' !== $row['preset'] ) {
+					continue;
+				}
+				$flat   = array(
+					'accepted' => isset( $row['accepted'] ) ? (string) $row['accepted'] : '0',
+					'enabled'  => isset( $row['enabled'] ) ? (string) $row['enabled'] : '0',
+				);
+				$params = isset( $row['params'] ) && is_array( $row['params'] ) ? $row['params'] : array();
+				foreach ( $params as $index => $param ) {
+					$flat[ 'param_' . $index ] = isset( $param['value'] ) ? (string) $param['value'] : '';
+				}
+				$rows[] = array(
+					'label'  => isset( $row['label'] ) && is_string( $row['label'] ) && '' !== $row['label'] ? $row['label'] : __( 'New network', 'adz-world' ),
+					'kind'   => __( 'Stored parameters', 'adz-world' ),
+					'status' => adzworld_manual_phase_label( adzworld_manual_account_phase( $flat ) ),
+					'note'   => __( 'Parameters saved on Connections. The public page does not receive them.', 'adz-world' ),
+					'desk'   => 'networks',
+				);
+			}
 		}
 	}
 	if ( function_exists( 'adzworld_affiliate_networks' ) && function_exists( 'adzworld_affiliate_accounts' ) ) {
@@ -467,19 +487,26 @@ function adzworld_manual_render_networks() {
 		$labels = adzworld_manual_field_labels( isset( $network['fields'] ) && is_array( $network['fields'] ) ? $network['fields'] : array() );
 		$signup = isset( $network['signup'] ) ? (string) $network['signup'] : '';
 		adzworld_manual_open( $class, (string) $network['label'] );
-		echo '<p>' . esc_html(
-			sprintf(
-				/* translators: 1: network name, 2: comma-separated field labels. */
-				__( 'You need an account with %1$s. Input %2$s on Connections.', 'adz-world' ),
-				(string) $network['label'],
-				$labels
-			)
-		) . '</p>';
-		echo '<p>';
-		if ( '' !== $signup ) {
-			echo '<a class="button" href="' . esc_url( $signup ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Create or open the account', 'adz-world' ) . '</a> ';
+		if ( function_exists( 'adzworld_registration_has' ) && adzworld_registration_has( $id ) ) {
+			adzworld_registration_render_steps( $id );
+			echo '<p class="adzworld-pay-actions">';
+			adzworld_registration_render_signup( $id, false );
+			echo ' <a class="button" href="' . esc_url( adzworld_desk_url( 'networks' ) . '#adzworld-pay-' . rawurlencode( $id ) ) . '">' . esc_html__( 'Open Connections', 'adz-world' ) . '</a></p>';
+		} else {
+			echo '<p>' . esc_html(
+				sprintf(
+					/* translators: 1: network name, 2: comma-separated field labels. */
+					__( 'You need an account with %1$s. Input %2$s on Connections.', 'adz-world' ),
+					(string) $network['label'],
+					$labels
+				)
+			) . '</p>';
+			echo '<p>';
+			if ( '' !== $signup ) {
+				echo '<a class="button" href="' . esc_url( $signup ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Create or open the account', 'adz-world' ) . '</a> ';
+			}
+			echo '<a class="button" href="' . esc_url( adzworld_desk_url( 'networks' ) ) . '">' . esc_html__( 'Open Connections', 'adz-world' ) . '</a></p>';
 		}
-		echo '<a class="button" href="' . esc_url( adzworld_desk_url( 'networks' ) ) . '">' . esc_html__( 'Open Connections', 'adz-world' ) . '</a></p>';
 		if ( 'apply' === $phase ) {
 			echo '</section>';
 			continue;
@@ -515,6 +542,40 @@ function adzworld_manual_render_networks() {
 		echo '<p>' . esc_html__( 'The words a visitor types are not sent to this network.', 'adz-world' ) . '</p>';
 		echo '</section>';
 	}
+	if ( ! function_exists( 'adzworld_network_rows' ) ) {
+		return;
+	}
+	foreach ( adzworld_network_rows() as $row ) {
+		if ( ! is_array( $row ) || 'custom' !== $row['preset'] ) {
+			continue;
+		}
+		$flat   = array(
+			'accepted' => isset( $row['accepted'] ) ? (string) $row['accepted'] : '0',
+			'enabled'  => isset( $row['enabled'] ) ? (string) $row['enabled'] : '0',
+		);
+		$params = isset( $row['params'] ) && is_array( $row['params'] ) ? $row['params'] : array();
+		foreach ( $params as $index => $param ) {
+			$flat[ 'param_' . $index ] = isset( $param['value'] ) ? (string) $param['value'] : '';
+		}
+		$phase = adzworld_manual_account_phase( $flat );
+		$class = 'apply' === $phase ? 'is-waiting' : ( 'live' === $phase ? 'is-done' : 'is-open' );
+		$label = isset( $row['label'] ) && is_string( $row['label'] ) && '' !== $row['label'] ? $row['label'] : __( 'New network', 'adz-world' );
+		adzworld_manual_open( $class, $label );
+		echo '<p>' . esc_html(
+			sprintf(
+				/* translators: %s: network name. */
+				__( 'You need an account with %s. Add a parameter for each identifier it requires on Connections.', 'adz-world' ),
+				$label
+			)
+		) . '</p>';
+		echo '<p><a class="button" href="' . esc_url( adzworld_desk_url( 'networks' ) ) . '">' . esc_html__( 'Open Connections', 'adz-world' ) . '</a></p>';
+		if ( 'apply' === $phase ) {
+			echo '</section>';
+			continue;
+		}
+		echo '<p>' . esc_html__( 'The parameters stay in WordPress. This network does not load a script.', 'adz-world' ) . '</p>';
+		echo '</section>';
+	}
 }
 
 /**
@@ -535,19 +596,26 @@ function adzworld_manual_render_affiliates() {
 		$labels  = adzworld_manual_field_labels( isset( $network['fields'] ) && is_array( $network['fields'] ) ? $network['fields'] : array() );
 		$signup  = isset( $network['account'] ) ? (string) $network['account'] : '';
 		adzworld_manual_open( $class, (string) $network['label'] );
-		echo '<p>' . esc_html(
-			sprintf(
-				/* translators: 1: program name, 2: comma-separated field labels. */
-				__( 'You need an account with %1$s. Input %2$s on Affiliate programs.', 'adz-world' ),
-				(string) $network['label'],
-				$labels
-			)
-		) . '</p>';
-		echo '<p>';
-		if ( '' !== $signup ) {
-			echo '<a class="button" href="' . esc_url( $signup ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Create or open the account', 'adz-world' ) . '</a> ';
+		if ( function_exists( 'adzworld_registration_has' ) && adzworld_registration_has( $id ) ) {
+			adzworld_registration_render_steps( $id );
+			echo '<p class="adzworld-pay-actions">';
+			adzworld_registration_render_signup( $id, false );
+			echo ' <a class="button" href="' . esc_url( adzworld_desk_url( 'networks' ) . '#adzworld-affiliate-' . rawurlencode( $id ) ) . '">' . esc_html__( 'Open the account fields', 'adz-world' ) . '</a></p>';
+		} else {
+			echo '<p>' . esc_html(
+				sprintf(
+					/* translators: 1: program name, 2: comma-separated field labels. */
+					__( 'You need an account with %1$s. Input %2$s on Affiliate programs.', 'adz-world' ),
+					(string) $network['label'],
+					$labels
+				)
+			) . '</p>';
+			echo '<p>';
+			if ( '' !== $signup ) {
+				echo '<a class="button" href="' . esc_url( $signup ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Create or open the account', 'adz-world' ) . '</a> ';
+			}
+			echo '<a class="button" href="' . esc_url( adzworld_desk_url( 'affiliates' ) ) . '">' . esc_html__( 'Open Affiliate programs', 'adz-world' ) . '</a></p>';
 		}
-		echo '<a class="button" href="' . esc_url( adzworld_desk_url( 'affiliates' ) ) . '">' . esc_html__( 'Open Affiliate programs', 'adz-world' ) . '</a></p>';
 		if ( 'apply' === $phase ) {
 			echo '</section>';
 			continue;
@@ -573,8 +641,8 @@ function adzworld_manual_render_managed() {
 	if ( ! function_exists( 'adzworld_managed_network_catalog' ) ) {
 		return;
 	}
-	echo '<h2>' . esc_html__( 'Managed networks', 'adz-world' ) . '</h2>';
-	echo '<p>' . esc_html__( 'These providers do not hand out a unit id this plugin can turn into a slot. Apply, then use the implementation that provider supplies.', 'adz-world' ) . '</p>';
+	echo '<h2>' . esc_html__( 'Other provider shortcodes', 'adz-world' ) . '</h2>';
+	echo '<p>' . esc_html__( 'A provider that is not in the connection list can still be a rotation slot when its plugin registers a shortcode and that shortcode is saved on Connections.', 'adz-world' ) . '</p>';
 	foreach ( adzworld_managed_network_catalog() as $network ) {
 		$signup = isset( $network['signup'] ) ? (string) $network['signup'] : '';
 		adzworld_manual_open( 'is-waiting', (string) $network['label'] );
@@ -1012,6 +1080,32 @@ function adzworld_manual_render_builder() {
 			$row   = isset( $settings[ $id ] ) && is_array( $settings[ $id ] ) ? $settings[ $id ] : array();
 			$phase = adzworld_manual_phase_label( adzworld_manual_account_phase( $row ) );
 			echo '<option value="' . esc_attr( $token ) . '"' . selected( $source, $token, false ) . '>' . esc_html( $network['label'] . ' — ' . $phase ) . '</option>';
+		}
+		if ( function_exists( 'adzworld_network_rows' ) ) {
+			foreach ( adzworld_network_rows() as $row ) {
+				if ( ! is_array( $row ) || empty( $row['id'] ) ) {
+					continue;
+				}
+				if ( 'custom' !== $row['preset'] && $row['id'] === $row['preset'] ) {
+					continue;
+				}
+				$token = 'source:network_' . $row['id'];
+				$flat  = array(
+					'accepted' => isset( $row['accepted'] ) ? (string) $row['accepted'] : '0',
+					'enabled'  => isset( $row['enabled'] ) ? (string) $row['enabled'] : '0',
+				);
+				if ( 'custom' === $row['preset'] ) {
+					$params = isset( $row['params'] ) && is_array( $row['params'] ) ? $row['params'] : array();
+					foreach ( $params as $index => $param ) {
+						$flat[ 'param_' . $index ] = isset( $param['value'] ) ? (string) $param['value'] : '';
+					}
+				} elseif ( isset( $row['fields'] ) && is_array( $row['fields'] ) ) {
+					$flat = array_merge( $flat, $row['fields'] );
+				}
+				$phase = adzworld_manual_phase_label( adzworld_manual_account_phase( $flat ) );
+				$name  = isset( $row['label'] ) && is_string( $row['label'] ) && '' !== $row['label'] ? $row['label'] : __( 'New network', 'adz-world' );
+				echo '<option value="' . esc_attr( $token ) . '"' . selected( $source, $token, false ) . '>' . esc_html( $name . ' — ' . $phase ) . '</option>';
+			}
 		}
 	}
 	echo '</select></td></tr>';

@@ -481,7 +481,7 @@ function adzworld_update_rotation_state( $rotation_id, $state ) {
  * Off unless the site owner turns it on. With it off ads come from this site's
  * own adz_ad posts. Separately consented earnings requests are independent.
  *
- * 1.0.8 called adz.world unconditionally, on page loads, sending visitor IP
+ * 1.0.8 called adz-world unconditionally, on page loads, sending visitor IP
  * addresses with no disclosure and no way to decline. Those requests require
  * review against external-service guidelines; the actual closure guideline
  * has not been established.
@@ -494,8 +494,9 @@ function adzworld_network_enabled() {
 	if ( empty( $options['connect_to_network'] ) ) {
 		return false;
 	}
-	$base_url = adzworld_network_base_url();
-	if ( 'adz-world.com' === wp_parse_url( $base_url, PHP_URL_HOST ) && empty( $options['adzworld_monetization_consent'] ) ) {
+	$base_url  = adzworld_network_base_url();
+	$home_host = adzworld_home_host();
+	if ( '' !== $home_host && wp_parse_url( $base_url, PHP_URL_HOST ) === $home_host && empty( $options['adzworld_monetization_consent'] ) ) {
 		return false;
 	}
 
@@ -510,7 +511,7 @@ function adzworld_network_enabled() {
  * @return string Trailing-slashed URL, or '' when none is configured.
  */
 function adzworld_network_base_url() {
-	$url = apply_filters( 'adzworld_ad_network_base_url', 'https://adz-world.com/' );
+	$url = apply_filters( 'adzworld_ad_network_base_url', adzworld_home_url() );
 
 	return $url ? trailingslashit( esc_url_raw( $url ) ) : '';
 }

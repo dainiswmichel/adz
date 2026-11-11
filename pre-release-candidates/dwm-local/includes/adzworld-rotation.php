@@ -113,9 +113,6 @@ function adzworld_save_rotation_source() {
 			|| ! shortcode_exists( $match[1] ) || 'adz_rotation' === $match[1] ) {
 			return new WP_Error( 'adzworld_source_shortcode', __( 'A label and an existing provider shortcode are required. A rotation cannot include itself.', 'adz-world' ) );
 		}
-		if ( count( $saved ) >= 50 && ! isset( $saved[ $key ] ) ) {
-			return new WP_Error( 'adzworld_source_limit', __( 'Up to fifty advertising sources can be saved.', 'adz-world' ) );
-		}
 		$saved[ $key ] = array(
 			'label'     => $label,
 			'shortcode' => $code,
@@ -134,7 +131,7 @@ function adzworld_save_rotation_source() {
  */
 function adzworld_rotation_slot_choices() {
 	$choices = array(
-		'intro' => __( 'Adz invitation and user hub', 'adz-world' ),
+		'intro' => __( 'adz invitation and user hub', 'adz-world' ),
 	);
 	$ads     = get_posts(
 		array(
@@ -210,10 +207,14 @@ function adzworld_accept_rotation_slot( $slot, $choices, $rotations, $owner ) {
 	if ( isset( $choices[ $slot ] ) ) {
 		return $slot;
 	}
-	if ( preg_match( '/^source:network_([a-z0-9_-]{1,40})$/D', $slot, $network )
-		&& function_exists( 'adzworld_network_catalog' )
-		&& isset( adzworld_network_catalog()[ $network[1] ] ) ) {
-		return 'source:network_' . $network[1];
+	if ( preg_match( '/^source:network_([a-z0-9_-]{1,40})$/D', $slot, $network ) ) {
+		$key = $network[1];
+		if ( function_exists( 'adzworld_network_catalog' ) && isset( adzworld_network_catalog()[ $key ] ) ) {
+			return 'source:network_' . $key;
+		}
+		if ( function_exists( 'adzworld_network_row' ) && is_array( adzworld_network_row( $key ) ) ) {
+			return 'source:network_' . $key;
+		}
 	}
 	if ( ! preg_match( '/^r:([a-z][a-z0-9_-]{0,49})$/D', $slot, $nested ) ) {
 		return '';
@@ -571,6 +572,24 @@ function adzworld_rotation_editor_choices( $owner, $rotations ) {
 			);
 		}
 	}
+	if ( function_exists( 'adzworld_network_rows' ) ) {
+		foreach ( adzworld_network_rows() as $row ) {
+			if ( ! is_array( $row ) || empty( $row['id'] ) ) {
+				continue;
+			}
+			$token = 'source:network_' . $row['id'];
+			if ( isset( $choices[ $token ] ) ) {
+				continue;
+			}
+			$label             = isset( $row['label'] ) && is_string( $row['label'] ) && '' !== $row['label']
+				? $row['label'] : __( 'New network', 'adz-world' );
+			$choices[ $token ] = sprintf(
+				/* translators: %s: advertising network name. */
+				__( 'Not connected — %s', 'adz-world' ),
+				$label
+			);
+		}
+	}
 	return $choices;
 }
 
@@ -914,8 +933,8 @@ function adzworld_rotation_weighted_slot( $slots, $draw ) {
  * Text-only adz are the caption. Media adz retain their creative and use the
  * post title as the caption. Long text can be expanded without duplication.
  *
- * @param WP_Post $ad Adz post.
- * @return string Adz slide content.
+ * @param WP_Post $ad adz post.
+ * @return string adz slide content.
  */
 function adzworld_local_ad_slide( $ad ) {
 	$content   = wp_kses_post( $ad->post_content );

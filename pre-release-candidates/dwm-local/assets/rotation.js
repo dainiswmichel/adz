@@ -27,6 +27,21 @@
 	}
 
 	/**
+	 * Mark a unit mounted and run its provider call.
+	 *
+	 * @param {HTMLElement} unit    Network element.
+	 * @param {Function}    ready   Returns true when the provider can be called.
+	 * @param {Function}    display Provider call.
+	 */
+	function mountWhenReady( unit, ready, display ) {
+		if ( ! ready() ) {
+			return;
+		}
+		unit.dataset.adzworldMounted = '1';
+		display();
+	}
+
+	/**
 	 * Mount an enabled publisher ad-network unit when its slide becomes active.
 	 *
 	 * @param {HTMLElement} slide Active carousel slide.
@@ -34,6 +49,7 @@
 	function mountNetworkUnit( slide ) {
 		var unit = slide.querySelector( '[data-adzworld-mount]' );
 		var kind;
+		var script;
 
 		if ( ! unit || '1' === unit.dataset.adzworldMounted ) {
 			return;
@@ -76,8 +92,6 @@
 
 		if ( 'taboola' === kind && 'https://cdn.taboola.com/libtrc/' === settings.taboolaBase &&
 			/^[a-z0-9][a-z0-9-]{1,48}$/.test( unit.dataset.publisher || '' ) ) {
-			var script;
-
 			unit.dataset.adzworldMounted = '1';
 			window._taboola = window._taboola || [];
 			window._taboola.push(
@@ -103,6 +117,121 @@
 			if ( window.OBR && window.OBR.extern && 'function' === typeof window.OBR.extern.researchWidget ) {
 				window.OBR.extern.researchWidget();
 			}
+			return;
+		}
+
+		if ( 'medianet' === kind && /^[0-9]{5,15}$/.test( unit.dataset.crid || '' ) && unit.id ) {
+			mountWhenReady(
+				unit,
+				function () {
+					return window._mNHandle && window._mNHandle.queue;
+				},
+				function () {
+					window._mNHandle.queue.push(
+						function () {
+							if ( window._mNDetails && 'function' === typeof window._mNDetails.loadTag ) {
+								window._mNDetails.loadTag( unit.dataset.crid, unit.dataset.width + 'x' + unit.dataset.height, unit.id );
+							}
+						}
+					);
+				}
+			);
+			return;
+		}
+
+		if ( 'amazonaps' === kind && unit.id && /^[A-Za-z0-9][A-Za-z0-9._~/-]{0,120}$/.test( unit.dataset.slotname || '' ) ) {
+			mountWhenReady(
+				unit,
+				function () {
+					return window.apstag && 'function' === typeof window.apstag.init && 'function' === typeof window.apstag.fetchBids;
+				},
+				function () {
+					if ( ! window.adzworldApsReady ) {
+						window.apstag.init(
+							{
+								pubID: unit.dataset.pub || '',
+								adServer: 'googletag'
+							}
+						);
+						window.adzworldApsReady = true;
+					}
+					window.apstag.fetchBids(
+						{
+							slots: [
+								{
+									slotID: unit.id,
+									slotName: unit.dataset.slotname,
+									sizes: [ [ Number( unit.dataset.width ), Number( unit.dataset.height ) ] ]
+								}
+							],
+							timeout: 2000
+						},
+						function () {
+							if ( 'function' === typeof window.apstag.setDisplayBids ) {
+								window.apstag.setDisplayBids();
+							}
+						}
+					);
+				}
+			);
+			return;
+		}
+
+		if ( 'ezoic' === kind && /^[0-9]{1,6}$/.test( unit.dataset.placeholder || '' ) ) {
+			window.ezstandalone = window.ezstandalone || {};
+			window.ezstandalone.cmd = window.ezstandalone.cmd || [];
+			unit.dataset.adzworldMounted = '1';
+			window.ezstandalone.cmd.push(
+				function () {
+					if ( 'function' === typeof window.ezstandalone.showAds ) {
+						window.ezstandalone.showAds( Number( unit.dataset.placeholder ) );
+					}
+				}
+			);
+			return;
+		}
+
+		if ( 'mgid' === kind ) {
+			unit.dataset.adzworldMounted = '1';
+			window._mgq = window._mgq || [];
+			window._mgq.push( [ '_mgc.load' ] );
+			return;
+		}
+
+		if ( 'carbon' === kind && /^[A-Z0-9]{8,10}$/.test( unit.dataset.serve || '' ) &&
+			/^[a-z0-9][a-z0-9-]{1,40}$/.test( unit.dataset.placement || '' ) ) {
+			script = document.createElement( 'script' );
+			script.async = true;
+			script.id = '_carbonads_js';
+			script.src = 'https://cdn.carbonads.com/carbon.js?serve=' + encodeURIComponent( unit.dataset.serve ) + '&placement=' + encodeURIComponent( unit.dataset.placement );
+			unit.dataset.adzworldMounted = '1';
+			unit.appendChild( script );
+			return;
+		}
+
+		if ( 'criteo' === kind && /^[0-9]{4,12}$/.test( unit.dataset.zone || '' ) && unit.id ) {
+			window.Criteo = window.Criteo || {};
+			window.Criteo.events = window.Criteo.events || [];
+			unit.dataset.adzworldMounted = '1';
+			window.Criteo.events.push(
+				function () {
+					if ( 'function' === typeof window.Criteo.DisplayAcceptableAdIfAdblocked ) {
+						window.Criteo.DisplayAcceptableAdIfAdblocked(
+							{
+								zoneid: Number( unit.dataset.zone ),
+								containerid: unit.id,
+								overrideZoneFloor: false
+							}
+						);
+					}
+				}
+			);
+			return;
+		}
+
+		if ( 'teads' === kind || 'mediavine' === kind || 'raptive' === kind || 'monumetric' === kind ||
+			'revcontent' === kind || 'dianomi' === kind || 'snigel' === kind || 'freestar' === kind ) {
+			unit.dataset.adzworldMounted = '1';
 		}
 	}
 

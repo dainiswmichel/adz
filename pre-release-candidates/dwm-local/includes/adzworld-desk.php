@@ -87,8 +87,8 @@ function adzworld_desk_tab() {
  */
 function adzworld_desk_menu() {
 	add_menu_page(
-		__( 'adz.world', 'adz-world' ),
-		__( 'Adz.world', 'adz-world' ),
+		ADZWORLD_NAME,
+		ADZWORLD_NAME,
 		'manage_options',
 		'adzworld',
 		'adzworld_desk_page',
@@ -196,7 +196,11 @@ function adzworld_desk_dashboard() {
 			'tab'   => 'networks',
 		),
 		array(
-			'label' => __( 'adz-world API', 'adz-world' ),
+			'label' => sprintf(
+				/* translators: %s: product name. */
+				__( '%s API', 'adz-world' ),
+				ADZWORLD_NAME
+			),
 			'value' => adzworld_network_enabled() ? __( 'Connected', 'adz-world' ) : __( 'Off', 'adz-world' ),
 			'text'  => __( 'Optional shared adz service. Local adz continue to work while it is off.', 'adz-world' ),
 			'tab'   => 'networks',
@@ -210,7 +214,13 @@ function adzworld_desk_dashboard() {
 	);
 
 	echo '<div class="adzworld-desk-intro"><h2>' . esc_html__( 'Monetization and delivery', 'adz-world' ) . '</h2>';
-	echo '<p>' . esc_html__( 'Direct affiliate and ad-network connections use the site owner’s own account identifiers. Those providers attribute revenue and pay the site owner under their existing agreements. The optional adz-world service is separate and remains off until explicitly connected.', 'adz-world' ) . '</p></div>';
+	echo '<p>' . esc_html(
+		sprintf(
+			/* translators: %s: product name. */
+			__( 'Direct affiliate and ad-network connections use the site owner’s own account identifiers. Those providers attribute revenue and pay the site owner under their existing agreements. The optional %s service is separate and remains off until explicitly connected.', 'adz-world' ),
+			ADZWORLD_NAME
+		)
+	) . '</p></div>';
 	echo '<div class="adzworld-desk-grid">';
 	foreach ( $cards as $card ) {
 		echo '<section class="adzworld-desk-card"><h3>' . esc_html( $card['label'] ) . '</h3><strong>' . esc_html( $card['value'] ) . '</strong><p>' . esc_html( $card['text'] ) . '</p><a class="button" href="' . esc_url( adzworld_desk_url( $card['tab'] ) ) . '">' . esc_html__( 'Open', 'adz-world' ) . '</a></section>';
@@ -228,8 +238,14 @@ function adzworld_desk_page() {
 		wp_die( esc_html__( 'Administrator permission is required.', 'adz-world' ), '', array( 'response' => 403 ) );
 	}
 	$current = adzworld_desk_tab();
-	echo '<div class="wrap adzworld-admin"><h1 class="adzworld-settings-title">' . esc_html__( 'Adz.world', 'adz-world' ) . ' <span class="adzworld-settings-version">v' . esc_html( ADZWORLD_VERSION ) . '</span></h1>';
-	echo '<nav class="nav-tab-wrapper adzworld-settings-tabs" aria-label="' . esc_attr__( 'Adz.world tabs', 'adz-world' ) . '">';
+	echo '<div class="wrap adzworld-admin"><h1 class="adzworld-settings-title">' . esc_html( ADZWORLD_NAME ) . ' <span class="adzworld-settings-version">v' . esc_html( ADZWORLD_VERSION ) . '</span></h1>';
+	echo '<nav class="nav-tab-wrapper adzworld-settings-tabs" aria-label="' . esc_attr(
+		sprintf(
+			/* translators: %s: product name. */
+			__( '%s tabs', 'adz-world' ),
+			ADZWORLD_NAME
+		)
+	) . '">';
 	foreach ( adzworld_desk_tabs() as $id => $label ) {
 		$url   = adzworld_desk_url( $id );
 		$class = 'nav-tab' . ( $current === $id ? ' nav-tab-active' : '' );

@@ -1,0 +1,73 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/theme.json",
+	"version": 3,
+	"title": "Hairline",
+	"description": "One stroke, repeated. The whole design is built from a ramp of rule weights at 1, 2, 3, 5 and 7 pixels, layered as concentric frames. Every one of those shadows has a zero blur radius, so the compositor fills a plain rectangle instead of rasterising a blur: the effect costs less than a single soft shadow would. No web font is requested, no image is loaded, and there is exactly one colour. The character is precision rather than pigment.",
+	"settings": {
+		"color": {
+			"palette": [
+				{ "slug": "base",     "name": "Bone",   "color": "#fbfbfa" },
+				{ "slug": "contrast", "name": "Ink",    "color": "#101112" },
+				{ "slug": "surface",  "name": "White",  "color": "#ffffff" },
+				{ "slug": "accent-1", "name": "Signal", "color": "#1b48ff" },
+				{ "slug": "accent-2", "name": "Graphite", "color": "#6b7076" }
+			],
+			"gradients": [
+				{
+					"slug": "signal-fade",
+					"name": "Signal fade",
+					"gradient": "linear-gradient(135deg, #1b48ff 0%, color-mix(in oklab, #1b48ff 30%, transparent) 100%)"
+				}
+			]
+		},
+		"typography": {
+			"fontFamilies": [
+				{
+					"slug": "sans",
+					"name": "System",
+					"fontFamily": "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+				},
+				{
+					"slug": "mono",
+					"name": "System mono",
+					"fontFamily": "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace"
+				}
+			]
+		},
+		"custom": {
+			"adz": {
+				"surface": "var(--wp--preset--color--surface)",
+				"line": "color-mix(in oklab, var(--wp--preset--color--contrast) 20%, transparent)",
+				"textQuiet": "var(--wp--preset--color--accent-2)",
+				"focus": "var(--wp--preset--color--accent-1)",
+				"rule": "color-mix(in oklab, var(--wp--preset--color--contrast) 9%, transparent)",
+				"ruleGap": "8px",
+				"strokeInner": "var(--wp--preset--color--contrast)",
+				"strokeMid": "color-mix(in oklab, var(--wp--preset--color--contrast) 26%, transparent)",
+				"strokeOuter": "color-mix(in oklab, var(--wp--preset--color--contrast) 9%, transparent)",
+				"ambience": "none",
+				"grainOpacity": "0",
+				"grainBlend": "normal",
+				"edge": "linear-gradient(var(--wp--custom--adz--line), var(--wp--custom--adz--line))",
+				"sheen": "none",
+				"lift": "none"
+			}
+		}
+	},
+	"styles": {
+		"color": {
+			"background": "var(--wp--preset--color--base)",
+			"text": "var(--wp--preset--color--contrast)"
+		},
+		"elements": {
+			"heading": { "typography": { "fontWeight": "700", "letterSpacing": "-0.035em" } },
+			"link": { "color": { "text": "var(--wp--preset--color--accent-1)" } },
+			"button": {
+				"color": {
+					"background": "var(--wp--preset--color--contrast)",
+					"text": "var(--wp--preset--color--base)"
+				}
+			}
+		}
+	}
+}

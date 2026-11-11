@@ -23,7 +23,7 @@ function adzworld_affiliate_networks() {
 	return array(
 		'amazon'    => array(
 			'label'   => 'Amazon Associates',
-			'account' => 'https://affiliate-program.amazon.com',
+			'account' => 'https://associates.amazon.com/signup',
 			'note'    => __( 'The tracking id is the tag on an Associates link, for example sitename-20. The search uses Amazon’s k parameter. One tag works only on the marketplace where it was issued.', 'adz-world' ),
 			'fields'  => array(
 				'tag'  => array(
@@ -61,7 +61,7 @@ function adzworld_affiliate_networks() {
 		),
 		'walmart'   => array(
 			'label'   => 'Walmart Affiliates',
-			'account' => 'https://affiliates.walmart.com',
+			'account' => 'https://app.impact.com/login.user',
 			'note'    => __( 'Walmart’s June 2026 agreement uses Impact. Create one tracking link in Impact and copy the three numbers from /c/PARTNER/AD/PROGRAM. The destination is the Walmart search for this request.', 'adz-world' ),
 			'fields'  => array(
 				'partner' => array(
@@ -80,7 +80,7 @@ function adzworld_affiliate_networks() {
 		),
 		'awin'      => array(
 			'label'   => 'Awin',
-			'account' => 'https://ui.awin.com',
+			'account' => 'https://www.awin.com/us/publishers',
 			'note'    => __( 'ShareASale closed on 6 October 2025 and its publishers moved to Awin. Existing ShareASale links were kept. A new link is Awin’s cread.php deep link. The destination must be that advertiser’s own search URL and must contain {query}.', 'adz-world' ),
 			'fields'  => array(
 				'publisher'   => array(
@@ -99,7 +99,7 @@ function adzworld_affiliate_networks() {
 		),
 		'cj'        => array(
 			'label'   => 'CJ Affiliate',
-			'account' => 'https://www.cj.com',
+			'account' => 'https://signup.cj.com/member/signup/publisher/',
 			'note'    => __( 'Use the publisher website id and link id from a CJ deep link, which has the form click-PID-AID. The destination must be that advertiser’s own search URL and must contain {query}.', 'adz-world' ),
 			'fields'  => array(
 				'pid'         => array(
@@ -128,7 +128,7 @@ function adzworld_affiliate_networks() {
 		),
 		'rakuten'   => array(
 			'label'   => 'Rakuten Advertising',
-			'account' => 'https://rakutenadvertising.com',
+			'account' => 'https://rakutenadvertising.com/',
 			'note'    => __( 'The deep link is click.linksynergy.com. id is the publisher site id and mid is the advertiser. The destination must contain {query}.', 'adz-world' ),
 			'fields'  => array(
 				'id'          => array(
@@ -147,7 +147,7 @@ function adzworld_affiliate_networks() {
 		),
 		'clickbank' => array(
 			'label'   => 'ClickBank',
-			'account' => 'https://accounts.clickbank.com',
+			'account' => 'https://accounts.clickbank.com/master/makebank.html',
 			'note'    => __( 'ClickBank is a marketplace of single products rather than a searchable catalogue, so a HopLink points at one vendor\'s page and is not built from what a visitor asked for. Enter your account nickname and the vendor nickname of the product you promote. The tracking id is optional and is yours: it is sent to ClickBank exactly as typed, and nothing a visitor entered is ever added to it.', 'adz-world' ),
 			'fields'  => array(
 				'nickname' => array(
@@ -166,7 +166,7 @@ function adzworld_affiliate_networks() {
 		),
 		'ebay'      => array(
 			'label'   => 'eBay Partner Network',
-			'account' => 'https://partnernetwork.ebay.com',
+			'account' => 'https://partnernetwork.ebay.com/',
 			'note'    => __( 'campid is the EPN campaign id. The US rotation id 711-53200-19255-0 and site id 0 are the values in eBay’s link-parameter article for ebay.com. For another marketplace, paste the rotation id and site id from that article. toolid 10001 is eBay’s custom-link tool.', 'adz-world' ),
 			'fields'  => array(
 				'campid' => array(
@@ -457,8 +457,17 @@ function adzworld_affiliate_page( $embedded = false ) {
 		delete_transient( $notice );
 		echo '<div class="notice notice-success"><p>' . esc_html__( 'Affiliate attribution saved.', 'adz-world' ) . '</p></div>';
 	}
+	if ( ! $embedded && function_exists( 'adzworld_registration_desk' ) ) {
+		adzworld_registration_desk();
+	}
 	echo '<h2>' . esc_html__( 'Affiliate programs', 'adz-world' ) . '</h2>';
-	echo '<p>' . esc_html__( 'These are your publisher identifiers. Adz adds them to eligible outbound links so the affiliate network attributes commission to your own account and pays you under that network’s terms. Adz does not receive or redistribute that direct commission.', 'adz-world' ) . '</p>';
+	echo '<p>' . esc_html(
+		sprintf(
+			/* translators: %s: product name. */
+			__( 'These are your publisher identifiers. %1$s adds them to eligible outbound links so the affiliate network attributes commission to your own account and pays you under that network’s terms. %1$s does not receive or redistribute that direct commission.', 'adz-world' ),
+			ADZWORLD_NAME
+		)
+	) . '</p>';
 	echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 	echo '<input type="hidden" name="action" value="adzworld_save_affiliates">';
 	if ( $embedded ) {
@@ -469,12 +478,18 @@ function adzworld_affiliate_page( $embedded = false ) {
 	echo '<div class="adzworld-connection-grid adzworld-affiliate-grid">';
 	foreach ( adzworld_affiliate_networks() as $id => $network ) {
 		$enabled = isset( $accounts[ $id ]['enabled'] ) ? $accounts[ $id ]['enabled'] : '0';
-		echo '<fieldset class="adzworld-connection-card"><legend>' . esc_html( $network['label'] ) . '</legend>';
+		echo '<fieldset id="adzworld-affiliate-' . esc_attr( $id ) . '" class="adzworld-connection-card"><legend>' . esc_html( $network['label'] ) . '</legend>';
 		echo '<span class="adzworld-connection-status' . ( '1' === $enabled ? ' is-enabled' : '' ) . '">' . esc_html( '1' === $enabled ? __( 'Enabled', 'adz-world' ) : __( 'Needs setup', 'adz-world' ) ) . '</span>';
-		echo '<p>' . esc_html( $network['note'] ) . '</p><ol class="adzworld-connection-steps">';
-		echo '<li><a class="button" href="' . esc_url( $network['account'] ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Create or open account', 'adz-world' ) . '</a></li>';
-		echo '<li>' . esc_html__( 'Copy the publisher identifiers assigned by the program.', 'adz-world' ) . '</li>';
-		echo '<li>' . esc_html__( 'Save the identifiers and enable attributed links.', 'adz-world' ) . '</li></ol>';
+		echo '<p>' . esc_html( $network['note'] ) . '</p>';
+		if ( function_exists( 'adzworld_registration_has' ) && adzworld_registration_has( $id ) ) {
+			$procedure_tab = ( ! $embedded && function_exists( 'adzworld_desk_tab' ) && 'affiliates' === adzworld_desk_tab() ) ? 'affiliates' : 'networks';
+			echo '<p class="adzworld-pay-actions">';
+			adzworld_registration_render_signup( $id, false );
+			echo ' <a href="' . esc_url( adzworld_desk_url( $procedure_tab ) . '#adzworld-pay-' . rawurlencode( $id ) ) . '">' . esc_html__( 'Registration procedure', 'adz-world' ) . '</a></p>';
+			adzworld_registration_render_steps( $id );
+		} else {
+			echo '<p><a class="button" href="' . esc_url( $network['account'] ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Create or open account', 'adz-world' ) . '</a></p>';
+		}
 		foreach ( $network['fields'] as $field => $rule ) {
 			$value = isset( $accounts[ $id ][ $field ] ) ? $accounts[ $id ][ $field ] : '';
 			$input = 'adzworld_affiliate_' . $id . '_' . $field;

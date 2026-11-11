@@ -664,7 +664,7 @@ function adzworld_ajax_refine() {
 		wp_send_json_success(
 			array(
 				'count'   => $count,
-				'message' => __( 'Adz slot added.', 'adz-world' ),
+				'message' => __( 'adz slot added.', 'adz-world' ),
 			)
 		);
 	}
@@ -700,7 +700,7 @@ function adzworld_ajax_refine() {
 			if ( ! in_array( $pair, $pref['category_refinements'], true ) ) {
 				$pref['category_refinements'][] = $pair;
 			}
-			$message = __( 'Adz refinement added.', 'adz-world' );
+			$message = __( 'adz refinement added.', 'adz-world' );
 		} elseif ( 'category' === $action ) {
 			$category = adzworld_normalize_category( $text );
 			if ( ! adzworld_valid_category( $category ) ) {

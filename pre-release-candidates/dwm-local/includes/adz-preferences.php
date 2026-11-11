@@ -848,7 +848,7 @@ function adzworld_category_refinement_preference( $pref, $category ) {
  * Exclusions are absolute: one excluded term present and the adz is never
  * shown, whatever else matches. Everything else accumulates.
  *
- * @param int   $ad_id Adz post ID.
+ * @param int   $ad_id adz post ID.
  * @param array $pref  Preference.
  * @return int Score, or -1 when the adz is excluded outright.
  */
@@ -977,7 +977,7 @@ function adzworld_flush_ad_pool() {
  *
  * @param array $pref  Preference.
  * @param int   $limit How many to return.
- * @return int[] Adz post IDs.
+ * @return int[] adz post IDs.
  */
 function adzworld_match_adz( $pref, $limit = 5 ) {
 	$scored  = array();

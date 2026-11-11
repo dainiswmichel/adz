@@ -14,22 +14,30 @@ if ( ! defined( 'ABSPATH' ) ) {
 function adzworld_ad_post_type_pub() {
 
 	$labels = array(
-		'name'                  => _x( 'Adz.world', 'Post Type General Name', 'adz-world' ),
-		'singular_name'         => _x( 'Adz.world', 'Post Type Singular Name', 'adz-world' ),
-		'menu_name'             => __( 'Adz.world', 'adz-world' ),
-		'name_admin_bar'        => __( 'Adz.world', 'adz-world' ),
-		'archives'              => __( 'Adz.world Archives', 'adz-world' ),
-		'attributes'            => __( 'TV Station Ad Attributes', 'adz-world' ),
+		'name'                  => ADZWORLD_NAME,
+		'singular_name'         => ADZWORLD_NAME,
+		'menu_name'             => ADZWORLD_NAME,
+		'name_admin_bar'        => ADZWORLD_NAME,
+		'archives'              => sprintf(
+			/* translators: %s: product name. */
+			__( '%s Archives', 'adz-world' ),
+			ADZWORLD_NAME
+		),
+		'attributes'            => __( 'adz attributes', 'adz-world' ),
 		'parent_item_colon'     => __( 'Parent Item:', 'adz-world' ),
-		'all_items'             => __( 'All Adz', 'adz-world' ),
-		'add_new_item'          => __( 'Add New Ad', 'adz-world' ),
-		'add_new'               => __( 'Add New Adz', 'adz-world' ),
-		'new_item'              => __( 'New Ad', 'adz-world' ),
-		'edit_item'             => __( 'Edit Ad', 'adz-world' ),
-		'update_item'           => __( 'Update Ad', 'adz-world' ),
-		'view_item'             => __( 'View Ad', 'adz-world' ),
-		'view_items'            => __( 'View Ad', 'adz-world' ),
-		'search_items'          => __( 'Search Adz.world', 'adz-world' ),
+		'all_items'             => __( 'All adz', 'adz-world' ),
+		'add_new_item'          => __( 'Add new adz', 'adz-world' ),
+		'add_new'               => __( 'Add new adz', 'adz-world' ),
+		'new_item'              => __( 'New adz', 'adz-world' ),
+		'edit_item'             => __( 'Edit adz', 'adz-world' ),
+		'update_item'           => __( 'Update adz', 'adz-world' ),
+		'view_item'             => __( 'View adz', 'adz-world' ),
+		'view_items'            => __( 'View adz', 'adz-world' ),
+		'search_items'          => sprintf(
+			/* translators: %s: product name. */
+			__( 'Search %s', 'adz-world' ),
+			ADZWORLD_NAME
+		),
 		'not_found'             => __( 'Not found', 'adz-world' ),
 		'not_found_in_trash'    => __( 'Not found in Trash', 'adz-world' ),
 		'featured_image'        => __( 'Featured Image', 'adz-world' ),
@@ -37,14 +45,26 @@ function adzworld_ad_post_type_pub() {
 		'remove_featured_image' => __( 'Remove featured image', 'adz-world' ),
 		'use_featured_image'    => __( 'Use as featured image', 'adz-world' ),
 		'insert_into_item'      => __( 'Insert into item', 'adz-world' ),
-		'uploaded_to_this_item' => __( 'Uploaded to this Ad', 'adz-world' ),
-		'items_list'            => __( 'Adz.world list', 'adz-world' ),
-		'items_list_navigation' => __( 'Adz.world list navigation', 'adz-world' ),
-		'filter_items_list'     => __( 'Filter ads list', 'adz-world' ),
+		'uploaded_to_this_item' => __( 'Uploaded to this adz', 'adz-world' ),
+		'items_list'            => sprintf(
+			/* translators: %s: product name. */
+			__( '%s list', 'adz-world' ),
+			ADZWORLD_NAME
+		),
+		'items_list_navigation' => sprintf(
+			/* translators: %s: product name. */
+			__( '%s list navigation', 'adz-world' ),
+			ADZWORLD_NAME
+		),
+		'filter_items_list'     => __( 'Filter adz list', 'adz-world' ),
 	);
 	$args   = array(
-		'label'               => __( 'Adz.world', 'adz-world' ),
-		'description'         => __( 'Adz.world to serve up to network', 'adz-world' ),
+		'label'               => ADZWORLD_NAME,
+		'description'         => sprintf(
+			/* translators: %s: product name. */
+			__( '%s to serve up to network', 'adz-world' ),
+			ADZWORLD_NAME
+		),
 		'labels'              => $labels,
 		'supports'            => array( 'title', 'excrpt', 'editor', 'custom-fields' ),
 		'hierarchical'        => false,
@@ -364,7 +384,14 @@ add_action( 'media_buttons', 'adzworld_iframe_button', 11 );
  * Register the template settings screen.
  */
 function adzworld_templates_setting_menu() {
-	add_submenu_page( 'edit.php?post_type=adz_ad', 'Adz Template Settings', 'Adz Template Settings', 'manage_options', 'adz-template-setting', 'adzworld_template_setting' );
+	add_submenu_page(
+		'edit.php?post_type=adz_ad',
+		__( 'adz template settings', 'adz-world' ),
+		__( 'adz template settings', 'adz-world' ),
+		'manage_options',
+		'adz-template-setting',
+		'adzworld_template_setting'
+	);
 }
 add_action( 'admin_menu', 'adzworld_templates_setting_menu', 11 );
 
@@ -419,8 +446,8 @@ function adzworld_template_setting() {
 	}
 	echo '<form method="post" action="">';
 	wp_nonce_field( 'adzworld_template_save', 'adzworld_template_nonce' );
-	echo ' <h3>Edit your Adz template header and footer text here.</h3>';
-	echo '<label>Select Adz Template</label><br>';
+	echo '<h3>' . esc_html__( 'Edit your adz template header and footer text here.', 'adz-world' ) . '</h3>';
+	echo '<label>' . esc_html__( 'Select adz template', 'adz-world' ) . '</label><br>';
 
 	echo "<select name='adz_template' id='adz_template_list'>";
 	echo "<option value=''>Select Template</option>";

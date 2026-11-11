@@ -132,7 +132,7 @@ function adzworld_fetch_statement() {
 		return new WP_Error( 'adzworld_not_connected', __( 'Earnings are not connected. No balance or payout is available from this installation.', 'adz-world' ) );
 	}
 	$response = wp_safe_remote_get(
-		'https://adz-world.com/wp-json/adz-world/v1/earnings',
+		adzworld_home_url( 'wp-json/adz-world/v1/earnings' ),
 		array(
 			'timeout'             => 15,
 			'redirection'         => 0,
@@ -180,8 +180,20 @@ function adzworld_donation_url() {
  * @return void
  */
 function adzworld_support_panel() {
-	echo '<section class="card adzworld-support-card"><h2>' . esc_html__( 'Support adz.world', 'adz-world' ) . '</h2>';
-	echo '<p>' . esc_html__( 'adz.world is free software. If it helps your site, a small voluntary contribution supports continued maintenance and WordPress.org updates.', 'adz-world' ) . '</p>';
+	echo '<section class="card adzworld-support-card"><h2>' . esc_html(
+		sprintf(
+			/* translators: %s: product name. */
+			__( 'Support %s', 'adz-world' ),
+			ADZWORLD_NAME
+		)
+	) . '</h2>';
+	echo '<p>' . esc_html(
+		sprintf(
+			/* translators: %s: product name. */
+			__( '%s is free software. If it helps your site, a small voluntary contribution supports continued maintenance and WordPress.org updates.', 'adz-world' ),
+			ADZWORLD_NAME
+		)
+	) . '</p>';
 	echo '<p><a class="button button-primary" href="' . esc_url( adzworld_donation_url() ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Buy Dainis a coffee', 'adz-world' ) . '</a></p></section>';
 }
 
@@ -226,7 +238,17 @@ function adzworld_earnings_page() {
 	?>
 	<div class="wrap adzworld-desk adzworld-earnings">
 		<h1><?php esc_html_e( 'Earnings', 'adz-world' ); ?></h1>
-		<p><?php esc_html_e( 'Choose established earning methods that pay the site owner through accounts the site owner already controls. adz.world does not create a new payment network.', 'adz-world' ); ?></p>
+		<p>
+		<?php
+		echo esc_html(
+			sprintf(
+				/* translators: %s: product name. */
+				__( 'Choose established earning methods that pay the site owner through accounts the site owner already controls. %s does not create a new payment network.', 'adz-world' ),
+				ADZWORLD_NAME
+			)
+		);
+		?>
+		</p>
 		<?php if ( $notice ) : ?>
 			<div class="notice notice-info"><p><?php echo esc_html( $notice ); ?></p></div>
 		<?php endif; ?>
@@ -257,16 +279,57 @@ function adzworld_earnings_page() {
 		</div>
 		<?php adzworld_support_panel(); ?>
 		<section class="adzworld-desk-section adzworld-service-statements">
-			<h2><?php esc_html_e( 'Optional adz-world service statements', 'adz-world' ); ?></h2>
-			<p><?php esc_html_e( 'For the optional adz-world monetization service, adz-world retains 10% of settled affiliate commissions and the publisher receives 90%. This is not a percentage of product sales. Statements are authoritative only at adz-world.com.', 'adz-world' ); ?></p>
-			<p><?php esc_html_e( 'Service ads use adz-world affiliate or referral codes only with publisher consent. Existing publisher links are not rewritten. This connection retrieves read-only statements and does not initiate a payment.', 'adz-world' ); ?></p>
+			<h2>
+			<?php
+			echo esc_html(
+				sprintf(
+					/* translators: %s: product name. */
+					__( 'Optional %s service statements', 'adz-world' ),
+					ADZWORLD_NAME
+				)
+			);
+			?>
+			</h2>
+			<p>
+			<?php
+			echo esc_html(
+				sprintf(
+					/* translators: 1: product name, 2: public site host. */
+					__( 'For the optional %1$s monetization service, %1$s retains 10%% of settled affiliate commissions and the publisher receives 90%%. This is not a percentage of product sales. Statements are authoritative only at %2$s.', 'adz-world' ),
+					ADZWORLD_NAME,
+					adzworld_home_host()
+				)
+			);
+			?>
+			</p>
+			<p>
+			<?php
+			echo esc_html(
+				sprintf(
+					/* translators: %s: product name. */
+					__( 'Service ads use %s affiliate or referral codes only with publisher consent. Existing publisher links are not rewritten. This connection retrieves read-only statements and does not initiate a payment.', 'adz-world' ),
+					ADZWORLD_NAME
+				)
+			);
+			?>
+			</p>
 		<?php if ( empty( $options['consent'] ) ) : ?>
 			<p><?php esc_html_e( 'Not connected. The settlement service and account provisioning must be operational before this connection can return statements. No earnings are assumed to be zero.', 'adz-world' ); ?></p>
 			<form method="post">
 				<?php wp_nonce_field( 'adzworld_earnings' ); ?>
 				<p><label><?php esc_html_e( 'Publisher ID', 'adz-world' ); ?> <input name="publisher_id" required maxlength="100"></label></p>
 				<p><label><?php esc_html_e( 'Read-only statement token', 'adz-world' ); ?> <input type="password" name="statement_token" required autocomplete="off"></label></p>
-				<p><label><input type="checkbox" name="earnings_consent" value="1" required> <?php esc_html_e( 'I authorize requests to adz-world.com to retrieve my publisher earnings statement. Requests send the read-only token and reveal this server’s IP address. This does not enable visitor tracking or authorize payouts.', 'adz-world' ); ?></label></p>
+				<p><label><input type="checkbox" name="earnings_consent" value="1" required>
+				<?php
+				echo esc_html(
+					sprintf(
+						/* translators: %s: public site host. */
+						__( 'I authorize requests to %s to retrieve my publisher earnings statement. Requests send the read-only token and reveal this server’s IP address. This does not enable visitor tracking or authorize payouts.', 'adz-world' ),
+						adzworld_home_host()
+					)
+				);
+				?>
+				</label></p>
 				<button class="button" name="adzworld_earnings_action" value="connect"><?php esc_html_e( 'Save connection', 'adz-world' ); ?></button>
 			</form>
 		<?php else : ?>
@@ -283,7 +346,11 @@ function adzworld_earnings_page() {
 				'estimated_minor' => __( 'Estimated / not settled', 'adz-world' ),
 				'settled_minor'   => __( 'Net settled commission', 'adz-world' ),
 				'reversed_minor'  => __( 'Reversals already deducted', 'adz-world' ),
-				'service_minor'   => __( 'adz-world share', 'adz-world' ),
+				'service_minor'   => sprintf(
+					/* translators: %s: product name. */
+					__( '%s share', 'adz-world' ),
+					ADZWORLD_NAME
+				),
 				'publisher_minor' => __( 'Publisher share', 'adz-world' ),
 				'available_minor' => __( 'Available / negative adjustment', 'adz-world' ),
 				'reserved_minor'  => __( 'Reserved / in flight', 'adz-world' ),

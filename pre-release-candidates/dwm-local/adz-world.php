@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: adz.world
+ * Plugin Name: adz-world
  * Description: Run your website like a TV station by requiring adz views in exchange for access to content.
  * Version: 1.0.9
  * Author: dainismichel
@@ -18,8 +18,59 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 define( 'ADZWORLD_VERSION', '1.0.9' );
+
+/**
+ * Product name and public site.
+ *
+ * A rename edits the Plugin Name header and ADZWORLD_HOME. Screens and links
+ * read those two values. Translation calls keep the literal text domain
+ * adz-world, which is this plugin's WordPress.org identity.
+ */
+$adzworld_plugin_header = get_file_data(
+	__FILE__,
+	array(
+		'Name' => 'Plugin Name',
+	),
+	'plugin'
+);
+$adzworld_plugin_name   = '';
+if ( isset( $adzworld_plugin_header['Name'] ) && is_string( $adzworld_plugin_header['Name'] ) ) {
+	$adzworld_plugin_name = $adzworld_plugin_header['Name'];
+}
+if ( '' === $adzworld_plugin_name ) {
+	$adzworld_plugin_name = 'adz-world';
+}
+define( 'ADZWORLD_NAME', $adzworld_plugin_name );
+define( 'ADZWORLD_HOME', 'https://adz-world.com' );
+unset( $adzworld_plugin_header, $adzworld_plugin_name );
+
+/**
+ * Address on the public site.
+ *
+ * @param string $path Path after the site address. Empty returns the address with a trailing slash.
+ * @return string
+ */
+function adzworld_home_url( $path = '' ) {
+	$home = untrailingslashit( ADZWORLD_HOME );
+	$path = ltrim( (string) $path, '/' );
+	if ( '' === $path ) {
+		return $home . '/';
+	}
+	return $home . '/' . $path;
+}
+
+/**
+ * Host of the public site.
+ *
+ * @return string
+ */
+function adzworld_home_host() {
+	$host = wp_parse_url( ADZWORLD_HOME, PHP_URL_HOST );
+	return is_string( $host ) ? $host : '';
+}
+
 global $adzworld_network_base_url;
-$adzworld_network_base_url = 'https://adz-world.com/';
+$adzworld_network_base_url = adzworld_home_url();
 require_once __DIR__ . '/vendor/eof/eof.php';
 require_once __DIR__ . '/vendor/eof/core/class-eof-field.php';
 require_once __DIR__ . '/vendor/eof/adz-config.php';
@@ -36,6 +87,7 @@ require_once __DIR__ . '/includes/adz-preference-ui.php';
 require_once __DIR__ . '/includes/adzworld-feedback.php';
 require_once __DIR__ . '/includes/adzworld-affiliates.php';
 require_once __DIR__ . '/includes/adzworld-networks.php';
+require_once __DIR__ . '/includes/adzworld-registrations.php';
 require_once __DIR__ . '/includes/adzworld-desk.php';
 require_once __DIR__ . '/includes/adzworld-rotation.php';
 require_once __DIR__ . '/includes/adzworld-starter.php';

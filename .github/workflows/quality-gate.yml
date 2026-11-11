@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'pre-release-candidates/dwm-local/**'
+      - 'pre-release-candidates/site-theme/adz-world-2026/**'
       - 'tools/**'
       - 'phpcs.xml.dist'
       - '.github/scripts/check-version.sh'
@@ -12,6 +13,7 @@ on:
   pull_request:
     paths:
       - 'pre-release-candidates/dwm-local/**'
+      - 'pre-release-candidates/site-theme/adz-world-2026/**'
       - 'tools/**'
       - 'phpcs.xml.dist'
       - '.github/scripts/check-version.sh'
@@ -50,22 +52,35 @@ jobs:
 
       - name: Lint every production PHP file
         run: |
-          find pre-release-candidates/dwm-local -name '*.php' -print0 \
+          find pre-release-candidates/dwm-local \
+            pre-release-candidates/site-theme/adz-world-2026 \
+            -name '*.php' -print0 \
             | xargs -0 -n1 php -l > /dev/null
 
       - name: Parse every production JavaScript file
         run: |
-          find pre-release-candidates/dwm-local -name '*.js' -print0 \
+          find pre-release-candidates/dwm-local \
+            pre-release-candidates/site-theme/adz-world-2026 \
+            -name '*.js' -print0 \
             | xargs -0 -n1 node --check
 
+      - name: Parse every production JSON file
+        run: |
+          find pre-release-candidates/site-theme/adz-world-2026 -name '*.json' -print0 \
+            | xargs -0 -n1 php -r 'json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR);'
+
       - name: Run full WPCS
-        run: ~/.composer/vendor/bin/phpcs --standard=phpcs.xml.dist pre-release-candidates/dwm-local
+        run: |
+          ~/.composer/vendor/bin/phpcs --standard=phpcs.xml.dist \
+            pre-release-candidates/dwm-local \
+            pre-release-candidates/site-theme/adz-world-2026
 
       - name: Enforce WordPress.org release invariants
         shell: bash
         run: |
           set -euo pipefail
           BUILD=pre-release-candidates/dwm-local
+          THEME=pre-release-candidates/site-theme/adz-world-2026
 
           if grep -RInE --include='*.php' --include='*.js' \
             'style=|<style|wp_add_inline_style|\.style[[:space:]]*=' "$BUILD"; then
@@ -76,6 +91,18 @@ jobs:
           if grep -RInE --include='*.php' \
             'phpcs:(ignore|disable)|@codingStandardsIgnore' "$BUILD"; then
             echo 'Suppressed coding-standard diagnostics are forbidden in the release.' >&2
+            exit 1
+          fi
+
+          if grep -RInE --include='*.php' --include='*.js' --include='*.html' \
+            'style=|<style|wp_add_inline_style|\.style[[:space:]]*=' "$THEME"; then
+            echo 'Inline or runtime styling is forbidden in the production theme.' >&2
+            exit 1
+          fi
+
+          if grep -RInE --include='*.php' \
+            'phpcs:(ignore|disable)|@codingStandardsIgnore' "$THEME"; then
+            echo 'Suppressed coding-standard diagnostics are forbidden in the production theme.' >&2
             exit 1
           fi
 
@@ -101,6 +128,12 @@ jobs:
             --include='*.txt' --include='*.md' --include='*.html' --include='*.pot' \
             --include='*.po' '[[:blank:]]+$' "$BUILD"; then
             echo 'Trailing whitespace is forbidden in the production tree.' >&2
+            exit 1
+          fi
+
+          if grep -RInE --include='*.php' --include='*.js' --include='*.css' \
+            --include='*.json' --include='*.html' '[[:blank:]]+$' "$THEME"; then
+            echo 'Trailing whitespace is forbidden in the production theme.' >&2
             exit 1
           fi
 

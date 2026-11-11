@@ -227,7 +227,7 @@ function adzworld_create_showcase() {
 
 	$page_id = wp_insert_post(
 		array(
-			'post_title'   => __( 'Adz display formats', 'adz-world' ),
+			'post_title'   => __( 'adz display formats', 'adz-world' ),
 			'post_name'    => 'adz-display-formats',
 			'post_content' => adzworld_showcase_content( $rotation_key ),
 			'post_status'  => 'draft',

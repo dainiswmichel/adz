@@ -1,0 +1,13 @@
+/*
+Theme Name: adz.world 2026
+Theme URI: https://adz-world.com/
+Description: The adz.world presentation theme. A child of Twenty Twenty-Five carrying three style variations -- Midnight, Atelier and Hairline -- selectable in Appearance > Editor > Styles. Every colour, gradient and stroke is declared in theme.json and reaches the page as a CSS custom property, so no style is written inline and a variation can be switched without touching markup.
+Author: dainismichel
+Template: twentytwentyfive
+Version: 1.0.1
+License: GPLv3
+License URI: https://www.gnu.org/licenses/gpl-3.0.html
+Text Domain: adz-world
+Requires at least: 6.7
+Requires PHP: 7.4
+*/

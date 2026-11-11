@@ -192,6 +192,33 @@
 	padding-top: 10px;
 }
 
+.adzworld-network-add {
+	align-items: end;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	margin: 12px 0 18px;
+}
+
+.adzworld-network-add p {
+	margin: 0;
+}
+
+.adzworld-network-add select {
+	min-width: 280px;
+}
+
+.adzworld-network-param {
+	display: grid;
+	gap: 8px;
+	grid-template-columns: minmax(140px, 220px) minmax(180px, 1fr);
+	margin: 0 0 8px;
+}
+
+.adzworld-network-param p {
+	margin: 0;
+}
+
 .adzworld-managed-card h4 {
 	font-size: 17px;
 	margin: 0 0 8px;
@@ -229,11 +256,111 @@
 	margin-top: 0;
 }
 
+.adzworld-pay {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	margin: 8px 0 28px;
+	max-width: 1200px;
+	padding: 4px 18px 18px;
+}
+
+.adzworld-pay-progress {
+	font-weight: 600;
+	margin: 0 0 8px;
+}
+
+.adzworld-pay-list {
+	display: grid;
+	gap: 10px;
+}
+
+.adzworld-pay-account {
+	border: 1px solid #dcdcde;
+	border-radius: 3px;
+	padding: 12px 14px;
+	scroll-margin-top: 48px;
+}
+
+.adzworld-pay-account.is-ready {
+	background: #f6fbf7;
+	border-color: #b8e0c2;
+}
+
+.adzworld-pay-head {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 12px;
+}
+
+.adzworld-pay-head h3 {
+	flex: 1 1 180px;
+	font-size: 15px;
+	margin: 0;
+}
+
+.adzworld-pay-pays {
+	color: #50575e;
+	flex: 1 1 240px;
+	margin: 0;
+}
+
+.adzworld-pay-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 10px 0;
+}
+
+.adzworld-pay-actions .button {
+	margin: 0;
+}
+
+.adzworld-pay-account summary {
+	color: #2271b1;
+	cursor: pointer;
+	font-weight: 600;
+	width: fit-content;
+}
+
+.adzworld-pay-account summary:focus {
+	box-shadow: 0 0 0 1px #2271b1;
+	outline: 2px solid transparent;
+}
+
+.adzworld-pay-steps {
+	margin: 8px 0 0 20px;
+}
+
+.adzworld-pay-steps li {
+	margin: 0 0 8px;
+}
+
+#adzworld-add-preset,
+.adzworld-connection-card {
+	scroll-margin-top: 48px;
+}
+
 @media screen and (max-width: 782px) {
 	.adzworld-connection-grid,
 	.adzworld-managed-grid,
-	.adzworld-provider-fields {
+	.adzworld-provider-fields,
+	.adzworld-network-param {
 		grid-template-columns: 1fr;
+	}
+
+	.adzworld-network-add {
+		display: block;
+	}
+
+	.adzworld-network-add select,
+	.adzworld-network-param input {
+		max-width: 100%;
+		width: 100%;
+	}
+
+	.adzworld-pay-head {
+		align-items: flex-start;
 	}
 }
 

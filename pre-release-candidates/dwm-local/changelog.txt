@@ -1,8 +1,8 @@
-=== adz.world plugin changelog ===
+=== adz-world plugin changelog ===
 
 
-== adz.world plugin basic information ==
-Plugin Name: adz.world
+== adz-world plugin basic information ==
+Plugin Name: adz-world
 Author: www.dainiswmichel.com
 Tested starting with: Wordpress Version 4.9.6
 Tested through: Wordpress Version 4.9.6
@@ -91,4 +91,4 @@ date format example: 2018-06m-11d-01
 date format explanation: yyyy-mm(+letter “m” to indicate month)-dd(+letter “d” to indicate day)-incremental integer
 
 Free: Free version available at wordpress.org
-Premium: Premium version available at www.adz.world
+Premium: Premium version available at https://adz-world.com

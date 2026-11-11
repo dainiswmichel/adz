@@ -1,4 +1,4 @@
-==== adz.world development team ====
+==== adz-world development team ====
     Product Manager: dainis w michel
     Location: Vienna, Austria
     URL: www.dainiswmichel.com
