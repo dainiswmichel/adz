@@ -1,0 +1,115 @@
+<?php
+/**
+ * Legacy plugin and settings-framework support.
+ *
+ * @package adz-world
+ */
+
+// Exit if accessed directly.
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+if ( ! class_exists( 'EOF_field' ) ) :
+	/**
+	 * EOF_field class
+	 *
+	 * Default setting field class
+	 *
+	 * @package EOF
+	 * @since 1.0.0
+	 */
+	class EOF_Field {
+
+		/**
+		 * Parent settings framework.
+		 *
+		 * @var EOF
+		 */
+		public $parent;
+
+		/**
+		 * Form option name.
+		 *
+		 * @var string
+		 */
+		public $option_name = '';
+
+		/**
+		 * Form option identifier.
+		 *
+		 * @var string
+		 */
+		public $option_id = '';
+
+		/**
+		 * Current field value.
+		 *
+		 * @var mixed
+		 */
+		public $value;
+
+		/**
+		 * Field configuration.
+		 *
+		 * @var array
+		 */
+		public $field = array();
+
+		/**
+		 * __construct
+		 *
+		 * This function will setup the field type data
+		 *
+		 * @since  1.0.0
+		 * @param array $field Field configuration.
+		 * @return void
+		 */
+		public function __construct( $field = array() ) {
+			add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueue_scripts' ) );
+			if ( isset( $field['sanitize_hook'] ) ) {
+				add_filter( $field['sanitize_hook'], array( $this, 'sanitize' ) );
+			}
+		}
+
+		/**
+		 * Enqueue scripts
+		 *
+		 * @since  1.0.0
+		 * @return void
+		 */
+		public static function admin_enqueue_scripts() {
+		}
+
+		/**
+		 * Default field value sanitize
+		 *
+		 * @since  1.0.0
+		 * @param  string $value - value to filter.
+		 * @return string        - filtered value
+		 */
+		public function sanitize( $value ) {
+
+			return $value;
+		}
+
+		/**
+		 * Beautify ID, replace '[',']' with '_'
+		 *
+		 * @since  1.0.0
+		 * @param  string $id - value to filter.
+		 * @return string     - filtered id
+		 */
+		public function beautifyid( $id ) {
+
+			$new_id = str_replace( '[]', '_', $id );
+			$new_id = str_replace( '][', '_', $new_id );
+			$new_id = str_replace( '[', '_', $new_id );
+			$new_id = str_replace( ']', '_', $new_id );
+			if ( '_' === substr( $new_id, -1 ) ) {
+				$new_id = substr( $new_id, 0, -1 );
+			}
+			return $new_id;
+		}
+	}
+endif;

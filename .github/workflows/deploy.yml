@@ -1,7 +1,12 @@
 # Deploys the plugin to the WordPress.org directory.
 #
-# Publishing a GitHub release commits adz-world-wordpress-codebase/ to SVN
-# trunk and creates the matching SVN tag. Nothing deploys on an ordinary push.
+# Publishing a GitHub release commits the production tree to SVN trunk and
+# creates the matching SVN tag. Nothing deploys on an ordinary push.
+#
+# The deploy cannot run unless the release gate passes first. The 29 September
+# 2026 review raised eleven items, three of which PHPCS cannot see at all, so a
+# clean PHPCS run is not evidence that the release is correct. The gate checks
+# each item by name against the tree that actually ships.
 #
 # Requires two repository secrets, under Settings > Secrets and variables >
 # Actions:
@@ -27,22 +32,78 @@ on:
         type: boolean
         default: true
 
+env:
+  # The one tree that is released. Candidates and ancestor/ never ship.
+  BUILD_DIR: pre-release-candidates/dwm-local
+
 jobs:
-  deploy:
-    name: Deploy to WP.org
+  gate:
+    name: Release gate
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          tools: composer
+          coverage: none
+
+      - name: Install PHP_CodeSniffer and WPCS
+        run: |
+          mkdir -p .phpcs
+          cat > .phpcs/composer.json <<'JSON'
+          {
+            "require-dev": {
+              "squizlabs/php_codesniffer": "^3.13",
+              "wp-coding-standards/wpcs": "^3.1",
+              "phpcsstandards/phpcsextra": "^1.2",
+              "phpcsstandards/phpcsutils": "^1.0"
+            },
+            "config": { "allow-plugins": { "dealerdirect/phpcodesniffer-composer-installer": true } }
+          }
+          JSON
+          composer install --working-dir=.phpcs --no-interaction
+          .phpcs/vendor/bin/phpcs --config-set installed_paths \
+            "$PWD/.phpcs/vendor/wp-coding-standards/wpcs,$PWD/.phpcs/vendor/phpcsstandards/phpcsextra,$PWD/.phpcs/vendor/phpcsstandards/phpcsutils"
+          .phpcs/vendor/bin/phpcs -i | grep -q WordPress
+
       - name: Check the version agrees everywhere
         run: ./.github/scripts/check-version.sh "${{ github.event.release.tag_name || inputs.tag }}"
 
-      - name: Lint every PHP file
+      - name: Lint every PHP file in the repository
         run: |
-          find adz-world-wordpress-codebase pre-release-candidates -name '*.php' -print0 \
+          find "$BUILD_DIR" pre-release-candidates -name '*.php' -print0 \
             | xargs -0 -n1 php -l > /dev/null
+
+      - name: Release gate
+        run: ./.github/scripts/release-gate.sh "$BUILD_DIR"
+
+  plugin-check:
+    name: WordPress Plugin Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # The directory runs Plugin Check on submission, so it runs here first.
+      - name: Plugin Check
+        uses: WordPress/plugin-check-action@v1
+        with:
+          build-dir: pre-release-candidates/dwm-local
+
+  deploy:
+    name: Deploy to WP.org
+    runs-on: ubuntu-latest
+    needs: [gate, plugin-check]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: WordPress Plugin Deploy
         uses: 10up/action-wordpress-plugin-deploy@stable
@@ -53,6 +114,5 @@ jobs:
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
           # The repository is named "adz"; the directory slug is "adz-world".
           SLUG: adz-world
-          # Only the production codebase is deployed. Candidates and ancestor never ship.
-          BUILD_DIR: adz-world-wordpress-codebase
+          BUILD_DIR: pre-release-candidates/dwm-local
           VERSION: ${{ github.event.release.tag_name || inputs.tag }}

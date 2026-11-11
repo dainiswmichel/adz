@@ -1,0 +1,25 @@
+# Files and directories excluded from the WordPress.org release payload.
+#
+# tests/ and review/ exist to verify the plugin, not to run on a publisher's
+# site. tests/ calls wp_set_current_user() to exercise capability checks, which
+# a reviewer reasonably reads as a plugin creating or logging in users when it
+# ships inside the plugin. They stay in Git and out of the ZIP.
+
+/.git
+/.github
+/.gitignore
+/.distignore
+/tests
+/review
+/node_modules
+/vendor/bin
+composer.json
+composer.lock
+package.json
+package-lock.json
+phpcs.xml
+phpcs.xml.dist
+phpunit.xml
+phpunit.xml.dist
+*.map
+.DS_Store

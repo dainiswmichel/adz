@@ -12,8 +12,11 @@
 set -euo pipefail
 
 TAG="${1:-}"
-PLUGIN_FILE="adz-world-wordpress-codebase/adz-world.php"
-README="adz-world-wordpress-codebase/readme.txt"
+# The directory that is actually released. Overridable so that the same check
+# runs against whichever tree the deploy ships.
+PLUGIN_DIR="${BUILD_DIR:-pre-release-candidates/dwm-local}"
+PLUGIN_FILE="$PLUGIN_DIR/adz-world.php"
+README="$PLUGIN_DIR/readme.txt"
 
 if [[ -z "$TAG" ]]; then
 	echo "::error::No release tag supplied."
