@@ -74,9 +74,11 @@
 		}
 	}
 
-	var known = data.variations.map( function ( variation ) {
-		return variation.slug;
-	} );
+	var known   = data.variations.map(
+		function ( variation ) {
+			return variation.slug;
+		}
+	);
 	var current = stored();
 
 	if ( current && known.indexOf( current ) === -1 ) {
@@ -84,7 +86,7 @@
 		remember( '' );
 	}
 
-	var id = 'adz-style-switcher';
+	var id    = 'adz-style-switcher';
 	var label = document.createElement( 'label' );
 
 	label.className = 'adz-switcher__label';
@@ -94,28 +96,33 @@
 	var select = document.createElement( 'select' );
 
 	select.className = 'adz-switcher__select';
-	select.id = id;
+	select.id        = id;
 
 	var fallback = document.createElement( 'option' );
 
-	fallback.value = '';
+	fallback.value       = '';
 	fallback.textContent = data.defaultLabel;
 	select.appendChild( fallback );
 
-	data.variations.forEach( function ( variation ) {
-		var option = document.createElement( 'option' );
+	data.variations.forEach(
+		function ( variation ) {
+			var option = document.createElement( 'option' );
 
-		option.value = variation.slug;
-		option.textContent = variation.title;
-		select.appendChild( option );
-	} );
+			option.value       = variation.slug;
+			option.textContent = variation.title;
+			select.appendChild( option );
+		}
+	);
 
 	select.value = current;
 
-	select.addEventListener( 'change', function () {
-		apply( select.value );
-		remember( select.value );
-	} );
+	select.addEventListener(
+		'change',
+		function () {
+			apply( select.value );
+			remember( select.value );
+		}
+	);
 
 	mount.appendChild( label );
 	mount.appendChild( select );

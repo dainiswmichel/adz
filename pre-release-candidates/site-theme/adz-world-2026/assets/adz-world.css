@@ -17,8 +17,8 @@
  */
 
 /* ==========================================================================
-   Page surface
-   ========================================================================== */
+	Page surface
+	========================================================================== */
 
 /*
  * Two very large, very dim lamps. They are gradients, not images, and they
@@ -56,8 +56,8 @@ body::after {
 }
 
 /* ==========================================================================
-   Typography
-   ========================================================================== */
+	Typography
+	========================================================================== */
 
 /*
  * Tracking is an optical correction, so it belongs to size, not to the face.
@@ -97,8 +97,8 @@ p { text-wrap: pretty; }
 }
 
 /* ==========================================================================
-   Surfaces
-   ========================================================================== */
+	Surfaces
+	========================================================================== */
 
 /*
  * A gradient border with no extra element and no pseudo-element: two
@@ -132,12 +132,12 @@ p { text-wrap: pretty; }
 }
 
 /* ==========================================================================
-   The stroke system
-   ==========================================================================
-   Concentric frames at 1 / 2 / 3 / 5 / 7px. Every shadow here has a zero blur
-   radius, so each ring is a solid rectangle the compositor fills directly --
-   no blur kernel is rasterised, at any size. This is why the effect is free.
-   A single 24px-blur shadow costs more than all five of these together. */
+	The stroke system
+	==========================================================================
+	Concentric frames at 1 / 2 / 3 / 5 / 7px. Every shadow here has a zero blur
+	radius, so each ring is a solid rectangle the compositor fills directly --
+	no blur kernel is rasterised, at any size. This is why the effect is free.
+	A single 24px-blur shadow costs more than all five of these together. */
 
 .is-style-framed {
 	box-shadow:
@@ -167,8 +167,8 @@ p { text-wrap: pretty; }
 }
 
 /* ==========================================================================
-   Controls
-   ========================================================================== */
+	Controls
+	========================================================================== */
 
 .wp-block-button__link {
 	padding-block: 0.7em;
@@ -184,7 +184,7 @@ p { text-wrap: pretty; }
 .wp-block-button__link:hover { filter: brightness(1.08); }
 
 /* Translating by a third of a pixel is below the threshold of being seen as
-   movement and above the threshold of being felt as a press. */
+	movement and above the threshold of being felt as a press. */
 .wp-block-button__link:active { transform: translateY(0.5px); }
 
 /*
@@ -198,8 +198,8 @@ p { text-wrap: pretty; }
 }
 
 /* ==========================================================================
-   Paint budget
-   ========================================================================== */
+	Paint budget
+	========================================================================== */
 
 /*
  * Sections below the fold are not painted until they approach the viewport.
@@ -235,16 +235,16 @@ p { text-wrap: pretty; }
 }
 
 /* ==========================================================================
-   The adz.world rotation
-   ==========================================================================
-   The plugin derives its own appearance from whatever surrounds it, and that
-   path is what every other site uses -- it needs nothing from a theme and is
-   not changed by anything here.
+	The adz.world rotation
+	==========================================================================
+	The plugin derives its own appearance from whatever surrounds it, and that
+	path is what every other site uses -- it needs nothing from a theme and is
+	not changed by anything here.
 
-   This theme happens to know its own colours exactly, so it hands them over
-   instead of leaving the plugin to infer them from the text colour. That is
-   the whole integration: a handful of custom properties. Delete this block and
-   the rotation still renders correctly, just inferred rather than told. */
+	This theme happens to know its own colours exactly, so it hands them over
+	instead of leaving the plugin to infer them from the text colour. That is
+	the whole integration: a handful of custom properties. Delete this block and
+	the rotation still renders correctly, just inferred rather than told. */
 
 /*
  * `:root` raises specificity to (0,2,0) against the plugin's own (0,1,0), so
@@ -264,10 +264,10 @@ p { text-wrap: pretty; }
 }
 
 /* ==========================================================================
-   Style switcher
-   ==========================================================================
-   Present only while more than one variation is installed. It is printed
-   hidden and revealed by its script, so it never appears as a dead control. */
+	Style switcher
+	==========================================================================
+	Present only while more than one variation is installed. It is printed
+	hidden and revealed by its script, so it never appears as a dead control. */
 
 .adz-switcher[hidden] { display: none; }
 
