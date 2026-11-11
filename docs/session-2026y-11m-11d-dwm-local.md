@@ -96,6 +96,23 @@ authenticated administrator tabs and the front end returned HTTP 200, and a
 deactivate/reactivate cycle created no debug log. This is test evidence, not
 the SVN release.
 
+The port-8099 database was then configured for visual release review. Its
+static front page is `adz dwm release test`, containing
+`[adz_rotation name="main"]`. The saved `main` rotation is a flat carousel with
+the invitation hub first, followed by the light fabric couch, used car, and
+nine-year-old bicycle examples. Public HTML contains both `Your adz hub` and
+the flat-rotation wrapper. Administrator login and the front page returned HTTP
+200, and the check created no debug log. This is burner content and does not
+change the tested plugin files.
+
+Repository enforcement was also tightened. `AGENTS.md` names `dwm-local` as
+the only production source and defines mandatory release evidence. The reusable
+`Production quality gate` runs for production pull requests and pushes, and the
+SVN deployment workflow cannot run unless that same gate passes. Local
+validation of the workflow and gate passed; GitHub branch protection still
+needs the `Production quality gate` check selected as required after its first
+GitHub run.
+
 `adz-world.com` remains blocked before installation: DNS still points at the
 Namecheap parking address, no `adz-world` SSH host exists, and no DigitalOcean
 provisioning client or authenticated browser connection is available in this

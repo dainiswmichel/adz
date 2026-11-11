@@ -84,6 +84,37 @@
   Earlier analysis: <a href="remediation-scope.md">remediation scope</a>; its historical DONE labels are not inherited as current integrated evidence.</p>
 </section>
 
+<section id="dwm-local-front-page-and-gate-2026y-11m-11d-UTC-09h-11m">
+<h2><code>dwm-local</code> visual burner front page and enforced quality gate</h2>
+<p class="meta"><strong>Verification MTS:</strong>
+<time datetime="2026-11-11T09:11:26Z">2026y-11m-11d-UTC-09h-11m-26s</time>.
+Production source: <code>pre-release-candidates/dwm-local/</code>. Visual test
+target: <code>http://167.172.241.113:8099/</code>.</p>
+<p>The fresh port-8099 installation had no static front page, saved rotation,
+or example adz; that absence was site configuration rather than a rendering
+failure. The burner now has a published front page containing
+<code>[adz_rotation name="main"]</code>. Its saved flat rotation places the
+invitation hub first, followed by the couch, car, and bicycle examples. Public
+HTML contains the invitation heading and flat-rotation wrapper. Administrator
+login returned HTTP 200 and no debug log was created. No plugin source file was
+changed to configure this burner content.</p>
+<p>The repository now makes the anti-shitcoding requirements executable.
+<code>AGENTS.md</code> identifies <code>dwm-local</code> as the only production
+source and defines the mandatory evidence. One reusable GitHub
+<code>Production quality gate</code> runs on production changes and is required
+by the SVN deployment workflow. It checks PHP and JavaScript syntax, full WPCS,
+strict official Plugin Check, inline styling, suppressed diagnostics, known
+WordPress.org regressions, direct-access guards, trailing whitespace, project
+regressions, call resolution, and release-version agreement. Local execution
+of the corresponding gate passed: WPCS zero findings, matching 19/19,
+preferences 42/42, and project-prefixed call resolution zero failures.</p>
+<p>GitHub branch protection cannot be changed from this workstation because its
+GitHub CLI credential is invalid. After the new workflow has run once on
+GitHub, the remaining repository control is to require the
+<code>Production quality gate</code> status check before merging to
+<code>main</code>.</p>
+</section>
+
 <section id="dwm-local-production-2026y-11m-11d-UTC-08h-44m">
 <h2><code>dwm-local</code> production source and exact-artifact verification</h2>
 <p class="meta"><strong>Verification MTS:</strong>

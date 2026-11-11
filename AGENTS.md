@@ -118,11 +118,11 @@ forbidden.
 - `pre-release-candidates/<agent>/` holds independent, complete plugin
   candidates. No candidate is authoritative merely because an agent made it.
 - Identify the baseline and exact repair scope. Review individual changes for
-  integration into `adz-world-wordpress-codebase/`; do not replace the
-  integrated source wholesale with a candidate.
-- The integrated source is the sole source for the release gate, release ZIP,
-  and WordPress.org submission. Candidate checks do not replace integration
-  checks.
+  integration into `pre-release-candidates/dwm-local/`; do not replace that
+  production tree wholesale with another candidate.
+- `pre-release-candidates/dwm-local/` is the sole source for the release gate,
+  release ZIP, production website, and WordPress.org submission. Candidate
+  checks do not replace production-tree checks.
 - The sibling `../adz-world-com/` is the website project, not another plugin
   source. Live deployment uses the approved integrated build.
 - Track source, reproducible setup, tests, manifests/lockfiles, and reviewed
@@ -144,3 +144,33 @@ forbidden.
 - Do not claim WordPress.org compliance or submission readiness without the
   required evidence. The technical findings do not identify the closure's
   underlying guideline violation; that question remains separate.
+
+## Mandatory production gate
+
+These requirements are release blockers, not suggestions. No agent may call a
+production change finished, commit it as a release, create a GitHub release,
+or publish it to WordPress.org unless the exact
+`pre-release-candidates/dwm-local/` tree passes all of them:
+
+- PHP lint and JavaScript parsing.
+- Full WPCS using `phpcs.xml.dist`, with zero errors and zero warnings.
+- Official WordPress Plugin Check in strict mode, with no ignored errors or
+  warnings.
+- Zero inline `style` attributes, `<style>` blocks, `wp_add_inline_style()`
+  calls, or JavaScript `.style` mutation in shipped plugin code.
+- Zero PHPCS suppressions or coding-standards ignore directives.
+- No hard-coded `wp-admin/admin-ajax.php`, deprecated `screen_icon()`, bundled
+  Chosen library, or `role_exists()` activation call.
+- Every shipped PHP file has an `ABSPATH` direct-access guard.
+- Project regression tests and project-prefixed call resolution pass.
+- `git diff --check` passes and the final diff contains no unrelated files.
+- The exact release ZIP is installed on clean WordPress with `WP_DEBUG` and
+  `WP_DEBUG_LOG`; activation, deactivation/reactivation, the public front end,
+  and every Adz.world administrator tab are exercised without a plugin warning,
+  notice, exception, or fatal error.
+- A visual change is not accepted from static checks alone. Dainis must be
+  given the exact test URL and the changed screen must be visually reviewed.
+
+Never weaken this gate to make a change pass. A failure blocks the release and
+must be reported with its exact output. GitHub branch protection should require
+the `Production quality gate` check before merging changes to `main`.

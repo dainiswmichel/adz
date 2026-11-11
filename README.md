@@ -43,10 +43,13 @@ clean WordPress. Only approved, tested code goes to the demonstration website
 or WordPress.org. Agent candidates never deploy. The sole deployable directory
 under `pre-release-candidates/` is `dwm-local/`.
 
-The GitHub deployment workflow is the release gate. It checks matching version
+The `Production quality gate` workflow runs on every production-source pull
+request and every production-source push to `main`. It checks matching version
 metadata, PHP and JavaScript syntax, full WPCS, forbidden inline styling,
-diagnostic suppressions, and the official WordPress Plugin Check before the SVN
-deployment step. The existing
+diagnostic suppressions, reported WordPress.org regressions, direct-access
+guards, project regression tests, call resolution, trailing whitespace, and the
+official WordPress Plugin Check. The SVN deployment workflow calls that same
+gate and cannot deploy unless it passes. The existing
 [setup specsheet](docs/adz-world-com-do-and-fast-gate-spec-2026-10m-25d.html)
 is retained as historical design context.
 
