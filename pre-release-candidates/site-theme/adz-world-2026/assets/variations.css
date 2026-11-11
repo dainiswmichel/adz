@@ -1,0 +1,105 @@
+/*
+ * GENERATED FILE -- do not edit.
+ *
+ * Written by tools/build-variations.py from styles/*.json, which remain
+ * the single source of truth. Re-run that script after changing any
+ * variation. Each block below repeats what WordPress already emits for
+ * the active variation, scoped to a data attribute so a visitor can pick
+ * a different one. With no attribute set, none of this applies.
+ */
+
+/* Atelier -- atelier.json */
+:root[data-adz-style="atelier"] {
+	--wp--preset--color--base: #faf6f0;
+	--wp--preset--color--contrast: #2b2621;
+	--wp--preset--color--surface: #fffdf9;
+	--wp--preset--color--accent-1: #b5807c;
+	--wp--preset--color--accent-2: #8d9c86;
+	--wp--preset--color--accent-3: #8fa4b8;
+	--wp--preset--color--accent-4: #bb9268;
+	--wp--preset--gradient--rose-sage: linear-gradient(135deg, #b5807c 0%, #bb9268 50%, #8d9c86 100%);
+	--wp--custom--adz--surface: var(--wp--preset--color--surface);
+	--wp--custom--adz--line: color-mix(in oklab, var(--wp--preset--color--contrast) 14%, transparent);
+	--wp--custom--adz--text-quiet: color-mix(in oklab, var(--wp--preset--color--contrast) 62%, transparent);
+	--wp--custom--adz--focus: var(--wp--preset--color--accent-1);
+	--wp--custom--adz--rule: color-mix(in oklab, var(--wp--preset--color--contrast) 11%, transparent);
+	--wp--custom--adz--rule-gap: 10px;
+	--wp--custom--adz--stroke-inner: color-mix(in oklab, var(--wp--preset--color--contrast) 18%, transparent);
+	--wp--custom--adz--stroke-mid: color-mix(in oklab, var(--wp--preset--color--accent-4) 16%, transparent);
+	--wp--custom--adz--stroke-outer: color-mix(in oklab, var(--wp--preset--color--accent-2) 10%, transparent);
+	--wp--custom--adz--ambience: radial-gradient(70rem 46rem at 85% -10%, color-mix(in oklab, #b5807c 9%, transparent), transparent 70%);
+	--wp--custom--adz--grain-opacity: 0.03;
+	--wp--custom--adz--grain-blend: multiply;
+	--wp--custom--adz--edge: linear-gradient(var(--wp--custom--adz--line), var(--wp--custom--adz--line));
+	--wp--custom--adz--sheen: none;
+	--wp--custom--adz--lift: none;
+}
+
+:root[data-adz-style="atelier"] body { background-color: var(--wp--preset--color--base); color: var(--wp--preset--color--contrast); }
+:root[data-adz-style="atelier"] body { line-height: 1.68; }
+:root[data-adz-style="atelier"] :is(h1, h2, h3, h4, h5, h6) { font-family: var(--wp--preset--font-family--serif); font-weight: 500; letter-spacing: -0.012em; }
+:root[data-adz-style="atelier"] a:where(:not(.wp-element-button)) { color: var(--wp--preset--color--accent-1); }
+:root[data-adz-style="atelier"] :is(.wp-block-button__link, .wp-element-button) { background-color: var(--wp--preset--color--contrast); color: var(--wp--preset--color--base); }
+
+/* Hairline -- hairline.json */
+:root[data-adz-style="hairline"] {
+	--wp--preset--color--base: #fbfbfa;
+	--wp--preset--color--contrast: #101112;
+	--wp--preset--color--surface: #ffffff;
+	--wp--preset--color--accent-1: #1b48ff;
+	--wp--preset--color--accent-2: #6b7076;
+	--wp--preset--gradient--signal-fade: linear-gradient(135deg, #1b48ff 0%, color-mix(in oklab, #1b48ff 30%, transparent) 100%);
+	--wp--preset--font-family--sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+	--wp--preset--font-family--mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+	--wp--custom--adz--surface: var(--wp--preset--color--surface);
+	--wp--custom--adz--line: color-mix(in oklab, var(--wp--preset--color--contrast) 20%, transparent);
+	--wp--custom--adz--text-quiet: var(--wp--preset--color--accent-2);
+	--wp--custom--adz--focus: var(--wp--preset--color--accent-1);
+	--wp--custom--adz--rule: color-mix(in oklab, var(--wp--preset--color--contrast) 9%, transparent);
+	--wp--custom--adz--rule-gap: 8px;
+	--wp--custom--adz--stroke-inner: var(--wp--preset--color--contrast);
+	--wp--custom--adz--stroke-mid: color-mix(in oklab, var(--wp--preset--color--contrast) 26%, transparent);
+	--wp--custom--adz--stroke-outer: color-mix(in oklab, var(--wp--preset--color--contrast) 9%, transparent);
+	--wp--custom--adz--ambience: none;
+	--wp--custom--adz--grain-opacity: 0;
+	--wp--custom--adz--grain-blend: normal;
+	--wp--custom--adz--edge: linear-gradient(var(--wp--custom--adz--line), var(--wp--custom--adz--line));
+	--wp--custom--adz--sheen: none;
+	--wp--custom--adz--lift: none;
+}
+
+:root[data-adz-style="hairline"] body { background-color: var(--wp--preset--color--base); color: var(--wp--preset--color--contrast); }
+:root[data-adz-style="hairline"] :is(h1, h2, h3, h4, h5, h6) { font-weight: 700; letter-spacing: -0.035em; }
+:root[data-adz-style="hairline"] a:where(:not(.wp-element-button)) { color: var(--wp--preset--color--accent-1); }
+:root[data-adz-style="hairline"] :is(.wp-block-button__link, .wp-element-button) { background-color: var(--wp--preset--color--contrast); color: var(--wp--preset--color--base); }
+
+/* Midnight -- midnight.json */
+:root[data-adz-style="midnight"] {
+	--wp--preset--color--base: #080e1e;
+	--wp--preset--color--contrast: #e9eefb;
+	--wp--preset--color--surface: #111b33;
+	--wp--preset--color--accent-1: #4cc3e0;
+	--wp--preset--color--accent-2: #d9a441;
+	--wp--preset--color--accent-3: #8fa3d8;
+	--wp--preset--gradient--cyan-brass: linear-gradient(135deg, #4cc3e0 0%, #8fa3d8 48%, #d9a441 100%);
+	--wp--preset--gradient--deep-fade: linear-gradient(180deg, #111b33 0%, #080e1e 100%);
+	--wp--custom--adz--surface: var(--wp--preset--color--surface);
+	--wp--custom--adz--line: color-mix(in oklab, var(--wp--preset--color--contrast) 16%, transparent);
+	--wp--custom--adz--text-quiet: color-mix(in oklab, var(--wp--preset--color--contrast) 68%, transparent);
+	--wp--custom--adz--focus: var(--wp--preset--color--accent-1);
+	--wp--custom--adz--rule: color-mix(in oklab, var(--wp--preset--color--contrast) 10%, transparent);
+	--wp--custom--adz--rule-gap: 9px;
+	--wp--custom--adz--stroke-inner: color-mix(in oklab, var(--wp--preset--color--accent-1) 55%, transparent);
+	--wp--custom--adz--stroke-mid: color-mix(in oklab, var(--wp--preset--color--accent-1) 22%, transparent);
+	--wp--custom--adz--stroke-outer: color-mix(in oklab, var(--wp--preset--color--accent-1) 8%, transparent);
+	--wp--custom--adz--ambience: radial-gradient(60rem 40rem at 12% -8%, color-mix(in oklab, #4cc3e0 16%, transparent), transparent 70%), radial-gradient(52rem 38rem at 94% 6%, color-mix(in oklab, #d9a441 11%, transparent), transparent 72%);
+	--wp--custom--adz--grain-opacity: 0.04;
+	--wp--custom--adz--grain-blend: overlay;
+	--wp--custom--adz--edge: linear-gradient(135deg, color-mix(in oklab, #4cc3e0 70%, transparent), transparent 45%, color-mix(in oklab, #d9a441 45%, transparent));
+	--wp--custom--adz--sheen: inset 0 1px 0 color-mix(in oklab, #ffffff 16%, transparent);
+	--wp--custom--adz--lift: 0 1px 2px rgba(3, 7, 18, 0.5), 0 16px 40px -18px rgba(3, 7, 18, 0.9);
+}
+
+:root[data-adz-style="midnight"] body { background-color: var(--wp--preset--color--base); color: var(--wp--preset--color--contrast); }
+:root[data-adz-style="midnight"] a:where(:not(.wp-element-button)) { color: var(--wp--preset--color--accent-1); }
+:root[data-adz-style="midnight"] :is(.wp-block-button__link, .wp-element-button) { background-color: var(--wp--preset--color--accent-1); color: var(--wp--preset--color--base); }

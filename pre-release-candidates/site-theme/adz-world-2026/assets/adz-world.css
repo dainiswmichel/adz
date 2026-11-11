@@ -262,3 +262,56 @@ p { text-wrap: pretty; }
 	--adz-accent: var(--wp--preset--color--accent-1);
 	--adz-ring: var(--wp--preset--color--base);
 }
+
+/* ==========================================================================
+   Style switcher
+   ==========================================================================
+   Present only while more than one variation is installed. It is printed
+   hidden and revealed by its script, so it never appears as a dead control. */
+
+.adz-switcher[hidden] { display: none; }
+
+.adz-switcher {
+	position: fixed;
+	right: max(16px, env(safe-area-inset-right));
+	bottom: max(16px, env(safe-area-inset-bottom));
+	z-index: 90;
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	padding: 7px 9px 7px 13px;
+	border-radius: var(--wp--custom--radius--pill);
+	background: var(--wp--custom--adz--surface);
+	box-shadow:
+		0 0 0 var(--wp--custom--stroke--hair) var(--wp--custom--adz--stroke-inner),
+		0 0 0 var(--wp--custom--stroke--edge) var(--wp--custom--adz--stroke-outer);
+}
+
+.adz-switcher__label {
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.09em;
+	text-transform: uppercase;
+	color: var(--wp--custom--adz--text-quiet);
+}
+
+.adz-switcher__select {
+	padding: 4px 6px;
+	color: inherit;
+	font: inherit;
+	font-size: var(--wp--preset--font-size--small);
+	background: transparent;
+	border: 0;
+	border-radius: var(--wp--custom--radius--sm);
+	cursor: pointer;
+}
+
+/* The native menu is painted by the OS, so it needs the scheme stated. */
+.adz-switcher__select option {
+	color: var(--wp--preset--color--contrast);
+	background: var(--wp--preset--color--base);
+}
+
+@media (max-width: 640px) {
+	.adz-switcher__label { display: none; }
+}

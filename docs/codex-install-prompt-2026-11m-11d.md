@@ -30,12 +30,39 @@ Two directories matter:
 terms and privacy links exist and they have the proper content. We will check
 those links in the next review."*
 
-Create both as published pages at exactly those slugs, with real content
-covering what the readme says is sent: for the adz-world.com network
-connection, the publisher ID, access tokens, referral code and visitor IP
-address; the adz title, content and categories on publish or delete; and the
-site URL, title and administrator email on registration. Do not use a
-placeholder or a generated privacy policy stub — the reviewer reads them.
+The content is written and committed. It is deliberately specific: every claim
+in it matches what `readme.txt` says the plugin sends, because the reviewer
+compares the two.
+
+```
+docs/site-pages/terms.html
+docs/site-pages/privacy.html
+```
+
+Both are Gutenberg block markup, ready to publish:
+
+```bash
+wp post create docs/site-pages/terms.html \
+  --post_type=page --post_status=publish \
+  --post_title="Terms of Service" --post_name=terms
+
+wp post create docs/site-pages/privacy.html \
+  --post_type=page --post_status=publish \
+  --post_title="Privacy Policy" --post_name=privacy
+```
+
+**Before publishing, replace four placeholders in both files.** Ask Dainis for
+these — do not invent them, they are legal identifiers:
+
+| Placeholder | What it is |
+|---|---|
+| `[LEGAL ENTITY]` | the company or person operating the service |
+| `[ADDRESS]` | its registered address |
+| `[JURISDICTION]` | the governing law for the terms |
+| `[CONTACT EMAIL]` | the address for privacy requests |
+
+Then confirm `curl -I` returns `200` for both URLs, and that each page's
+content actually renders rather than showing raw block comments.
 
 ## Install
 
@@ -79,18 +106,26 @@ did not run.
    Browse styles: **Midnight**, **Atelier**, **Hairline**. Switch between them
    and confirm the whole page repaints, including the rotation panel.
    Screenshot each.
-3. **The shortcode is name-only.** Adz → Rotation should now print
+3. **The reader-facing switcher works.** A pill sits at the bottom right of the
+   front end reading "Theme", with four options: Site default, Midnight,
+   Atelier, Hairline. Confirm that choosing one repaints the page, that the
+   choice survives a reload, that there is **no flash of the previous palette**
+   on that reload, and that "Site default" returns to the administrator's
+   choice. It is built by `assets/style-switcher.js` and keyed on a
+   `data-adz-style` attribute on `<html>`; with JavaScript off the control is
+   never shown and the administrator's variation applies.
+4. **The shortcode is name-only.** Adz → Rotation should now print
    `[adz_rotation name="..."]` with no `display` or `controls` attribute. The
    display format, creative size, navigation and region name are settings on
    that screen. Confirm changing the format there changes the front end.
-4. **A creative is not clipped or resized.** Place a rotation holding a real
+5. **A creative is not clipped or resized.** Place a rotation holding a real
    provider slot, then in devtools confirm the injected unit has the width and
    height the network set, and that no ancestor has `overflow: hidden`. This is
    the point of the change — a resized or clipped unit is a policy violation.
-5. **Narrow container.** Put the same rotation in a sidebar or a column under
+6. **Narrow container.** Put the same rotation in a sidebar or a column under
    300px. It should stack, the button should match the input width, and the
    category chips should wrap inside the panel.
-6. **Legal pages resolve.** `curl -I` both URLs, expect `200`.
+7. **Legal pages resolve.** `curl -I` both URLs, expect `200`.
 
 ## Site content
 
@@ -124,5 +159,13 @@ Stated so you do not inherit a claim as fact:
   emits, not by WordPress itself. If a variation does not appear in the Site
   Editor, the likely cause is the `styles/*.json` schema or the child theme
   header in `style.css`.
+- The reader-facing switcher **was** driven end to end in a headless browser:
+  every option applied, the choice persisted, and the attribute was already set
+  before paint after a reload. That was against a generated harness, not
+  against WordPress, so the part still unproven is whether `functions.php`
+  enqueues and prints correctly inside a real theme.
+- `assets/variations.css` is generated from `styles/*.json` by
+  `tools/build-variations.py`. If you change a variation, re-run that script;
+  do not hand-edit the generated file.
 - The plugin's PHP passes `php -l` and PHPCS with the WordPress standard at
   exit 0, and `release-gate.sh` passes. Those were run; the two above were not.
