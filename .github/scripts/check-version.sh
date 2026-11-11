@@ -12,16 +12,21 @@
 set -euo pipefail
 
 TAG="${1:-}"
-PLUGIN_FILE="adz-world-wordpress-codebase/adz-world.php"
-README="adz-world-wordpress-codebase/readme.txt"
+PLUGIN_FILE="pre-release-candidates/dwm-local/adz-world.php"
+README="pre-release-candidates/dwm-local/readme.txt"
 
 if [[ -z "$TAG" ]]; then
 	echo "::error::No release tag supplied."
 	exit 1
 fi
 
-# A leading "v" is a common tag convention; WordPress versions never carry one.
-TAG="${TAG#v}"
+# The deploy action uses the GitHub release tag as the SVN directory name.
+# WordPress.org release tags may contain only numbers and periods, so fail
+# instead of silently accepting a leading "v" and publishing the wrong path.
+if [[ ! "$TAG" =~ ^[0-9]+(\.[0-9]+)+$ ]]; then
+	echo "::error::Release tag '$TAG' is invalid. Use a numeric tag such as 1.0.9 (no leading v)."
+	exit 1
+fi
 
 HEADER=$(grep -m1 '^ *\* *Version:\|^Version:' "$PLUGIN_FILE" | sed 's/.*Version: *//' | tr -d '[:space:]')
 STABLE=$(grep -m1 '^Stable tag:' "$README" | sed 's/^Stable tag: *//' | tr -d '[:space:]')

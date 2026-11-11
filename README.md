@@ -7,11 +7,12 @@ WordPress plugin remediation workspace for `adz-world`.
 | Directory | Purpose | Deploys? |
 |---|---|---|
 | `ancestor/` | Frozen 2018 plugin, network server, and premium plugin reference | No |
-| `adz-world-wordpress-codebase/` | Integrated plugin source assembled from reviewed repairs | Yes, on approved release |
+| `pre-release-candidates/dwm-local/` | Dainis' approved production release source | Yes, on approved release |
+| `adz-world-wordpress-codebase/` | Historical integrated source retained for comparison | No |
 | `pre-release-candidates/<agent>/` | Independent agent repair candidates | No |
 | `../adz-world-com/` | Website project: server/WordPress setup, site-specific code, and deployment configuration | Separately, to adz-world.com |
 
-`adz-world-wordpress-codebase/` is the production release source, not a running
+`pre-release-candidates/dwm-local/` is the production release source, not a running
 WordPress site. It is not yet a claim of WordPress.org compliance. Never modify
 `ancestor/`.
 
@@ -32,20 +33,22 @@ source to review its proposed changes:
 diff -qr adz-world-wordpress-codebase pre-release-candidates/claude-code-web
 ```
 
-Human and AI review selects individual repairs for integration into
-`adz-world-wordpress-codebase/`; do not replace the integrated source wholesale
-with an agent's candidate. Run one shared verification gate against the
-integrated plugin, including regression tests, PHP lint, PHPCS/WPCS, Plugin
+Human and AI review selects repairs for integration into
+`pre-release-candidates/dwm-local/`. Run one shared verification gate against
+that production source, including regression tests, PHP lint, PHPCS/WPCS, Plugin
 Check, and real WordPress activation with `WP_DEBUG` and `WP_DEBUG_LOG`.
 
 Build one release ZIP from the integrated source and test that exact ZIP on
 clean WordPress. Only approved, tested code goes to the demonstration website
-or WordPress.org. Nothing in `pre-release-candidates/` deploys directly.
+or WordPress.org. Agent candidates never deploy. The sole deployable directory
+under `pre-release-candidates/` is `dwm-local/`.
 
-The shared gate is not implemented yet. The existing
+The GitHub deployment workflow is the release gate. It checks matching version
+metadata, PHP and JavaScript syntax, full WPCS, forbidden inline styling,
+diagnostic suppressions, and the official WordPress Plugin Check before the SVN
+deployment step. The existing
 [setup specsheet](docs/adz-world-com-do-and-fast-gate-spec-2026-10m-25d.html)
-describes the proposed gate; its single-candidate source assumptions must be
-aligned with this integration workflow before implementation.
+is retained as historical design context.
 
 ## Website and Git boundaries
 
@@ -64,7 +67,7 @@ dependencies. Runtime data needs separate backups, not source commits.
 
 ## Releasing
 
-Publishing a GitHub release deploys `adz-world-wordpress-codebase/` to the
+Publishing a GitHub release deploys `pre-release-candidates/dwm-local/` to the
 WordPress.org SVN repository — trunk, plus a matching tag. Nothing deploys on
 an ordinary push.
 
@@ -72,13 +75,14 @@ Before a release, the version must agree in three places:
 
 | Where | Field |
 |---|---|
-| `adz-world-wordpress-codebase/adz-world.php` | `Version:` |
-| `adz-world-wordpress-codebase/readme.txt` | `Stable tag:` |
+| `pre-release-candidates/dwm-local/adz-world.php` | `Version:` |
+| `pre-release-candidates/dwm-local/readme.txt` | `Stable tag:` |
 | The GitHub release | Tag name |
 
 `.github/scripts/check-version.sh` checks these values before deployment. A
-deploy can be rehearsed without releasing: Actions → Deploy to WordPress.org →
-Run workflow, with the dry-run box ticked.
+release tag must contain only numbers and periods, for example `1.0.9`; do not
+prefix it with `v`. A deploy can be rehearsed without releasing: Actions →
+Deploy to WordPress.org → Run workflow, with the dry-run box ticked.
 
 The workflow needs two repository secrets under Settings → Secrets and
 variables → Actions:

@@ -1,6 +1,6 @@
 # Deploys the plugin to the WordPress.org directory.
 #
-# Publishing a GitHub release commits adz-world-wordpress-codebase/ to SVN
+# Publishing a GitHub release commits pre-release-candidates/dwm-local/ to SVN
 # trunk and creates the matching SVN tag. Nothing deploys on an ordinary push.
 #
 # Requires two repository secrets, under Settings > Secrets and variables >
@@ -36,13 +36,56 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer
+
+      - name: Install WordPress Coding Standards
+        run: |
+          composer global config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer global require --no-interaction wp-coding-standards/wpcs dealerdirect/phpcodesniffer-composer-installer
+
       - name: Check the version agrees everywhere
         run: ./.github/scripts/check-version.sh "${{ github.event.release.tag_name || inputs.tag }}"
 
-      - name: Lint every PHP file
+      - name: Lint every production PHP file
         run: |
-          find adz-world-wordpress-codebase pre-release-candidates -name '*.php' -print0 \
+          find pre-release-candidates/dwm-local -name '*.php' -print0 \
             | xargs -0 -n1 php -l > /dev/null
+
+      - name: Parse every production JavaScript file
+        run: |
+          find pre-release-candidates/dwm-local -name '*.js' -print0 \
+            | xargs -0 -n1 node --check
+
+      - name: Run full WPCS
+        run: ~/.composer/vendor/bin/phpcs --standard=phpcs.xml.dist pre-release-candidates/dwm-local
+
+      - name: Reject inline styles and suppressed diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          BUILD=pre-release-candidates/dwm-local
+          if grep -RInE --include='*.php' --include='*.js' \
+            'style=|<style|wp_add_inline_style|\.style[[:space:]]*=' "$BUILD"; then
+            echo 'Inline or runtime styling is forbidden in the release.' >&2
+            exit 1
+          fi
+          if grep -RInE --include='*.php' \
+            'phpcs:(ignore|disable)|@codingStandardsIgnore' "$BUILD"; then
+            echo 'Suppressed coding-standard diagnostics are forbidden in the release.' >&2
+            exit 1
+          fi
+
+      - name: Run official WordPress Plugin Check
+        uses: wordpress/plugin-check-action@v1
+        with:
+          build-dir: './pre-release-candidates/dwm-local'
+          slug: adz-world
+          strict: true
 
       - name: WordPress Plugin Deploy
         uses: 10up/action-wordpress-plugin-deploy@stable
@@ -54,5 +97,5 @@ jobs:
           # The repository is named "adz"; the directory slug is "adz-world".
           SLUG: adz-world
           # Only the production codebase is deployed. Candidates and ancestor never ship.
-          BUILD_DIR: adz-world-wordpress-codebase
+          BUILD_DIR: pre-release-candidates/dwm-local
           VERSION: ${{ github.event.release.tag_name || inputs.tag }}

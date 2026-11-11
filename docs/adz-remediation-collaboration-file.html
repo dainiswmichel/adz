@@ -84,6 +84,85 @@
   Earlier analysis: <a href="remediation-scope.md">remediation scope</a>; its historical DONE labels are not inherited as current integrated evidence.</p>
 </section>
 
+<section id="dwm-local-production-2026y-11m-11d-UTC-08h-44m">
+<h2><code>dwm-local</code> production source and exact-artifact verification</h2>
+<p class="meta"><strong>Verification MTS:</strong>
+<time datetime="2026-11-11T08:44:21Z">2026y-11m-11d-UTC-08h-44m-21s</time>.
+Production source: <code>pre-release-candidates/dwm-local/</code>. Isolated test
+target: <code>http://167.172.241.113:8099/</code>.</p>
+<p>The named production directory is now populated and the GitHub release
+workflow points to it. The workflow fails closed before SVN deployment on PHP
+lint, JavaScript parsing, full WordPress Coding Standards, forbidden inline
+styles, PHPCS suppressions, and the official WordPress Plugin Check. The older
+candidate folders and ports 8096–8098 remain test candidates and are not the
+release source.</p>
+<p>The current rotation architecture stores display, controls, size, and the
+ordered slot list on the saved rotation. Page content uses the stable shortcode
+<code>[adz_rotation name="rotation-key"]</code>. The release tree includes the
+Manual and Starter-pack changes that follow that contract; it is newer than
+the code still installed on port 8097.</p>
+<p><strong>Exact current artifact:</strong>
+<code>/private/tmp/adz-world-dwm-local-1.0.9-final.zip</code>, SHA-256
+<code>c14015bfa4f5da53b2d50bd6b7c3b8f31fcc67b07f37febfeae351ac137e8b5b</code>,
+72 files. All 52 PHP files contain direct-access guards. PHP lint and JavaScript
+parsing returned zero failures; full WPCS returned zero findings; forbidden
+inline-style and diagnostic-suppression searches returned zero lines; the
+call resolver found zero unresolved project-prefixed calls, arity mismatches,
+or duplicate file-scope functions. Preference tests passed 42/42 and matching
+tests passed 19/19. The older rotation-spacing harness correctly reported that
+it does not apply to this tree; it was not counted as a pass.</p>
+<p>The exact zip was installed on fresh WordPress 7.1.4 at port 8099. Its
+installed aggregate manifest hash matches the local release tree:
+<code>fe1695069e03899d8d31e8626b305b7f9236e18d886a0f0871aa05fbc34f6bbe</code>.
+Official Plugin Check 2.2.0 returned
+<code>Success: Checks complete. No errors found.</code> Dashboard, Manual,
+Connections, Affiliate programs, Rotation, Earnings, Templates, Starter packs,
+and the front end each returned HTTP 200. Deactivate/reactivate succeeded with
+<code>WP_DEBUG</code> enabled and no debug log was created.</p>
+<p><strong>Remaining external blockers:</strong> this code evidence does not
+publish a release. The apex <code>adz-world.com</code> still points to Namecheap
+parking and no production server was identifiable, so its Terms and Privacy
+URLs are not yet live. The SVN release and the reply to the Plugins Team remain
+open. The Plugins Team email also says its technical list is not the unnamed
+guideline that caused closure; that guideline must be confirmed in the existing
+email thread rather than inferred.</p>
+</section>
+
+<section id="codex-three-burner-audit-2026y-11m-11d-UTC-08h-25m">
+<h2>Three-burner release audit — 8097 is strongest, source freeze still required</h2>
+<p class="meta"><strong>Audit MTS:</strong>
+<time datetime="2026-11-11T08:25:35Z">2026y-11m-11d-UTC-08h-25m-35s</time>.
+Targets: ports 8096, 8097, and 8098; local candidate trees were not modified.</p>
+<p>The burner labels no longer identify three independent original candidates.
+All three deployed plugins are successive descendants of
+<code>pre-release-candidates/codex-gpt5</code>. Port 8097 is byte-for-byte
+identical to the current local Codex candidate (82 files). Port 8096 matches
+the Claude design-line code except for the newer Manual integration, and port
+8098 is the earlier six-tab Codex baseline. The original
+<code>claude-code-web</code> and <code>grok-4-6</code> folders remain unsuitable
+as release sources: the shared WPCS ruleset reports 710 errors/190 warnings and
+876 errors/191 warnings respectively.</p>
+<p><strong>Actual deployed gates:</strong> all three installed plugins returned
+zero WPCS findings, zero official Plugin Check 2.2.0 errors, zero PHP lint
+failures, and zero JavaScript parse failures. Each is active. The disposable
+rotation display and configured-rotation suites passed on all three. On 8097,
+the REST adapter, settings/network, and template-settings contract suites also
+passed without remote traffic. Every declared administrator tab returned HTTP
+200. The 8097 server-side render covered Dashboard, Manual, Connections,
+Affiliate programs, Rotation, Earnings, Templates, and Starter packs without a
+runtime failure. Current HTTP checks added no plugin error to the debug logs;
+older log entries are retained and were not misreported as current failures.</p>
+<p><strong>Decision:</strong> port 8097 is the most complete and robust build:
+eight administrator tabs, 18 display formats, 15 fixed sizes, seven starter
+packs, four direct-network definitions, seven affiliate-network definitions,
+and the contextual setup Manual. It is not yet SVN-ready. Its exact source has
+seven modified files plus two untracked PHP files, so GitHub cannot reproduce
+the deployed build. The plugin/readme version remains 1.0.9; the readme still
+describes only three display formats, omits ClickBank from its external-service
+disclosure, and contains candidate-era wording. These are release blockers,
+not reasons to select an older build.</p>
+</section>
+
 <section id="claude-design-handoff-2026y-11m-10d-EET">
 <h2>Handoff to Claude Code — focused design pass on the remediated baseline</h2>
 <p class="meta"><strong>GitHub baseline:</strong> branch <code>main</code> at
