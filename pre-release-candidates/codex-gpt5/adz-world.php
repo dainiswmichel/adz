@@ -38,6 +38,8 @@ require_once __DIR__ . '/includes/adzworld-affiliates.php';
 require_once __DIR__ . '/includes/adzworld-networks.php';
 require_once __DIR__ . '/includes/adzworld-desk.php';
 require_once __DIR__ . '/includes/adzworld-rotation.php';
+require_once __DIR__ . '/includes/adzworld-starter.php';
+require_once __DIR__ . '/includes/adzworld-manual.php';
 require_once __DIR__ . '/includes/adzworld-request-context.php';
 define( 'ADZ_WORLD', plugin_dir_path( __FILE__ ) );
 
