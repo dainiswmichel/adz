@@ -267,11 +267,27 @@ function adzworld_getpaid_network_card( $provider, $rows ) {
 	}
 
 	if ( empty( $rows ) ) {
-		echo '<p class="description">' . esc_html__( 'No unit configured yet. Add one below, then paste the identifiers this network gave you.', 'adz-world' ) . '</p>';
-		echo '<p><button type="submit" class="button button-secondary" name="adzworld_add_network" value="1" formnovalidate>'
-			. esc_html__( 'Add a unit', 'adz-world' ) . '</button>';
-		echo '<input type="hidden" name="adzworld_add_preset" value="' . esc_attr( $provider['id'] ) . '" disabled data-adzworld-preset>';
-		echo '</p>';
+		echo '<p class="description">' . esc_html(
+			sprintf(
+				/* translators: %s: provider name. */
+				__( 'Not connected. Register with %s, then open the fields here and paste the identifiers it gave you.', 'adz-world' ),
+				$provider['label']
+			)
+		) . '</p>';
+
+		/*
+		 * The button submits a form of its own, named below, rather than the
+		 * page's main form. Every network card is inside that one form, so a
+		 * hidden field naming the provider would be submitted by all of them
+		 * at once and the last would win.
+		 */
+		echo '<p><button type="submit" class="button button-secondary" form="' . esc_attr( 'adzworld-connect-' . $provider['id'] ) . '">';
+		printf(
+			/* translators: %s: provider name. */
+			esc_html__( 'Open the fields for %s', 'adz-world' ),
+			esc_html( $provider['label'] )
+		);
+		echo '</button></p>';
 	} else {
 		foreach ( $rows as $row ) {
 			adzworld_network_render_row( $row );
@@ -367,4 +383,23 @@ function adzworld_getpaid_page() {
 	echo '</div>';
 	submit_button( __( 'Save network connections', 'adz-world' ) );
 	echo '</form>';
+
+	/*
+	 * One tiny form per provider that has no unit yet, each carrying only the
+	 * provider it opens. A button inside the main form targets its own form by
+	 * id, which is why the provider never has to be a hidden field inside a
+	 * form shared by twenty-five cards.
+	 */
+	foreach ( $providers as $provider ) {
+		if ( 'network' !== $provider['source'] || ! empty( $rows_by_preset[ $provider['id'] ] ) ) {
+			continue;
+		}
+
+		echo '<form id="' . esc_attr( 'adzworld-connect-' . $provider['id'] ) . '" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="adzworld-paid-connect-form">';
+		echo '<input type="hidden" name="action" value="adzworld_save_networks">';
+		echo '<input type="hidden" name="adzworld_add_network" value="1">';
+		echo '<input type="hidden" name="adzworld_add_preset" value="' . esc_attr( $provider['id'] ) . '">';
+		wp_nonce_field( 'adzworld_save_networks', 'adzworld_network_nonce' );
+		echo '</form>';
+	}
 }

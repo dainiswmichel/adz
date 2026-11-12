@@ -1382,3 +1382,8 @@
 @media (prefers-reduced-motion: reduce) {
 	.adz-int-strip { scroll-behavior: auto; }
 }
+
+/* The per-provider connect forms carry only hidden fields. */
+.adzworld-paid-connect-form {
+	display: contents;
+}
