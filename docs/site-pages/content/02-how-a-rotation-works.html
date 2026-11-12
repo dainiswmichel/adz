@@ -1,0 +1,71 @@
+<!-- wp:paragraph -->
+<p>A rotation is the unit adz.world serves. It is an ordered list of slots that cycles and repeats, and everything about how it looks and behaves is set once, on the rotation itself, rather than on every page that places it.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2>Slots</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>A slot is one position in the cycle. It holds one of three things:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul>
+<li><strong>The invitation.</strong> A short panel where a reader can say what they are shopping for. One rotation usually carries one of these, and without it there is nowhere for a reader to express an intention.</li>
+<li><strong>A local adz.</strong> Something the site owner made themselves — an image and a link is enough. These are the creatives the owner fully controls.</li>
+<li><strong>A provider unit.</strong> An ad from a network the site owner has connected, rendered exactly as that network built it.</li>
+</ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>A rotation of five slots might be an invitation, two local adz and two provider units. It might equally be the same provider unit five times, which simply serves that network's inventory and nothing else. The mix is the site owner's decision, and it can be changed without touching a single page.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2>The shortcode carries nothing but a name</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>To place a rotation on a page you write one thing:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>[[adz_rotation name="main"]]</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:paragraph -->
+<p>The display format, the creative size, the navigation controls and the slot order all live on the rotation. That means the same rotation placed in three different pages looks the same in all three, and changing it in one place changes it everywhere. It also means a page author does not need to understand advertising to place an ad.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2>Display formats</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>A format changes only the frame. The slots, their order and the matching behave identically in every one, so a format can be switched at any time without reconfiguring anything. The library covers the shapes publishers actually use: single, flat and 3D carousels, crossfade, card stack, filmstrip, grid, banner, billboard, in-article card, sidebar widget, left and right rails, skyscraper, top and bottom docks, and a corner card.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>One constraint is worth knowing: most advertising networks prohibit serving into a hidden container, and every carousel format hides the slides that are not currently showing. A rotation carrying a network unit should therefore use the Single format, or the network unit should have a rotation of its own.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2>Sizes</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Rotations use the standard creative sizes the advertising industry already works in: 300x250, 336x280, 250x250, 200x200, 180x150, 728x90, 970x90, 970x250, 468x60, 234x60, 300x600, 160x600, 120x600, 320x50 and 320x100. A rotation can also be fluid, taking whatever width the space gives it, which is what responsive network units expect.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2>What happens when a reader says something</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>When a reader writes into the invitation panel, the rotation reorders. Adz whose text answers what the reader asked for move toward the front. Adz containing a word the reader ruled out are removed from that reader's rotation entirely, not merely demoted.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Nothing is fetched from elsewhere and nothing is sent anywhere. The reordering happens against the slots the site owner already configured, using words held in the reader's own browser.</p>
+<!-- /wp:paragraph -->
