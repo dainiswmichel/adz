@@ -1,7 +1,7 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/theme.json",
 	"version": 3,
-	"title": "Atelier",
+	"title": "Almond",
 	"description": "Classy faded pastels. Pastels fail when they are only desaturated; they work when they share an undertone, so every accent here is mixed from the same clay and reads as a family. Warm paper, true ink, a serif for headings against a sans for text. No shadow anywhere: separation is carried by rule lines and open space, the way a printed page does it.",
 	"settings": {
 		"color": {

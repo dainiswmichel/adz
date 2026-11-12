@@ -1,7 +1,7 @@
 {
 	"$schema": "https://schemas.wp.org/trunk/theme.json",
 	"version": 3,
-	"title": "Hairline",
+	"title": "Graphite",
 	"description": "One stroke, repeated. The whole design is built from a ramp of rule weights at 1, 2, 3, 5 and 7 pixels, layered as concentric frames. Every one of those shadows has a zero blur radius, so the compositor fills a plain rectangle instead of rasterising a blur: the effect costs less than a single soft shadow would. No web font is requested, no image is loaded, and there is exactly one colour. The character is precision rather than pigment.",
 	"settings": {
 		"color": {

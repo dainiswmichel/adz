@@ -8,7 +8,7 @@
  * a different one. With no attribute set, none of this applies.
  */
 
-/* Atelier -- atelier.json */
+/* Almond -- atelier.json */
 :root[data-adz-style="atelier"] {
 	--wp--preset--color--base: #faf6f0;
 	--wp--preset--color--contrast: #2b2621;
@@ -41,7 +41,7 @@
 :root[data-adz-style="atelier"] a:where(:not(.wp-element-button)) { color: var(--wp--preset--color--accent-1); }
 :root[data-adz-style="atelier"] :is(.wp-block-button__link, .wp-element-button) { background-color: var(--wp--preset--color--contrast); color: var(--wp--preset--color--base); }
 
-/* Hairline -- hairline.json */
+/* Graphite -- hairline.json */
 :root[data-adz-style="hairline"] {
 	--wp--preset--color--base: #fbfbfa;
 	--wp--preset--color--contrast: #101112;

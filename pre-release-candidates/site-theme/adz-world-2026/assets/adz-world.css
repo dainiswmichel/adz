@@ -302,8 +302,8 @@ p { text-wrap: pretty; }
 
 .adz-switcher {
 	position: fixed;
+	top: max(16px, env(safe-area-inset-top));
 	right: max(16px, env(safe-area-inset-right));
-	bottom: max(16px, env(safe-area-inset-bottom));
 	z-index: 90;
 	display: flex;
 	gap: 8px;

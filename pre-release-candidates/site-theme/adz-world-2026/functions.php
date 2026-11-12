@@ -118,10 +118,10 @@ function adzworld_2026_switcher_assets() {
 		'adzworld-2026-switcher',
 		'adzWorldStyles',
 		array(
-			'key'          => 'adz-world-style',
-			'label'        => __( 'Theme', 'adz-world' ),
-			'defaultLabel' => __( 'Site default', 'adz-world' ),
-			'variations'   => $variations,
+			'key'        => 'adz-world-style',
+			'label'      => __( 'Theme', 'adz-world' ),
+			'default'    => 'midnight',
+			'variations' => $variations,
 		)
 	);
 }
@@ -145,8 +145,9 @@ function adzworld_2026_switcher_boot() {
 	}
 
 	$script = 'try{var s=localStorage.getItem("adz-world-style");'
-		. 'if(s&&/^[a-z0-9_-]{1,32}$/.test(s))'
-		. 'document.documentElement.setAttribute("data-adz-style",s);}catch(e){}';
+		. 'if(!s||!/^[a-z0-9_-]{1,32}$/.test(s)){s="midnight";}'
+		. 'document.documentElement.setAttribute("data-adz-style",s);}'
+		. 'catch(e){document.documentElement.setAttribute("data-adz-style","midnight");}';
 
 	wp_print_inline_script_tag( $script, array( 'id' => 'adzworld-2026-boot' ) );
 }

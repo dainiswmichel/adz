@@ -63,7 +63,7 @@
 	/**
 	 * Apply a variation by setting the attribute the generated stylesheet keys on.
 	 *
-	 * @param {string} slug Variation slug, or an empty string for the default.
+	 * @param {string} slug Variation slug. Midnight is the stored default.
 	 * @return {void}
 	 */
 	function apply( slug ) {
@@ -77,12 +77,15 @@
 	var known = data.variations.map( function ( variation ) {
 		return variation.slug;
 	} );
+	var fallback = known.indexOf( data.default ) === -1 ? known[ 0 ] : data.default;
 	var current = stored();
 
-	if ( current && known.indexOf( current ) === -1 ) {
-		current = '';
-		remember( '' );
+	if ( ! current || known.indexOf( current ) === -1 ) {
+		current = fallback;
+		remember( current );
 	}
+
+	apply( current );
 
 	var id = 'adz-style-switcher';
 	var label = document.createElement( 'label' );
@@ -95,12 +98,6 @@
 
 	select.className = 'adz-switcher__select';
 	select.id = id;
-
-	var fallback = document.createElement( 'option' );
-
-	fallback.value = '';
-	fallback.textContent = data.defaultLabel;
-	select.appendChild( fallback );
 
 	data.variations.forEach( function ( variation ) {
 		var option = document.createElement( 'option' );
