@@ -1,0 +1,1039 @@
+.adzworld-admin,
+.adzworld-desk {
+	max-width: 1200px;
+}
+
+.adzworld-admin .nav-tab-wrapper {
+	margin-bottom: 0;
+}
+
+.adzworld-admin .adzworld-settings-tabs {
+	border-bottom: 1px solid #c3c4c7;
+	margin-bottom: 12px;
+	padding: 6px 0 0;
+}
+
+.adzworld-admin .adzworld-settings-tabs::after {
+	clear: both;
+	content: "";
+	display: block;
+}
+
+.adzworld-admin .adzworld-settings-tabs .nav-tab {
+	background-color: #e9edf1 !important;
+	border: 1px solid #b9bfc6 !important;
+	border-bottom-color: #9ea5ad !important;
+	border-radius: 3px 3px 0 0;
+	color: #1f2933 !important;
+	display: block;
+	float: left;
+	line-height: 1.4;
+	margin: 0 6px 6px 0;
+	padding: 8px 14px;
+	text-align: left;
+	vertical-align: top;
+}
+
+.adzworld-admin .adzworld-settings-tabs .nav-tab:hover,
+.adzworld-admin .adzworld-settings-tabs .nav-tab:focus {
+	background-color: #dde4ea !important;
+	border-color: #aab2bb !important;
+	color: #1d2327 !important;
+}
+
+.adzworld-admin .adzworld-settings-tabs .nav-tab.nav-tab-active {
+	background-color: #fff !important;
+	border-bottom-color: #fff !important;
+	border-color: #8c939a !important;
+	color: #11161a !important;
+	margin: 0 6px 6px 0;
+}
+
+.adzworld-settings-title {
+	align-items: center;
+	display: flex;
+	gap: 10px;
+}
+
+.adzworld-settings-version {
+	background: #f0f0f1;
+	border-radius: 2px;
+	color: #50575e;
+	font-size: 12px;
+	font-weight: 400;
+	padding: 3px 10px;
+}
+
+.adzworld-desk-intro {
+	max-width: 840px;
+}
+
+.adzworld-desk-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	gap: 16px;
+	margin-top: 20px;
+}
+
+.adzworld-desk-card,
+.adzworld-desk-section {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	box-sizing: border-box;
+	padding: 20px;
+}
+
+.adzworld-desk-card h3 {
+	margin-top: 0;
+}
+
+.adzworld-desk-card strong {
+	display: block;
+	font-size: 28px;
+	line-height: 1.2;
+}
+
+.adzworld-earnings-grid .adzworld-desk-card strong {
+	font-size: 18px;
+}
+
+.adzworld-desk-section {
+	margin: 18px 0;
+}
+
+.adzworld-desk-section legend {
+	font-size: 18px;
+	font-weight: 600;
+	padding: 0 6px;
+}
+
+.adzworld-support-card {
+	max-width: 720px;
+	margin-top: 20px;
+}
+
+.adzworld-support-card h2 {
+	margin-top: 0;
+}
+
+.adzworld-connections {
+	max-width: 1200px;
+}
+
+.adzworld-connections > hr {
+	border: 0;
+	border-top: 1px solid #c3c4c7;
+	margin: 32px 0;
+}
+
+.adzworld-connections__lead {
+	font-size: 15px;
+	max-width: 880px;
+}
+
+.adzworld-connection-grid,
+.adzworld-managed-grid {
+	display: grid;
+	gap: 16px;
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	margin: 18px 0;
+}
+
+.adzworld-connection-card,
+.adzworld-managed-card,
+.adzworld-provider-bridge {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 3px;
+	box-sizing: border-box;
+	padding: 18px;
+}
+
+.adzworld-connection-card legend {
+	font-size: 18px;
+	font-weight: 600;
+	padding: 0 6px;
+}
+
+.adzworld-connection-card input[type="text"],
+.adzworld-connection-card select,
+.adzworld-provider-fields input {
+	max-width: 100%;
+	width: 100%;
+}
+
+.adzworld-connection-status {
+	background: #f0f0f1;
+	border-radius: 2px;
+	color: #50575e;
+	display: inline-block;
+	font-size: 12px;
+	font-weight: 600;
+	padding: 3px 8px;
+}
+
+.adzworld-connection-status.is-enabled {
+	background: #edfaef;
+	color: #116329;
+}
+
+.adzworld-connection-steps {
+	margin-left: 20px;
+}
+
+.adzworld-connection-steps li {
+	margin-bottom: 10px;
+}
+
+.adzworld-connection-links {
+	border-top: 1px solid #dcdcde;
+	font-size: 12px;
+	padding-top: 10px;
+}
+
+.adzworld-network-add {
+	align-items: end;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	margin: 12px 0 18px;
+}
+
+.adzworld-network-add p {
+	margin: 0;
+}
+
+.adzworld-network-add select {
+	min-width: 280px;
+}
+
+.adzworld-network-param {
+	display: grid;
+	gap: 8px;
+	grid-template-columns: minmax(140px, 220px) minmax(180px, 1fr);
+	margin: 0 0 8px;
+}
+
+.adzworld-network-param p {
+	margin: 0;
+}
+
+.adzworld-managed-card h4 {
+	font-size: 17px;
+	margin: 0 0 8px;
+}
+
+.adzworld-managed-card > strong {
+	color: #50575e;
+	display: block;
+	font-size: 12px;
+}
+
+.adzworld-connection-actions .button {
+	margin: 0 5px 5px 0;
+}
+
+.adzworld-provider-bridge {
+	margin: 24px 0;
+}
+
+.adzworld-provider-bridge h3 {
+	margin-top: 0;
+}
+
+.adzworld-provider-fields {
+	display: grid;
+	gap: 12px;
+	grid-template-columns: minmax(140px, 1fr) minmax(180px, 1.4fr) minmax(260px, 2fr);
+}
+
+.adzworld-provider-fields p {
+	margin-bottom: 0;
+}
+
+.adzworld-connections-affiliates > h2 {
+	margin-top: 0;
+}
+
+.adzworld-pay {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	margin: 8px 0 28px;
+	max-width: 1200px;
+	padding: 4px 18px 18px;
+}
+
+.adzworld-pay-progress {
+	font-weight: 600;
+	margin: 0 0 8px;
+}
+
+.adzworld-pay-list {
+	display: grid;
+	gap: 10px;
+}
+
+.adzworld-pay-account {
+	border: 1px solid #dcdcde;
+	border-radius: 3px;
+	padding: 12px 14px;
+	scroll-margin-top: 48px;
+}
+
+.adzworld-pay-account.is-ready {
+	background: #f6fbf7;
+	border-color: #b8e0c2;
+}
+
+.adzworld-pay-head {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 12px;
+}
+
+.adzworld-pay-head h3 {
+	flex: 1 1 180px;
+	font-size: 15px;
+	margin: 0;
+}
+
+.adzworld-pay-pays {
+	color: #50575e;
+	flex: 1 1 240px;
+	margin: 0;
+}
+
+.adzworld-pay-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 10px 0;
+}
+
+.adzworld-pay-actions .button {
+	margin: 0;
+}
+
+.adzworld-pay-account summary {
+	color: #2271b1;
+	cursor: pointer;
+	font-weight: 600;
+	width: fit-content;
+}
+
+.adzworld-pay-account summary:focus {
+	box-shadow: 0 0 0 1px #2271b1;
+	outline: 2px solid transparent;
+}
+
+.adzworld-pay-steps {
+	margin: 8px 0 0 20px;
+}
+
+.adzworld-pay-steps li {
+	margin: 0 0 8px;
+}
+
+#adzworld-add-preset,
+.adzworld-connection-card {
+	scroll-margin-top: 48px;
+}
+
+@media screen and (max-width: 782px) {
+	.adzworld-connection-grid,
+	.adzworld-managed-grid,
+	.adzworld-provider-fields,
+	.adzworld-network-param {
+		grid-template-columns: 1fr;
+	}
+
+	.adzworld-network-add {
+		display: block;
+	}
+
+	.adzworld-network-add select,
+	.adzworld-network-param input {
+		max-width: 100%;
+		width: 100%;
+	}
+
+	.adzworld-pay-head {
+		align-items: flex-start;
+	}
+}
+
+.adzworld-rotation-admin {
+	max-width: 1100px;
+}
+
+.adzworld-rotation-picker {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin: 18px 0;
+}
+
+.adzworld-rotation-meta {
+	align-items: end;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 3px;
+	display: grid;
+	gap: 16px;
+	grid-template-columns: minmax(220px, 1fr) minmax(180px, 0.7fr) minmax(280px, 1.3fr);
+	margin-bottom: 18px;
+	padding: 18px;
+}
+
+.adzworld-rotation-meta p {
+	margin: 0;
+}
+
+.adzworld-rotation-meta input {
+	max-width: 100%;
+	width: 100%;
+}
+
+.adzworld-rotation-shortcode span {
+	font-weight: 600;
+}
+
+.adzworld-rotation-shortcode code {
+	display: inline-block;
+	max-width: 100%;
+	overflow-wrap: anywhere;
+	padding: 6px 8px;
+}
+
+.adzworld-admin-slots {
+	display: grid;
+	gap: 14px;
+}
+
+.adzworld-admin-slot {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 3px;
+	box-sizing: border-box;
+	padding: 16px;
+}
+
+.adzworld-admin-slot > header {
+	align-items: center;
+	border-bottom: 1px solid #dcdcde;
+	display: flex;
+	justify-content: space-between;
+	margin: -2px 0 14px;
+	padding-bottom: 10px;
+}
+
+.adzworld-admin-slot > header > strong {
+	font-size: 16px;
+}
+
+.adzworld-admin-slot__actions {
+	display: flex;
+	gap: 5px;
+}
+
+.adzworld-admin-slot > label {
+	display: block;
+	font-weight: 600;
+}
+
+.adzworld-admin-slot > label select {
+	display: block;
+	font-weight: 400;
+	margin-top: 5px;
+	max-width: 720px;
+	width: 100%;
+}
+
+.adzworld-admin-slot__preview {
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 3px;
+	margin-top: 14px;
+	padding: 14px;
+}
+
+.adzworld-admin-slot-preview {
+	margin-bottom: 12px;
+}
+
+.adzworld-admin-slot-preview .adz-panel,
+.adzworld-admin-slot-preview .adzworld-creative,
+.adzworld-admin-slot-preview .adzworld-caption,
+.adzworld-admin-slot-preview .adzworld-provider {
+	max-width: 820px;
+}
+
+.adzworld-rotation-controls {
+	margin: 18px 0;
+}
+
+@media screen and (max-width: 782px) {
+	.adzworld-rotation-meta {
+		grid-template-columns: 1fr;
+	}
+
+	.adzworld-admin-slot > header {
+		align-items: flex-start;
+		gap: 10px;
+	}
+}
+
+/* ==========================================================================
+   Display format reference (Rotation tab)
+   ==========================================================================
+   Generated from adzworld_rotation_display_formats() and
+   adzworld_rotation_size_presets(), so this section cannot drift out of step
+   with what the shortcode accepts.
+
+   Each entry carries a small swatch drawn in CSS rather than an image: the
+   shape of the swatch is the shape of the frame, so the list can be read at a
+   glance without loading anything.
+   ========================================================================== */
+
+.adzworld-format-gallery {
+	--adzf-line: #c3c4c7;
+	--adzf-ink: #1f2933;
+	--adzf-muted: #646970;
+	--adzf-accent: #3e6d86;
+	--adzf-surface: #fff;
+	--adzf-sunken: #f4f7f9;
+
+	margin-top: 28px;
+	padding-top: 20px;
+	border-top: 1px solid var(--adzf-line);
+}
+
+.adzworld-format-gallery h2 {
+	margin: 0 0 4px;
+	font-size: 16px;
+}
+
+.adzworld-format-intro {
+	max-width: 70ch;
+	margin: 0 0 16px;
+	color: var(--adzf-muted);
+}
+
+.adzworld-format-group {
+	margin: 20px 0 8px;
+	color: var(--adzf-muted);
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+.adzworld-format-list {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+	gap: 10px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.adzworld-format {
+	display: flex;
+	gap: 12px;
+	align-items: flex-start;
+	padding: 12px;
+	background: var(--adzf-surface);
+	border: 1px solid var(--adzf-line);
+	border-radius: 6px;
+}
+
+.adzworld-format-body {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	min-width: 0;
+}
+
+.adzworld-format-name {
+	color: var(--adzf-ink);
+	font-size: 13px;
+}
+
+.adzworld-format-note {
+	color: var(--adzf-muted);
+	font-size: 12px;
+	line-height: 1.45;
+}
+
+.adzworld-format-code {
+	margin-top: 4px;
+	padding: 4px 6px;
+	overflow-wrap: anywhere;
+	color: var(--adzf-ink);
+	font-size: 11px;
+	background: var(--adzf-sunken);
+	border-radius: 3px;
+}
+
+/* ------------------------------------------------------- swatch geometry */
+
+/*
+ * Every swatch is the same box. What differs is where the filled block sits
+ * inside it, which is what distinguishes the formats from each other.
+ */
+.adzworld-format-swatch {
+	position: relative;
+	flex: 0 0 auto;
+	width: 46px;
+	height: 36px;
+	overflow: hidden;
+	background: var(--adzf-sunken);
+	border: 1px solid var(--adzf-line);
+	border-radius: 3px;
+}
+
+.adzworld-format-swatch::before,
+.adzworld-format-swatch::after {
+	content: "";
+	position: absolute;
+	background: var(--adzf-accent);
+}
+
+/* Carousel: one centred block, with neighbours peeking for the wider ones. */
+.adzworld-format-swatch--single::before {
+	inset: 7px 11px;
+	border-radius: 2px;
+}
+
+.adzworld-format-swatch--flat::before {
+	inset: 9px 4px 9px 14px;
+	border-radius: 2px;
+}
+
+.adzworld-format-swatch--flat::after {
+	inset: 9px 36px 9px 2px;
+	opacity: 0.35;
+	border-radius: 2px;
+}
+
+.adzworld-format-swatch--3d::before {
+	inset: 6px 13px;
+	border-radius: 2px;
+}
+
+.adzworld-format-swatch--3d::after {
+	inset: 11px 2px 11px 36px;
+	opacity: 0.3;
+	border-radius: 2px;
+}
+
+.adzworld-format-swatch--coverflow::before {
+	inset: 6px 14px;
+	border-radius: 2px;
+}
+
+.adzworld-format-swatch--coverflow::after {
+	inset: 11px 2px 11px 2px;
+	opacity: 0.28;
+	border-radius: 2px;
+}
+
+.adzworld-format-swatch--fade::before {
+	inset: 7px 9px;
+	opacity: 0.45;
+	border-radius: 2px;
+}
+
+.adzworld-format-swatch--fade::after {
+	inset: 11px 13px;
+	border-radius: 2px;
+}
+
+.adzworld-format-swatch--stack::before {
+	inset: 4px 8px 12px;
+	opacity: 0.3;
+	border-radius: 2px;
+}
+
+.adzworld-format-swatch--stack::after {
+	inset: 10px 6px 6px;
+	border-radius: 2px;
+}
+
+/* Multiple: repeated blocks. */
+/*
+ * Repeated blocks are drawn with offset box-shadow copies of one element. A
+ * blend mode over transparent gradient stops does not render reliably across
+ * browsers, and these swatches have to be legible rather than clever.
+ */
+.adzworld-format-swatch--filmstrip::before {
+	top: 10px;
+	left: 3px;
+	width: 11px;
+	height: 16px;
+	border-radius: 2px;
+	box-shadow:
+		15px 0 0 var(--adzf-accent),
+		30px 0 0 var(--adzf-accent);
+}
+
+.adzworld-format-swatch--grid::before {
+	top: 5px;
+	left: 5px;
+	width: 16px;
+	height: 11px;
+	border-radius: 2px;
+	box-shadow:
+		20px 0 0 var(--adzf-accent),
+		0 15px 0 var(--adzf-accent),
+		20px 15px 0 var(--adzf-accent);
+}
+
+/* Banner: wide and short, billboard taller. */
+.adzworld-format-swatch--banner::before {
+	inset: 14px 4px;
+	border-radius: 2px;
+}
+
+.adzworld-format-swatch--billboard::before {
+	inset: 8px 4px;
+	border-radius: 2px;
+}
+
+/* Widget: a bordered card. */
+.adzworld-format-swatch--inline-card::before {
+	inset: 6px 8px;
+	border-radius: 3px;
+}
+
+.adzworld-format-swatch--sidebar::before {
+	inset: 5px 26px 5px 5px;
+	border-radius: 3px;
+}
+
+/* Vertical: a tall block on one side. */
+.adzworld-format-swatch--rail-left::before {
+	inset: 4px 34px 4px 3px;
+	border-radius: 2px;
+}
+
+.adzworld-format-swatch--rail-right::before {
+	inset: 4px 3px 4px 34px;
+	border-radius: 2px;
+}
+
+.adzworld-format-swatch--skyscraper::before {
+	inset: 3px 15px;
+	border-radius: 2px;
+}
+
+/* Anchored: pinned to an edge or a corner. */
+.adzworld-format-swatch--dock-bottom::before {
+	inset: auto 2px 2px;
+	height: 10px;
+	border-radius: 2px;
+}
+
+.adzworld-format-swatch--dock-top::before {
+	inset: 2px 2px auto;
+	height: 10px;
+	border-radius: 2px;
+}
+
+.adzworld-format-swatch--corner::before {
+	inset: auto 3px 3px auto;
+	width: 20px;
+	height: 14px;
+	border-radius: 2px;
+}
+
+/* ----------------------------------------------------------- sizes table */
+
+.adzworld-format-sizes {
+	width: 100%;
+	max-width: 620px;
+	border-collapse: collapse;
+}
+
+.adzworld-format-sizes th,
+.adzworld-format-sizes td {
+	padding: 7px 10px;
+	text-align: left;
+	border-bottom: 1px solid var(--adzf-line);
+}
+
+.adzworld-format-sizes th {
+	color: var(--adzf-muted);
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+}
+
+.adzworld-format-sizes tbody tr:hover {
+	background: var(--adzf-sunken);
+}
+
+.adzworld-format-sizes code {
+	font-size: 11px;
+	background: var(--adzf-sunken);
+}
+
+/* ==========================================================================
+   Design pass: hierarchy, spacing, focus
+   ==========================================================================
+   Added rather than rewritten, so the existing six-tab structure, the slot
+   previews and the per-slot refresh controls keep their behaviour.
+   ========================================================================== */
+
+/*
+ * A visible focus ring on every interactive control in the desk. The WordPress
+ * default is easy to lose against the light panels this plugin uses, and
+ * keyboard operation of the rotation editor depends on being able to see where
+ * focus is.
+ */
+.adzworld-admin :is(a, button, input, select, textarea, summary):focus-visible,
+.adzworld-desk :is(a, button, input, select, textarea, summary):focus-visible {
+	outline: 2px solid #3e6d86;
+	outline-offset: 1px;
+	box-shadow: none;
+}
+
+/* Breathing room between the stacked sections of each tab. */
+.adzworld-desk-section + .adzworld-desk-section {
+	margin-top: 24px;
+}
+
+/*
+ * The rotation editor's slot rows. Each row is a unit, so it reads as one
+ * thing rather than a run of loose controls, and the populated preview sits
+ * with the row it belongs to.
+ */
+.adzworld-admin-slots {
+	display: grid;
+	gap: 10px;
+}
+
+.adzworld-admin-slot {
+	padding: 12px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 6px;
+}
+
+.adzworld-admin-slot:focus-within {
+	border-color: #3e6d86;
+}
+
+.adzworld-admin-slot-preview {
+	margin-top: 8px;
+	padding: 10px;
+	background: #f4f7f9;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+}
+
+/* Long shortcode strings must wrap rather than widen the page. */
+.adzworld-rotation-shortcode code,
+.adzworld-admin code {
+	overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.adzworld-admin *,
+	.adzworld-desk * {
+		transition: none !important;
+		animation: none !important;
+	}
+}
+
+@media (max-width: 782px) {
+
+	/* WordPress' own mobile admin breakpoint. */
+	.adzworld-format-list {
+		grid-template-columns: 1fr;
+	}
+
+	.adzworld-format-sizes {
+		max-width: none;
+	}
+}
+
+/* ==========================================================================
+   Starter packs tab
+   ==========================================================================
+   One card per pack. Each states what it will create, what state it is in, and
+   what happens to what it created, because a control that generates content on
+   someone's site should say so before it is pressed rather than after.
+   ========================================================================== */
+
+.adzworld-starter-intro {
+	max-width: 70ch;
+	margin: 0 0 20px;
+	color: #646970;
+}
+
+.adzworld-starter-packs {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+	gap: 14px;
+	align-items: start;
+}
+
+.adzworld-starter-pack {
+	min-width: 0;
+	padding: 18px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-left: 3px solid #3e6d86;
+	border-radius: 6px;
+}
+
+.adzworld-starter-pack__name {
+	margin: 0 0 6px;
+	font-size: 15px;
+}
+
+.adzworld-starter-pack__note {
+	max-width: 62ch;
+	margin: 0 0 14px;
+	color: #50575e;
+}
+
+.adzworld-starter-state {
+	margin: 0 0 12px;
+	padding: 8px 12px;
+	background: #f4f7f9;
+	border-radius: 4px;
+	font-size: 13px;
+}
+
+.adzworld-starter-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 0;
+}
+
+.adzworld-starter-note {
+	margin: 12px 0 0;
+	color: #646970;
+	font-size: 12px;
+}
+
+@media (max-width: 782px) {
+
+	.adzworld-starter-packs {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* Placements inside a starter pack card: where it goes, and what to paste. */
+.adzworld-starter-placements {
+	display: grid;
+	gap: 8px;
+	margin: 0 0 14px;
+	padding: 0;
+	list-style: none;
+}
+
+.adzworld-starter-placement {
+	display: grid;
+	gap: 3px;
+	min-width: 0;
+	padding: 9px 11px;
+	background: #f4f7f9;
+	border-radius: 4px;
+}
+
+.adzworld-starter-placement__where {
+	color: #50575e;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.adzworld-starter-placement__code {
+	overflow-wrap: anywhere;
+	font-size: 11.5px;
+	background: transparent;
+}
+
+.adzworld-starter-state--blocked {
+	background: #fdf6e3;
+	border-left: 3px solid #dba617;
+}
+
+.adzworld-manual-step {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 3px;
+	margin: 0 0 12px;
+	padding: 14px 16px;
+}
+
+.adzworld-manual-step h3 {
+	margin: 0 0 8px;
+}
+
+.adzworld-manual-state {
+	font-size: 12px;
+	font-weight: 600;
+	margin: 0 0 8px;
+}
+
+.adzworld-manual-step.is-done {
+	border-color: #68de7c;
+}
+
+.adzworld-manual-step.is-waiting {
+	background: #f6f7f7;
+}
+
+.adzworld-manual-step code {
+	display: inline-block;
+	overflow-wrap: anywhere;
+}
+
+.adzworld-manual-table {
+	background: #fff;
+	border-collapse: collapse;
+	margin: 12px 0 18px;
+	width: 100%;
+}
+
+.adzworld-manual-table th,
+.adzworld-manual-table td {
+	border-bottom: 1px solid #dcdcde;
+	padding: 8px 10px;
+	text-align: left;
+	vertical-align: top;
+}
+
+.adzworld-manual-builder {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	margin: 0 0 20px;
+	padding: 16px;
+}
+
+.adzworld-manual-shortcode {
+	display: block;
+	margin: 8px 0 16px;
+	overflow-wrap: anywhere;
+}
+
+.adzworld-manual-chapters {
+	list-style: none;
+	margin: 0 0 20px;
+	padding: 0;
+}
+
+.adzworld-provider-placeholder {
+	background: #f6f7f7;
+	border: 1px dashed #8c939a;
+	min-height: 120px;
+	padding: 16px;
+}

@@ -1,0 +1,1838 @@
+/*
+ * Claude candidate presentation (claude-code-web/assets/css/adz-rotation.css),
+ * applied to Codex class names. Codex markup is unchanged.
+ */
+
+/*
+ * Appearance is derived from the theme. Structure is enforced by the plugin.
+ *
+ * A plugin that renders into a theme it has never seen cannot know the page's
+ * background colour: CSS gives no way to read it. Preset colour names are not
+ * standardised either -- Twenty Twenty-Five publishes accent-1, other themes
+ * publish primary, and a classic theme publishes nothing at all. So nothing is
+ * detected and no theme is special-cased.
+ *
+ * Instead every surface is mixed from currentColor, which always resolves to
+ * whatever the theme set as text, and composites over whatever the theme
+ * painted behind it. On a light theme (dark text) that yields a soft grey
+ * lift; on a dark theme (light text) a soft bright one. Correct in both
+ * directions, with no theme-specific rules and no JavaScript.
+ *
+ * The literal colours in this block are last-resort fallbacks for a browser
+ * that cannot parse color-mix(). They never paint over a theme's own colours.
+ */
+.adzworld-rotation {
+	--adz-radius: 10px;
+	--adz-gap: 14px;
+
+	/* Text: the theme's, untouched. */
+	--adz-ink: currentColor;
+	--adz-muted: #646970;
+	--adz-line: #dcdcde;
+	--adz-surface: #fff;
+	--adz-surface-raised: #f6f7f7;
+	--adz-surface-sunken: #f0f0f1;
+	--adz-line-strong: #8c8f94;
+
+	/*
+	 * A ring that reads against the page behind the rotation. `Canvas` is the
+	 * browser's own page-background colour and follows color-scheme, so it
+	 * stays correct on a dark theme where a white ring would glare.
+	 */
+	--adz-ring: #fff;
+	--adz-ring: Canvas;
+
+	/* Informational, like --adzworld-good and --adzworld-bad: semantic. */
+	--adz-info: #2271b1;
+
+	/*
+	 * The accent travels with the theme where the theme publishes one. The
+	 * chain covers the names in common use and lands on the plugin's own teal
+	 * when a theme publishes none.
+	 */
+	--adz-accent:
+		var(--wp--preset--color--accent-1,
+		var(--wp--preset--color--primary,
+		var(--wp--preset--color--accent, #3e6d86)));
+
+	/*
+	 * A solid the plugin puts white text on, so its lightness cannot be left
+	 * to the theme. Hue and chroma travel; lightness is clamped into a band
+	 * where white clears 4.5:1. Falls back to the known-good teal below.
+	 */
+	--adz-accent-solid: #3e6d86;
+	--adz-on-accent: #fff;
+
+	/* Scoring colours are semantic, not decorative, so they do not adapt. */
+	--adzworld-accent: var(--adz-accent-solid);
+	--adzworld-good: #16803a;
+	--adzworld-neutral: #f5c400;
+	--adzworld-bad: #c92a2a;
+
+	position: relative;
+	box-sizing: border-box;
+
+	/*
+	 * The rotation sizes itself against the box it was placed in, not the
+	 * viewport. A rotation does not know whether it landed in a 300px sidebar,
+	 * a text column or a full-bleed band, and the viewport width cannot tell
+	 * it: a wide window says nothing about a narrow container.
+	 */
+	container-type: inline-size;
+	container-name: adzworld;
+
+	margin: 0 0 1.5em;
+
+	/* Typography is the theme's business. The plugin states no family, no
+	   size and no line height on the rotation itself. */
+	color: inherit;
+	font: inherit;
+}
+
+@supports (color: color-mix(in oklab, currentColor 50%, transparent)) {
+	.adzworld-rotation {
+		--adz-muted: color-mix(in oklab, currentColor 70%, transparent);
+		--adz-line: color-mix(in oklab, currentColor 22%, transparent);
+		--adz-surface: color-mix(in oklab, currentColor 5%, transparent);
+		--adz-surface-raised: color-mix(in oklab, currentColor 9%, transparent);
+		--adz-surface-sunken: color-mix(in oklab, currentColor 13%, transparent);
+		--adz-line-strong: color-mix(in oklab, currentColor 45%, transparent);
+	}
+}
+
+@supports (color: oklch(from red l c h)) {
+	.adzworld-rotation {
+		--adz-accent-solid: oklch(from var(--adz-accent) clamp(0.3, l, 0.48) c h);
+	}
+}
+
+.adzworld-rotation *,
+.adzworld-rotation *::before,
+.adzworld-rotation *::after {
+	box-sizing: inherit;
+}
+
+.adzworld-rotation [hidden] {
+	display: none !important;
+}
+
+.adzworld-rotation button,
+.adzworld-rotation input,
+.adzworld-rotation textarea {
+	margin: 0;
+	font-family: inherit;
+	font-size: inherit;
+	line-height: inherit;
+	appearance: none;
+}
+
+.adzworld-carousel {
+	position: relative;
+	padding-inline: 52px;
+}
+
+.adzworld-slides {
+	display: block;
+}
+
+.adzworld-rotation .adzworld-slide {
+	min-width: 0;
+	padding: 0;
+	background: var(--adz-surface);
+	border: 0;
+	border-radius: var(--adz-radius);
+}
+
+.adzworld-rotation .adzworld-slide > .adzworld-caption,
+.adzworld-rotation .adzworld-slide > .adzworld-creative,
+.adzworld-rotation .adzworld-slide > .adz-panel {
+	min-height: 48px;
+}
+
+.adzworld-rotation--3d.adzworld-enhanced .adzworld-slides {
+	position: relative;
+	min-height: 220px;
+	perspective: 1200px;
+	perspective-origin: 50% 45%;
+}
+
+.adzworld-rotation--3d.adzworld-enhanced .adzworld-active {
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14);
+}
+
+.adzworld-creative,
+/*
+ * The received creative is not touched.
+ *
+ * What a network returns is presented exactly as the network built it. The
+ * plugin does not resize it, crop it, restyle it or constrain it. That is not
+ * a preference: a modified, clipped or obscured unit breaks the network's
+ * terms. Google treats a resized or covered creative as a policy violation,
+ * and the publisher carries that, not us.
+ *
+ * The work here is therefore defensive, not decorative. Themes routinely ship
+ * `img, iframe { max-width: 100%; height: auto }` and `overflow: hidden` on
+ * content wrappers, which would reformat or clip a 728x90 unit without anyone
+ * noticing. The slot sheds those inherited rules and contains its own layout,
+ * so neither the theme nor this plugin reaches the creative.
+ *
+ * Until 1.0.9 this plugin was itself the offender: it forced max-width and
+ * height onto every provider img and iframe, and clipped the slot with
+ * overflow: hidden. Both are gone.
+ */
+.adzworld-provider {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 90px;
+
+	/*
+	 * Never `hidden`. Clipping a creative is a breach, not a crop. A creative
+	 * wider than its container overflows visibly, where it is obvious and can
+	 * be corrected, rather than being silently cut off.
+	 */
+	overflow: visible;
+
+	/* The page's layout cannot reach into the slot, nor the slot into it. */
+	contain: layout;
+}
+
+/*
+ * Everything the network injects into its mount point is rolled back to the
+ * browser's own defaults, so no theme rule and no rule of ours applies to it.
+ * The network's own inline styles outrank this and survive untouched, which
+ * is precisely what should happen.
+ */
+.adzworld-network-unit > * {
+	all: revert-layer;
+}
+
+/*
+ * A local adz is the publisher's own content, rendered by this plugin, so it
+ * is ours to fit to its slot. This rule deliberately does not name
+ * .adzworld-provider.
+ */
+.adzworld-creative img,
+.adzworld-creative iframe {
+	max-width: 100%;
+	height: auto;
+}
+
+.adzworld-match-label,
+.adzworld-caption {
+	margin: 6px 2px 0;
+	color: var(--adz-muted);
+	font-size: 12px;
+	line-height: 1.4;
+	text-align: center;
+}
+
+.adzworld-caption--expandable summary {
+	cursor: pointer;
+	list-style-position: inside;
+}
+
+.adzworld-caption__full {
+	margin-block-start: 0.75rem;
+}
+
+.adzworld-navigation {
+	position: static;
+}
+
+.adzworld-rotation .adzworld-previous,
+.adzworld-rotation .adzworld-next {
+	position: absolute;
+	top: 4px;
+	z-index: 20;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 38px;
+	min-width: 38px;
+	height: 38px;
+	min-height: 38px;
+	padding: 0;
+	color: var(--adz-ink);
+	font-size: 22px;
+	line-height: 1;
+	background: var(--adz-surface);
+	border: 1px solid var(--adz-line);
+	border-radius: 50%;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+	cursor: pointer;
+}
+
+.adzworld-rotation .adzworld-previous:hover,
+.adzworld-rotation .adzworld-next:hover,
+.adzworld-rotation .adzworld-previous:focus-visible,
+.adzworld-rotation .adzworld-next:focus-visible {
+	background: var(--adz-surface-raised);
+	border-color: var(--adz-accent);
+}
+
+.adzworld-rotation .adzworld-previous {
+	left: 6px;
+}
+
+.adzworld-rotation .adzworld-next {
+	right: 6px;
+}
+
+.adzworld-dots {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	margin-top: 12px;
+}
+
+.adzworld-rotation .adzworld-dots button {
+	width: 9px;
+	min-width: 9px;
+	height: 9px;
+	min-height: 9px;
+	padding: 0;
+	background: var(--adz-line);
+	border: 0;
+	border-radius: 50%;
+	cursor: pointer;
+}
+
+.adzworld-rotation .adzworld-dots button::before {
+	content: none;
+}
+
+.adzworld-rotation .adzworld-dots button[aria-pressed="true"] {
+	width: 22px;
+	background: linear-gradient(90deg, var(--adz-accent-solid), color-mix(in oklab, var(--adz-accent-solid) 58%, #fff));
+	border-radius: 5px;
+}
+
+.adzworld-rotation .adzworld-dots button:hover {
+	transform: scale(1.2);
+}
+
+.adzworld-rotation .adzworld-dots .adzworld-hub-position {
+	background: transparent;
+	border: 2px solid var(--adz-accent);
+	border-radius: 2px;
+}
+
+.adzworld-rotation .adzworld-dots .adzworld-hub-position[aria-pressed="true"] {
+	width: 22px;
+	background: var(--adz-accent);
+	border-radius: 2px;
+}
+
+.adzworld-rotation .adz-panel {
+	width: auto;
+	padding: 14px 16px;
+	margin: 0 0 14px;
+	background: var(--adz-surface-raised);
+	border: 1px solid var(--adz-line);
+	border-radius: 10px;
+	font-size: 14px;
+}
+
+.adzworld-rotation .adz-panel__title {
+	margin: 0 0 8px;
+	color: var(--adz-ink);
+	font-size: 15px;
+	font-weight: 600;
+	line-height: 1.45;
+}
+
+.adzworld-rotation .adz-intro__lead {
+	margin: 0 0 8px;
+	font-size: 15px;
+	font-weight: 600;
+	line-height: 1.45;
+}
+
+.adzworld-rotation .adz-intro__points {
+	margin: 0 0 12px;
+	padding-left: 18px;
+	color: var(--adz-muted);
+	font-size: 13px;
+	line-height: 1.6;
+}
+
+.adzworld-rotation .adz-panel__label,
+.adzworld-rotation .adz-panel__section-label {
+	display: block;
+	margin: 12px 0 6px;
+	color: var(--adz-muted);
+	font-size: 12px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+.adzworld-rotation .adz-panel__category-guidance {
+	margin: 0 0 8px;
+	color: var(--adz-muted);
+	font-size: 12px;
+}
+
+.adzworld-rotation .adz-panel__row,
+.adzworld-rotation .adzworld-improve__row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+}
+
+.adzworld-rotation .adz-panel__input {
+	flex: 1 1 220px;
+	min-width: 0;
+	min-height: 0;
+	max-height: none;
+	padding: 9px 11px;
+	color: var(--adz-ink);
+	font-size: 14px;
+	background: var(--adz-surface);
+	border: 1px solid var(--adz-line-strong);
+	border-radius: 6px;
+}
+
+.adzworld-rotation .adz-panel__input:focus,
+.adzworld-rotation .adz-panel__input:focus-visible {
+	border-color: var(--adz-accent);
+	outline: 2px solid transparent;
+	box-shadow: 0 0 0 2px color-mix(in oklab, var(--adz-accent) 35%, transparent);
+}
+
+.adzworld-rotation .adz-panel__submit {
+	flex: 0 0 auto;
+	padding: 9px 16px;
+	color: var(--adz-on-accent);
+	font-size: 14px;
+	background: var(--adz-accent);
+	border: 0;
+	border-radius: 6px;
+	cursor: pointer;
+}
+
+.adzworld-rotation .adz-panel__submit:hover {
+	background: color-mix(in oklab, var(--adz-accent-solid) 82%, #000);
+}
+
+.adzworld-rotation .adz-panel__submit[disabled] {
+	opacity: 0.6;
+	cursor: default;
+}
+
+.adzworld-rotation .adz-panel__chiplist {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.adzworld-rotation .adz-panel__categories {
+	margin-top: 12px;
+}
+
+.adzworld-rotation .adz-panel__categories > summary {
+	margin-bottom: 6px;
+	color: var(--adz-muted);
+	font-size: 12px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	cursor: pointer;
+}
+
+.adzworld-rotation .adz-panel__chip {
+	display: inline-flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 4px;
+	max-width: 100%;
+	padding: 3px 4px 3px 10px;
+	background: var(--adz-surface);
+	border: 1px solid var(--adz-line);
+	border-radius: 999px;
+	font-size: 13px;
+	line-height: 1.6;
+}
+
+.adzworld-rotation .adz-panel__chip--exclude {
+	background: color-mix(in oklab, var(--adzworld-bad) 12%, var(--adz-surface));
+	border-color: var(--adzworld-bad);
+	text-decoration: line-through;
+}
+
+.adzworld-rotation .adz-panel__chip--min_price,
+.adzworld-rotation .adz-panel__chip--max_price,
+.adzworld-rotation .adz-panel__chip--capacity,
+.adzworld-rotation .adz-panel__chip--age {
+	background: color-mix(in oklab, var(--adz-info) 12%, var(--adz-surface));
+	border-color: var(--adz-info);
+}
+
+.adzworld-rotation .adz-panel__chip--intent {
+	background: color-mix(in oklab, var(--adzworld-good) 12%, var(--adz-surface));
+	border-color: var(--adzworld-good);
+}
+
+.adzworld-rotation .adz-panel__chip--categories {
+	background: var(--adz-surface);
+	border-color: var(--adz-line);
+	color: var(--adz-ink);
+}
+
+/*
+ * The four category tones.
+ *
+ * A tone exists to tell one category from another at a glance, so what has to
+ * survive is the difference in hue -- not a fixed pair of pale blues that
+ * vanish on a dark theme. Each tone therefore carries only a hue angle, and
+ * both states are built from it: the resting chip as a wash of that hue over
+ * the derived surface, the active chip as the hue itself.
+ *
+ * The literal pairs below are the fallback for a browser without oklch(). The
+ * active lightness is held at or under 0.50 so that --adz-on-accent clears
+ * 4.5:1 across the whole gradient, not only at its dark end.
+ */
+.adzworld-rotation .adz-panel__chip--tone-0 {
+	background: linear-gradient(135deg, #f4f8fb 0%, #d5e5ef 100%);
+	border-color: #8aafc2;
+	color: #1a3c50;
+}
+
+.adzworld-rotation .adz-panel__chip--tone-1 {
+	background: linear-gradient(135deg, #f3f8f6 0%, #d5ebe4 100%);
+	border-color: #7eb3a6;
+	color: #1a403b;
+}
+
+.adzworld-rotation .adz-panel__chip--tone-2 {
+	background: linear-gradient(135deg, #f4f6fa 0%, #dce3ee 100%);
+	border-color: #8ea0bb;
+	color: #2a3a52;
+}
+
+.adzworld-rotation .adz-panel__chip--tone-3 {
+	background: linear-gradient(135deg, #f3f7f8 0%, #d7e6ea 100%);
+	border-color: #86aeb8;
+	color: #1d3d46;
+}
+
+.adzworld-rotation .adz-panel__chip--tone-0.is-active {
+	background: linear-gradient(135deg, #30586d 0%, #3e6d86 100%);
+	border-color: #30586d;
+	color: var(--adz-on-accent);
+}
+
+.adzworld-rotation .adz-panel__chip--tone-1.is-active {
+	background: linear-gradient(135deg, #25544f 0%, #2f6b64 100%);
+	border-color: #25544f;
+	color: var(--adz-on-accent);
+}
+
+.adzworld-rotation .adz-panel__chip--tone-2.is-active {
+	background: linear-gradient(135deg, #313e53 0%, #3d4d68 100%);
+	border-color: #313e53;
+	color: var(--adz-on-accent);
+}
+
+.adzworld-rotation .adz-panel__chip--tone-3.is-active {
+	background: linear-gradient(135deg, #2e4e59 0%, #3a6270 100%);
+	border-color: #2e4e59;
+	color: var(--adz-on-accent);
+}
+
+@supports (color: oklch(0.5 0.09 200)) {
+	.adzworld-rotation .adz-panel__chip--tone-0 { --adz-tone: 237; }
+	.adzworld-rotation .adz-panel__chip--tone-1 { --adz-tone: 172; }
+	.adzworld-rotation .adz-panel__chip--tone-2 { --adz-tone: 281; }
+	.adzworld-rotation .adz-panel__chip--tone-3 { --adz-tone: 205; }
+
+	.adzworld-rotation .adz-panel__chip--tone-0,
+	.adzworld-rotation .adz-panel__chip--tone-1,
+	.adzworld-rotation .adz-panel__chip--tone-2,
+	.adzworld-rotation .adz-panel__chip--tone-3 {
+		background: color-mix(in oklab, oklch(0.5 0.09 var(--adz-tone)) 14%, var(--adz-surface));
+		border-color: color-mix(in oklab, oklch(0.5 0.09 var(--adz-tone)) 48%, transparent);
+		color: inherit;
+	}
+
+	.adzworld-rotation .adz-panel__chip--tone-0.is-active,
+	.adzworld-rotation .adz-panel__chip--tone-1.is-active,
+	.adzworld-rotation .adz-panel__chip--tone-2.is-active,
+	.adzworld-rotation .adz-panel__chip--tone-3.is-active {
+		background: linear-gradient(
+			135deg,
+			oklch(0.42 0.09 var(--adz-tone)) 0%,
+			oklch(0.5 0.09 var(--adz-tone)) 100%
+		);
+		border-color: oklch(0.42 0.09 var(--adz-tone));
+		color: var(--adz-on-accent);
+	}
+}
+
+.adzworld-rotation .adz-panel__category-row {
+	display: flex;
+
+	/*
+	 * Without wrapping, a row of category chips overflows the panel as soon
+	 * as the container is narrower than the chips are wide, and the last chip
+	 * sits outside the card.
+	 */
+	flex-wrap: wrap;
+	gap: 6px;
+	align-items: center;
+	min-width: 0;
+}
+
+.adzworld-rotation .adz-panel__chiptext,
+.adzworld-rotation .adz-panel__category,
+.adzworld-rotation .adz-panel__category-name,
+.adzworld-rotation .adz-panel__refinement-name {
+	max-width: 16rem;
+	overflow: hidden;
+	color: inherit;
+	font-weight: 600;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.adzworld-rotation .adz-panel__category,
+.adzworld-rotation .adz-panel__category-name,
+.adzworld-rotation .adz-panel__refinement-name {
+	min-width: 0;
+	min-height: 0;
+	padding: 0;
+	background: transparent;
+	border: 0;
+	box-shadow: none;
+}
+
+.adzworld-rotation .adz-panel__category-name:focus,
+.adzworld-rotation .adz-panel__refinement-name:focus {
+	background: var(--adz-surface);
+	color: var(--adz-ink);
+	outline: 2px solid var(--adz-accent);
+	outline-offset: 1px;
+	text-overflow: clip;
+}
+
+.adzworld-rotation .adz-panel__chipedit {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+	min-width: 20px;
+	height: 20px;
+	min-height: 20px;
+	padding: 0;
+	color: var(--adz-muted);
+	font-size: 15px;
+	line-height: 1;
+	background: transparent;
+	border: 0;
+	border-radius: 50%;
+	cursor: pointer;
+}
+
+.adzworld-rotation .adz-panel__chipedit:hover,
+.adzworld-rotation .adz-panel__chipedit:focus-visible {
+	color: var(--adzworld-bad);
+	background: var(--adz-surface-sunken);
+}
+
+.adzworld-rotation .adz-panel__chip--categories.is-active .adz-panel__chipedit {
+	color: var(--adz-on-accent);
+}
+
+.adzworld-rotation .adz-panel__category-slots,
+.adzworld-rotation .adzworld-category-slots__positions {
+	display: flex;
+	gap: 2px;
+	align-items: center;
+}
+
+.adzworld-rotation .adz-panel__category-slot,
+.adzworld-rotation .adzworld-category-slots__positions button {
+	position: relative;
+	width: 14px;
+	min-width: 14px;
+	height: 14px;
+	min-height: 14px;
+	padding: 0;
+	background: transparent;
+	border: 0;
+	border-radius: 50%;
+	cursor: pointer;
+}
+
+.adzworld-rotation .adz-panel__category-slot::before,
+.adzworld-rotation .adzworld-category-slots__positions button::before {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 7px;
+	height: 7px;
+	background: var(--adz-line);
+	border: 0;
+	border-radius: 50%;
+	content: "";
+	transform: translate(-50%, -50%);
+}
+
+.adzworld-rotation .adz-panel__category-slot[aria-pressed="true"]::before,
+.adzworld-rotation .adzworld-category-slots__positions button[aria-pressed="true"]::before {
+	width: 9px;
+	background: var(--adz-accent);
+}
+
+.adzworld-rotation .adz-panel__chip--categories.is-active .adz-panel__category-slot::before {
+	background: rgba(255, 255, 255, 0.45);
+}
+
+.adzworld-rotation .adz-panel__chip--categories.is-active .adz-panel__category-slot[aria-pressed="true"]::before {
+	background: var(--adz-surface);
+}
+
+.adzworld-category-slots {
+	align-self: flex-start;
+	margin-top: 12px;
+}
+
+.adzworld-category-slots__heading {
+	display: inline-flex;
+	max-width: 100%;
+	overflow: hidden;
+	background: var(--adz-surface);
+	border: 1px solid var(--adz-line);
+	border-radius: 999px;
+}
+
+.adzworld-rotation .adzworld-category-slots__heading button {
+	min-width: 0;
+	min-height: 0;
+	padding: 3px 10px;
+	color: var(--adz-ink);
+	font-size: 13px;
+	font-weight: 600;
+	background: transparent;
+	border: 0;
+	border-radius: 0;
+	cursor: pointer;
+}
+
+.adzworld-rotation .adzworld-category-slots__heading .adzworld-category-slots__add {
+	min-width: 28px;
+	padding-inline: 8px;
+	border-inline-start: 1px solid var(--adz-line);
+	color: var(--adz-accent);
+	font-size: 16px;
+}
+
+.adzworld-category-slots__status,
+.adzworld-rotation .adz-panel__note,
+.adzworld-rotation .adz-panel__status {
+	margin: 8px 0 0;
+	color: var(--adz-muted);
+	font-size: 12px;
+}
+
+.adzworld-rotation .adzworld-affiliate-offers {
+	margin: 12px 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.adzworld-rotation .adzworld-affiliate-offer {
+	color: var(--adz-accent);
+	font-size: 13px;
+	text-decoration: underline;
+}
+
+.adzworld-rotation :focus-visible {
+	outline: 2px solid var(--adz-accent);
+	outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.adzworld-rotation .adzworld-slide,
+	.adzworld-rotation .adzworld-dots button,
+	.adzworld-rotation .adzworld-previous,
+	.adzworld-rotation .adzworld-next {
+		transition: none;
+	}
+}
+
+/*
+ * The rotation's own chrome responds to the box it sits in. A phone-width
+ * window and a 300px sidebar in a wide window need the same layout, and a wide
+ * window says nothing about a narrow container.
+ */
+@container adzworld (max-width: 600px) {
+	.adzworld-carousel {
+		padding-inline: 46px;
+	}
+
+	.adzworld-rotation .adzworld-previous {
+		left: 4px;
+	}
+
+	.adzworld-rotation .adzworld-next {
+		right: 2px;
+	}
+
+	.adzworld-rotation--3d.adzworld-enhanced .adzworld-slides {
+		min-height: 190px;
+	}
+}
+
+.adzworld-evaluation {
+	margin-block-start: 1rem;
+	padding-block-start: 0.75rem;
+	border-block-start: 1px solid var(--adz-line);
+}
+
+.adzworld-evaluation summary {
+	cursor: pointer;
+	font-weight: 600;
+}
+
+.adzworld-evaluation summary:focus,
+.adzworld-evaluation summary:focus-visible {
+	outline: 0;
+	text-decoration: none;
+}
+
+.adzworld-evaluation__control {
+	display: grid;
+	grid-template-columns: auto minmax(10rem, 1fr) auto;
+	gap: 0.75rem;
+	align-items: center;
+	margin-block-start: 0.75rem;
+}
+
+.adzworld-evaluation input[type="range"] {
+	--adzworld-thumb: var(--adzworld-neutral);
+	appearance: none;
+	width: 100%;
+	height: 0.55rem;
+	margin: 0;
+	background: linear-gradient(90deg, var(--adzworld-bad) 0%, #ef7d22 25%, var(--adzworld-neutral) 50%, #83bd3c 75%, var(--adzworld-good) 100%);
+	border: 0;
+	border-radius: 999px;
+	outline-offset: 0.3rem;
+}
+
+.adzworld-evaluation input[type="range"]::-webkit-slider-runnable-track {
+	height: 0.55rem;
+	background: transparent;
+	border-radius: 999px;
+}
+
+.adzworld-evaluation input[type="range"]::-webkit-slider-thumb {
+	width: 1.25rem;
+	height: 1.25rem;
+	margin-top: -0.35rem;
+	appearance: none;
+	background: var(--adzworld-thumb);
+	border: 3px solid var(--adz-ring);
+	border-radius: 50%;
+	box-shadow: 0 0 0 2px var(--adzworld-thumb);
+}
+
+.adzworld-evaluation input[type="range"]::-moz-range-track {
+	height: 0.55rem;
+	background: transparent;
+	border: 0;
+	border-radius: 999px;
+}
+
+.adzworld-evaluation input[type="range"]::-moz-range-progress {
+	background: transparent;
+}
+
+.adzworld-evaluation input[type="range"]::-moz-range-thumb {
+	width: 1rem;
+	height: 1rem;
+	background: var(--adzworld-thumb);
+	border: 3px solid var(--adz-ring);
+	border-radius: 50%;
+	box-shadow: 0 0 0 2px var(--adzworld-thumb);
+}
+
+.adzworld-evaluation input.is-score-minus-100 { --adzworld-thumb: hsl(0 72% 43%); }
+.adzworld-evaluation input.is-score-minus-99 { --adzworld-thumb: hsl(0 72% 43%); }
+.adzworld-evaluation input.is-score-minus-98 { --adzworld-thumb: hsl(1 72% 43%); }
+.adzworld-evaluation input.is-score-minus-97 { --adzworld-thumb: hsl(1 72% 43%); }
+.adzworld-evaluation input.is-score-minus-96 { --adzworld-thumb: hsl(2 72% 43%); }
+.adzworld-evaluation input.is-score-minus-95 { --adzworld-thumb: hsl(2 72% 43%); }
+.adzworld-evaluation input.is-score-minus-94 { --adzworld-thumb: hsl(3 72% 43%); }
+.adzworld-evaluation input.is-score-minus-93 { --adzworld-thumb: hsl(3 72% 43%); }
+.adzworld-evaluation input.is-score-minus-92 { --adzworld-thumb: hsl(4 72% 43%); }
+.adzworld-evaluation input.is-score-minus-91 { --adzworld-thumb: hsl(4 72% 43%); }
+.adzworld-evaluation input.is-score-minus-90 { --adzworld-thumb: hsl(5 72% 43%); }
+.adzworld-evaluation input.is-score-minus-89 { --adzworld-thumb: hsl(5 72% 43%); }
+.adzworld-evaluation input.is-score-minus-88 { --adzworld-thumb: hsl(6 72% 43%); }
+.adzworld-evaluation input.is-score-minus-87 { --adzworld-thumb: hsl(6 72% 43%); }
+.adzworld-evaluation input.is-score-minus-86 { --adzworld-thumb: hsl(7 72% 43%); }
+.adzworld-evaluation input.is-score-minus-85 { --adzworld-thumb: hsl(7 72% 43%); }
+.adzworld-evaluation input.is-score-minus-84 { --adzworld-thumb: hsl(8 72% 43%); }
+.adzworld-evaluation input.is-score-minus-83 { --adzworld-thumb: hsl(8 72% 43%); }
+.adzworld-evaluation input.is-score-minus-82 { --adzworld-thumb: hsl(9 72% 43%); }
+.adzworld-evaluation input.is-score-minus-81 { --adzworld-thumb: hsl(9 72% 43%); }
+.adzworld-evaluation input.is-score-minus-80 { --adzworld-thumb: hsl(10 72% 43%); }
+.adzworld-evaluation input.is-score-minus-79 { --adzworld-thumb: hsl(10 72% 43%); }
+.adzworld-evaluation input.is-score-minus-78 { --adzworld-thumb: hsl(11 72% 43%); }
+.adzworld-evaluation input.is-score-minus-77 { --adzworld-thumb: hsl(11 72% 43%); }
+.adzworld-evaluation input.is-score-minus-76 { --adzworld-thumb: hsl(12 72% 43%); }
+.adzworld-evaluation input.is-score-minus-75 { --adzworld-thumb: hsl(12 72% 43%); }
+.adzworld-evaluation input.is-score-minus-74 { --adzworld-thumb: hsl(12 72% 43%); }
+.adzworld-evaluation input.is-score-minus-73 { --adzworld-thumb: hsl(13 72% 43%); }
+.adzworld-evaluation input.is-score-minus-72 { --adzworld-thumb: hsl(13 72% 43%); }
+.adzworld-evaluation input.is-score-minus-71 { --adzworld-thumb: hsl(14 72% 43%); }
+.adzworld-evaluation input.is-score-minus-70 { --adzworld-thumb: hsl(14 72% 43%); }
+.adzworld-evaluation input.is-score-minus-69 { --adzworld-thumb: hsl(15 72% 43%); }
+.adzworld-evaluation input.is-score-minus-68 { --adzworld-thumb: hsl(15 72% 43%); }
+.adzworld-evaluation input.is-score-minus-67 { --adzworld-thumb: hsl(16 72% 43%); }
+.adzworld-evaluation input.is-score-minus-66 { --adzworld-thumb: hsl(16 72% 43%); }
+.adzworld-evaluation input.is-score-minus-65 { --adzworld-thumb: hsl(17 72% 43%); }
+.adzworld-evaluation input.is-score-minus-64 { --adzworld-thumb: hsl(17 72% 43%); }
+.adzworld-evaluation input.is-score-minus-63 { --adzworld-thumb: hsl(18 72% 43%); }
+.adzworld-evaluation input.is-score-minus-62 { --adzworld-thumb: hsl(18 72% 43%); }
+.adzworld-evaluation input.is-score-minus-61 { --adzworld-thumb: hsl(19 72% 43%); }
+.adzworld-evaluation input.is-score-minus-60 { --adzworld-thumb: hsl(19 72% 43%); }
+.adzworld-evaluation input.is-score-minus-59 { --adzworld-thumb: hsl(20 72% 43%); }
+.adzworld-evaluation input.is-score-minus-58 { --adzworld-thumb: hsl(20 72% 43%); }
+.adzworld-evaluation input.is-score-minus-57 { --adzworld-thumb: hsl(21 72% 43%); }
+.adzworld-evaluation input.is-score-minus-56 { --adzworld-thumb: hsl(21 72% 43%); }
+.adzworld-evaluation input.is-score-minus-55 { --adzworld-thumb: hsl(22 72% 43%); }
+.adzworld-evaluation input.is-score-minus-54 { --adzworld-thumb: hsl(22 72% 43%); }
+.adzworld-evaluation input.is-score-minus-53 { --adzworld-thumb: hsl(23 72% 43%); }
+.adzworld-evaluation input.is-score-minus-52 { --adzworld-thumb: hsl(23 72% 43%); }
+.adzworld-evaluation input.is-score-minus-51 { --adzworld-thumb: hsl(24 72% 43%); }
+.adzworld-evaluation input.is-score-minus-50 { --adzworld-thumb: hsl(24 72% 43%); }
+.adzworld-evaluation input.is-score-minus-49 { --adzworld-thumb: hsl(24 72% 43%); }
+.adzworld-evaluation input.is-score-minus-48 { --adzworld-thumb: hsl(25 72% 43%); }
+.adzworld-evaluation input.is-score-minus-47 { --adzworld-thumb: hsl(25 72% 43%); }
+.adzworld-evaluation input.is-score-minus-46 { --adzworld-thumb: hsl(26 72% 43%); }
+.adzworld-evaluation input.is-score-minus-45 { --adzworld-thumb: hsl(26 72% 43%); }
+.adzworld-evaluation input.is-score-minus-44 { --adzworld-thumb: hsl(27 72% 43%); }
+.adzworld-evaluation input.is-score-minus-43 { --adzworld-thumb: hsl(27 72% 43%); }
+.adzworld-evaluation input.is-score-minus-42 { --adzworld-thumb: hsl(28 72% 43%); }
+.adzworld-evaluation input.is-score-minus-41 { --adzworld-thumb: hsl(28 72% 43%); }
+.adzworld-evaluation input.is-score-minus-40 { --adzworld-thumb: hsl(29 72% 43%); }
+.adzworld-evaluation input.is-score-minus-39 { --adzworld-thumb: hsl(29 72% 43%); }
+.adzworld-evaluation input.is-score-minus-38 { --adzworld-thumb: hsl(30 72% 43%); }
+.adzworld-evaluation input.is-score-minus-37 { --adzworld-thumb: hsl(30 72% 43%); }
+.adzworld-evaluation input.is-score-minus-36 { --adzworld-thumb: hsl(31 72% 43%); }
+.adzworld-evaluation input.is-score-minus-35 { --adzworld-thumb: hsl(31 72% 43%); }
+.adzworld-evaluation input.is-score-minus-34 { --adzworld-thumb: hsl(32 72% 43%); }
+.adzworld-evaluation input.is-score-minus-33 { --adzworld-thumb: hsl(32 72% 43%); }
+.adzworld-evaluation input.is-score-minus-32 { --adzworld-thumb: hsl(33 72% 43%); }
+.adzworld-evaluation input.is-score-minus-31 { --adzworld-thumb: hsl(33 72% 43%); }
+.adzworld-evaluation input.is-score-minus-30 { --adzworld-thumb: hsl(34 72% 43%); }
+.adzworld-evaluation input.is-score-minus-29 { --adzworld-thumb: hsl(34 72% 43%); }
+.adzworld-evaluation input.is-score-minus-28 { --adzworld-thumb: hsl(35 72% 43%); }
+.adzworld-evaluation input.is-score-minus-27 { --adzworld-thumb: hsl(35 72% 43%); }
+.adzworld-evaluation input.is-score-minus-26 { --adzworld-thumb: hsl(36 72% 43%); }
+.adzworld-evaluation input.is-score-minus-25 { --adzworld-thumb: hsl(36 72% 43%); }
+.adzworld-evaluation input.is-score-minus-24 { --adzworld-thumb: hsl(36 72% 43%); }
+.adzworld-evaluation input.is-score-minus-23 { --adzworld-thumb: hsl(37 72% 43%); }
+.adzworld-evaluation input.is-score-minus-22 { --adzworld-thumb: hsl(37 72% 43%); }
+.adzworld-evaluation input.is-score-minus-21 { --adzworld-thumb: hsl(38 72% 43%); }
+.adzworld-evaluation input.is-score-minus-20 { --adzworld-thumb: hsl(38 72% 43%); }
+.adzworld-evaluation input.is-score-minus-19 { --adzworld-thumb: hsl(39 72% 43%); }
+.adzworld-evaluation input.is-score-minus-18 { --adzworld-thumb: hsl(39 72% 43%); }
+.adzworld-evaluation input.is-score-minus-17 { --adzworld-thumb: hsl(40 72% 43%); }
+.adzworld-evaluation input.is-score-minus-16 { --adzworld-thumb: hsl(40 72% 43%); }
+.adzworld-evaluation input.is-score-minus-15 { --adzworld-thumb: hsl(41 72% 43%); }
+.adzworld-evaluation input.is-score-minus-14 { --adzworld-thumb: hsl(41 72% 43%); }
+.adzworld-evaluation input.is-score-minus-13 { --adzworld-thumb: hsl(42 72% 43%); }
+.adzworld-evaluation input.is-score-minus-12 { --adzworld-thumb: hsl(42 72% 43%); }
+.adzworld-evaluation input.is-score-minus-11 { --adzworld-thumb: hsl(43 72% 43%); }
+.adzworld-evaluation input.is-score-minus-10 { --adzworld-thumb: hsl(43 72% 43%); }
+.adzworld-evaluation input.is-score-minus-9 { --adzworld-thumb: hsl(44 72% 43%); }
+.adzworld-evaluation input.is-score-minus-8 { --adzworld-thumb: hsl(44 72% 43%); }
+.adzworld-evaluation input.is-score-minus-7 { --adzworld-thumb: hsl(45 72% 43%); }
+.adzworld-evaluation input.is-score-minus-6 { --adzworld-thumb: hsl(45 72% 43%); }
+.adzworld-evaluation input.is-score-minus-5 { --adzworld-thumb: hsl(46 72% 43%); }
+.adzworld-evaluation input.is-score-minus-4 { --adzworld-thumb: hsl(46 72% 43%); }
+.adzworld-evaluation input.is-score-minus-3 { --adzworld-thumb: hsl(47 72% 43%); }
+.adzworld-evaluation input.is-score-minus-2 { --adzworld-thumb: hsl(47 72% 43%); }
+.adzworld-evaluation input.is-score-minus-1 { --adzworld-thumb: hsl(48 72% 43%); }
+.adzworld-evaluation input.is-score-0 { --adzworld-thumb: hsl(48 92% 48%); }
+.adzworld-evaluation input.is-score-1 { --adzworld-thumb: hsl(49 72% 43%); }
+.adzworld-evaluation input.is-score-2 { --adzworld-thumb: hsl(50 72% 43%); }
+.adzworld-evaluation input.is-score-3 { --adzworld-thumb: hsl(50 72% 43%); }
+.adzworld-evaluation input.is-score-4 { --adzworld-thumb: hsl(51 72% 43%); }
+.adzworld-evaluation input.is-score-5 { --adzworld-thumb: hsl(52 72% 43%); }
+.adzworld-evaluation input.is-score-6 { --adzworld-thumb: hsl(53 72% 43%); }
+.adzworld-evaluation input.is-score-7 { --adzworld-thumb: hsl(53 72% 43%); }
+.adzworld-evaluation input.is-score-8 { --adzworld-thumb: hsl(54 72% 43%); }
+.adzworld-evaluation input.is-score-9 { --adzworld-thumb: hsl(55 72% 43%); }
+.adzworld-evaluation input.is-score-10 { --adzworld-thumb: hsl(56 72% 43%); }
+.adzworld-evaluation input.is-score-11 { --adzworld-thumb: hsl(56 72% 43%); }
+.adzworld-evaluation input.is-score-12 { --adzworld-thumb: hsl(57 72% 43%); }
+.adzworld-evaluation input.is-score-13 { --adzworld-thumb: hsl(58 72% 43%); }
+.adzworld-evaluation input.is-score-14 { --adzworld-thumb: hsl(59 72% 43%); }
+.adzworld-evaluation input.is-score-15 { --adzworld-thumb: hsl(60 72% 43%); }
+.adzworld-evaluation input.is-score-16 { --adzworld-thumb: hsl(60 72% 43%); }
+.adzworld-evaluation input.is-score-17 { --adzworld-thumb: hsl(61 72% 43%); }
+.adzworld-evaluation input.is-score-18 { --adzworld-thumb: hsl(62 72% 43%); }
+.adzworld-evaluation input.is-score-19 { --adzworld-thumb: hsl(63 72% 43%); }
+.adzworld-evaluation input.is-score-20 { --adzworld-thumb: hsl(63 72% 43%); }
+.adzworld-evaluation input.is-score-21 { --adzworld-thumb: hsl(64 72% 43%); }
+.adzworld-evaluation input.is-score-22 { --adzworld-thumb: hsl(65 72% 43%); }
+.adzworld-evaluation input.is-score-23 { --adzworld-thumb: hsl(66 72% 43%); }
+.adzworld-evaluation input.is-score-24 { --adzworld-thumb: hsl(66 72% 43%); }
+.adzworld-evaluation input.is-score-25 { --adzworld-thumb: hsl(67 72% 43%); }
+.adzworld-evaluation input.is-score-26 { --adzworld-thumb: hsl(68 72% 43%); }
+.adzworld-evaluation input.is-score-27 { --adzworld-thumb: hsl(69 72% 43%); }
+.adzworld-evaluation input.is-score-28 { --adzworld-thumb: hsl(70 72% 43%); }
+.adzworld-evaluation input.is-score-29 { --adzworld-thumb: hsl(70 72% 43%); }
+.adzworld-evaluation input.is-score-30 { --adzworld-thumb: hsl(71 72% 43%); }
+.adzworld-evaluation input.is-score-31 { --adzworld-thumb: hsl(72 72% 43%); }
+.adzworld-evaluation input.is-score-32 { --adzworld-thumb: hsl(73 72% 43%); }
+.adzworld-evaluation input.is-score-33 { --adzworld-thumb: hsl(73 72% 43%); }
+.adzworld-evaluation input.is-score-34 { --adzworld-thumb: hsl(74 72% 43%); }
+.adzworld-evaluation input.is-score-35 { --adzworld-thumb: hsl(75 72% 43%); }
+.adzworld-evaluation input.is-score-36 { --adzworld-thumb: hsl(76 72% 43%); }
+.adzworld-evaluation input.is-score-37 { --adzworld-thumb: hsl(76 72% 43%); }
+.adzworld-evaluation input.is-score-38 { --adzworld-thumb: hsl(77 72% 43%); }
+.adzworld-evaluation input.is-score-39 { --adzworld-thumb: hsl(78 72% 43%); }
+.adzworld-evaluation input.is-score-40 { --adzworld-thumb: hsl(79 72% 43%); }
+.adzworld-evaluation input.is-score-41 { --adzworld-thumb: hsl(80 72% 43%); }
+.adzworld-evaluation input.is-score-42 { --adzworld-thumb: hsl(80 72% 43%); }
+.adzworld-evaluation input.is-score-43 { --adzworld-thumb: hsl(81 72% 43%); }
+.adzworld-evaluation input.is-score-44 { --adzworld-thumb: hsl(82 72% 43%); }
+.adzworld-evaluation input.is-score-45 { --adzworld-thumb: hsl(83 72% 43%); }
+.adzworld-evaluation input.is-score-46 { --adzworld-thumb: hsl(83 72% 43%); }
+.adzworld-evaluation input.is-score-47 { --adzworld-thumb: hsl(84 72% 43%); }
+.adzworld-evaluation input.is-score-48 { --adzworld-thumb: hsl(85 72% 43%); }
+.adzworld-evaluation input.is-score-49 { --adzworld-thumb: hsl(86 72% 43%); }
+.adzworld-evaluation input.is-score-50 { --adzworld-thumb: hsl(87 72% 43%); }
+.adzworld-evaluation input.is-score-51 { --adzworld-thumb: hsl(87 72% 43%); }
+.adzworld-evaluation input.is-score-52 { --adzworld-thumb: hsl(88 72% 43%); }
+.adzworld-evaluation input.is-score-53 { --adzworld-thumb: hsl(89 72% 43%); }
+.adzworld-evaluation input.is-score-54 { --adzworld-thumb: hsl(90 72% 43%); }
+.adzworld-evaluation input.is-score-55 { --adzworld-thumb: hsl(90 72% 43%); }
+.adzworld-evaluation input.is-score-56 { --adzworld-thumb: hsl(91 72% 43%); }
+.adzworld-evaluation input.is-score-57 { --adzworld-thumb: hsl(92 72% 43%); }
+.adzworld-evaluation input.is-score-58 { --adzworld-thumb: hsl(93 72% 43%); }
+.adzworld-evaluation input.is-score-59 { --adzworld-thumb: hsl(93 72% 43%); }
+.adzworld-evaluation input.is-score-60 { --adzworld-thumb: hsl(94 72% 43%); }
+.adzworld-evaluation input.is-score-61 { --adzworld-thumb: hsl(95 72% 43%); }
+.adzworld-evaluation input.is-score-62 { --adzworld-thumb: hsl(96 72% 43%); }
+.adzworld-evaluation input.is-score-63 { --adzworld-thumb: hsl(97 72% 43%); }
+.adzworld-evaluation input.is-score-64 { --adzworld-thumb: hsl(97 72% 43%); }
+.adzworld-evaluation input.is-score-65 { --adzworld-thumb: hsl(98 72% 43%); }
+.adzworld-evaluation input.is-score-66 { --adzworld-thumb: hsl(99 72% 43%); }
+.adzworld-evaluation input.is-score-67 { --adzworld-thumb: hsl(100 72% 43%); }
+.adzworld-evaluation input.is-score-68 { --adzworld-thumb: hsl(100 72% 43%); }
+.adzworld-evaluation input.is-score-69 { --adzworld-thumb: hsl(101 72% 43%); }
+.adzworld-evaluation input.is-score-70 { --adzworld-thumb: hsl(102 72% 43%); }
+.adzworld-evaluation input.is-score-71 { --adzworld-thumb: hsl(103 72% 43%); }
+.adzworld-evaluation input.is-score-72 { --adzworld-thumb: hsl(103 72% 43%); }
+.adzworld-evaluation input.is-score-73 { --adzworld-thumb: hsl(104 72% 43%); }
+.adzworld-evaluation input.is-score-74 { --adzworld-thumb: hsl(105 72% 43%); }
+.adzworld-evaluation input.is-score-75 { --adzworld-thumb: hsl(106 72% 43%); }
+.adzworld-evaluation input.is-score-76 { --adzworld-thumb: hsl(107 72% 43%); }
+.adzworld-evaluation input.is-score-77 { --adzworld-thumb: hsl(107 72% 43%); }
+.adzworld-evaluation input.is-score-78 { --adzworld-thumb: hsl(108 72% 43%); }
+.adzworld-evaluation input.is-score-79 { --adzworld-thumb: hsl(109 72% 43%); }
+.adzworld-evaluation input.is-score-80 { --adzworld-thumb: hsl(110 72% 43%); }
+.adzworld-evaluation input.is-score-81 { --adzworld-thumb: hsl(110 72% 43%); }
+.adzworld-evaluation input.is-score-82 { --adzworld-thumb: hsl(111 72% 43%); }
+.adzworld-evaluation input.is-score-83 { --adzworld-thumb: hsl(112 72% 43%); }
+.adzworld-evaluation input.is-score-84 { --adzworld-thumb: hsl(113 72% 43%); }
+.adzworld-evaluation input.is-score-85 { --adzworld-thumb: hsl(113 72% 43%); }
+.adzworld-evaluation input.is-score-86 { --adzworld-thumb: hsl(114 72% 43%); }
+.adzworld-evaluation input.is-score-87 { --adzworld-thumb: hsl(115 72% 43%); }
+.adzworld-evaluation input.is-score-88 { --adzworld-thumb: hsl(116 72% 43%); }
+.adzworld-evaluation input.is-score-89 { --adzworld-thumb: hsl(117 72% 43%); }
+.adzworld-evaluation input.is-score-90 { --adzworld-thumb: hsl(117 72% 43%); }
+.adzworld-evaluation input.is-score-91 { --adzworld-thumb: hsl(118 72% 43%); }
+.adzworld-evaluation input.is-score-92 { --adzworld-thumb: hsl(119 72% 43%); }
+.adzworld-evaluation input.is-score-93 { --adzworld-thumb: hsl(120 72% 43%); }
+.adzworld-evaluation input.is-score-94 { --adzworld-thumb: hsl(120 72% 43%); }
+.adzworld-evaluation input.is-score-95 { --adzworld-thumb: hsl(121 72% 43%); }
+.adzworld-evaluation input.is-score-96 { --adzworld-thumb: hsl(122 72% 43%); }
+.adzworld-evaluation input.is-score-97 { --adzworld-thumb: hsl(123 72% 43%); }
+.adzworld-evaluation input.is-score-98 { --adzworld-thumb: hsl(123 72% 43%); }
+.adzworld-evaluation input.is-score-99 { --adzworld-thumb: hsl(124 72% 43%); }
+.adzworld-evaluation input.is-score-100 { --adzworld-thumb: hsl(125 72% 43%); }
+
+.adzworld-evaluation__value {
+	display: block;
+	margin-block-start: 0.5rem;
+	text-align: center;
+	font-weight: 600;
+}
+
+.adzworld-evaluation__status {
+	min-height: 1.5em;
+	margin-block: 0.25rem 0;
+	text-align: center;
+	font-size: 0.8rem;
+}
+
+.adzworld-improve {
+	margin-block-start: 1rem;
+	padding-block-start: 1rem;
+	border-block-start: 1px solid var(--adz-line);
+}
+
+.adzworld-improve__heading {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+	justify-content: space-between;
+	margin-block-end: 0.5rem;
+	font-weight: 600;
+}
+
+.adzworld-improve__information {
+	position: relative;
+}
+
+.adzworld-improve__information > summary {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.5rem;
+	height: 1.5rem;
+	color: var(--adz-accent-solid);
+	font-family: Georgia, serif;
+	font-size: 0.95rem;
+	font-weight: 700;
+	background: color-mix(in oklab, var(--adz-accent-solid) 10%, var(--adz-surface));
+	border: 1px solid color-mix(in oklab, var(--adz-accent-solid) 45%, transparent);
+	border-radius: 50%;
+	cursor: pointer;
+	list-style: none;
+}
+
+.adzworld-improve__information > summary::-webkit-details-marker {
+	display: none;
+}
+
+.adzworld-improve__information > p {
+	max-width: 34rem;
+	margin: 0.5rem 0 0;
+	padding: 0.75rem;
+	color: var(--adz-muted);
+	font-size: 0.85rem;
+	font-weight: 400;
+	background: var(--adz-surface-raised);
+	border: 1px solid var(--adz-line);
+	border-radius: 0.3rem;
+}
+
+.adzworld-improve__row {
+	display: flex;
+	gap: 0.5rem;
+	align-items: end;
+}
+
+.adzworld-rotation .adzworld-improve__input {
+	flex: 1 1 auto;
+	min-height: 4.75rem;
+	resize: vertical;
+	field-sizing: fixed;
+}
+
+.adzworld-improve .adz-panel__chips {
+	margin-block-start: 0.75rem;
+}
+
+/*
+ * The mount point reserves space before the network's script resolves, which
+ * is what stops the page jumping. It states no width, because a creative's
+ * width is the network's to decide; `width: 100%` here would stretch a fixed
+ * unit to the column.
+ */
+.adzworld-network-unit {
+	display: block;
+	min-height: 90px;
+}
+
+@container adzworld (max-width: 600px) {
+	/*
+	 * Once the row stacks, its main axis is vertical, so the input's
+	 * `flex: 1 1 220px` would read 220px as a *height* and then grow it. The
+	 * field has to be told to size to its own content again.
+	 */
+	.adzworld-rotation .adz-panel__row,
+	.adzworld-rotation .adzworld-improve__row {
+		align-items: stretch;
+		flex-direction: column;
+	}
+
+	.adzworld-rotation .adz-panel__input {
+		flex: 0 0 auto;
+	}
+
+	.adzworld-rotation .adz-panel__submit {
+		align-self: stretch;
+		justify-content: center;
+	}
+
+	.adzworld-evaluation__control {
+		grid-template-columns: 1fr;
+		text-align: center;
+	}
+
+	.adzworld-improve__row {
+		align-items: stretch;
+		flex-direction: column;
+	}
+}
+
+/* ==========================================================================
+   Display format library
+   ==========================================================================
+
+   One modifier class per format, listed in adzworld_rotation_display_formats().
+   Every format renders the same markup, the same slot order and the same
+   escaping; a format only changes the frame. That is why a new format is a
+   block of CSS and an allowlist entry, and never a new render path.
+
+   Six groups:
+     Carousel   single flat 3d coverflow fade stack
+     Multiple   filmstrip grid
+     Banner     banner billboard
+     Widget     inline-card sidebar
+     Vertical   rail-left rail-right skyscraper
+     Anchored   dock-bottom dock-top corner
+
+   The Multiple group and coverflow and stack need every slot on screen, so PHP
+   marks them with data-adzworld-multiple and the script leaves the siblings
+   visible. The rest keep the one-at-a-time behaviour.
+   ========================================================================== */
+
+/* ------------------------------------------------------------- shared frame */
+
+.adzworld-rotation {
+	--adz-frame-bg: var(--adz-surface);
+	--adz-frame-line: var(--adz-line);
+	--adz-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(0, 0, 0, 0.04);
+	--adz-shadow-2: 0 2px 4px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.08);
+	--adz-shadow-3: 0 4px 8px rgba(0, 0, 0, 0.08), 0 16px 48px rgba(0, 0, 0, 0.12);
+	--adz-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+	--adz-duration: 420ms;
+}
+
+/*
+ * No advertising label is generated here. An earlier version of this file
+ * rendered the container's aria-label with content: attr(aria-label), which was
+ * wrong twice over: many screen readers announce CSS generated content, so the
+ * region's accessible name would be read a second time as body text, and it
+ * put a visible label on every rotation that previously had none, which is a
+ * product change rather than a design pass. The plugin already discloses
+ * sources through .adzworld-match-label and the invitation panel heading, both
+ * of which are real translatable markup.
+ */
+
+/*
+ * Flat carousel. This format had no rules of its own: with
+ * .adzworld-slides set to display:block and the script hiding every inactive
+ * slot, it rendered identically to "single" while the administrator's own
+ * shortcode example offered it as the alternative. The movement it advertises
+ * is restored here.
+ *
+ * The motion is an entry animation on the slot that becomes active rather than
+ * a translated track, because a track needs its siblings present and the
+ * one-at-a-time formats deliberately keep them hidden. An element moving from
+ * hidden to shown restarts the animation, so each step is visible.
+ */
+@keyframes adzworld-slide-in {
+
+	from {
+		opacity: 0;
+		transform: translateX(14%);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+.adzworld-rotation--flat.adzworld-enhanced .adzworld-active {
+	animation: adzworld-slide-in var(--adz-duration) var(--adz-ease) both;
+}
+
+/*
+ * Single. Intentionally has no rules of its own: it is the plain one-at-a-time
+ * frame the base styles already produce. Listed here so the absence is a
+ * decision on the record rather than an omission.
+ */
+
+/*
+ * Coverflow. The active slot sits forward and square to the reader; its
+ * neighbours stay on screen, angled and scaled back, so the reader can see
+ * that the rotation continues in both directions.
+ */
+.adzworld-rotation--coverflow.adzworld-enhanced .adzworld-slides {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0;
+	min-height: 240px;
+	perspective: 1400px;
+	perspective-origin: 50% 50%;
+}
+
+.adzworld-rotation--coverflow.adzworld-enhanced .adzworld-slide {
+	flex: 0 0 auto;
+	width: min(340px, 72%);
+	transform: rotateY(32deg) scale(0.82);
+	opacity: 0.45;
+	transform-origin: center center;
+	transition: transform var(--adz-duration) var(--adz-ease), opacity var(--adz-duration) var(--adz-ease);
+	backface-visibility: hidden;
+}
+
+.adzworld-rotation--coverflow.adzworld-enhanced .adzworld-active ~ .adzworld-slide {
+	transform: rotateY(-32deg) scale(0.82);
+}
+
+.adzworld-rotation--coverflow.adzworld-enhanced .adzworld-active {
+	width: min(420px, 86%);
+	transform: rotateY(0) scale(1);
+	opacity: 1;
+	box-shadow: var(--adz-shadow-3);
+	z-index: 2;
+}
+
+/*
+ * Crossfade. Every slot occupies the same frame, so the frame never changes
+ * height between slots and the page does not jump.
+ */
+.adzworld-rotation--fade.adzworld-enhanced .adzworld-slides {
+	display: grid;
+	min-height: 200px;
+}
+
+.adzworld-rotation--fade.adzworld-enhanced .adzworld-slide {
+	grid-area: 1 / 1;
+	opacity: 0;
+	transition: opacity var(--adz-duration) var(--adz-ease);
+}
+
+.adzworld-rotation--fade.adzworld-enhanced .adzworld-active {
+	opacity: 1;
+}
+
+/*
+ * Card stack. Layered cards, offset downward, so the depth of the stack shows
+ * how many slots remain without needing a counter.
+ */
+.adzworld-rotation--stack.adzworld-enhanced .adzworld-slides {
+	display: grid;
+	min-height: 220px;
+}
+
+.adzworld-rotation--stack.adzworld-enhanced .adzworld-slide {
+	grid-area: 1 / 1;
+	background: var(--adz-frame-bg);
+	border: 1px solid var(--adz-frame-line);
+	border-radius: var(--adz-radius);
+	box-shadow: var(--adz-shadow-1);
+	transform: translateY(14px) scale(0.95);
+	opacity: 0.55;
+	transition: transform var(--adz-duration) var(--adz-ease), opacity var(--adz-duration) var(--adz-ease);
+}
+
+.adzworld-rotation--stack.adzworld-enhanced .adzworld-active ~ .adzworld-slide {
+	transform: translateY(28px) scale(0.9);
+	opacity: 0.3;
+}
+
+.adzworld-rotation--stack.adzworld-enhanced .adzworld-active {
+	transform: translateY(0) scale(1);
+	opacity: 1;
+	box-shadow: var(--adz-shadow-2);
+	z-index: 2;
+}
+
+/* --------------------------------------------------------- Multiple group */
+
+/*
+ * Filmstrip. A horizontal strip the reader can swipe or scroll, snapping to
+ * each slot. The arrows still work, so there are two ways to move.
+ */
+.adzworld-rotation--filmstrip .adzworld-slides {
+	display: flex;
+	gap: var(--adz-gap);
+	overflow-x: auto;
+	scroll-snap-type: x mandatory;
+	scrollbar-width: thin;
+	padding-bottom: 6px;
+	overscroll-behavior-x: contain;
+}
+
+.adzworld-rotation--filmstrip .adzworld-slide {
+	flex: 0 0 min(320px, 78%);
+	scroll-snap-align: center;
+	background: var(--adz-frame-bg);
+	border: 1px solid var(--adz-frame-line);
+	border-radius: var(--adz-radius);
+	/*
+	 * Not `hidden`. The radius exists to round the frame, and when a creative
+	 * fits there is nothing to clip. When one does not fit, clipping it is a
+	 * policy breach, so it overflows visibly instead: obvious, and fixable.
+	 */
+	overflow: visible;
+}
+
+.adzworld-rotation--filmstrip .adzworld-active {
+	border-color: var(--adz-accent);
+	box-shadow: var(--adz-shadow-1);
+}
+
+/*
+ * Grid. Every slot at once, reflowing by the width it is given rather than by
+ * a device breakpoint, so it behaves the same in a narrow column as on a wide
+ * page.
+ */
+.adzworld-rotation--grid .adzworld-slides {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+	gap: var(--adz-gap);
+}
+
+.adzworld-rotation--grid .adzworld-slide {
+	background: var(--adz-frame-bg);
+	border: 1px solid var(--adz-frame-line);
+	border-radius: var(--adz-radius);
+	/*
+	 * Not `hidden`. The radius exists to round the frame, and when a creative
+	 * fits there is nothing to clip. When one does not fit, clipping it is a
+	 * policy breach, so it overflows visibly instead: obvious, and fixable.
+	 */
+	overflow: visible;
+}
+
+.adzworld-rotation--grid .adzworld-active {
+	border-color: var(--adz-accent);
+}
+
+.adzworld-rotation--grid .adzworld-carousel,
+.adzworld-rotation--filmstrip .adzworld-carousel {
+	padding-inline: 0;
+}
+
+.adzworld-rotation--grid .adzworld-navigation,
+.adzworld-rotation--filmstrip .adzworld-navigation {
+	margin-top: 10px;
+}
+
+.adzworld-rotation--grid .adzworld-previous,
+.adzworld-rotation--grid .adzworld-next,
+.adzworld-rotation--filmstrip .adzworld-previous,
+.adzworld-rotation--filmstrip .adzworld-next {
+	position: static;
+	transform: none;
+}
+
+/* ----------------------------------------------------------- Banner group */
+
+.adzworld-rotation--banner .adzworld-creative,
+.adzworld-rotation--banner .adzworld-provider {
+	min-height: 90px;
+}
+
+.adzworld-rotation--billboard .adzworld-creative,
+.adzworld-rotation--billboard .adzworld-provider {
+	min-height: 250px;
+}
+
+.adzworld-rotation--banner .adzworld-slide,
+.adzworld-rotation--billboard .adzworld-slide {
+	width: 100%;
+	background: var(--adz-frame-bg);
+	border: 1px solid var(--adz-frame-line);
+	border-radius: var(--adz-radius);
+	/*
+	 * Not `hidden`. The radius exists to round the frame, and when a creative
+	 * fits there is nothing to clip. When one does not fit, clipping it is a
+	 * policy breach, so it overflows visibly instead: obvious, and fixable.
+	 */
+	overflow: visible;
+}
+
+/* ----------------------------------------------------------- Widget group */
+
+.adzworld-rotation--inline-card,
+.adzworld-rotation--sidebar {
+	padding: 14px;
+	background: var(--adz-frame-bg);
+	border: 1px solid var(--adz-frame-line);
+	border-radius: var(--adz-radius);
+	box-shadow: var(--adz-shadow-1);
+}
+
+.adzworld-rotation--inline-card {
+	margin-block: 1.75em;
+}
+
+.adzworld-rotation--sidebar {
+	max-width: 340px;
+}
+
+.adzworld-rotation--sidebar .adzworld-carousel {
+	padding-inline: 0;
+}
+
+.adzworld-rotation--sidebar .adzworld-previous,
+.adzworld-rotation--sidebar .adzworld-next {
+	position: static;
+	transform: none;
+}
+
+.adzworld-rotation--sidebar .adzworld-navigation {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+	justify-content: center;
+	margin-top: 10px;
+}
+
+/* --------------------------------------------------------- Vertical group */
+
+.adzworld-rotation--skyscraper {
+	width: min(300px, 100%);
+}
+
+.adzworld-rotation--skyscraper .adzworld-creative,
+.adzworld-rotation--skyscraper .adzworld-provider {
+	min-height: 600px;
+}
+
+.adzworld-rotation--skyscraper .adzworld-carousel {
+	padding-inline: 0;
+}
+
+/*
+ * Left and right rails. These stick to the side of the viewport, so they are
+ * only offered where there is room beside the content: below 1280px they fall
+ * back into the normal flow rather than covering the text.
+ */
+.adzworld-rotation--rail-left,
+.adzworld-rotation--rail-right {
+	width: min(160px, 100%);
+}
+
+.adzworld-rotation--rail-left .adzworld-carousel,
+.adzworld-rotation--rail-right .adzworld-carousel {
+	padding-inline: 0;
+}
+
+.adzworld-rotation--rail-left .adzworld-creative,
+.adzworld-rotation--rail-right .adzworld-creative,
+.adzworld-rotation--rail-left .adzworld-provider,
+.adzworld-rotation--rail-right .adzworld-provider {
+	min-height: 600px;
+}
+
+/*
+ * This one stays a viewport query on purpose. These formats are positioned
+ * against the viewport, so the viewport is what they must be measured against;
+ * the container they were placed in is irrelevant once they leave the flow.
+ */
+@media (min-width: 1280px) {
+
+	.adzworld-rotation--rail-left,
+	.adzworld-rotation--rail-right {
+		position: fixed;
+		top: 50%;
+		z-index: 80;
+		padding: 8px;
+		background: var(--adz-frame-bg);
+		border: 1px solid var(--adz-frame-line);
+		border-radius: var(--adz-radius);
+		box-shadow: var(--adz-shadow-2);
+		transform: translateY(-50%);
+	}
+
+	.adzworld-rotation--rail-left {
+		left: 16px;
+	}
+
+	.adzworld-rotation--rail-right {
+		right: 16px;
+	}
+}
+
+/* --------------------------------------------------------- Anchored group */
+
+/*
+ * Docks and the corner card sit above the page, so each one is dismissible,
+ * leaves room for the dismiss control, and respects the safe area on phones
+ * with a home bar.
+ */
+.adzworld-rotation--dock-bottom,
+.adzworld-rotation--dock-top {
+	position: fixed;
+	left: 0;
+	right: 0;
+	z-index: 90;
+	display: flex;
+	gap: 12px;
+	align-items: center;
+	padding: 8px 48px 8px 16px;
+	background: var(--adz-frame-bg);
+	box-shadow: var(--adz-shadow-2);
+}
+
+.adzworld-rotation--dock-bottom {
+	bottom: 0;
+	padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+	border-top: 1px solid var(--adz-frame-line);
+}
+
+.adzworld-rotation--dock-top {
+	top: 0;
+	padding-top: calc(8px + env(safe-area-inset-top, 0px));
+	border-bottom: 1px solid var(--adz-frame-line);
+}
+
+.adzworld-rotation--dock-bottom .adzworld-carousel,
+.adzworld-rotation--dock-top .adzworld-carousel {
+	flex: 1 1 auto;
+	min-width: 0;
+	padding-inline: 0;
+}
+
+.adzworld-rotation--dock-bottom .adzworld-creative,
+.adzworld-rotation--dock-top .adzworld-creative,
+.adzworld-rotation--dock-bottom .adzworld-provider,
+.adzworld-rotation--dock-top .adzworld-provider {
+	min-height: 50px;
+}
+
+.adzworld-rotation--dock-bottom .adzworld-previous,
+.adzworld-rotation--dock-bottom .adzworld-next,
+.adzworld-rotation--dock-top .adzworld-previous,
+.adzworld-rotation--dock-top .adzworld-next {
+	position: static;
+	transform: none;
+}
+
+.adzworld-rotation--corner {
+	position: fixed;
+	right: 16px;
+
+	/* env() carries its own fallback, so no second declaration is needed. */
+	bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+	z-index: 90;
+	width: min(320px, calc(100vw - 32px));
+	padding: 12px 40px 12px 12px;
+	background: var(--adz-frame-bg);
+	border: 1px solid var(--adz-frame-line);
+	border-radius: var(--adz-radius);
+	box-shadow: var(--adz-shadow-3);
+}
+
+.adzworld-rotation--corner .adzworld-carousel {
+	padding-inline: 0;
+}
+
+.adzworld-dismiss {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	color: var(--adz-muted);
+	font-size: 18px;
+	line-height: 1;
+	background: transparent;
+	border: 1px solid transparent;
+	border-radius: 50%;
+	cursor: pointer;
+}
+
+.adzworld-dismiss:hover,
+.adzworld-dismiss:focus-visible {
+	color: var(--adz-ink);
+	background: var(--adz-surface-sunken);
+	border-color: var(--adz-frame-line);
+}
+
+/* ------------------------------------------------------------ Fixed sizes */
+
+/*
+ * The standard fixed creative sizes, one class each. The dimensions are here
+ * rather than in a style attribute because a size written inline is an inline
+ * style. Each frame caps its width at the space available, so a 970px
+ * billboard in a 320px column shrinks instead of overflowing, and the height
+ * is a minimum so a creative is never cropped.
+ */
+.adzworld-rotation[class*="adzworld-rotation--size-"] .adzworld-slide {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.adzworld-rotation--size-300x250 .adzworld-creative,
+.adzworld-rotation--size-300x250 .adzworld-provider {
+	width: min(300px, 100%);
+	min-height: 250px;
+}
+
+.adzworld-rotation--size-336x280 .adzworld-creative,
+.adzworld-rotation--size-336x280 .adzworld-provider {
+	width: min(336px, 100%);
+	min-height: 280px;
+}
+
+.adzworld-rotation--size-250x250 .adzworld-creative,
+.adzworld-rotation--size-250x250 .adzworld-provider {
+	width: min(250px, 100%);
+	min-height: 250px;
+}
+
+.adzworld-rotation--size-200x200 .adzworld-creative,
+.adzworld-rotation--size-200x200 .adzworld-provider {
+	width: min(200px, 100%);
+	min-height: 200px;
+}
+
+.adzworld-rotation--size-180x150 .adzworld-creative,
+.adzworld-rotation--size-180x150 .adzworld-provider {
+	width: min(180px, 100%);
+	min-height: 150px;
+}
+
+.adzworld-rotation--size-728x90 .adzworld-creative,
+.adzworld-rotation--size-728x90 .adzworld-provider {
+	width: min(728px, 100%);
+	min-height: 90px;
+}
+
+.adzworld-rotation--size-970x90 .adzworld-creative,
+.adzworld-rotation--size-970x90 .adzworld-provider {
+	width: min(970px, 100%);
+	min-height: 90px;
+}
+
+.adzworld-rotation--size-970x250 .adzworld-creative,
+.adzworld-rotation--size-970x250 .adzworld-provider {
+	width: min(970px, 100%);
+	min-height: 250px;
+}
+
+.adzworld-rotation--size-468x60 .adzworld-creative,
+.adzworld-rotation--size-468x60 .adzworld-provider {
+	width: min(468px, 100%);
+	min-height: 60px;
+}
+
+.adzworld-rotation--size-234x60 .adzworld-creative,
+.adzworld-rotation--size-234x60 .adzworld-provider {
+	width: min(234px, 100%);
+	min-height: 60px;
+}
+
+.adzworld-rotation--size-300x600 .adzworld-creative,
+.adzworld-rotation--size-300x600 .adzworld-provider {
+	width: min(300px, 100%);
+	min-height: 600px;
+}
+
+.adzworld-rotation--size-160x600 .adzworld-creative,
+.adzworld-rotation--size-160x600 .adzworld-provider {
+	width: min(160px, 100%);
+	min-height: 600px;
+}
+
+.adzworld-rotation--size-120x600 .adzworld-creative,
+.adzworld-rotation--size-120x600 .adzworld-provider {
+	width: min(120px, 100%);
+	min-height: 600px;
+}
+
+.adzworld-rotation--size-320x50 .adzworld-creative,
+.adzworld-rotation--size-320x50 .adzworld-provider {
+	width: min(320px, 100%);
+	min-height: 50px;
+}
+
+.adzworld-rotation--size-320x100 .adzworld-creative,
+.adzworld-rotation--size-320x100 .adzworld-provider {
+	width: min(320px, 100%);
+	min-height: 100px;
+}
+
+/* ------------------------------------------- motion and narrow viewports */
+
+@media (prefers-reduced-motion: reduce) {
+
+	.adzworld-rotation .adzworld-slide,
+	.adzworld-rotation .adzworld-slides {
+		transition: none !important;
+		animation: none !important;
+	}
+
+	.adzworld-rotation--filmstrip .adzworld-slides {
+		scroll-behavior: auto;
+	}
+}
+
+/*
+ * A local adz is the publisher's own content, so a tall one may be given less
+ * room on a small screen rather than pushing the page off it.
+ *
+ * A provider slot is deliberately absent from this list. Reserving less height
+ * than the creative the network will return does not make the creative
+ * smaller -- it only guarantees a layout shift when the unit loads, and leaves
+ * it overflowing a box built too small for it. A 160x600 skyscraper stays
+ * 600 tall wherever it is placed. Choosing a tall format for a narrow space is
+ * a configuration mistake, and the Rotation tab is where it should be caught,
+ * not papered over here.
+ */
+@container adzworld (max-width: 600px) {
+	.adzworld-rotation--skyscraper .adzworld-creative,
+	.adzworld-rotation--rail-left .adzworld-creative,
+	.adzworld-rotation--rail-right .adzworld-creative,
+	.adzworld-rotation--size-300x600 .adzworld-creative,
+	.adzworld-rotation--size-160x600 .adzworld-creative,
+	.adzworld-rotation--size-120x600 .adzworld-creative {
+		min-height: 250px;
+	}
+
+	.adzworld-rotation--coverflow.adzworld-enhanced .adzworld-slide {
+		width: 86%;
+	}
+}
+
+/*
+ * The docks are fixed to the viewport, so their padding is a viewport
+ * question, like the rails above.
+ */
+@media (max-width: 600px) {
+	.adzworld-rotation--dock-bottom,
+	.adzworld-rotation--dock-top {
+		padding-right: 44px;
+		padding-left: 10px;
+	}
+}
+
+/*
+ * Open-provider cards have no reserved height because their setup instructions,
+ * rather than a network creative, are visible.
+ */
+.adzworld-network-unit.adzworld-network-unit--open {
+	min-height: 0;
+}
