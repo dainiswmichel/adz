@@ -340,4 +340,3 @@ function adzworld_check_shortcode_rotation_completed( $sequence ) {
 	}
 	return $return;
 }
-?>

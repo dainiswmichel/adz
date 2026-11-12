@@ -121,5 +121,3 @@ if ( ! class_exists( 'EOF_field_checkbox' ) ) :
 	}
 
 endif;
-
-?>
