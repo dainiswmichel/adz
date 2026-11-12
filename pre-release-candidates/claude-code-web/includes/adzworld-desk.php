@@ -18,8 +18,7 @@ function adzworld_desk_tabs() {
 	return array(
 		'dashboard'  => __( 'Dashboard', 'adz-world' ),
 		'manual'     => __( 'Manual', 'adz-world' ),
-		'networks'   => __( 'Connections', 'adz-world' ),
-		'affiliates' => __( 'Affiliate programs', 'adz-world' ),
+		'affiliates' => __( 'Get Paid', 'adz-world' ),
 		'rotation'   => __( 'Rotation', 'adz-world' ),
 		'earnings'   => __( 'Earnings', 'adz-world' ),
 		'templates'  => __( 'Templates', 'adz-world' ),
@@ -290,7 +289,7 @@ function adzworld_desk_page() {
 	}
 	if ( 'affiliates' === $current ) {
 		echo '<div class="wrap">';
-		adzworld_affiliate_page();
+		adzworld_getpaid_page();
 		echo '</div>';
 		return;
 	}

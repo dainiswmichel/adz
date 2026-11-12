@@ -485,7 +485,7 @@ function adzworld_affiliate_page( $embedded = false ) {
 			$procedure_tab = ( ! $embedded && function_exists( 'adzworld_desk_tab' ) && 'affiliates' === adzworld_desk_tab() ) ? 'affiliates' : 'networks';
 			echo '<p class="adzworld-pay-actions">';
 			adzworld_registration_render_signup( $id, false );
-			echo ' <a href="' . esc_url( adzworld_desk_url( $procedure_tab ) . '#adzworld-pay-' . rawurlencode( $id ) ) . '">' . esc_html__( 'Registration procedure', 'adz-world' ) . '</a></p>';
+			echo ' <a href="' . esc_url( adzworld_desk_url( $procedure_tab ) . '#adzworld-paid-affiliate-' . rawurlencode( $id ) ) . '">' . esc_html__( 'Registration procedure', 'adz-world' ) . '</a></p>';
 			adzworld_registration_render_steps( $id );
 		} else {
 			echo '<p><a class="button" href="' . esc_url( $network['account'] ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Create or open account', 'adz-world' ) . '</a></p>';

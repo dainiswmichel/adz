@@ -1131,7 +1131,7 @@ function adzworld_save_networks() {
 	}
 	update_option( 'adzworld_network_rows', $rows, false );
 	set_transient( 'adzworld_networks_saved_' . get_current_user_id(), $flag, MINUTE_IN_SECONDS );
-	wp_safe_redirect( adzworld_desk_url( 'networks' ) );
+	wp_safe_redirect( adzworld_desk_url( 'affiliates' ) );
 	exit;
 }
 add_action( 'admin_post_adzworld_save_networks', 'adzworld_save_networks' );
@@ -1147,7 +1147,7 @@ function adzworld_save_provider_source() {
 	$value  = is_wp_error( $result ) ? $result->get_error_message() : __( 'Advertising source saved and made available to rotations.', 'adz-world' );
 	set_transient( $key, $value, MINUTE_IN_SECONDS );
 	set_transient( $key . '_type', is_wp_error( $result ) ? 'error' : 'success', MINUTE_IN_SECONDS );
-	wp_safe_redirect( adzworld_desk_url( 'networks' ) );
+	wp_safe_redirect( adzworld_desk_url( 'affiliates' ) );
 	exit;
 }
 add_action( 'admin_post_adzworld_save_provider_source', 'adzworld_save_provider_source' );
@@ -1209,7 +1209,7 @@ function adzworld_network_render_row( $row ) {
 		if ( function_exists( 'adzworld_registration_has' ) && adzworld_registration_has( $preset ) ) {
 			echo '<p class="adzworld-pay-actions">';
 			adzworld_registration_render_signup( $preset, false );
-			echo ' <a href="' . esc_url( adzworld_desk_url( 'networks' ) . '#adzworld-pay-' . rawurlencode( $preset ) ) . '">' . esc_html__( 'Registration procedure', 'adz-world' ) . '</a></p>';
+			echo ' <a href="' . esc_url( adzworld_desk_url( 'affiliates' ) . '#adzworld-paid-network-' . rawurlencode( $preset ) ) . '">' . esc_html__( 'Registration procedure', 'adz-world' ) . '</a></p>';
 			adzworld_registration_render_steps( $preset );
 		} else {
 			echo '<ol class="adzworld-connection-steps">';
@@ -1360,7 +1360,10 @@ function adzworld_network_page() {
 	submit_button( __( 'Save provider source', 'adz-world' ), 'secondary', 'submit', false );
 	echo '</form></section>';
 
-	echo '<hr><div class="adzworld-connections-affiliates">';
-	adzworld_affiliate_page( true );
-	echo '</div></div>';
+	/*
+	 * The affiliate cards used to be embedded here as well as on their own
+	 * tab, so the same seven providers rendered twice in two different
+	 * layouts. Get Paid now holds every provider once.
+	 */
+	echo '</div>';
 }

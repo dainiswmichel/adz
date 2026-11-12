@@ -1037,3 +1037,124 @@
 	min-height: 120px;
 	padding: 16px;
 }
+
+/* ==========================================================================
+   Get Paid
+   ==========================================================================
+   One card per provider. The card is the connection: registration, the
+   identifiers, and the switch that turns it on, in one place. Built from
+   core's own postbox and form-table so the screen reads as part of
+   WordPress rather than as something bolted onto it. */
+
+.adzworld-paid-summary {
+	max-width: 70ch;
+	margin: 0 0 1.5em;
+	font-size: 14px;
+}
+
+.adzworld-paid-group {
+	margin: 2.2em 0 0.2em;
+	padding-top: 1.2em;
+	border-top: 1px solid #dcdcde;
+	font-size: 1.15em;
+}
+
+.adzworld-paid-group + .description {
+	max-width: 70ch;
+	margin-bottom: 1.2em;
+}
+
+.adzworld-paid-grid {
+	display: grid;
+	gap: 16px;
+	grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+	align-items: start;
+}
+
+.adzworld-paid-card {
+	margin: 0;
+}
+
+/*
+ * The provider name and what it does sit on one line, with the name taking
+ * the space it needs and the capability pushed to the end, so a column of
+ * cards can be scanned down either edge.
+ */
+.adzworld-paid-card .postbox-header .hndle {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 12px;
+	align-items: baseline;
+	justify-content: space-between;
+	width: 100%;
+}
+
+.adzworld-paid-name {
+	font-size: 14px;
+}
+
+.adzworld-paid-serves {
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	white-space: nowrap;
+}
+
+/*
+ * The one place on this screen where colour carries meaning: whether the
+ * reader's own words reach the provider. Both tones clear 4.5:1 on the card.
+ */
+.adzworld-paid-serves--adz { color: #0a6848; }
+.adzworld-paid-serves--sads { color: #8a6116; }
+
+.adzworld-paid-state {
+	margin: 0 0 10px;
+}
+
+.adzworld-paid-state .notice {
+	margin: 0;
+	padding: 2px 10px;
+}
+
+.adzworld-paid-pays {
+	font-style: italic;
+}
+
+.adzworld-paid-steps {
+	margin: 10px 0;
+	padding: 8px 12px;
+	background: #f6f7f7;
+	border-radius: 3px;
+}
+
+.adzworld-paid-steps summary {
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.adzworld-paid-steps ol {
+	margin: 10px 0 2px 1.4em;
+	font-size: 13px;
+}
+
+.adzworld-paid-steps li {
+	margin-bottom: 6px;
+}
+
+/* form-table is built for a full-width screen; inside a card it stacks. */
+.adzworld-paid-card .form-table th {
+	width: 11em;
+	padding: 12px 10px 12px 0;
+	font-size: 13px;
+}
+
+.adzworld-paid-card .form-table td {
+	padding: 12px 0;
+}
+
+@media (max-width: 782px) {
+	.adzworld-paid-grid {
+		grid-template-columns: 1fr;
+	}
+}

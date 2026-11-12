@@ -370,7 +370,7 @@ function adzworld_manual_render_providers() {
 	foreach ( adzworld_manual_provider_rows() as $row ) {
 		echo '<tr><td>' . esc_html( $row['label'] ) . '</td><td>' . esc_html( $row['kind'] ) . '</td><td>' . esc_html( $row['status'] ) . '</td><td>' . esc_html( $row['note'] );
 		if ( 'networks' === $row['desk'] ) {
-			echo ' <a href="' . esc_url( adzworld_desk_url( 'networks' ) ) . '">' . esc_html__( 'Connections', 'adz-world' ) . '</a>';
+			echo ' <a href="' . esc_url( adzworld_desk_url( 'affiliates' ) ) . '">' . esc_html__( 'Get Paid', 'adz-world' ) . '</a>';
 		} elseif ( 'affiliates' === $row['desk'] ) {
 			echo ' <a href="' . esc_url( adzworld_desk_url( 'affiliates' ) ) . '">' . esc_html__( 'Affiliate programs', 'adz-world' ) . '</a>';
 		}
@@ -491,7 +491,7 @@ function adzworld_manual_render_networks() {
 			adzworld_registration_render_steps( $id );
 			echo '<p class="adzworld-pay-actions">';
 			adzworld_registration_render_signup( $id, false );
-			echo ' <a class="button" href="' . esc_url( adzworld_desk_url( 'networks' ) . '#adzworld-pay-' . rawurlencode( $id ) ) . '">' . esc_html__( 'Open Connections', 'adz-world' ) . '</a></p>';
+			echo ' <a class="button" href="' . esc_url( adzworld_desk_url( 'affiliates' ) . '#adzworld-paid-affiliate-' . rawurlencode( $id ) ) . '">' . esc_html__( 'Open Get Paid', 'adz-world' ) . '</a></p>';
 		} else {
 			echo '<p>' . esc_html(
 				sprintf(
@@ -505,7 +505,7 @@ function adzworld_manual_render_networks() {
 			if ( '' !== $signup ) {
 				echo '<a class="button" href="' . esc_url( $signup ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Create or open the account', 'adz-world' ) . '</a> ';
 			}
-			echo '<a class="button" href="' . esc_url( adzworld_desk_url( 'networks' ) ) . '">' . esc_html__( 'Open Connections', 'adz-world' ) . '</a></p>';
+			echo '<a class="button" href="' . esc_url( adzworld_desk_url( 'affiliates' ) ) . '">' . esc_html__( 'Open Get Paid', 'adz-world' ) . '</a></p>';
 		}
 		if ( 'apply' === $phase ) {
 			echo '</section>';
@@ -568,7 +568,7 @@ function adzworld_manual_render_networks() {
 				$label
 			)
 		) . '</p>';
-		echo '<p><a class="button" href="' . esc_url( adzworld_desk_url( 'networks' ) ) . '">' . esc_html__( 'Open Connections', 'adz-world' ) . '</a></p>';
+		echo '<p><a class="button" href="' . esc_url( adzworld_desk_url( 'affiliates' ) ) . '">' . esc_html__( 'Open Get Paid', 'adz-world' ) . '</a></p>';
 		if ( 'apply' === $phase ) {
 			echo '</section>';
 			continue;
@@ -600,7 +600,7 @@ function adzworld_manual_render_affiliates() {
 			adzworld_registration_render_steps( $id );
 			echo '<p class="adzworld-pay-actions">';
 			adzworld_registration_render_signup( $id, false );
-			echo ' <a class="button" href="' . esc_url( adzworld_desk_url( 'networks' ) . '#adzworld-affiliate-' . rawurlencode( $id ) ) . '">' . esc_html__( 'Open the account fields', 'adz-world' ) . '</a></p>';
+			echo ' <a class="button" href="' . esc_url( adzworld_desk_url( 'affiliates' ) . '#adzworld-paid-affiliate-' . rawurlencode( $id ) ) . '">' . esc_html__( 'Open the account fields', 'adz-world' ) . '</a></p>';
 		} else {
 			echo '<p>' . esc_html(
 				sprintf(
