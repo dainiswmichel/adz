@@ -92,8 +92,8 @@ function adzworld_empty_preference() {
  */
 function adzworld_category_slot_count( $pref, $category ) {
 	foreach ( $pref['category_slots'] as $stored ) {
-		$parts = explode( '--', $stored, 2 );
-		if ( 2 === count( $parts ) && $category === $parts[0] ) {
+		$parts = adzworld_pair_split( $stored );
+		if ( '' !== $parts[1] && $category === $parts[0] ) {
 			return max( 1, min( ADZWORLD_CATEGORY_MAX_SLOTS, (int) $parts[1] ) );
 		}
 	}
@@ -116,13 +116,13 @@ function adzworld_set_category_slot_count( $pref, $category, $count ) {
 		array_filter(
 			$pref['category_slots'],
 			static function ( $stored ) use ( $category ) {
-				return 0 !== strpos( $stored, $category . '--' );
+				return 0 !== strpos( $stored, adzworld_pair_prefix( $category ) );
 			}
 		)
 	);
 
 	if ( $count > 1 ) {
-		$pref['category_slots'][] = $category . '--' . $count;
+		$pref['category_slots'][] = adzworld_pair_join( $category, (string) $count );
 	}
 
 	return $pref;
@@ -381,6 +381,82 @@ function adzworld_parse_refinement( $text, $onto = null ) {
  * @param array $pref Preference.
  * @return array<int,array{facet:string,value:string,label:string}>
  */
+/**
+ * Join a category and a refinement into one stored pair.
+ *
+ * The pair is read back by matching the category and a `--` separator at the
+ * start of the string. A category may itself contain `--`, because
+ * adzworld_normalize_category() only collapses whitespace, and then two
+ * different pairs produce the same string:
+ *
+ *     category 'a',    refinement 'b--c'  ->  'a--b--c'
+ *     category 'a--b', refinement 'c'     ->  'a--b--c'
+ *
+ * Matching the prefix 'a--' returns the second pair's refinement to category
+ * 'a'. Encoding each half, and escaping the hyphen inside it, means neither
+ * half can contain a `-` at all, so the separator is unambiguous.
+ *
+ * @param string $category   Category.
+ * @param string $refinement Refinement.
+ * @return string Stored pair.
+ */
+function adzworld_pair_join( $category, $refinement ) {
+	return adzworld_pair_escape( $category ) . '--' . adzworld_pair_escape( $refinement );
+}
+
+/**
+ * Split a stored pair back into its category and refinement.
+ *
+ * Accepts the unescaped form written by earlier versions, so a preference
+ * saved before this change still reads. An unescaped pair is ambiguous by
+ * definition; it is split on the first separator, which is what the previous
+ * code did.
+ *
+ * @param string $pair Stored pair.
+ * @return array{0:string,1:string} Category and refinement.
+ */
+function adzworld_pair_split( $pair ) {
+	$parts      = explode( '--', (string) $pair, 2 );
+	$category   = isset( $parts[0] ) ? $parts[0] : '';
+	$refinement = isset( $parts[1] ) ? $parts[1] : '';
+
+	return array( adzworld_pair_unescape( $category ), adzworld_pair_unescape( $refinement ) );
+}
+
+/**
+ * The prefix a stored pair for this category begins with.
+ *
+ * @param string $category Category.
+ * @return string Prefix including the separator.
+ */
+function adzworld_pair_prefix( $category ) {
+	return adzworld_pair_escape( $category ) . '--';
+}
+
+/**
+ * Escape one half of a pair so it cannot contain the separator.
+ *
+ * rawurlencode() leaves `-` alone, so the hyphen is escaped afterwards. The
+ * result is restricted to characters sanitize_text_field() leaves untouched,
+ * which the stored preference depends on.
+ *
+ * @param string $value Raw value.
+ * @return string Escaped value.
+ */
+function adzworld_pair_escape( $value ) {
+	return str_replace( '-', '%2D', rawurlencode( (string) $value ) );
+}
+
+/**
+ * Reverse adzworld_pair_escape(). Safe on an unescaped legacy value.
+ *
+ * @param string $value Escaped value.
+ * @return string Raw value.
+ */
+function adzworld_pair_unescape( $value ) {
+	return rawurldecode( (string) $value );
+}
+
 function adzworld_preference_chips( $pref ) {
 	$pref  = wp_parse_args( (array) $pref, adzworld_empty_preference() );
 	$chips = array();
@@ -401,12 +477,22 @@ function adzworld_preference_chips( $pref ) {
 	}
 
 	foreach ( $pref['category_refinements'] as $category_refinement ) {
-		$parts   = explode( '--', $category_refinement, 2 );
-		$label   = isset( $parts[1] ) ? $parts[1] : $parts[0];
+		list( $pair_category, $pair_refinement ) = adzworld_pair_split( $category_refinement );
+
+		/*
+		 * A pair whose refinement is empty rendered as a chip with no text.
+		 * Two of them were visible on the live site after a single category
+		 * was submitted.
+		 */
+		if ( '' === trim( $pair_refinement ) ) {
+			continue;
+		}
+
 		$chips[] = array(
-			'facet' => 'category_refinements',
-			'value' => $category_refinement,
-			'label' => $label,
+			'facet'    => 'category_refinements',
+			'value'    => $category_refinement,
+			'label'    => $pair_refinement,
+			'category' => $pair_category,
 		);
 	}
 
@@ -523,7 +609,7 @@ function adzworld_remove_facet( $pref, $facet, $value ) {
 	if ( in_array( $facet, array( 'categories', 'category_refinements', 'include', 'exclude', 'attributes' ), true ) ) {
 		$pref[ $facet ] = array_values( array_diff( $pref[ $facet ], array( (string) $value ) ) );
 		if ( 'categories' === $facet ) {
-			$prefix                       = (string) $value . '--';
+			$prefix                       = adzworld_pair_prefix( (string) $value );
 			$pref['category_refinements'] = array_values(
 				array_filter(
 					$pref['category_refinements'],
@@ -589,16 +675,16 @@ function adzworld_rename_category( $pref, $old, $replacement ) {
 	}
 	$pref['categories'] = array_values( array_unique( $pref['categories'] ) );
 
-	$old_prefix = $old . '--';
+	$old_prefix = adzworld_pair_prefix( $old );
 	foreach ( $pref['category_refinements'] as $index => $refinement ) {
 		if ( 0 === strpos( $refinement, $old_prefix ) ) {
-			$pref['category_refinements'][ $index ] = $replacement . '--' . substr( $refinement, strlen( $old_prefix ) );
+			$pref['category_refinements'][ $index ] = adzworld_pair_prefix( $replacement ) . substr( $refinement, strlen( $old_prefix ) );
 		}
 	}
 	$pref['category_refinements'] = array_values( array_unique( $pref['category_refinements'] ) );
 	foreach ( $pref['category_slots'] as $index => $stored ) {
 		if ( 0 === strpos( $stored, $old_prefix ) ) {
-			$pref['category_slots'][ $index ] = $replacement . '--' . substr( $stored, strlen( $old_prefix ) );
+			$pref['category_slots'][ $index ] = adzworld_pair_prefix( $replacement ) . substr( $stored, strlen( $old_prefix ) );
 		}
 	}
 
@@ -831,11 +917,14 @@ function adzworld_preference_with_catalog( $pref ) {
  */
 function adzworld_category_refinement_preference( $pref, $category ) {
 	$scoped = adzworld_empty_preference();
-	$prefix = (string) $category . '--';
+	$prefix = adzworld_pair_prefix( (string) $category );
 
 	foreach ( $pref['category_refinements'] as $stored ) {
 		if ( 0 === strpos( $stored, $prefix ) ) {
-			$scoped = adzworld_parse_refinement( substr( $stored, strlen( $prefix ) ), $scoped );
+			$scoped = adzworld_parse_refinement(
+				adzworld_pair_unescape( substr( $stored, strlen( $prefix ) ) ),
+				$scoped
+			);
 		}
 	}
 

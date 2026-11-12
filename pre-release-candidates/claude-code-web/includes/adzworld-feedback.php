@@ -133,7 +133,7 @@ function adzworld_category_refinement_chips( $preference, $category ) {
 		return array();
 	}
 
-	$prefix = $category . '--';
+	$prefix = adzworld_pair_prefix( $category );
 	return array_values(
 		array_filter(
 			adzworld_preference_chips( $preference ),

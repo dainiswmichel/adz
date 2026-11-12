@@ -263,13 +263,13 @@ function adzworld_sanitize_preference( $pref ) {
 
 	if ( ! empty( $pref['category_slots'] ) && is_array( $pref['category_slots'] ) ) {
 		foreach ( array_slice( $pref['category_slots'], 0, 10 ) as $stored ) {
-			$parts = explode( '--', sanitize_text_field( (string) $stored ), 2 );
-			if ( 2 !== count( $parts ) || ! in_array( $parts[0], $known, true ) ) {
+			$parts = adzworld_pair_split( sanitize_text_field( (string) $stored ) );
+			if ( '' === $parts[1] || ! in_array( $parts[0], $known, true ) ) {
 				continue;
 			}
 			$count = max( 1, min( ADZWORLD_CATEGORY_MAX_SLOTS, (int) $parts[1] ) );
 			if ( $count > 1 ) {
-				$clean['category_slots'][] = $parts[0] . '--' . $count;
+				$clean['category_slots'][] = adzworld_pair_join( $parts[0], (string) $count );
 			}
 		}
 	}
@@ -374,7 +374,7 @@ function adzworld_render_preference_panel( $pref, $has_pref, $intro = 'full' ) {
 	$input_label = __( 'What are you looking to buy?', 'adz-world' );
 	$panel_title = $has_pref ? __( 'Your adz hub', 'adz-world' ) : __( 'Advertising by invitation', 'adz-world' );
 	$active      = isset( $pref['active_category'] ) ? (string) $pref['active_category'] : '';
-	$prefix      = $active . '--';
+	$prefix      = adzworld_pair_prefix( $active );
 	$chips       = array_values(
 		array_filter(
 			$all_chips,
@@ -527,7 +527,12 @@ function adzworld_render_chips( $chips ) {
 		<ul class="adz-panel__chiplist">
 			<?php foreach ( $refinements as $chip ) : ?>
 				<?php $refinement_id = wp_unique_id( 'adz-refinement-' ); ?>
-				<li class="adz-panel__chip adz-panel__chip--<?php echo esc_attr( $chip['facet'] ); ?>">
+				<li
+					class="adz-panel__chip adz-panel__chip--<?php echo esc_attr( $chip['facet'] ); ?>"
+					<?php if ( ! empty( $chip['category'] ) ) : ?>
+						data-adzworld-category="<?php echo esc_attr( $chip['category'] ); ?>"
+					<?php endif; ?>
+				>
 					<span class="adz-panel__chiptext"><?php echo esc_html( $chip['label'] ); ?></span>
 					<button
 						type="button"
@@ -625,14 +630,19 @@ function adzworld_ajax_refine() {
 		$refinement = isset( $_POST['refinement'] )
 			? sanitize_text_field( wp_unslash( $_POST['refinement'] ) )
 			: '';
-		$refinement = trim( mb_substr( str_replace( '--', '-', $refinement ), 0, 120 ) );
-		$parts      = explode( '--', $old, 2 );
+		/*
+		 * The separator no longer has to be stripped out of the text: both
+		 * halves are escaped when the pair is joined, so a refinement may
+		 * contain a hyphen or a double hyphen without becoming ambiguous.
+		 */
+		$refinement = trim( mb_substr( $refinement, 0, 120 ) );
+		$parts      = adzworld_pair_split( $old );
 
-		if ( ! in_array( $old, $pref['category_refinements'], true ) || 2 !== count( $parts ) || '' === $refinement ) {
+		if ( ! in_array( $old, $pref['category_refinements'], true ) || '' === $parts[0] || '' === $refinement ) {
 			wp_send_json_error( array( 'message' => __( 'Enter a refinement to keep improving these adz.', 'adz-world' ) ), 400 );
 		}
 
-		$replacement = mb_substr( $parts[0] . '--' . $refinement, 0, 160 );
+		$replacement = mb_substr( adzworld_pair_join( $parts[0], $refinement ), 0, 240 );
 		foreach ( $pref['category_refinements'] as $index => $stored ) {
 			if ( $old === $stored ) {
 				$pref['category_refinements'][ $index ] = $replacement;
@@ -696,7 +706,11 @@ function adzworld_ajax_refine() {
 				wp_send_json_error( array( 'message' => __( 'Add or select this category in the invitation hub before refining it.', 'adz-world' ) ), 400 );
 			}
 
-			$pair = mb_substr( $category . '--' . $text, 0, 160 );
+			if ( '' === trim( $text ) ) {
+				wp_send_json_error( array( 'message' => __( 'Enter a refinement to keep improving these adz.', 'adz-world' ) ), 400 );
+			}
+
+			$pair = mb_substr( adzworld_pair_join( $category, $text ), 0, 240 );
 			if ( ! in_array( $pair, $pref['category_refinements'], true ) ) {
 				$pref['category_refinements'][] = $pair;
 			}
@@ -716,7 +730,11 @@ function adzworld_ajax_refine() {
 			wp_send_json_error( array( 'message' => __( 'Add a category in the invitation hub before refining it.', 'adz-world' ) ), 400 );
 		} else {
 			$active = isset( $pref['active_category'] ) ? $pref['active_category'] : $pref['categories'][0];
-			$pair   = mb_substr( $active . '--' . $text, 0, 160 );
+			if ( '' === trim( $text ) ) {
+				wp_send_json_error( array( 'message' => __( 'Enter a refinement to keep improving these adz.', 'adz-world' ) ), 400 );
+			}
+
+			$pair = mb_substr( adzworld_pair_join( $active, $text ), 0, 240 );
 			if ( ! in_array( $pair, $pref['category_refinements'], true ) ) {
 				$pref['category_refinements'][] = $pair;
 			}
