@@ -214,13 +214,12 @@ function adzworld_registration_ready( $id ) {
  */
 function adzworld_registration_paste_href( $id ) {
 	$catalog = adzworld_registration_catalog();
-	$tab     = function_exists( 'adzworld_desk_tab' ) ? adzworld_desk_tab() : '';
 	if ( isset( $catalog[ $id ] ) && 'display' === $catalog[ $id ]['group'] ) {
 		$row  = adzworld_registration_display_row( $id );
 		$hash = is_array( $row ) && isset( $row['id'] ) ? '#adzworld-network-row-' . rawurlencode( (string) $row['id'] ) : '#adzworld-add-preset';
-		return adzworld_desk_url( 'networks' ) . $hash;
+		return adzworld_desk_url( 'affiliates' ) . $hash;
 	}
-	return adzworld_desk_url( 'networks' === $tab ? 'networks' : 'affiliates' ) . '#adzworld-affiliate-' . rawurlencode( sanitize_key( $id ) );
+	return adzworld_desk_url( 'affiliates' ) . '#adzworld-paid-affiliate-' . rawurlencode( sanitize_key( $id ) );
 }
 
 /**

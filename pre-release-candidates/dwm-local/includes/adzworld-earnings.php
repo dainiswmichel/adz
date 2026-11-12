@@ -274,7 +274,7 @@ function adzworld_earnings_page() {
 				?>
 				<strong><?php echo esc_html( $network_count ); ?></strong>
 				<p><?php esc_html_e( 'Connected display networks use the site owner’s account identifiers and handle their own reporting and payments.', 'adz-world' ); ?></p>
-				<a class="button" href="<?php echo esc_url( adzworld_desk_url( 'networks' ) ); ?>"><?php esc_html_e( 'Manage ad networks', 'adz-world' ); ?></a>
+				<a class="button" href="<?php echo esc_url( adzworld_desk_url( 'affiliates' ) ); ?>"><?php esc_html_e( 'Open Get Paid', 'adz-world' ); ?></a>
 			</section>
 		</div>
 		<?php adzworld_support_panel(); ?>

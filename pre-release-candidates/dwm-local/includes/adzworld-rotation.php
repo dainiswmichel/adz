@@ -944,6 +944,9 @@ function adzworld_local_ad_slide( $ad ) {
 	$content   = wp_kses_post( $ad->post_content );
 	$thumbnail = get_the_post_thumbnail( $ad, 'large', array( 'class' => 'adzworld-creative__image' ) );
 	$creative  = trim( $thumbnail . $content );
+	if ( function_exists( 'adzworld_internal_link_creative' ) ) {
+		$creative = adzworld_internal_link_creative( $creative, $ad->ID );
+	}
 
 	if ( '' === $creative ) {
 		return '<div class="adzworld-creative adzworld-creative--empty" role="status"><p>'
