@@ -630,6 +630,7 @@ function adzworld_ajax_refine() {
 		$refinement = isset( $_POST['refinement'] )
 			? sanitize_text_field( wp_unslash( $_POST['refinement'] ) )
 			: '';
+
 		/*
 		 * The separator no longer has to be stripped out of the text: both
 		 * halves are escaped when the pair is joined, so a refinement may

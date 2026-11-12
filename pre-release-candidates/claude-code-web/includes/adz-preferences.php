@@ -373,15 +373,6 @@ function adzworld_parse_refinement( $text, $onto = null ) {
 }
 
 /**
- * Describe a preference as chips the visitor can read and remove.
- *
- * Each chip carries the facet and value so the form can drop exactly one
- * without the visitor retyping everything.
- *
- * @param array $pref Preference.
- * @return array<int,array{facet:string,value:string,label:string}>
- */
-/**
  * Join a category and a refinement into one stored pair.
  *
  * The pair is read back by matching the category and a `--` separator at the
@@ -436,7 +427,7 @@ function adzworld_pair_prefix( $category ) {
 /**
  * Escape one half of a pair so it cannot contain the separator.
  *
- * rawurlencode() leaves `-` alone, so the hyphen is escaped afterwards. The
+ * The hyphen is escaped after rawurlencode(), which leaves it alone. The
  * result is restricted to characters sanitize_text_field() leaves untouched,
  * which the stored preference depends on.
  *
@@ -457,6 +448,16 @@ function adzworld_pair_unescape( $value ) {
 	return rawurldecode( (string) $value );
 }
 
+/**
+ * Describe a preference as chips the visitor can read and remove.
+ *
+ * Each chip carries the facet and value so the form can drop exactly one
+ * without the visitor retyping everything. A category_refinements chip also
+ * carries the category it belongs to.
+ *
+ * @param array $pref Preference.
+ * @return array<int,array{facet:string,value:string,label:string}>
+ */
 function adzworld_preference_chips( $pref ) {
 	$pref  = wp_parse_args( (array) $pref, adzworld_empty_preference() );
 	$chips = array();
