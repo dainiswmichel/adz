@@ -7,15 +7,23 @@
 
 defined( 'ABSPATH' ) || exit; // Exit if accessed directly.
 
-/*
- * role_exists() was defined here. WordPress core now ships its own, so
- * redeclaring it is a fatal error the moment the plugin is activated.
- * Nothing in this plugin ever called it, so it is removed rather than guarded.
+/**
+ * Render the scheduled page-advertising request controls.
+ *
+ * @param int    $ad_visibility Countdown seconds.
+ * @param int    $ad_visibility_interval Minimum seconds between ads.
+ * @param mixed  $repeat_times Repeat count or infinite.
+ * @param string $target_type Target kind.
+ * @param int    $target Target identifier.
+ * @param mixed  $ad_to_serve Selected ad identifier.
+ * @param string $rotations_id Saved rotation identifier.
+ * @param string $sequence Configured ad sequence.
+ * @param string $display_type Presentation kind.
+ * @param string $adz_template Template filename.
  */
+function adzworld_get_advertise( $ad_visibility, $ad_visibility_interval, $repeat_times, $target_type, $target, $ad_to_serve, $rotations_id, $sequence, $display_type, $adz_template ) {
 
-function adz_get_advertise( $ad_visibility, $ad_visibility_interval, $repeat_times, $target_type, $target, $ad_to_serve, $rotations_id, $sequence, $display_type, $adz_template ) {
-
-	if ( ! isset( $_SESSION['first_time'] ) && @$_SESSION['first_time'] == '' ) {
+	if ( ! isset( $_SESSION['first_time'] ) ) {
 		$_SESSION['first_time'] = time() + $ad_visibility_interval;
 	}
 
@@ -26,19 +34,19 @@ function adz_get_advertise( $ad_visibility, $ad_visibility_interval, $repeat_tim
 			var repeat_adz = 'yes';
 			var interval = setInterval(function () {
 				if(repeat_adz == 'yes'){
-					
-					browsing_advertise();	
-				}				
-					
+
+					browsing_advertise();
+				}
+
 			}, 60000);
 			function browsing_advertise(){
 
-							
+
 				jQuery.ajax({
 					url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
 					type : 'post',
 					data: {
-						action :'adz_get_advertise_content',
+						action :'adzworld_get_advertise_content',
 						target_type : '<?php echo esc_js( $target_type ); ?>',
 						target : '<?php echo esc_js( $target ); ?>',
 						ad_visibility_interval : '<?php echo esc_js( $ad_visibility_interval ); ?>',
@@ -48,10 +56,11 @@ function adz_get_advertise( $ad_visibility, $ad_visibility_interval, $repeat_tim
 						display_type : '<?php echo esc_js( $display_type ); ?>',
 						adz_template : '<?php echo esc_js( $adz_template ); ?>',
 						repeat_times : '<?php echo esc_js( $repeat_times ); ?>' ,
+						adzworld_context: '<?php echo esc_js( adzworld_ad_request_token( $target_type, $target, $ad_visibility_interval, $repeat_times, $ad_to_serve, $rotations_id, $sequence, $display_type, $adz_template ) ); ?>',
 						adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
 					},
 					success:function(data) {
-						
+
 						if(jQuery.trim(data) != 'continue'){
 							<?php if ( is_category() ) { ?>
 								jQuery('.page-header').after('<div class="adz-world-category-wapper"></div>');
@@ -60,7 +69,7 @@ function adz_get_advertise( $ad_visibility, $ad_visibility_interval, $repeat_tim
 
 							<?php } ?>
 							<?php if ( is_category() ) { ?>
-								jQuery(document).find('.adz-world-category-wapper').html(window.atob(data));
+								jQuery(document).find('.adz-world-category-wapper').html(window.adzworldDecodeAd(data));
 								var i = <?php echo absint( $ad_visibility ); ?>;
 								var adz_interval = setInterval(function () {
 									if (i >= 0) {
@@ -68,14 +77,13 @@ function adz_get_advertise( $ad_visibility, $ad_visibility_interval, $repeat_tim
 										i--;
 									} else {
 										jQuery('.continue_reading').text('Continue >>');
-										jQuery('.continue_reading').addClass('close_adz');	
-										jQuery('.continue_reading').css('cusrsor','pointer');						       
+										jQuery('.continue_reading').addClass('close_adz');
 										clearInterval(adz_interval);
 										repeat_adz = 'no';
 									}
 								}, 1000);
 							<?php } else { ?>
-								jQuery('.adz-world-container').html(window.atob(data));
+								jQuery('.adz-world-container').html(window.adzworldDecodeAd(data));
 								var i = <?php echo absint( $ad_visibility ); ?>;
 								var adz_interval = setInterval(function () {
 									if (i >= 0) {
@@ -83,8 +91,7 @@ function adz_get_advertise( $ad_visibility, $ad_visibility_interval, $repeat_tim
 										i--;
 									} else {
 										jQuery('.continue_reading').text('Continue >>');
-										jQuery('.continue_reading').addClass('close_adz');	
-										jQuery('.continue_reading').css('cusrsor','pointer');						       
+										jQuery('.continue_reading').addClass('close_adz');
 										clearInterval(adz_interval);
 										repeat_adz = 'no';
 									}
@@ -93,8 +100,7 @@ function adz_get_advertise( $ad_visibility, $ad_visibility_interval, $repeat_tim
 
 
 						}else{
-							//jQuery('body').show();
-						}					
+						}
 					},
 					error: function(errorThrown){
 						console.log(errorThrown);
@@ -107,12 +113,14 @@ function adz_get_advertise( $ad_visibility, $ad_visibility_interval, $repeat_tim
 					url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
 					type : 'post',
 					data: {
-						action :'adz_get_advertise_content',
+						action :'adzworld_get_advertise_content',
 						target_type : '<?php echo esc_js( $target_type ); ?>',
 						target : '<?php echo esc_js( $target ); ?>',
 						ad_visibility_interval : '<?php echo esc_js( $ad_visibility_interval ); ?>',
 						repeat_times : '<?php echo esc_js( $repeat_times ); ?>',
 						close_adz : 'true',
+						rotations_id : '<?php echo esc_js( $rotations_id ); ?>',
+						adzworld_context: '<?php echo esc_js( adzworld_ad_request_token( $target_type, $target, $ad_visibility_interval, $repeat_times, '', $rotations_id, '', '', '', 'true' ) ); ?>',
 						adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
 
 
@@ -121,50 +129,64 @@ function adz_get_advertise( $ad_visibility, $ad_visibility_interval, $repeat_tim
 						if(jQuery.trim(data) != 'continue'){
 							repeat_adz = 'yes';
 							location.reload();
-						}					
+						}
 					},
 					error: function(errorThrown){
 						console.log(errorThrown);
 					}
 				});
-				
+
 			});
 		});
 
 	</script>
 	<?php
 }
-function adz_get_advertise_popup( $ad_visibility, $ad_visibility_interval, $repeat_times, $target_type, $target, $ad_to_serve, $rotations_id, $sequence, $display_type, $adz_template ) {
+/**
+ * Render the scheduled popup advertising request controls.
+ *
+ * @param int    $ad_visibility Countdown seconds.
+ * @param int    $ad_visibility_interval Minimum seconds between ads.
+ * @param mixed  $repeat_times Repeat count or infinite.
+ * @param string $target_type Target kind.
+ * @param int    $target Target identifier.
+ * @param mixed  $ad_to_serve Selected ad identifier.
+ * @param string $rotations_id Saved rotation identifier.
+ * @param string $sequence Configured ad sequence.
+ * @param string $display_type Presentation kind.
+ * @param string $adz_template Template filename.
+ */
+function adzworld_get_advertise_popup( $ad_visibility, $ad_visibility_interval, $repeat_times, $target_type, $target, $ad_to_serve, $rotations_id, $sequence, $display_type, $adz_template ) {
 
-	if ( ! isset( $_SESSION['first_time'] ) && $_SESSION['first_time'] == '' ) {
+	if ( ! isset( $_SESSION['first_time'] ) ) {
 		$_SESSION['first_time'] = time() + $ad_visibility_interval;
 
 	}
 	?>
 	<div id="show_overlay" class="adz_overlay">
 		<div class="adz_popup">
-							
-			<div class="content"> </div>			
+
+			<div class="content"> </div>
 		</div>
 	</div>
 
 	<script type="text/javascript">
-	jQuery(document).ready(function(){	
+	jQuery(document).ready(function(){
 
 		var repeat_adz = 'yes';
 		var interval = setInterval(function () {
 			if(repeat_adz == 'yes'){
 				browsing_advertise();
 			}
-				
+
 		}, 60000);
 		function browsing_advertise(){
-			
+
 			jQuery.ajax({
 				url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
 				type : 'post',
 				data: {
-					action :'adz_get_advertise_content',
+					action :'adzworld_get_advertise_content',
 					target_type : '<?php echo esc_js( $target_type ); ?>',
 					target : '<?php echo esc_js( $target ); ?>',
 					ad_visibility_interval : '<?php echo esc_js( $ad_visibility_interval ); ?>',
@@ -173,18 +195,18 @@ function adz_get_advertise_popup( $ad_visibility, $ad_visibility_interval, $repe
 					sequence : '<?php echo esc_js( $sequence ); ?>',
 					display_type : '<?php echo esc_js( $display_type ); ?>',
 					adz_template : '<?php echo esc_js( $adz_template ); ?>',
-					repeat_times : '<?php echo esc_js( $repeat_times ); ?>',		          
+					repeat_times : '<?php echo esc_js( $repeat_times ); ?>',
+					adzworld_context: '<?php echo esc_js( adzworld_ad_request_token( $target_type, $target, $ad_visibility_interval, $repeat_times, $ad_to_serve, $rotations_id, $sequence, $display_type, $adz_template ) ); ?>',
 					show_popup : 'true',
 					adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
 
 				},
 				success:function(data) {
-				
+
 					if(jQuery.trim(data) != 'continue'){
-						jQuery('#show_overlay').css('visibility','visible');
-						jQuery('#show_overlay').css('opacity','1');
-						jQuery('.adz_popup .content').html(window.atob(data));
-						
+						jQuery('#show_overlay').addClass('adzworld-is-visible');
+						jQuery('.adz_popup .content').html(window.adzworldDecodeAd(data));
+
 
 						var i = <?php echo absint( $ad_visibility ); ?>;
 						var adz_interval = setInterval(function () {
@@ -193,128 +215,158 @@ function adz_get_advertise_popup( $ad_visibility, $ad_visibility_interval, $repe
 								i--;
 							} else {
 								jQuery('.continue_reading').text('Continue >>');
-								jQuery('.continue_reading').addClass('close_adz');	
-								jQuery('.continue_reading').css('cusrsor','pointer');						       
+								jQuery('.continue_reading').addClass('close_adz');
 								clearInterval(adz_interval);
 								repeat_adz = 'no';
 							}
 						}, 1000);
-					}					
+					}
 				},
 				error: function(errorThrown){
 					console.log(errorThrown);
 				}
 			});
-			
-		}	
-		
+
+		}
+
 		jQuery(document).on('click','.close_adz',function(){
 			jQuery.ajax({
 				url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
 				type : 'post',
 				data: {
-					action :'adz_get_advertise_content',
+					action :'adzworld_get_advertise_content',
 					target_type : '<?php echo esc_js( $target_type ); ?>',
 					target : '<?php echo esc_js( $target ); ?>',
 					ad_visibility_interval : '<?php echo esc_js( $ad_visibility_interval ); ?>',
 					repeat_times : '<?php echo esc_js( $repeat_times ); ?>',
 					close_adz : 'true',
+					rotations_id : '<?php echo esc_js( $rotations_id ); ?>',
+					adzworld_context: '<?php echo esc_js( adzworld_ad_request_token( $target_type, $target, $ad_visibility_interval, $repeat_times, '', $rotations_id, '', '', '', 'true' ) ); ?>',
 					show_popup : 'true',
-					adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>' 
+					adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
 				},
 				success:function(data) {
-					jQuery('#show_overlay').css('visibility','hidden');
-					jQuery('#show_overlay').css('opacity','0');    
-					repeat_adz = 'yes';            
+					jQuery('#show_overlay').removeClass('adzworld-is-visible');
+					repeat_adz = 'yes';
 				},
 				error: function(errorThrown){
 					console.log(errorThrown);
 				}
 			});
-			 
-			 
+
+
 		});
 	});
-	
+
 	</script>
 	<?php
 }
 
-// This Function is use to get publishers adz.
-function adz_get_publisher_adz() {
+/**
+ * Return the published, publicly available publisher-ad sequence.
+ *
+ * @return string Comma-separated ad identifiers.
+ */
+function adzworld_get_publisher_ads() {
 
 	$args              = array(
 		'posts_per_page' => -1,
 		'post_type'      => 'adz_ad',
 		'post_status'    => 'publish',
+		'has_password'   => false,
 	);
 	$posts_array       = get_posts( $args );
 	$publisher_adz_ids = '';
 	if ( ! empty( $posts_array ) ) {
 		foreach ( $posts_array as $posts ) {
 
-			$publisher_adz_ids .= get_post_meta( $posts->ID, 'network_ad_id', true ) . ',';
+			$publisher_adz_ids .= ( adzworld_network_enabled() ? get_post_meta( $posts->ID, 'network_ad_id', true ) : $posts->ID ) . ',';
 		}
 	}
 
 	return $publisher_adz_ids;
-}//end adz_get_publisher_adz()
+}//end adzworld_get_publisher_ads()
 
-/* This Function Return the network adz id */
-function adz_get_network_id( $adz_ids ) {
+/**
+ * Resolve local posts to the identifiers used by the selected ad service.
+ *
+ * @param array $adz_ids Local post identifiers.
+ * @return string Comma-separated ad identifiers.
+ */
+function adzworld_get_network_id( $adz_ids ) {
 	$network_ids = '';
 	if ( ! empty( $adz_ids ) ) {
 		foreach ( $adz_ids as $adz ) {
-			$network_ids .= get_post_meta( $adz, 'network_ad_id', true ) . ',';
+			$network_ids .= ( adzworld_network_enabled() ? get_post_meta( $adz, 'network_ad_id', true ) : absint( $adz ) ) . ',';
 		}
 	}
-	return rtrim( $network_ids );
-}//end adz_get_network_id()
+	return rtrim( $network_ids, ',' );
+}//end adzworld_get_network_id()
 
 /**
- * The requesting visitor's IP address, validated as an IP address.
+ * Return a published local ad through the existing renderer's response shape.
  *
- * REMOTE_ADDR is request data and is absent on some SAPIs, so it is validated
- * rather than sanitised as text: anything that is not an IP address is not an
- * IP address, and there is nothing to repair about it. Returns an empty string
- * when no usable address is present, which callers treat as an unknown
- * visitor rather than failing.
- *
- * @return string Validated IP address, or an empty string.
+ * @param int $post_id Local ad identifier.
+ * @return array|WP_Error A local content response, never an outbound request.
  */
-function adzworld_visitor_ip() {
-	if ( ! isset( $_SERVER['REMOTE_ADDR'] ) ) {
-		return '';
+function adzworld_local_ad_response( $post_id ) {
+	$post = get_post( absint( $post_id ) );
+	if ( ! $post || 'adz_ad' !== $post->post_type || 'publish' !== $post->post_status || '' !== $post->post_password ) {
+		return new WP_Error( 'adzworld_ad_unavailable', __( 'The selected local ad is not publicly available.', 'adz-world' ) );
 	}
-
-	$ip = filter_var( wp_unslash( $_SERVER['REMOTE_ADDR'] ), FILTER_VALIDATE_IP );
-
-	return false === $ip ? '' : $ip;
+	return array(
+		'response' => array( 'code' => 200 ),
+		'headers'  => array(),
+		'body'     => wp_json_encode( array( array( 'content' => wp_kses_post( $post->post_content ) ) ) ),
+	);
 }
 
-/* This Function is user check Visitor is logged in or not on adz.world */
-function adz_world_logged_in() {
+/**
+ * Return the HTML elements permitted in an advertising response.
+ *
+ * @return array HTML allowlist including the legacy iframe presentation.
+ */
+function adzworld_ad_allowed_html() {
+	$allowed           = wp_kses_allowed_html( 'post' );
+	$allowed['iframe'] = array(
+		'src'    => true,
+		'height' => true,
+		'width'  => true,
+		'title'  => true,
+	);
+	return $allowed;
+}
+
+/**
+ * Render only the plugin's iframe shortcode within sanitized ad content.
+ *
+ * An advertising service must not be able to execute arbitrary site shortcodes.
+ *
+ * @param string $content Advertising markup.
+ * @return string Safe ad markup.
+ */
+function adzworld_ad_content( $content ) {
+	$content = wp_kses( $content, adzworld_ad_allowed_html() );
+	$content = preg_replace_callback( '/' . get_shortcode_regex( array( 'adzworld_iframe' ) ) . '/', 'do_shortcode_tag', $content );
+	return wp_kses( $content, adzworld_ad_allowed_html() );
+}
+
+/**
+ * Look up the current account only when the external service is enabled.
+ *
+ * @return int|false Account identifier, or false when not logged in.
+ */
+function adzworld_logged_in() {
 
 	// With no network connected there is no remote visitor to look up, and
 	// 1.0.8 sent the visitor's IP address here on every call.
-	if ( ! adz_network_enabled() ) {
+	if ( ! adzworld_network_enabled() ) {
 		return is_user_logged_in() ? get_current_user_id() : false;
 	}
 
-	global $adz_ad_network_base_url;
-
-	/*
-	 * With no usable address there is no remote visitor to look up, so the
-	 * request is not made at all. The address is encoded for a query string on
-	 * the way out.
-	 */
-	$visitor_ip = adzworld_visitor_ip();
-
-	if ( '' === $visitor_ip ) {
-		return false;
-	}
-
-	$ad_network_url = $adz_ad_network_base_url . 'wp-json/adz_server/v1/ads/is_visitor_logged?visitor_ip=' . rawurlencode( $visitor_ip );
+	global $adzworld_network_base_url;
+	$visitor_ip     = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+	$ad_network_url = add_query_arg( 'visitor_ip', $visitor_ip, $adzworld_network_base_url . 'wp-json/adz_server/v1/ads/is_visitor_logged' );
 	$args           = array();
 	$response       = wp_remote_get( $ad_network_url, $args );
 
@@ -332,12 +384,17 @@ function adz_world_logged_in() {
 	} else {
 		return false;
 	}
-}//end adz_world_logged_in()
+}//end adzworld_logged_in()
 
-/* This function is use to check roatation completed or not. */
-function adz_check_roatation_completed_or_not( $rotation ) {
+/**
+ * Select the next unserved ad from a configured rotation.
+ *
+ * @param array $rotation Saved rotation configuration.
+ * @return string|false Next ad identifier, or false when complete.
+ */
+function adzworld_check_rotation_completed( $rotation ) {
 	$rotation_adz_pool = get_option( $rotation['rotation_id'] );
-	if ( rtrim( $rotation['sequence'], ',' ) == '' ) {
+	if ( '' === rtrim( $rotation['sequence'], ',' ) ) {
 		return 'network';
 	}
 
@@ -353,7 +410,7 @@ function adz_check_roatation_completed_or_not( $rotation ) {
 		$return = false;
 	}
 	return $return;
-}//end adz_check_roatation_completed_or_not()
+}//end adzworld_check_rotation_completed()
 /**
  * Validate a rotation id arriving from a request.
  *
@@ -369,10 +426,36 @@ function adz_check_roatation_completed_or_not( $rotation ) {
  * @param mixed $rotation_id Candidate rotation id from the request.
  * @return string The validated id, or '' when it is not a real rotation id.
  */
-function adz_validate_rotation_id( $rotation_id ) {
+function adzworld_validate_rotation_id( $rotation_id ) {
 	$rotation_id = is_scalar( $rotation_id ) ? (string) $rotation_id : '';
 
 	return preg_match( '/^adz_rotation_[0-9]+$/', $rotation_id ) ? $rotation_id : '';
+}
+
+/**
+ * Resolve a rotation option only when it belongs to saved plugin settings.
+ *
+ * @param mixed $rotation_id Requested rotation identifier.
+ * @return string Configured identifier, or an empty string when unavailable.
+ */
+function adzworld_configured_rotation_id( $rotation_id ) {
+	$rotation_id = adzworld_validate_rotation_id( $rotation_id );
+	if ( '' === $rotation_id ) {
+		return '';
+	}
+
+	$options = get_option( 'adz_ad_options' );
+	if ( ! is_array( $options ) || ! isset( $options['ad_settings'] ) || ! is_array( $options['ad_settings'] ) ) {
+		return '';
+	}
+
+	foreach ( $options['ad_settings'] as $rotation ) {
+		if ( is_array( $rotation ) && isset( $rotation['rotation_id'] ) && $rotation_id === $rotation['rotation_id'] ) {
+			return $rotation_id;
+		}
+	}
+
+	return '';
 }
 
 /**
@@ -382,8 +465,8 @@ function adz_validate_rotation_id( $rotation_id ) {
  * @param mixed $state       Rotation state to store.
  * @return bool True when written, false when the id was refused.
  */
-function adz_update_rotation_state( $rotation_id, $state ) {
-	$rotation_id = adz_validate_rotation_id( $rotation_id );
+function adzworld_update_rotation_state( $rotation_id, $state ) {
+	$rotation_id = adzworld_configured_rotation_id( $rotation_id );
 
 	if ( '' === $rotation_id ) {
 		return false;
@@ -395,24 +478,29 @@ function adz_update_rotation_state( $rotation_id, $state ) {
 /**
  * Whether this site is connected to a remote adz network.
  *
- * Off unless the site owner turns it on. With it off the plugin contacts no
- * outside server at all: adz come from this site's own adz_ad posts.
+ * Off unless the site owner turns it on. With it off ads come from this site's
+ * own adz_ad posts. Separately consented earnings requests are independent.
  *
- * 1.0.8 called adz.world unconditionally, on page loads, sending visitor IP
- * addresses with no disclosure and no way to decline. That is what the
- * wordpress.org guidelines forbid, and that host no longer exists, so every
- * one of those requests now simply hangs until it times out.
+ * 1.0.8 called adz-world unconditionally, on page loads, sending visitor IP
+ * addresses with no disclosure and no way to decline. Those requests require
+ * review against external-service guidelines; the actual closure guideline
+ * has not been established.
  *
  * @return bool
  */
-function adz_network_enabled() {
+function adzworld_network_enabled() {
 	$options = get_option( 'adz_ad_options' );
 
 	if ( empty( $options['connect_to_network'] ) ) {
 		return false;
 	}
+	$base_url  = adzworld_network_base_url();
+	$home_host = adzworld_home_host();
+	if ( '' !== $home_host && wp_parse_url( $base_url, PHP_URL_HOST ) === $home_host && empty( $options['adzworld_monetization_consent'] ) ) {
+		return false;
+	}
 
-	return '' !== adz_network_base_url();
+	return '' !== $base_url;
 }
 
 /**
@@ -422,8 +510,8 @@ function adz_network_enabled() {
  *
  * @return string Trailing-slashed URL, or '' when none is configured.
  */
-function adz_network_base_url() {
-	$url = apply_filters( 'adz_ad_network_base_url', 'https://adz-world.com/' );
+function adzworld_network_base_url() {
+	$url = apply_filters( 'adzworld_ad_network_base_url', adzworld_home_url() );
 
 	return $url ? trailingslashit( esc_url_raw( $url ) ) : '';
 }
@@ -445,14 +533,17 @@ function adz_network_base_url() {
  * @param mixed $template Requested template filename.
  * @return string Absolute path to a real template, or '' when there is no match.
  */
-function adz_resolve_template( $template ) {
-	$template = basename( trim( (string) $template ) );
+function adzworld_resolve_template( $template ) {
+	if ( ! is_string( $template ) || basename( $template ) !== $template ) {
+		return '';
+	}
+	$template = trim( $template );
 
 	if ( '' === $template || '.php' !== substr( $template, -4 ) ) {
 		return '';
 	}
 
-	if ( ! in_array( $template, adz_available_templates(), true ) ) {
+	if ( ! in_array( $template, adzworld_available_templates(), true ) ) {
 		return '';
 	}
 
@@ -464,7 +555,7 @@ function adz_resolve_template( $template ) {
  *
  * @return string[] Filenames.
  */
-function adz_available_templates() {
+function adzworld_available_templates() {
 	static $templates = null;
 
 	if ( null !== $templates ) {
@@ -478,128 +569,82 @@ function adz_available_templates() {
 }
 
 /**
- * Look up today's view record for a visitor against one target.
+ * Build a privacy-preserving key for one visitor's daily view record.
  *
- * SECURITY. The four queries this replaces were built by string concatenation,
- * with $_POST values passed through sanitize_text_field() on the way in.
- * sanitize_text_field() strips tags and control characters; it does not escape
- * quotes and is not a SQL escaping function, so those queries were injectable.
- * $wpdb->prepare() was used nowhere in the plugin.
- *
- * @param string $visitor_ip  Visitor address.
- * @param int    $target_id   Post the adz was shown against.
- * @param string $target_type Context, or '' to match any.
- * @return object|null Row object, or null when there is no view today.
- */
-function adz_get_view_row( $visitor_ip, $target_id, $target_type = '' ) {
-	global $wpdb;
-
-	$table = $wpdb->prefix . 'adz_views';
-	$today = current_time( 'Y-m-d' );
-
-	if ( '' !== $target_type ) {
-		return $wpdb->get_row(
-			$wpdb->prepare(
-				'SELECT * FROM %i WHERE visitor_ip = %s AND `targate_id` = %d AND `target_type` = %s AND ad_date = %s',
-				$table,
-				$visitor_ip,
-				(int) $target_id,
-				$target_type,
-				$today
-			),
-			OBJECT
-		);
-	}
-
-	return $wpdb->get_row(
-		$wpdb->prepare(
-			'SELECT * FROM %i WHERE visitor_ip = %s AND `targate_id` = %d AND ad_date = %s',
-			$table,
-			$visitor_ip,
-			(int) $target_id,
-			$today
-		),
-		OBJECT
-	);
-}
-
-/**
- * Today's view record for a visitor, with no target filter.
+ * The raw address is never stored. WordPress salts make the digest specific to
+ * this installation, and the date naturally separates daily records.
  *
  * @param string $visitor_ip Visitor address.
- * @return object|null
+ * @param int    $target_id Target post identifier.
+ * @param string $target_type Display context.
+ * @return string Transient key.
  */
-function adz_get_view_row_any( $visitor_ip ) {
-	global $wpdb;
+function adzworld_view_key( $visitor_ip, $target_id, $target_type ) {
+	$identity = wp_json_encode(
+		array(
+			sanitize_text_field( (string) $visitor_ip ),
+			absint( $target_id ),
+			sanitize_key( $target_type ),
+			current_time( 'Y-m-d' ),
+		)
+	);
 
-	$table = $wpdb->prefix . 'adz_views';
+	return 'adzworld_view_' . hash_hmac( 'sha256', $identity, wp_salt( 'nonce' ) );
+}
 
-	return $wpdb->get_row(
-		$wpdb->prepare(
-			'SELECT * FROM %i WHERE visitor_ip = %s AND ad_date = %s',
-			$table,
-			$visitor_ip,
-			current_time( 'Y-m-d' )
+/**
+ * Look up today's view record for a visitor against one target.
+ *
+ * @param string $visitor_ip Visitor address.
+ * @param int    $target_id Target post identifier.
+ * @param string $target_type Display context.
+ * @return object|null View record, or null when no view was recorded today.
+ */
+function adzworld_get_view_row( $visitor_ip, $target_id, $target_type = '' ) {
+	$record = get_transient( adzworld_view_key( $visitor_ip, $target_id, $target_type ) );
+	return is_array( $record ) ? (object) $record : null;
+}
+
+/**
+ * Record a completed ad view until the end of the current site-local day.
+ *
+ * @param string $visitor_ip Visitor address.
+ * @param int    $target_id Target post identifier.
+ * @param string $target_type Display context.
+ * @return bool Whether the record was stored.
+ */
+function adzworld_record_view( $visitor_ip, $target_id, $target_type ) {
+	$key      = adzworld_view_key( $visitor_ip, $target_id, $target_type );
+	$existing = get_transient( $key );
+	$count    = is_array( $existing ) && isset( $existing['number_of_times'] ) ? absint( $existing['number_of_times'] ) + 1 : 1;
+	$now      = current_datetime();
+	$tomorrow = $now->setTime( 0, 0 )->modify( '+1 day' );
+	$expires  = max( HOUR_IN_SECONDS, $tomorrow->getTimestamp() - $now->getTimestamp() );
+
+	return set_transient(
+		$key,
+		array(
+			'number_of_times' => $count,
+			'updated'         => current_time( 'mysql' ),
 		),
-		OBJECT
+		$expires
 	);
 }
 
 /**
- * Read a template's header/footer settings.
+ * Normalize native and historical double-serialized template settings.
  *
- * 1.0.8 called serialize() explicitly before update_option(), which already
- * serializes arrays itself, and the template then called unserialize() on the
- * result. That explicit pair is what made an option value reach unserialize()
- * -- an object-injection sink -- and it is removed. Values are now stored as a
- * plain array.
- *
- * Existing installs still hold the double-serialized string, so that form is
- * read here and converted on the next save rather than lost.
- *
- * @param string $template Template filename, e.g. 'template1.php'.
- * @return array{header_text:string,header_style:string,footer_text:string,footer_style:string}
+ * @param mixed $settings Stored option value.
+ * @return array Template settings.
  */
-function adz_get_template_settings_array( $template ) {
-	$defaults = array(
-		'header_text'  => '',
-		'header_style' => 'center',
-		'footer_text'  => '',
-		'footer_style' => 'center',
-	);
-
-	$template = basename( (string) $template );
-
-	if ( '' === adz_resolve_template( $template ) ) {
-		return $defaults;
+function adzworld_template_settings( $settings ) {
+	if ( is_array( $settings ) ) {
+		return $settings;
+	}
+	if ( ! is_string( $settings ) || ! is_serialized( $settings ) || preg_match( '/(?:^|[;}])(?:O|C):[0-9]+:/', $settings ) ) {
+		return array();
 	}
 
-	$stored = get_option( 'template_' . $template );
-
-	if ( is_array( $stored ) ) {
-		return wp_parse_args( $stored, $defaults );
-	}
-
-	if ( is_string( $stored ) && '' !== $stored ) {
-		// Legacy double-serialized value. Decoded without allowing objects.
-		$legacy = maybe_unserialize( $stored );
-
-		if ( is_array( $legacy ) ) {
-			return wp_parse_args( $legacy, $defaults );
-		}
-	}
-
-	return $defaults;
-}
-
-/**
- * Validate a text-alignment value.
- *
- * @param mixed $style Candidate.
- * @return string One of left, right, center.
- */
-function adz_sanitize_alignment( $style ) {
-	$style = sanitize_key( (string) $style );
-
-	return in_array( $style, array( 'left', 'right', 'center' ), true ) ? $style : 'center';
+	$decoded = maybe_unserialize( $settings );
+	return is_array( $decoded ) ? $decoded : array();
 }
