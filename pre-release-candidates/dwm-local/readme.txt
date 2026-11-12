@@ -53,10 +53,12 @@ installed plugin can still be saved on Connections. adz-world does not recreate
 a provider's account, inventory, auction, reporting, or payment system.
 
 The invitation accepts categories and refinements in the visitor's own words.
-Logged-out preferences use a browser-session cookie; signed-in preferences use
-user metadata. Visible removable pills show what was understood, matching local
-adz are prioritised, and explicit -100 to 100 evaluations add positive or
-negative weight. Untouched adz remain distinct from an explicit neutral rating.
+Logged-out preferences use a server-side PHP session identified by a session
+cookie and start fresh after 24 hours; signed-in guest and member preferences
+use user metadata. Visible editable pills show the visitor's categories and
+refinements, matching local adz are prioritised, and explicit -100 to 100
+evaluations add positive or negative weight. Untouched adz remain distinct from
+an explicit neutral rating.
 Configured provider sources remain responsible for their own inventory,
 targeting, consent rules, and request behavior.
 
@@ -253,6 +255,9 @@ administrator-controlled opt-ins.
 * Removed unused direct-cURL, client-certificate, Basic-auth, and payment-sandbox prototypes.
 * Scoped administrator assets to adz-world screens, removed the iframe's external default URL, and added explicit local/network consent boundaries.
 * Added safer template settings and WPCS-clean code and tests.
+* Added named mixed-source rotations, administrator slot previews, established network and affiliate connections, earnings guidance, and starter packs.
+* Added invitation categories with scoped refinements, editable category navigation, collision-safe storage, and anonymous preference reset after 24 hours.
+* Separated local advertisement creative from matching refinements: editor content or a featured image is the ad, while the excerpt is matching data and is never presented as the ad.
 
 
 == Upgrade Notice ==

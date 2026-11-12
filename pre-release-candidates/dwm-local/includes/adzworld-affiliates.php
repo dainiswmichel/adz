@@ -256,7 +256,7 @@ function adzworld_affiliate_request_string( $pref, $category ) {
 	}
 	$parts = array( $category );
 	foreach ( $pref['category_refinements'] as $stored ) {
-		$split = explode( '--', (string) $stored, 2 );
+		$split = adzworld_pair_split( $stored );
 		if ( 2 === count( $split ) && $category === $split[0] && '' !== trim( $split[1] ) ) {
 			$parts[] = trim( $split[1] );
 		}

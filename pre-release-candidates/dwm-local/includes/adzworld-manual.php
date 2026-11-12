@@ -406,7 +406,7 @@ function adzworld_manual_render_setup() {
 	echo '<p>' . esc_html__( 'This manual reads the accounts saved on this site. A network section stays on the account step until those identifiers are saved. The rotation steps for that account appear after that.', 'adz-world' ) . '</p>';
 
 	adzworld_manual_open( $published > 0 ? 'is-done' : 'is-open', __( 'Publish a local ad', 'adz-world' ) );
-	echo '<p>' . esc_html__( 'One ad is one thing. The title is that thing in ordinary words. The product image goes in the post body. The featured image is not read. A draft is ignored.', 'adz-world' ) . '</p>';
+	echo '<p>' . esc_html__( 'One ad is one thing. The title names that thing, the editor content or featured image is the advertisement creative, and the excerpt supplies matching refinements. A draft is ignored.', 'adz-world' ) . '</p>';
 	if ( $published > 0 ) {
 		echo '<ul>';
 		foreach ( $ads as $ad ) {
@@ -463,7 +463,7 @@ function adzworld_manual_render_setup() {
 	echo '</section>';
 
 	adzworld_manual_open( 'is-open', __( 'What the visitor types', 'adz-world' ) );
-	echo '<p>' . esc_html__( 'The hub question is “What are you looking to buy?”. Three words, 48 characters. An ad whose title, body, or Ad Type contains those words moves ahead. The hub stays first. Ads that do not match stay later. An ad that is not in the slot list never appears.', 'adz-world' ) . '</p>';
+	echo '<p>' . esc_html__( 'The hub question is “What are you looking to buy?”. Visitors can enter as much useful detail as they need. A long entry gets a short category label while the remaining text stays attached as refinements. An ad whose title, creative, excerpt, or Ad Type matches that category and its refinements moves ahead. The hub stays first. An ad that is not in the slot list never appears.', 'adz-world' ) . '</p>';
 	echo '</section>';
 }
 
@@ -767,7 +767,7 @@ function adzworld_manual_chapters() {
 			'slug'    => 'publish-a-local-ad',
 			'title'   => __( 'Publish a local ad', 'adz-world' ),
 			'excerpt' => __( 'One ad is one thing. The image goes in the post body.', 'adz-world' ),
-			'content' => '<p>' . esc_html__( 'The title is the thing in ordinary words. The product image goes in the post body. The featured image is not read. A draft is ignored.', 'adz-world' ) . '</p><p><a href="' . esc_url( admin_url( 'post-new.php?post_type=adz_ad' ) ) . '">' . esc_html__( 'Add a local ad', 'adz-world' ) . '</a></p>',
+			'content' => '<p>' . esc_html__( 'The title names the thing. The editor content or featured image is the advertisement creative, and the excerpt supplies matching refinements. A draft is ignored.', 'adz-world' ) . '</p><p><a href="' . esc_url( admin_url( 'post-new.php?post_type=adz_ad' ) ) . '">' . esc_html__( 'Add a local ad', 'adz-world' ) . '</a></p>',
 		),
 		array(
 			'slug'    => 'save-a-rotation',

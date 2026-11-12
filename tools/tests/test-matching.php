@@ -43,6 +43,7 @@ class WP_Post {
 	public $ID;
 	public $post_title;
 	public $post_content;
+	public $post_excerpt;
 }
 function get_post( $id = 0 ) {
 	$id = (int) $id;
@@ -53,6 +54,7 @@ function get_post( $id = 0 ) {
 	$p->ID = $id;
 	$p->post_title = $GLOBALS['adz_catalogue'][ $id ];
 	$p->post_content = '';
+	$p->post_excerpt = '';
 	return $p;
 }
 // adzworld_get_all_ad_ids() is NOT stubbed. Stubbing it is what hid a fatal: the

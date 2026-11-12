@@ -928,31 +928,42 @@ function adzworld_rotation_weighted_slot( $slots, $draw ) {
 }
 
 /**
- * Render one local adz as creative followed by one caption.
+ * Render one local adz creative or an honest empty-result state.
  *
- * Text-only adz are the caption. Media adz retain their creative and use the
- * post title as the caption. Long text can be expanded without duplication.
+ * The editor content and featured image are the advertisement itself. The
+ * excerpt is matching information and is never displayed as an advertisement.
  *
  * @param WP_Post $ad adz post.
  * @return string adz slide content.
  */
 function adzworld_local_ad_slide( $ad ) {
+	if ( ! $ad instanceof WP_Post ) {
+		return '';
+	}
+
 	$content   = wp_kses_post( $ad->post_content );
-	$plain     = trim( wp_strip_all_tags( $ad->post_content ) );
-	$has_media = (bool) preg_match( '/<(?:img|picture|video|audio|iframe|svg)\b/i', $ad->post_content );
+	$thumbnail = get_the_post_thumbnail( $ad, 'large', array( 'class' => 'adzworld-creative__image' ) );
+	$creative  = trim( $thumbnail . $content );
 
-	if ( $has_media ) {
-		return '<div class="adzworld-creative">' . $content . '</div>'
-			. '<p class="adzworld-caption">' . esc_html( $ad->post_title ) . '</p>';
+	if ( '' === $creative ) {
+		return '<div class="adzworld-creative adzworld-creative--empty" role="status"><p>'
+			. esc_html__( 'No matching adz is available yet.', 'adz-world' ) . '</p></div>';
 	}
 
-	if ( mb_strlen( $plain ) <= 180 ) {
-		return '<p class="adzworld-caption">' . esc_html( $plain ) . '</p>';
-	}
+	return '<div class="adzworld-creative">' . $creative . '</div>';
+}
 
-	return '<details class="adzworld-caption adzworld-caption--expandable"><summary>'
-		. esc_html( mb_substr( $plain, 0, 177 ) . '…' ) . '</summary><div class="adzworld-caption__full">'
-		. $content . '</div></details>';
+/**
+ * Whether one local adz contains an advertisement creative.
+ *
+ * @param WP_Post|null $ad Advertisement post.
+ * @return bool
+ */
+function adzworld_local_ad_has_creative( $ad ) {
+	return $ad instanceof WP_Post
+		&& ( '' !== trim( wp_strip_all_tags( $ad->post_content ) )
+			|| has_post_thumbnail( $ad )
+			|| (bool) preg_match( '/<(?:img|picture|video|audio|iframe|svg)\b/i', $ad->post_content ) );
 }
 
 /**
@@ -1390,8 +1401,9 @@ function adzworld_render_rotation_level( $attributes ) {
 			if ( '' === $category ) {
 				$category = adzworld_ad_category( $ad, $pref );
 			}
-			$html = adzworld_local_ad_slide( $ad )
-				. adzworld_feedback_control( 'ad-' . $ad->ID, $category );
+			$has_creative = adzworld_local_ad_has_creative( $ad );
+			$html         = adzworld_local_ad_slide( $ad )
+				. adzworld_feedback_control( 'ad-' . $ad->ID, $category, $has_creative );
 			if ( in_array( $category, $pref['categories'], true ) ) {
 				$html .= adzworld_category_slot_control( $category, $slot_count, $category_slot );
 				if ( 0 === $category_slot ) {

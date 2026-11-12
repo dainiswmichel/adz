@@ -149,6 +149,36 @@
 	min-height: 48px;
 }
 
+/*
+ * Local adz content needs breathing room inside its frame. Provider units are
+ * deliberately excluded so their fixed dimensions remain exactly as supplied.
+ */
+.adzworld-rotation .adzworld-creative,
+.adzworld-rotation .adzworld-caption,
+.adzworld-rotation .adzworld-match-label {
+	padding-inline: var(--adz-gap);
+}
+
+.adzworld-rotation .adzworld-slide > .adzworld-creative:first-child {
+	padding-block-start: var(--adz-gap);
+}
+
+.adzworld-rotation .adzworld-creative--empty {
+	display: grid;
+	place-items: center;
+	min-height: 140px;
+	padding: calc(var(--adz-gap) * 2);
+	color: var(--adz-muted);
+	text-align: center;
+	background: var(--adz-surface-sunken);
+	border: 1px dashed var(--adz-line-strong);
+}
+
+.adzworld-rotation .adzworld-creative--empty p {
+	max-width: 30rem;
+	margin: 0;
+}
+
 .adzworld-rotation--3d.adzworld-enhanced .adzworld-slides {
 	position: relative;
 	min-height: 220px;

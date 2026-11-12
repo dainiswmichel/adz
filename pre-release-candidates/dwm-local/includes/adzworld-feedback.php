@@ -133,12 +133,13 @@ function adzworld_category_refinement_chips( $preference, $category ) {
 		return array();
 	}
 
-	$prefix = $category . '--';
 	return array_values(
 		array_filter(
 			adzworld_preference_chips( $preference ),
-			static function ( $chip ) use ( $prefix ) {
-				return 'category_refinements' === $chip['facet'] && 0 === strpos( $chip['value'], $prefix );
+			static function ( $chip ) use ( $category ) {
+				$parts = adzworld_pair_split( $chip['value'] );
+
+				return 'category_refinements' === $chip['facet'] && 2 === count( $parts ) && $category === $parts[0];
 			}
 		)
 	);
@@ -147,11 +148,12 @@ function adzworld_category_refinement_chips( $preference, $category ) {
 /**
  * Render the compact improvement control below one adz.
  *
- * @param string $target   Stable adz or provider identifier.
- * @param string $category Category represented by this adz.
+ * @param string $target       Stable adz or provider identifier.
+ * @param string $category     Category represented by this adz.
+ * @param bool   $can_evaluate Whether an actual advertisement is present to evaluate.
  * @return string Evaluation markup.
  */
-function adzworld_feedback_control( $target, $category ) {
+function adzworld_feedback_control( $target, $category, $can_evaluate = true ) {
 	$target       = sanitize_key( $target );
 	$category     = mb_substr( sanitize_text_field( $category ), 0, 80 );
 	$feedback     = adzworld_current_feedback();
@@ -172,8 +174,13 @@ function adzworld_feedback_control( $target, $category ) {
 
 	ob_start();
 	?>
-	<details class="adzworld-evaluation" data-adzworld-feedback-target="<?php echo esc_attr( $target ); ?>">
+	<details class="adzworld-evaluation"
+		<?php if ( $can_evaluate ) : ?>
+			data-adzworld-feedback-target="<?php echo esc_attr( $target ); ?>"
+		<?php endif; ?>
+	>
 		<summary><?php esc_html_e( 'Improve', 'adz-world' ); ?></summary>
+		<?php if ( $can_evaluate ) : ?>
 		<div class="adzworld-evaluation__control">
 			<span aria-hidden="true"><?php esc_html_e( 'Dislike', 'adz-world' ); ?></span>
 			<label class="screen-reader-text" for="<?php echo esc_attr( $input_id ); ?>">
@@ -184,6 +191,7 @@ function adzworld_feedback_control( $target, $category ) {
 		</div>
 		<output class="adzworld-evaluation__value" for="<?php echo esc_attr( $input_id ); ?>"><?php echo esc_html( adzworld_feedback_label( $score ) ); ?></output>
 		<p class="adzworld-evaluation__status" role="status" aria-live="polite"></p>
+		<?php endif; ?>
 		<div class="adzworld-improve">
 			<div class="adzworld-improve__heading">
 				<label for="<?php echo esc_attr( $refine_id ); ?>"><?php echo esc_html( $refine_label ); ?></label>
@@ -194,7 +202,7 @@ function adzworld_feedback_control( $target, $category ) {
 			</div>
 			<form class="adzworld-improve__form" method="post" data-adz-panel data-adz-improve-target="<?php echo esc_attr( $target ); ?>">
 				<div class="adzworld-improve__row">
-					<textarea id="<?php echo esc_attr( $refine_id ); ?>" class="adz-panel__input adzworld-improve__input" name="adzworld_refinement" maxlength="500" rows="2" placeholder="<?php esc_attr_e( 'Be specific: size, dates, colour, price range, brands, location, or other preferences.', 'adz-world' ); ?>" <?php disabled( ! $can_refine ); ?>></textarea>
+					<textarea id="<?php echo esc_attr( $refine_id ); ?>" class="adz-panel__input adzworld-improve__input" name="adzworld_refinement" rows="2" placeholder="<?php esc_attr_e( 'Be specific: size, dates, colour, price range, brands, location, or other preferences.', 'adz-world' ); ?>" <?php disabled( ! $can_refine ); ?>></textarea>
 					<button type="submit" class="adz-panel__submit" name="adzworld_mode" value="improve" <?php disabled( ! $can_refine ); ?>><?php esc_html_e( 'Refine', 'adz-world' ); ?></button>
 				</div>
 				<div class="adz-panel__chips" data-adz-chips><?php adzworld_render_chips( $chips ); ?></div>

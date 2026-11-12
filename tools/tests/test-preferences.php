@@ -79,7 +79,7 @@ foreach ( $inputs as $text ) {
 	$b = $decoded;
 	unset( $a['raw'], $b['raw'] );
 	check( 'cookie round trip lossless', $a === $b, true );
-	check( 'cookie charset restricted', (bool) preg_match( '/^[a-z0-9,:|_\-]*$/', $encoded ), true );
+	check( 'cookie charset restricted', (bool) preg_match( '/^[A-Za-z0-9:|,_\-]*$/', $encoded ), true );
 	check( 'sanitize_text_field idempotent', sanitize_text_field( $encoded ) === $encoded, true );
 }
 
@@ -115,6 +115,42 @@ $p = adzworld_remove_facet( $p, 'exclude', 'leather' );
 check( 'chip removal drops exclusion', in_array( 'leather', $p['exclude'], true ), false );
 check( 'chip removal keeps the rest', in_array( 'couch', $p['include'], true ), true );
 
+echo "\n=== category and refinement input convention ===\n";
+$parsed = adzworld_parse_category_input( 'couch: light fabric, two-seater' );
+check( 'colon category parsed', $parsed['category'], 'couch' );
+check( 'colon refinements parsed', $parsed['refinements'], array( 'light fabric', 'two-seater' ) );
+
+$parsed = adzworld_parse_category_input( 'canon: eos r5 | cheap, used' );
+check( 'pipe preserves category colon', $parsed['category'], 'canon: eos r5' );
+check( 'pipe refinements parsed', $parsed['refinements'], array( 'cheap', 'used' ) );
+
+$parsed = adzworld_parse_category_input( 'used electric cars with above 500 mile range and a detailed warranty' );
+check( 'long input gets short category', $parsed['category'], 'used electric cars…' );
+check( 'long input remainder becomes refinement', $parsed['refinements'], array( 'with above 500 mile range and a detailed warranty' ) );
+
+echo "\n=== category pairs cannot collide ===\n";
+$pair_one = adzworld_pair_join( 'a', 'b--c' );
+$pair_two = adzworld_pair_join( 'a--b', 'c' );
+check( 'ambiguous raw pairs store differently', $pair_one !== $pair_two, true );
+
+$collision_pref                         = adzworld_empty_preference();
+$collision_pref['categories']           = array( 'a', 'a--b' );
+$collision_pref['category_refinements'] = array( $pair_one, $pair_two );
+$first_scope                            = adzworld_category_refinement_preference( $collision_pref, 'a' );
+$second_scope                           = adzworld_category_refinement_preference( $collision_pref, 'a--b' );
+check( 'first category keeps own refinement', $first_scope['raw'], array( 'b--c' ) );
+check( 'second category keeps own refinement', $second_scope['raw'], array( 'c' ) );
+
+echo "\n=== punctuation survives cookie round trip ===\n";
+$punctuation_pref                         = adzworld_empty_preference();
+$punctuation_pref['categories']           = array( 'canon: eos r5' );
+$punctuation_pref['category_refinements'] = array( adzworld_pair_join( 'canon: eos r5', 'cheap | used, local' ) );
+$punctuation_pref['active_category']      = 'canon: eos r5';
+$punctuation_encoded                      = adzworld_encode_preference( $punctuation_pref );
+$punctuation_decoded                      = adzworld_decode_preference( $punctuation_encoded );
+check( 'punctuation round trip lossless', $punctuation_decoded, $punctuation_pref );
+check( 'punctuation encoding sanitizes losslessly', sanitize_text_field( $punctuation_encoded ), $punctuation_encoded );
+
 echo "\n=== hostile cookie values are rebuilt, not trusted ===\n";
 foreach ( array(
 	'i:<script>alert(1)</script>',
@@ -132,7 +168,7 @@ foreach ( array(
 		count( $d['include'] ),
 		$d['min_price'],
 		var_export( $d['intent'], true ),
-		preg_match( '/^[a-z0-9,:|_\-]*$/', $enc ) ? 'safe' : 'UNSAFE'
+		preg_match( '/^[A-Za-z0-9:|,_\-]*$/', $enc ) ? 'safe' : 'UNSAFE'
 	);
 	check( 'min never negative', $d['min_price'] >= 0, true );
 	check( 'terms capped at 20', count( $d['include'] ) <= 20, true );

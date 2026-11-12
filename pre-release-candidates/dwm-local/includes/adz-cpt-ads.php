@@ -66,7 +66,7 @@ function adzworld_ad_post_type_pub() {
 			ADZWORLD_NAME
 		),
 		'labels'              => $labels,
-		'supports'            => array( 'title', 'excrpt', 'editor', 'custom-fields' ),
+		'supports'            => array( 'title', 'excerpt', 'editor', 'thumbnail', 'custom-fields' ),
 		'hierarchical'        => false,
 		'public'              => true,
 		'show_ui'             => true,

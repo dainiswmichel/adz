@@ -4,6 +4,7 @@
 define( 'ABSPATH', '/stub/' );
 define( 'COOKIEPATH', '/' );
 define( 'COOKIE_DOMAIN', '' );
+define( 'DAY_IN_SECONDS', 86400 );
 define( 'YEAR_IN_SECONDS', 31536000 );
 
 function sanitize_text_field( $str ) {
