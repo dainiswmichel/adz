@@ -1,0 +1,25 @@
+# Excluded from the WordPress.org release payload.
+#
+# tests/ and review/ exist to verify the plugin, not to run on a publisher's
+# site. tests/ calls wp_set_current_user() sixteen times to exercise
+# capability checks, which a reviewer reasonably reads as a plugin creating
+# and logging in users when it ships inside the plugin. They stay in Git and
+# out of the ZIP.
+
+/.git
+/.github
+/.gitignore
+/.distignore
+/tests
+/review
+/node_modules
+composer.json
+composer.lock
+package.json
+package-lock.json
+phpcs.xml
+phpcs.xml.dist
+phpunit.xml
+phpunit.xml.dist
+*.map
+.DS_Store
