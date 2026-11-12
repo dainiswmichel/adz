@@ -1,4 +1,9 @@
 <?php
+/**
+ * Legacy plugin and settings-framework support.
+ *
+ * @package adz-world
+ */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -19,6 +24,9 @@ if ( ! defined( 'WPINC' ) ) {
  */
 if ( ! class_exists( 'EOF_Loader' ) ) :
 
+	/**
+	 * Configured eof loader component.
+	 */
 	class EOF_Loader {
 
 		/**
@@ -32,7 +40,6 @@ if ( ! class_exists( 'EOF_Loader' ) ) :
 
 			add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 			add_filter( 'plugin_row_meta', array( $this, 'donate_link' ), 10, 2 );
-			$this->i18n();
 			$this->require_files();
 		}
 
@@ -42,7 +49,7 @@ if ( ! class_exists( 'EOF_Loader' ) ) :
 		 * @since  1.0.0
 		 * @return void
 		 */
-		function require_files() {
+		public function require_files() {
 			require EOF_DIR . 'core/class-eof-admin.php';
 			require EOF_DIR . 'core/class-eof-views.php';
 			require EOF_DIR . 'core/class-eof-settings.php';
@@ -56,33 +63,27 @@ if ( ! class_exists( 'EOF_Loader' ) ) :
 		 * @since  1.0.0
 		 * @return void
 		 */
-		function enqueue_scripts() {
+		public function enqueue_scripts() {
+			if ( ! function_exists( 'adzworld_is_plugin_admin_screen' ) || ! adzworld_is_plugin_admin_screen() ) {
+				return;
+			}
+
 			wp_enqueue_script( 'jquery' );
 			wp_enqueue_style( 'jquery-ui' );
-			wp_enqueue_style( 'eof-style', EOF_URL . 'css/eof-style.css' );
-			wp_enqueue_script( 'eof_custom_js', EOF_URL . 'js/eof-custom.js', array( 'jquery', 'wp-color-picker' ), '', true );
-		}
-
-		/**
-		 * Load the framework translation file.
-		 *
-		 * @since  1.0.0
-		 * @return void
-		 */
-		function i18n() {
-			// set text domain
-			load_textdomain( 'eof', EOF_DIR . 'languages/eof-' . get_locale() . '.mo' );
+			wp_enqueue_style( 'eof-style', EOF_URL . 'css/eof-style.css', array(), (string) filemtime( EOF_DIR . 'css/eof-style.css' ) );
+			wp_enqueue_script( 'eof_custom_js', EOF_URL . 'js/eof-custom.js', array( 'jquery', 'wp-color-picker' ), (string) filemtime( EOF_DIR . 'js/eof-custom.js' ), true );
+			wp_localize_script( 'eof_custom_js', 'adzworldSettings', array( 'ajaxUrl' => admin_url( 'admin-ajax.php' ) ) );
 		}
 
 		/**
 		 * Add donate link to plugin description in /wp-admin/plugins.php
 		 *
 		 * @since  1.0.0
-		 * @param  array  $plugin_meta
-		 * @param  string $plugin_file
+		 * @param  array  $plugin_meta Existing plugin metadata links.
+		 * @param  string $plugin_file Plugin entry filename.
 		 * @return array
 		 */
-		function donate_link( $plugin_meta, $plugin_file ) {
+		public function donate_link( $plugin_meta, $plugin_file ) {
 
 			if ( strpos( $plugin_file, 'eof.php' ) !== false ) {
 				$plugin_meta[] = sprintf(

@@ -1,21 +1,34 @@
 <?php
+/**
+ * Legacy iframe and gated-content shortcodes.
+ *
+ * @package adz-world
+ */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
 
-add_shortcode( 'adzworld_iframe', 'adz_iframe_shortcode' );
-function adz_iframe_shortcode( $atts, $content = null ) {
+add_shortcode( 'adzworld_iframe', 'adzworld_iframe_shortcode' );
+/**
+ * Render an escaped, configured iframe.
+ *
+ * @param array $atts Shortcode attributes.
+ * @return string Iframe markup.
+ */
+function adzworld_iframe_shortcode( $atts ) {
 
 	$attributes = shortcode_atts(
 		array(
-			'adz_url' => 'https://adz-world.com',
+			'adz_url' => '',
 			'height'  => 600,
 			'width'   => '100%',
+			'title'   => __( 'Advertisement', 'adz-world' ),
 		),
 		$atts
 	);
+
 	/*
 	 * WordPress echoes whatever a shortcode returns, so everything in it is
 	 * escaped here rather than trusted. 1.0.8 concatenated the raw attributes
@@ -23,18 +36,29 @@ function adz_iframe_shortcode( $atts, $content = null ) {
 	 */
 	$width = trim( (string) $attributes['width'] );
 	$width = preg_match( '/^[0-9]+%?$/', $width ) ? $width : '100%';
+	$url   = esc_url_raw( (string) $attributes['adz_url'], array( 'http', 'https' ) );
+	if ( ! $url || ! in_array( wp_parse_url( $url, PHP_URL_SCHEME ), array( 'http', 'https' ), true ) ) {
+		return '';
+	}
 
 	return sprintf(
-		'<iframe src="%s" height="%d" width="%s"></iframe>',
-		esc_url( $attributes['adz_url'] ),
+		'<iframe src="%s" height="%d" width="%s" title="%s" loading="lazy"></iframe>',
+		esc_url( $url ),
 		absint( $attributes['height'] ),
-		esc_attr( $width )
+		esc_attr( $width ),
+		esc_attr( $attributes['title'] )
 	);
 }
 
-add_shortcode( 'Adzworld', 'adz_shortcode' );
-function adz_shortcode( $atts, $content = null ) {
-	global $wpdb;
+add_shortcode( 'Adzworld', 'adzworld_shortcode' );
+/**
+ * Gate enclosed content behind the selected local or connected-network ad.
+ *
+ * @param array       $atts Shortcode attributes.
+ * @param string|null $content Enclosed content.
+ * @return string Content and its request controls.
+ */
+function adzworld_shortcode( $atts, $content = null ) {
 
 	$attributes = shortcode_atts(
 		array(
@@ -49,34 +73,33 @@ function adz_shortcode( $atts, $content = null ) {
 	);
 
 	$more_text        = $attributes['view_more_text'];
-	$adz_duration     = $attributes['adz_duration'];
-	$adz_interval_sec = $attributes['adz_interval_sec'];
+	$adz_duration     = absint( $attributes['adz_duration'] );
+	$adz_interval_sec = absint( $attributes['adz_interval_sec'] );
 	$adz_display      = $attributes['adz_display'];
 	$adz_template     = $attributes['adz_template'];
 
-	if ( trim( $attributes['adz_sequence'] ) == '' ) {
-		$adz_sequence = rtrim( get_publisher_adz(), ',' );
+	if ( '' === trim( $attributes['adz_sequence'] ) ) {
+		$adz_sequence = rtrim( adzworld_get_publisher_ads(), ',' );
 	} else {
 		$adz_sequence = $attributes['adz_sequence'];
 	}
 
-	// An unknown address returns an empty string here rather than failing: this
-	// lookup is a local view-count row, and 1.0.8 already keyed it on whatever
-	// REMOTE_ADDR happened to hold.
-	$visitor_ip = adzworld_visitor_ip();
+	$output     = $content;
+	$visitor_ip = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
 
-	$adz_views = adz_get_view_row( $visitor_ip, (int) get_the_ID(), 'shortcode' );
+	$adz_views = adzworld_get_view_row( $visitor_ip, (int) get_the_ID(), 'shortcode' );
 
-	$adz_to_serve = adz_check_shortcode_roatation_completed_or_not( $adz_sequence );
+	$adz_to_serve = adzworld_check_shortcode_rotation_completed( $adz_sequence );
 
+	ob_start();
 	if ( $adz_to_serve ) {
 		if ( empty( $adz_views ) ) {
 
 			$output = '<div id="content_after_ad"><a id="show_adz" href="javascript:void(0)">' . esc_html( $more_text ) . '</a></div>';
-			if ( $adz_display == 'page' ) {
-				adz_in_page( $adz_interval_sec, $adz_duration );
+			if ( 'page' === $adz_display ) {
+				adzworld_in_page( $adz_interval_sec, $adz_duration, $adz_sequence, $adz_template, $adz_to_serve );
 			} else {
-				adz_in_popup( $adz_interval_sec, $adz_duration, $adz_sequence, $adz_template, $adz_display, $adz_to_serve, $content );
+				adzworld_in_popup( $adz_interval_sec, $adz_duration, $adz_sequence, $adz_template, $adz_display, $adz_to_serve, $content );
 			}
 		} else {
 
@@ -87,10 +110,10 @@ function adz_shortcode( $atts, $content = null ) {
 
 			if ( $seconds >= $interval_in_sec ) {
 				$output = '<div id="content_after_ad"><a id="show_adz" href="javascript:void(0)">' . esc_html( $more_text ) . '</a></div>';
-				if ( $adz_display == 'page' ) {
-					adz_in_page( $adz_interval_min, $adz_duration );
-				} elseif ( $adz_display == 'popup' ) {
-					adz_in_popup( $adz_interval_min, $adz_duration, $adz_sequence, $adz_template, $adz_display, $adz_to_serve, $content );
+				if ( 'page' === $adz_display ) {
+					adzworld_in_page( $adz_interval_sec, $adz_duration, $adz_sequence, $adz_template, $adz_to_serve );
+				} elseif ( 'popup' === $adz_display ) {
+					adzworld_in_popup( $adz_interval_sec, $adz_duration, $adz_sequence, $adz_template, $adz_display, $adz_to_serve, $content );
 				}
 			} else {
 				$output = $content;
@@ -98,10 +121,19 @@ function adz_shortcode( $atts, $content = null ) {
 		}
 	}
 
-	return $output;
+	return $output . ob_get_clean();
 }
 
-function adz_in_page( $adz_interval_min, $adz_duration ) {
+/**
+ * Render inline gated-ad controls.
+ *
+ * @param int    $adz_interval_min Minimum interval in seconds (legacy name).
+ * @param int    $adz_duration Countdown seconds.
+ * @param string $adz_sequence Configured sequence.
+ * @param string $adz_template Template filename.
+ * @param mixed  $adz_to_serve Selected ad identifier.
+ */
+function adzworld_in_page( $adz_interval_min, $adz_duration, $adz_sequence = '', $adz_template = 'template1.php', $adz_to_serve = '' ) {
 	?>
 	<script type="text/javascript">
 	jQuery(document).ready(function(){
@@ -111,17 +143,21 @@ function adz_in_page( $adz_interval_min, $adz_duration ) {
 				url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
 				type : 'post',
 				data: {
-					action :'adz_get_advertise_content',
+					action :'adzworld_get_advertise_content',
 					target_type : 'shortcode',
 					target : '<?php echo absint( get_the_ID() ); ?>',
 					ad_visibility_interval : '<?php echo esc_js( $adz_interval_min ); ?>',
 					repeat_times : 'infinite',
+					ad_to_serve : '<?php echo esc_js( $adz_to_serve ); ?>',
+					sequence : '<?php echo esc_js( $adz_sequence ); ?>',
+					display_type : 'page',
+					adz_template : '<?php echo esc_js( $adz_template ); ?>',
+					adzworld_context: '<?php echo esc_js( adzworld_ad_request_token( 'shortcode', get_the_ID(), $adz_interval_min, 'infinite', $adz_to_serve, '', $adz_sequence, 'page', $adz_template ) ); ?>',
 					adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
 				},
 				success:function(data) {
 					if(data != 'continue'){
-						jQuery('.adz-world-container').html(data);
-						//jQuery('body').show();
+						jQuery('#content_after_ad').html(window.adzworldDecodeAd(data));
 
 						var i = <?php echo absint( $adz_duration ); ?>;
 						var adz_interval = setInterval(function () {
@@ -130,17 +166,14 @@ function adz_in_page( $adz_interval_min, $adz_duration ) {
 								i--;
 							} else {
 								jQuery('.continue_reading').text('Continue reading >>');
-								jQuery('.continue_reading').addClass('close_adz');	
-								jQuery('.continue_reading').css('cusrsor','pointer');						       
+								jQuery('.continue_reading').addClass('close_adz');
 								clearInterval(adz_interval);
 							}
 						}, 1000);
 
-						
-						
-					}else{
-						jQuery('body').show();
-					}					
+
+
+				}
 				},
 				error: function(errorThrown){
 					console.log(errorThrown);
@@ -148,60 +181,69 @@ function adz_in_page( $adz_interval_min, $adz_duration ) {
 			});
 		});
 
-		jQuery(document).on('click','.close_adz_button',function(){
+		jQuery(document).on('click','.close_adz',function(){
 			jQuery.ajax({
 				url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
 				type : 'post',
 				data: {
-					action :'adz_get_advertise_content',
+					action :'adzworld_get_advertise_content',
 					target_type : 'shortcode',
 					target : '<?php echo absint( get_the_ID() ); ?>',
 					ad_visibility_interval : '<?php echo esc_js( $adz_interval_min ); ?>',
 					repeat_times : 'infinite',
 					close_adz : 'true',
+					adzworld_context: '<?php echo esc_js( adzworld_ad_request_token( 'shortcode', get_the_ID(), $adz_interval_min, 'infinite', '', '', '', '', '', 'true' ) ); ?>',
 					adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
 
 				},
 				success:function(data) {
 					if(data != 'continue'){
 						location.reload();
-					}					
+					}
 				},
 				error: function(errorThrown){
 					console.log(errorThrown);
 				}
 			});
-			
+
 		});
-	});	
+	});
 	</script>
 	<?php
 }
-function adz_in_popup( $adz_interval_min, $adz_duration, $adz_sequence, $adz_template, $adz_display, $adz_to_serve, $content ) {
+/**
+ * Render popup gated-ad controls and the enclosed content.
+ *
+ * @param int    $adz_interval_min Minimum interval in seconds (legacy name).
+ * @param int    $adz_duration Countdown seconds.
+ * @param string $adz_sequence Configured sequence.
+ * @param string $adz_template Template filename.
+ * @param string $adz_display Presentation kind.
+ * @param mixed  $adz_to_serve Selected ad identifier.
+ * @param string $content Enclosed content.
+ */
+function adzworld_in_popup( $adz_interval_min, $adz_duration, $adz_sequence, $adz_template, $adz_display, $adz_to_serve, $content ) {
 	?>
 	<div id="show_overlay" class="adz_overlay">
 		<div class="adz_popup">
-							
-			
+
+
 			<div class="content">
-			
+
 			</div>
-			
+
 		</div>
 	</div>
 	<script type="text/javascript">
 	jQuery(document).ready(function(){
-		// wp_json_encode emits the quotes, which is how a PHP value is
-		// handed to JavaScript without hand-written delimiters. The payload
-		// is unchanged: the same base64 string the atob() below expects.
-		var content_after_ad = <?php echo wp_json_encode( base64_encode( $content ) ); ?>;
+		var content_after_ad = <?php echo wp_json_encode( (string) $content, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?>;
 		jQuery('#show_adz').click(function(){
-			jQuery('.adz_popup .close_adz').hide();
+			jQuery('.adz_popup .close_adz').addClass('adzworld-is-hidden');
 			jQuery.ajax({
 				url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
 				type : 'post',
 				data: {
-					action :'adz_get_advertise_content',
+					action :'adzworld_get_advertise_content',
 					target_type : 'shortcode',
 					target : '<?php echo absint( get_the_ID() ); ?>',
 					ad_visibility_interval : '<?php echo esc_js( $adz_interval_min ); ?>',
@@ -211,13 +253,13 @@ function adz_in_popup( $adz_interval_min, $adz_duration, $adz_sequence, $adz_tem
 					ad_to_serve : '<?php echo esc_js( $adz_to_serve ); ?>',
 					repeat_times : 'infinite',
 					show_popup : 'true',
+					adzworld_context: '<?php echo esc_js( adzworld_ad_request_token( 'shortcode', get_the_ID(), $adz_interval_min, 'infinite', $adz_to_serve, '', $adz_sequence, $adz_display, $adz_template ) ); ?>',
 					adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
 				},
 				success:function(data) {
 					if(data != 'continue'){
-						jQuery('#show_overlay').css('visibility','visible');
-						jQuery('#show_overlay').css('opacity','1');
-						jQuery('.adz_popup .content').html(window.atob(data));
+						jQuery('#show_overlay').addClass('adzworld-is-visible');
+						jQuery('.adz_popup .content').html(window.adzworldDecodeAd(data));
 						var i = <?php echo absint( $adz_duration ); ?>;
 						var adz_interval = setInterval(function () {
 							if (i >= 0) {
@@ -225,20 +267,19 @@ function adz_in_popup( $adz_interval_min, $adz_duration, $adz_sequence, $adz_tem
 								i--;
 							} else {
 								jQuery('.continue_reading').text('Continue reading >>');
-								jQuery('.continue_reading').addClass('close_adz');	
-								jQuery('.continue_reading').css('cusrsor','pointer');						       
+								jQuery('.continue_reading').addClass('close_adz');
 								clearInterval(adz_interval);
 							}
 						}, 1000);
 
-							
-					}					
+
+					}
 				},
 				error: function(errorThrown){
 					console.log(errorThrown);
 				}
 			});
-			
+
 		});
 
 		jQuery(document).on('click','.close_adz',function(){
@@ -246,33 +287,39 @@ function adz_in_popup( $adz_interval_min, $adz_duration, $adz_sequence, $adz_tem
 				url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
 				type : 'post',
 				data: {
-					action :'adz_get_advertise_content',
+					action :'adzworld_get_advertise_content',
 					target_type : 'shortcode',
 					target : '<?php echo absint( get_the_ID() ); ?>',
 					ad_visibility_interval : '<?php echo esc_js( $adz_interval_min ); ?>',
 					repeat_times : 'infinite',
 					close_adz : 'true',
+					adzworld_context: '<?php echo esc_js( adzworld_ad_request_token( 'shortcode', get_the_ID(), $adz_interval_min, 'infinite', '', '', '', '', '', 'true' ) ); ?>',
 					show_popup : 'true',
 					adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
 
 				},
 				success:function(data) {
-					jQuery('#show_overlay').css('visibility','hidden');
-					jQuery('#show_overlay').css('opacity','0');                        
+					jQuery('#show_overlay').removeClass('adzworld-is-visible');
 				},
 				error: function(errorThrown){
 					console.log(errorThrown);
 				}
 			});
-			jQuery('#content_after_ad').html(window.atob(content_after_ad));
+			jQuery('#content_after_ad').html(content_after_ad);
 		});
 	});
-		
+
 	</script>
 	<?php
 }
 
-function adz_check_shortcode_roatation_completed_or_not( $sequence ) {
+/**
+ * Select the next ad for the current shortcode's rotation.
+ *
+ * @param string $sequence Comma-separated ad identifiers.
+ * @return string|false Selected identifier, or false when complete.
+ */
+function adzworld_check_shortcode_rotation_completed( $sequence ) {
 
 	$publisher_rotations_stats = get_post_meta( get_the_ID(), 'adz_rotation_shortcode', true );
 

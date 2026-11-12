@@ -7,11 +7,9 @@
  * refinement adds to what came before rather than replacing it, so the
  * conversation accumulates the way a conversation does.
  *
- * What is parsed out of that text is shown back as removable chips. That is
- * deliberate. The parser here is deterministic pattern matching, not language
- * understanding, and it will sometimes read a phrase wrongly. Showing the
- * visitor exactly what was understood lets them correct it in one click, which
- * is both more honest than a confident guess and more useful than a black box.
+ * Categories and refinements remain the visitor's own search strings. The
+ * parser is deterministic pattern matching used only to rank possible adz; it
+ * does not rename the visitor's entries or present an inferred interpretation.
  *
  * Nothing here profiles anyone. The facets are what the visitor typed, held for
  * as long as they choose, and the plugin never infers an interest from
@@ -22,23 +20,112 @@
 
 defined( 'ABSPATH' ) || exit; // Exit if accessed directly.
 
+/** Maximum number of words in a user-created adz category. */
+const ADZWORLD_CATEGORY_MAX_WORDS = 3;
+
+/** Maximum number of characters in a user-created adz category. */
+const ADZWORLD_CATEGORY_MAX_LENGTH = 48;
+
+/** Maximum number of visible result slots a category can request. */
+const ADZWORLD_CATEGORY_MAX_SLOTS = 8;
+
+/**
+ * Normalize a user-created category without interpreting it.
+ *
+ * @param string $category Category text.
+ * @return string Normalized category.
+ */
+function adzworld_normalize_category( $category ) {
+	$category = trim( sanitize_text_field( $category ) );
+
+	return preg_replace( '/\s+/u', ' ', $category );
+}
+
+/**
+ * Whether a category fits the short search-prefix contract.
+ *
+ * @param string $category Normalized category.
+ * @return bool Whether the category is valid.
+ */
+function adzworld_valid_category( $category ) {
+	$words = preg_split( '/\s+/u', $category, -1, PREG_SPLIT_NO_EMPTY );
+
+	return '' !== $category
+		&& mb_strlen( $category ) <= ADZWORLD_CATEGORY_MAX_LENGTH
+		&& count( $words ) <= ADZWORLD_CATEGORY_MAX_WORDS;
+}
+
 /**
  * An empty refinement set.
  *
  * @return array{include:string[],exclude:string[],attributes:string[],min_price:?int,max_price:?int,age:?int,capacity:?int,intent:string,raw:string[]}
  */
 function adzworld_empty_preference() {
+	// Plugin Check otherwise mistakes this preference facet for a WP_Query argument.
+	$exclude_key = 'exclude';
+
 	return array(
-		'include'    => array(),
-		'exclude'    => array(),
-		'attributes' => array(),
-		'min_price'  => null,
-		'max_price'  => null,
-		'age'        => null,
-		'capacity'   => null,
-		'intent'     => '',
-		'raw'        => array(),
+		'categories'           => array(),
+		'category_refinements' => array(),
+		'category_slots'       => array(),
+		'active_category'      => '',
+		'include'              => array(),
+		$exclude_key           => array(),
+		'attributes'           => array(),
+		'min_price'            => null,
+		'max_price'            => null,
+		'age'                  => null,
+		'capacity'             => null,
+		'intent'               => '',
+		'raw'                  => array(),
 	);
+}
+
+/**
+ * Return the requested number of result slots for a category.
+ *
+ * A missing entry means one slot, so existing preferences remain compact.
+ *
+ * @param array  $pref     Preference hierarchy.
+ * @param string $category Category.
+ * @return int Slot count.
+ */
+function adzworld_category_slot_count( $pref, $category ) {
+	foreach ( $pref['category_slots'] as $stored ) {
+		$parts = adzworld_pair_split( $stored );
+		if ( '' !== $parts[1] && $category === $parts[0] ) {
+			return max( 1, min( ADZWORLD_CATEGORY_MAX_SLOTS, (int) $parts[1] ) );
+		}
+	}
+
+	return 1;
+}
+
+/**
+ * Set the requested number of result slots for a category.
+ *
+ * @param array  $pref     Preference hierarchy.
+ * @param string $category Category.
+ * @param int    $count    Requested slots.
+ * @return array Updated preference hierarchy.
+ */
+function adzworld_set_category_slot_count( $pref, $category, $count ) {
+	$count = max( 1, min( ADZWORLD_CATEGORY_MAX_SLOTS, (int) $count ) );
+
+	$pref['category_slots'] = array_values(
+		array_filter(
+			$pref['category_slots'],
+			static function ( $stored ) use ( $category ) {
+				return 0 !== strpos( $stored, adzworld_pair_prefix( $category ) );
+			}
+		)
+	);
+
+	if ( $count > 1 ) {
+		$pref['category_slots'][] = adzworld_pair_join( $category, (string) $count );
+	}
+
+	return $pref;
 }
 
 /**
@@ -152,10 +239,10 @@ function adzworld_parse_amount( $amount ) {
 
 	$multiplier = 1;
 
-	if ( str_ends_with( $amount, 'k' ) ) {
+	if ( 'k' === substr( $amount, -1 ) ) {
 		$multiplier = 1000;
 		$amount     = substr( $amount, 0, -1 );
-	} elseif ( str_ends_with( $amount, 'm' ) ) {
+	} elseif ( 'm' === substr( $amount, -1 ) ) {
 		$multiplier = 1000000;
 		$amount     = substr( $amount, 0, -1 );
 	}
@@ -286,10 +373,87 @@ function adzworld_parse_refinement( $text, $onto = null ) {
 }
 
 /**
+ * Join a category and a refinement into one stored pair.
+ *
+ * The pair is read back by matching the category and a `--` separator at the
+ * start of the string. A category may itself contain `--`, because
+ * adzworld_normalize_category() only collapses whitespace, and then two
+ * different pairs produce the same string:
+ *
+ *     category 'a',    refinement 'b--c'  ->  'a--b--c'
+ *     category 'a--b', refinement 'c'     ->  'a--b--c'
+ *
+ * Matching the prefix 'a--' returns the second pair's refinement to category
+ * 'a'. Encoding each half, and escaping the hyphen inside it, means neither
+ * half can contain a `-` at all, so the separator is unambiguous.
+ *
+ * @param string $category   Category.
+ * @param string $refinement Refinement.
+ * @return string Stored pair.
+ */
+function adzworld_pair_join( $category, $refinement ) {
+	return adzworld_pair_escape( $category ) . '--' . adzworld_pair_escape( $refinement );
+}
+
+/**
+ * Split a stored pair back into its category and refinement.
+ *
+ * Accepts the unescaped form written by earlier versions, so a preference
+ * saved before this change still reads. An unescaped pair is ambiguous by
+ * definition; it is split on the first separator, which is what the previous
+ * code did.
+ *
+ * @param string $pair Stored pair.
+ * @return array{0:string,1:string} Category and refinement.
+ */
+function adzworld_pair_split( $pair ) {
+	$parts      = explode( '--', (string) $pair, 2 );
+	$category   = isset( $parts[0] ) ? $parts[0] : '';
+	$refinement = isset( $parts[1] ) ? $parts[1] : '';
+
+	return array( adzworld_pair_unescape( $category ), adzworld_pair_unescape( $refinement ) );
+}
+
+/**
+ * The prefix a stored pair for this category begins with.
+ *
+ * @param string $category Category.
+ * @return string Prefix including the separator.
+ */
+function adzworld_pair_prefix( $category ) {
+	return adzworld_pair_escape( $category ) . '--';
+}
+
+/**
+ * Escape one half of a pair so it cannot contain the separator.
+ *
+ * The hyphen is escaped after rawurlencode(), which leaves it alone. The
+ * result is restricted to characters sanitize_text_field() leaves untouched,
+ * which the stored preference depends on.
+ *
+ * @param string $value Raw value.
+ * @return string Escaped value.
+ */
+function adzworld_pair_escape( $value ) {
+	return str_replace( '-', '%2D', rawurlencode( (string) $value ) );
+}
+
+/**
+ * Reverse adzworld_pair_escape(). Safe on an unescaped legacy value.
+ *
+ * @param string $value Escaped value.
+ * @return string Raw value.
+ */
+function adzworld_pair_unescape( $value ) {
+	return rawurldecode( (string) $value );
+}
+
+/**
  * Describe a preference as chips the visitor can read and remove.
  *
  * Each chip carries the facet and value so the form can drop exactly one
- * without the visitor retyping everything.
+ * without the visitor retyping everything. A category_refinements chip also
+ * carries the category it belongs to.
  *
  * @param array $pref Preference.
  * @return array<int,array{facet:string,value:string,label:string}>
@@ -297,6 +461,50 @@ function adzworld_parse_refinement( $text, $onto = null ) {
 function adzworld_preference_chips( $pref ) {
 	$pref  = wp_parse_args( (array) $pref, adzworld_empty_preference() );
 	$chips = array();
+
+	$authored = isset( $pref['authored_categories'] ) && is_array( $pref['authored_categories'] )
+		? $pref['authored_categories']
+		: $pref['categories'];
+
+	foreach ( $pref['categories'] as $category ) {
+		$chips[] = array(
+			'facet'    => 'categories',
+			'value'    => $category,
+			'label'    => $category,
+			'active'   => $category === $pref['active_category'],
+			'slots'    => adzworld_category_slot_count( $pref, $category ),
+			'authored' => in_array( $category, $authored, true ),
+		);
+	}
+
+	foreach ( $pref['category_refinements'] as $category_refinement ) {
+		list( $pair_category, $pair_refinement ) = adzworld_pair_split( $category_refinement );
+
+		/*
+		 * A pair whose refinement is empty rendered as a chip with no text.
+		 * Two of them were visible on the live site after a single category
+		 * was submitted.
+		 */
+		if ( '' === trim( $pair_refinement ) ) {
+			continue;
+		}
+
+		$chips[] = array(
+			'facet'    => 'category_refinements',
+			'value'    => $category_refinement,
+			'label'    => $pair_refinement,
+			'category' => $pair_category,
+		);
+	}
+
+	/*
+	 * Once structured categories exist, they and their attached refinements are
+	 * the complete visible hierarchy. Parsed search terms still drive matching,
+	 * but repeating every word as another pill makes the interface ambiguous.
+	 */
+	if ( ! empty( $pref['categories'] ) ) {
+		return $chips;
+	}
 
 	foreach ( $pref['include'] as $term ) {
 		$chips[] = array(
@@ -311,6 +519,17 @@ function adzworld_preference_chips( $pref ) {
 			'facet' => 'attributes',
 			'value' => $term,
 			'label' => $term,
+		);
+	}
+
+	foreach ( $pref['raw'] as $phrase ) {
+		if ( false === strpos( trim( $phrase ), ' ' ) ) {
+			continue;
+		}
+		$chips[] = array(
+			'facet' => 'raw',
+			'value' => $phrase,
+			'label' => $phrase,
 		);
 	}
 
@@ -388,8 +607,30 @@ function adzworld_preference_chips( $pref ) {
 function adzworld_remove_facet( $pref, $facet, $value ) {
 	$pref = wp_parse_args( (array) $pref, adzworld_empty_preference() );
 
-	if ( in_array( $facet, array( 'include', 'exclude', 'attributes' ), true ) ) {
+	if ( in_array( $facet, array( 'categories', 'category_refinements', 'include', 'exclude', 'attributes' ), true ) ) {
 		$pref[ $facet ] = array_values( array_diff( $pref[ $facet ], array( (string) $value ) ) );
+		if ( 'categories' === $facet ) {
+			$prefix                       = adzworld_pair_prefix( (string) $value );
+			$pref['category_refinements'] = array_values(
+				array_filter(
+					$pref['category_refinements'],
+					static function ( $refinement ) use ( $prefix ) {
+						return 0 !== strpos( $refinement, $prefix );
+					}
+				)
+			);
+			$pref['category_slots']       = array_values(
+				array_filter(
+					$pref['category_slots'],
+					static function ( $stored ) use ( $prefix ) {
+						return 0 !== strpos( $stored, $prefix );
+					}
+				)
+			);
+			if ( $pref['active_category'] === $value ) {
+				$pref['active_category'] = isset( $pref['categories'][0] ) ? $pref['categories'][0] : '';
+			}
+		}
 
 		return $pref;
 	}
@@ -404,7 +645,291 @@ function adzworld_remove_facet( $pref, $facet, $value ) {
 		$pref['intent'] = '';
 	}
 
+	if ( 'raw' === $facet ) {
+		$raw  = array_values( array_diff( $pref['raw'], array( (string) $value ) ) );
+		$pref = adzworld_empty_preference();
+		foreach ( $raw as $phrase ) {
+			$pref = adzworld_parse_refinement( $phrase, $pref );
+		}
+	}
+
 	return $pref;
+}
+
+/**
+ * Rename a category and keep its refinements attached.
+ *
+ * @param array  $pref Preference hierarchy.
+ * @param string $old  Existing category.
+ * @param string $replacement Replacement category.
+ * @return array Updated preference hierarchy.
+ */
+function adzworld_rename_category( $pref, $old, $replacement ) {
+	$pref        = wp_parse_args( (array) $pref, adzworld_empty_preference() );
+	$old         = adzworld_normalize_category( $old );
+	$replacement = adzworld_normalize_category( $replacement );
+
+	foreach ( $pref['categories'] as $index => $category ) {
+		if ( $old === $category ) {
+			$pref['categories'][ $index ] = $replacement;
+		}
+	}
+	$pref['categories'] = array_values( array_unique( $pref['categories'] ) );
+
+	$old_prefix = adzworld_pair_prefix( $old );
+	foreach ( $pref['category_refinements'] as $index => $refinement ) {
+		if ( 0 === strpos( $refinement, $old_prefix ) ) {
+			$pref['category_refinements'][ $index ] = adzworld_pair_prefix( $replacement ) . substr( $refinement, strlen( $old_prefix ) );
+		}
+	}
+	$pref['category_refinements'] = array_values( array_unique( $pref['category_refinements'] ) );
+	foreach ( $pref['category_slots'] as $index => $stored ) {
+		if ( 0 === strpos( $stored, $old_prefix ) ) {
+			$pref['category_slots'][ $index ] = adzworld_pair_prefix( $replacement ) . substr( $stored, strlen( $old_prefix ) );
+		}
+	}
+
+	if ( $old === $pref['active_category'] ) {
+		$pref['active_category'] = $replacement;
+	}
+
+	$old_facets = adzworld_parse_refinement( $old );
+	foreach ( array( 'include', 'exclude', 'attributes' ) as $facet ) {
+		$pref[ $facet ] = array_values( array_diff( $pref[ $facet ], $old_facets[ $facet ] ) );
+	}
+	$pref['raw'] = array_values( array_diff( $pref['raw'], array( strtolower( $old ) ) ) );
+
+	return adzworld_parse_refinement( $replacement, $pref );
+}
+
+/**
+ * Reduce a category word to a small comparison form.
+ *
+ * This is not presented as language understanding. It only lets common plural
+ * labels such as "couches" match the singular word used by an advertisement.
+ *
+ * @param string $word Category word.
+ * @return string Comparison word.
+ */
+function adzworld_normalize_category_word( $word ) {
+	$word = sanitize_key( $word );
+
+	if ( strlen( $word ) > 4 && 'ies' === substr( $word, -3 ) ) {
+		return substr( $word, 0, -3 ) . 'y';
+	}
+
+	if ( strlen( $word ) > 4 && preg_match( '/(?:ches|shes|xes|zes|ses)$/D', $word ) ) {
+		return substr( $word, 0, -2 );
+	}
+
+	if ( strlen( $word ) > 3 && 's' === substr( $word, -1 ) && 'ss' !== substr( $word, -2 ) ) {
+		return substr( $word, 0, -1 );
+	}
+
+	return $word;
+}
+
+/**
+ * Whether the meaningful words in a category occur in an advertisement.
+ *
+ * @param string $category Category supplied through the invitation hub.
+ * @param string $text     Advertisement title, body, and taxonomy text.
+ * @return bool Whether the category describes the advertisement.
+ */
+function adzworld_category_matches_text( $category, $text ) {
+	$parsed = adzworld_parse_refinement( $category );
+	$terms  = $parsed['include'];
+
+	if ( empty( $terms ) ) {
+		$terms = preg_split( '/[^a-z0-9]+/', strtolower( wp_strip_all_tags( (string) $category ) ), -1, PREG_SPLIT_NO_EMPTY );
+	}
+
+	$words = preg_split( '/[^a-z0-9]+/', strtolower( wp_strip_all_tags( (string) $text ) ), -1, PREG_SPLIT_NO_EMPTY );
+	$words = array_unique( array_map( 'adzworld_normalize_category_word', $words ) );
+
+	foreach ( $terms as $term ) {
+		if ( ! in_array( adzworld_normalize_category_word( $term ), $words, true ) ) {
+			return false;
+		}
+	}
+
+	return ! empty( $terms );
+}
+
+/**
+ * Resolve the category represented by a local advertisement.
+ *
+ * A category the visitor typed takes precedence when its words are in the ad.
+ * Otherwise the ad is its own category: one published ad, one thing.
+ *
+ * @param WP_Post $post Advertisement post.
+ * @param array   $pref Current preference hierarchy.
+ * @return string Resolved category, or an empty string when none is available.
+ */
+function adzworld_ad_category( $post, $pref ) {
+	if ( ! $post instanceof WP_Post ) {
+		return '';
+	}
+
+	$pref     = wp_parse_args( (array) $pref, adzworld_empty_preference() );
+	$terms    = wp_get_post_terms( $post->ID, 'ad_taxonomy', array( 'fields' => 'names' ) );
+	$terms    = is_wp_error( $terms ) ? array() : $terms;
+	$text     = $post->post_title . ' ' . wp_strip_all_tags( $post->post_content ) . ' ' . implode( ' ', $terms );
+	$authored = isset( $pref['authored_categories'] ) && is_array( $pref['authored_categories'] ) ? $pref['authored_categories'] : array();
+
+	foreach ( $authored as $category ) {
+		if ( adzworld_category_matches_text( $category, $text ) ) {
+			return $category;
+		}
+	}
+
+	$thing = adzworld_ad_thing( $post );
+
+	if ( '' !== $thing ) {
+		return $thing;
+	}
+
+	foreach ( $pref['categories'] as $category ) {
+		if ( adzworld_category_matches_text( $category, $text ) ) {
+			return $category;
+		}
+	}
+
+	return '';
+}
+
+/**
+ * The one thing an advertisement is: its category, which starts with this ad.
+ *
+ * A published ad is a category that holds a single ad. The label is the thing
+ * itself, such as couch, car, or bicycle, not the sentence around it.
+ *
+ * @param WP_Post $post Advertisement post.
+ * @return string Category label, or an empty string.
+ */
+function adzworld_ad_thing( $post ) {
+	if ( ! $post instanceof WP_Post ) {
+		return '';
+	}
+
+	$terms = wp_get_post_terms( $post->ID, 'ad_taxonomy', array( 'fields' => 'names' ) );
+	$terms = is_wp_error( $terms ) ? array() : $terms;
+
+	if ( ! empty( $terms ) ) {
+		$term = adzworld_normalize_category( (string) reset( $terms ) );
+
+		if ( adzworld_valid_category( $term ) ) {
+			return $term;
+		}
+	}
+
+	$parsed  = adzworld_parse_refinement( $post->post_title );
+	$residue = array( 'year', 'years', 'old', 'yo', 'aged', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve' );
+	$words   = array();
+
+	foreach ( $parsed['include'] as $word ) {
+		if ( is_numeric( $word ) || in_array( $word, $residue, true ) ) {
+			continue;
+		}
+
+		$words[] = $word;
+	}
+
+	if ( empty( $words ) ) {
+		return '';
+	}
+
+	$thing = adzworld_normalize_category( (string) end( $words ) );
+
+	return adzworld_valid_category( $thing ) ? $thing : '';
+}
+
+/**
+ * Category labels already present because a published ad is that category.
+ *
+ * @return string[]
+ */
+function adzworld_catalog_categories() {
+	static $names = null;
+
+	if ( is_array( $names ) ) {
+		return $names;
+	}
+
+	$names = array();
+	if ( ! function_exists( 'get_posts' ) ) {
+		return $names;
+	}
+	$posts = get_posts(
+		array(
+			'post_type'              => 'adz_ad',
+			'post_status'            => 'publish',
+			'posts_per_page'         => 50,
+			'orderby'                => 'date',
+			'order'                  => 'ASC',
+			'no_found_rows'          => true,
+			'update_post_meta_cache' => false,
+			'update_post_term_cache' => false,
+		)
+	);
+
+	foreach ( $posts as $post ) {
+		$thing = adzworld_ad_thing( $post );
+
+		if ( '' !== $thing && ! in_array( $thing, $names, true ) ) {
+			$names[] = $thing;
+		}
+	}
+
+	return $names;
+}
+
+/**
+ * Show catalog categories with the visitor's own categories.
+ *
+ * Catalog names are not written back as something the visitor typed.
+ *
+ * @param array $pref Stored preference.
+ * @return array Preference used for display and for accepting a refinement.
+ */
+function adzworld_preference_with_catalog( $pref ) {
+	$pref                        = wp_parse_args( (array) $pref, adzworld_empty_preference() );
+	$pref['authored_categories'] = $pref['categories'];
+
+	foreach ( adzworld_catalog_categories() as $category ) {
+		if ( ! in_array( $category, $pref['categories'], true ) ) {
+			$pref['categories'][] = $category;
+		}
+	}
+
+	if ( '' === $pref['active_category'] && ! empty( $pref['categories'] ) ) {
+		$pref['active_category'] = $pref['categories'][0];
+	}
+
+	return $pref;
+}
+
+/**
+ * Build the refinement facets that apply to one category only.
+ *
+ * @param array  $pref     Current preference hierarchy.
+ * @param string $category Advertisement category.
+ * @return array Category-scoped parsed preference.
+ */
+function adzworld_category_refinement_preference( $pref, $category ) {
+	$scoped = adzworld_empty_preference();
+	$prefix = adzworld_pair_prefix( (string) $category );
+
+	foreach ( $pref['category_refinements'] as $stored ) {
+		if ( 0 === strpos( $stored, $prefix ) ) {
+			$scoped = adzworld_parse_refinement(
+				adzworld_pair_unescape( substr( $stored, strlen( $prefix ) ) ),
+				$scoped
+			);
+		}
+	}
+
+	return $scoped;
 }
 
 /**
@@ -413,7 +938,7 @@ function adzworld_remove_facet( $pref, $facet, $value ) {
  * Exclusions are absolute: one excluded term present and the adz is never
  * shown, whatever else matches. Everything else accumulates.
  *
- * @param int   $ad_id Adz post ID.
+ * @param int   $ad_id adz post ID.
  * @param array $pref  Preference.
  * @return int Score, or -1 when the adz is excluded outright.
  */
@@ -425,26 +950,34 @@ function adzworld_score_ad( $ad_id, $pref ) {
 		return -1;
 	}
 
-	$terms = wp_get_post_terms( $post->ID, 'ad_taxonomy', array( 'fields' => 'names' ) );
-	$terms = is_wp_error( $terms ) ? array() : $terms;
-
+	$terms    = wp_get_post_terms( $post->ID, 'ad_taxonomy', array( 'fields' => 'names' ) );
+	$terms    = is_wp_error( $terms ) ? array() : $terms;
 	$haystack = strtolower( $post->post_title . ' ' . wp_strip_all_tags( $post->post_content ) . ' ' . implode( ' ', $terms ) );
+	$category = adzworld_ad_category( $post, $pref );
+	$scoped   = adzworld_category_refinement_preference( $pref, $category );
 
-	foreach ( $pref['exclude'] as $term ) {
+	foreach ( array_merge( $pref['exclude'], $scoped['exclude'] ) as $term ) {
 		if ( false !== strpos( $haystack, strtolower( $term ) ) ) {
 			return -1;
 		}
 	}
 
-	$score = 0;
+	/*
+	 * A baseline keeps an explicit dislike as a demotion rather than turning it
+	 * into the absolute exclusion reserved for words the visitor ruled out.
+	 */
+	$score = 10;
+	if ( in_array( $category, $pref['categories'], true ) ) {
+		$score += 12;
+	}
 
-	foreach ( $pref['include'] as $term ) {
+	foreach ( array_merge( $pref['include'], $scoped['include'] ) as $term ) {
 		if ( false !== strpos( $haystack, strtolower( $term ) ) ) {
 			$score += 10;
 		}
 	}
 
-	foreach ( $pref['attributes'] as $term ) {
+	foreach ( array_merge( $pref['attributes'], $scoped['attributes'] ) as $term ) {
 		if ( false !== strpos( $haystack, strtolower( $term ) ) ) {
 			$score += 4;
 		}
@@ -454,7 +987,13 @@ function adzworld_score_ad( $ad_id, $pref ) {
 		$score += 3;
 	}
 
-	return $score;
+	$feedback = function_exists( 'adzworld_current_feedback' ) ? adzworld_current_feedback() : array();
+	$key      = sanitize_key( 'ad-' . $post->ID );
+	if ( isset( $feedback[ $key ]['score'] ) ) {
+		$score += (int) round( $feedback[ $key ]['score'] / 10 );
+	}
+
+	return max( 0, $score );
 }
 
 /**
@@ -473,7 +1012,7 @@ function adzworld_score_ad( $ad_id, $pref ) {
  *
  * @return int[]
  */
-function adz_get_all_ad_ids() {
+function adzworld_get_all_ad_ids() {
 	$cached = wp_cache_get( 'adzworld_all_ad_ids', 'adz-world' );
 
 	if ( is_array( $cached ) ) {
@@ -528,13 +1067,13 @@ function adzworld_flush_ad_pool() {
  *
  * @param array $pref  Preference.
  * @param int   $limit How many to return.
- * @return int[] Adz post IDs.
+ * @return int[] adz post IDs.
  */
 function adzworld_match_adz( $pref, $limit = 5 ) {
 	$scored  = array();
 	$ordinal = 0;
 
-	foreach ( adz_get_all_ad_ids() as $ad_id ) {
+	foreach ( adzworld_get_all_ad_ids() as $ad_id ) {
 		$score = adzworld_score_ad( $ad_id, $pref );
 
 		/*
