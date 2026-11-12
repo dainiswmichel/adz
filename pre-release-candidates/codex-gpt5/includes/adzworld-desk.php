@@ -17,11 +17,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 function adzworld_desk_tabs() {
 	return array(
 		'dashboard'  => __( 'Dashboard', 'adz-world' ),
+		'manual'     => __( 'Manual', 'adz-world' ),
 		'networks'   => __( 'Connections', 'adz-world' ),
 		'affiliates' => __( 'Affiliate programs', 'adz-world' ),
 		'rotation'   => __( 'Rotation', 'adz-world' ),
 		'earnings'   => __( 'Earnings', 'adz-world' ),
 		'templates'  => __( 'Templates', 'adz-world' ),
+		'starter'    => __( 'Starter packs', 'adz-world' ),
 	);
 }
 
@@ -49,11 +51,13 @@ function adzworld_desk_url( $tab = 'dashboard' ) {
 function adzworld_desk_submenu_slugs() {
 	return array(
 		'dashboard'  => 'adzworld',
+		'manual'     => 'adzworld-manual',
 		'networks'   => 'adzworld-networks',
 		'affiliates' => 'adzworld-affiliates',
 		'rotation'   => 'adzworld-rotation',
 		'earnings'   => 'adzworld-earnings',
 		'templates'  => 'adzworld-templates',
+		'starter'    => 'adzworld-starter',
 	);
 }
 
@@ -168,6 +172,12 @@ function adzworld_desk_dashboard() {
 	$earnings    = get_option( 'adzworld_earnings_connection', array() );
 	$cards       = array(
 		array(
+			'label' => __( 'Setup manual', 'adz-world' ),
+			'value' => (string) adzworld_enabled_network_count(),
+			'text'  => __( 'Direct network accounts enabled. A network section of the manual fills in after that account is saved.', 'adz-world' ),
+			'tab'   => 'manual',
+		),
+		array(
 			'label' => __( 'Published local adz', 'adz-world' ),
 			'value' => (string) $local_adz,
 			'text'  => __( 'Created and served by this WordPress site.', 'adz-world' ),
@@ -233,6 +243,19 @@ function adzworld_desk_page() {
 		return;
 	}
 
+	if ( 'manual' === $current ) {
+		echo '<div class="wrap adzworld-desk">';
+		adzworld_manual_page();
+		echo '</div>';
+		return;
+	}
+
+	if ( 'starter' === $current ) {
+		echo '<div class="wrap adzworld-desk">';
+		adzworld_starter_page();
+		echo '</div>';
+		return;
+	}
 	if ( 'templates' === $current ) {
 		adzworld_template_setting();
 		return;

@@ -994,3 +994,613 @@
 		flex-direction: column;
 	}
 }
+
+/* ==========================================================================
+   Display format library
+   ==========================================================================
+
+   One modifier class per format, listed in adzworld_rotation_display_formats().
+   Every format renders the same markup, the same slot order and the same
+   escaping; a format only changes the frame. That is why a new format is a
+   block of CSS and an allowlist entry, and never a new render path.
+
+   Six groups:
+     Carousel   single flat 3d coverflow fade stack
+     Multiple   filmstrip grid
+     Banner     banner billboard
+     Widget     inline-card sidebar
+     Vertical   rail-left rail-right skyscraper
+     Anchored   dock-bottom dock-top corner
+
+   The Multiple group and coverflow and stack need every slot on screen, so PHP
+   marks them with data-adzworld-multiple and the script leaves the siblings
+   visible. The rest keep the one-at-a-time behaviour.
+   ========================================================================== */
+
+/* ------------------------------------------------------------- shared frame */
+
+.adzworld-rotation {
+	--adz-frame-bg: var(--adz-surface);
+	--adz-frame-line: var(--adz-line);
+	--adz-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.05), 0 2px 8px rgba(0, 0, 0, 0.04);
+	--adz-shadow-2: 0 2px 4px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.08);
+	--adz-shadow-3: 0 4px 8px rgba(0, 0, 0, 0.08), 0 16px 48px rgba(0, 0, 0, 0.12);
+	--adz-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+	--adz-duration: 420ms;
+}
+
+/*
+ * No advertising label is generated here. An earlier version of this file
+ * rendered the container's aria-label with content: attr(aria-label), which was
+ * wrong twice over: many screen readers announce CSS generated content, so the
+ * region's accessible name would be read a second time as body text, and it
+ * put a visible label on every rotation that previously had none, which is a
+ * product change rather than a design pass. The plugin already discloses
+ * sources through .adzworld-match-label and the invitation panel heading, both
+ * of which are real translatable markup.
+ */
+
+/*
+ * Flat carousel. This format had no rules of its own: with
+ * .adzworld-slides set to display:block and the script hiding every inactive
+ * slot, it rendered identically to "single" while the administrator's own
+ * shortcode example offered it as the alternative. The movement it advertises
+ * is restored here.
+ *
+ * The motion is an entry animation on the slot that becomes active rather than
+ * a translated track, because a track needs its siblings present and the
+ * one-at-a-time formats deliberately keep them hidden. An element moving from
+ * hidden to shown restarts the animation, so each step is visible.
+ */
+@keyframes adzworld-slide-in {
+
+	from {
+		opacity: 0;
+		transform: translateX(14%);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+.adzworld-rotation--flat.adzworld-enhanced .adzworld-active {
+	animation: adzworld-slide-in var(--adz-duration) var(--adz-ease) both;
+}
+
+/*
+ * Single. Intentionally has no rules of its own: it is the plain one-at-a-time
+ * frame the base styles already produce. Listed here so the absence is a
+ * decision on the record rather than an omission.
+ */
+
+/*
+ * Coverflow. The active slot sits forward and square to the reader; its
+ * neighbours stay on screen, angled and scaled back, so the reader can see
+ * that the rotation continues in both directions.
+ */
+.adzworld-rotation--coverflow.adzworld-enhanced .adzworld-slides {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0;
+	min-height: 240px;
+	perspective: 1400px;
+	perspective-origin: 50% 50%;
+}
+
+.adzworld-rotation--coverflow.adzworld-enhanced .adzworld-slide {
+	flex: 0 0 auto;
+	width: min(340px, 72%);
+	transform: rotateY(32deg) scale(0.82);
+	opacity: 0.45;
+	transform-origin: center center;
+	transition: transform var(--adz-duration) var(--adz-ease), opacity var(--adz-duration) var(--adz-ease);
+	backface-visibility: hidden;
+}
+
+.adzworld-rotation--coverflow.adzworld-enhanced .adzworld-active ~ .adzworld-slide {
+	transform: rotateY(-32deg) scale(0.82);
+}
+
+.adzworld-rotation--coverflow.adzworld-enhanced .adzworld-active {
+	width: min(420px, 86%);
+	transform: rotateY(0) scale(1);
+	opacity: 1;
+	box-shadow: var(--adz-shadow-3);
+	z-index: 2;
+}
+
+/*
+ * Crossfade. Every slot occupies the same frame, so the frame never changes
+ * height between slots and the page does not jump.
+ */
+.adzworld-rotation--fade.adzworld-enhanced .adzworld-slides {
+	display: grid;
+	min-height: 200px;
+}
+
+.adzworld-rotation--fade.adzworld-enhanced .adzworld-slide {
+	grid-area: 1 / 1;
+	opacity: 0;
+	transition: opacity var(--adz-duration) var(--adz-ease);
+}
+
+.adzworld-rotation--fade.adzworld-enhanced .adzworld-active {
+	opacity: 1;
+}
+
+/*
+ * Card stack. Layered cards, offset downward, so the depth of the stack shows
+ * how many slots remain without needing a counter.
+ */
+.adzworld-rotation--stack.adzworld-enhanced .adzworld-slides {
+	display: grid;
+	min-height: 220px;
+}
+
+.adzworld-rotation--stack.adzworld-enhanced .adzworld-slide {
+	grid-area: 1 / 1;
+	background: var(--adz-frame-bg);
+	border: 1px solid var(--adz-frame-line);
+	border-radius: var(--adz-radius);
+	box-shadow: var(--adz-shadow-1);
+	transform: translateY(14px) scale(0.95);
+	opacity: 0.55;
+	transition: transform var(--adz-duration) var(--adz-ease), opacity var(--adz-duration) var(--adz-ease);
+}
+
+.adzworld-rotation--stack.adzworld-enhanced .adzworld-active ~ .adzworld-slide {
+	transform: translateY(28px) scale(0.9);
+	opacity: 0.3;
+}
+
+.adzworld-rotation--stack.adzworld-enhanced .adzworld-active {
+	transform: translateY(0) scale(1);
+	opacity: 1;
+	box-shadow: var(--adz-shadow-2);
+	z-index: 2;
+}
+
+/* --------------------------------------------------------- Multiple group */
+
+/*
+ * Filmstrip. A horizontal strip the reader can swipe or scroll, snapping to
+ * each slot. The arrows still work, so there are two ways to move.
+ */
+.adzworld-rotation--filmstrip .adzworld-slides {
+	display: flex;
+	gap: var(--adz-gap);
+	overflow-x: auto;
+	scroll-snap-type: x mandatory;
+	scrollbar-width: thin;
+	padding-bottom: 6px;
+	overscroll-behavior-x: contain;
+}
+
+.adzworld-rotation--filmstrip .adzworld-slide {
+	flex: 0 0 min(320px, 78%);
+	scroll-snap-align: center;
+	background: var(--adz-frame-bg);
+	border: 1px solid var(--adz-frame-line);
+	border-radius: var(--adz-radius);
+	overflow: hidden;
+}
+
+.adzworld-rotation--filmstrip .adzworld-active {
+	border-color: var(--adz-accent);
+	box-shadow: var(--adz-shadow-1);
+}
+
+/*
+ * Grid. Every slot at once, reflowing by the width it is given rather than by
+ * a device breakpoint, so it behaves the same in a narrow column as on a wide
+ * page.
+ */
+.adzworld-rotation--grid .adzworld-slides {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+	gap: var(--adz-gap);
+}
+
+.adzworld-rotation--grid .adzworld-slide {
+	background: var(--adz-frame-bg);
+	border: 1px solid var(--adz-frame-line);
+	border-radius: var(--adz-radius);
+	overflow: hidden;
+}
+
+.adzworld-rotation--grid .adzworld-active {
+	border-color: var(--adz-accent);
+}
+
+.adzworld-rotation--grid .adzworld-carousel,
+.adzworld-rotation--filmstrip .adzworld-carousel {
+	padding-inline: 0;
+}
+
+.adzworld-rotation--grid .adzworld-navigation,
+.adzworld-rotation--filmstrip .adzworld-navigation {
+	margin-top: 10px;
+}
+
+.adzworld-rotation--grid .adzworld-previous,
+.adzworld-rotation--grid .adzworld-next,
+.adzworld-rotation--filmstrip .adzworld-previous,
+.adzworld-rotation--filmstrip .adzworld-next {
+	position: static;
+	transform: none;
+}
+
+/* ----------------------------------------------------------- Banner group */
+
+.adzworld-rotation--banner .adzworld-creative,
+.adzworld-rotation--banner .adzworld-provider {
+	min-height: 90px;
+}
+
+.adzworld-rotation--billboard .adzworld-creative,
+.adzworld-rotation--billboard .adzworld-provider {
+	min-height: 250px;
+}
+
+.adzworld-rotation--banner .adzworld-slide,
+.adzworld-rotation--billboard .adzworld-slide {
+	width: 100%;
+	background: var(--adz-frame-bg);
+	border: 1px solid var(--adz-frame-line);
+	border-radius: var(--adz-radius);
+	overflow: hidden;
+}
+
+/* ----------------------------------------------------------- Widget group */
+
+.adzworld-rotation--inline-card,
+.adzworld-rotation--sidebar {
+	padding: 14px;
+	background: var(--adz-frame-bg);
+	border: 1px solid var(--adz-frame-line);
+	border-radius: var(--adz-radius);
+	box-shadow: var(--adz-shadow-1);
+}
+
+.adzworld-rotation--inline-card {
+	margin-block: 1.75em;
+}
+
+.adzworld-rotation--sidebar {
+	max-width: 340px;
+}
+
+.adzworld-rotation--sidebar .adzworld-carousel {
+	padding-inline: 0;
+}
+
+.adzworld-rotation--sidebar .adzworld-previous,
+.adzworld-rotation--sidebar .adzworld-next {
+	position: static;
+	transform: none;
+}
+
+.adzworld-rotation--sidebar .adzworld-navigation {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+	justify-content: center;
+	margin-top: 10px;
+}
+
+/* --------------------------------------------------------- Vertical group */
+
+.adzworld-rotation--skyscraper {
+	width: min(300px, 100%);
+}
+
+.adzworld-rotation--skyscraper .adzworld-creative,
+.adzworld-rotation--skyscraper .adzworld-provider {
+	min-height: 600px;
+}
+
+.adzworld-rotation--skyscraper .adzworld-carousel {
+	padding-inline: 0;
+}
+
+/*
+ * Left and right rails. These stick to the side of the viewport, so they are
+ * only offered where there is room beside the content: below 1280px they fall
+ * back into the normal flow rather than covering the text.
+ */
+.adzworld-rotation--rail-left,
+.adzworld-rotation--rail-right {
+	width: min(160px, 100%);
+}
+
+.adzworld-rotation--rail-left .adzworld-carousel,
+.adzworld-rotation--rail-right .adzworld-carousel {
+	padding-inline: 0;
+}
+
+.adzworld-rotation--rail-left .adzworld-creative,
+.adzworld-rotation--rail-right .adzworld-creative,
+.adzworld-rotation--rail-left .adzworld-provider,
+.adzworld-rotation--rail-right .adzworld-provider {
+	min-height: 600px;
+}
+
+@media (min-width: 1280px) {
+
+	.adzworld-rotation--rail-left,
+	.adzworld-rotation--rail-right {
+		position: fixed;
+		top: 50%;
+		z-index: 80;
+		padding: 8px;
+		background: var(--adz-frame-bg);
+		border: 1px solid var(--adz-frame-line);
+		border-radius: var(--adz-radius);
+		box-shadow: var(--adz-shadow-2);
+		transform: translateY(-50%);
+	}
+
+	.adzworld-rotation--rail-left {
+		left: 16px;
+	}
+
+	.adzworld-rotation--rail-right {
+		right: 16px;
+	}
+}
+
+/* --------------------------------------------------------- Anchored group */
+
+/*
+ * Docks and the corner card sit above the page, so each one is dismissible,
+ * leaves room for the dismiss control, and respects the safe area on phones
+ * with a home bar.
+ */
+.adzworld-rotation--dock-bottom,
+.adzworld-rotation--dock-top {
+	position: fixed;
+	left: 0;
+	right: 0;
+	z-index: 90;
+	display: flex;
+	gap: 12px;
+	align-items: center;
+	padding: 8px 48px 8px 16px;
+	background: var(--adz-frame-bg);
+	box-shadow: var(--adz-shadow-2);
+}
+
+.adzworld-rotation--dock-bottom {
+	bottom: 0;
+	padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+	border-top: 1px solid var(--adz-frame-line);
+}
+
+.adzworld-rotation--dock-top {
+	top: 0;
+	padding-top: calc(8px + env(safe-area-inset-top, 0px));
+	border-bottom: 1px solid var(--adz-frame-line);
+}
+
+.adzworld-rotation--dock-bottom .adzworld-carousel,
+.adzworld-rotation--dock-top .adzworld-carousel {
+	flex: 1 1 auto;
+	min-width: 0;
+	padding-inline: 0;
+}
+
+.adzworld-rotation--dock-bottom .adzworld-creative,
+.adzworld-rotation--dock-top .adzworld-creative,
+.adzworld-rotation--dock-bottom .adzworld-provider,
+.adzworld-rotation--dock-top .adzworld-provider {
+	min-height: 50px;
+}
+
+.adzworld-rotation--dock-bottom .adzworld-previous,
+.adzworld-rotation--dock-bottom .adzworld-next,
+.adzworld-rotation--dock-top .adzworld-previous,
+.adzworld-rotation--dock-top .adzworld-next {
+	position: static;
+	transform: none;
+}
+
+.adzworld-rotation--corner {
+	position: fixed;
+	right: 16px;
+
+	/* env() carries its own fallback, so no second declaration is needed. */
+	bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+	z-index: 90;
+	width: min(320px, calc(100vw - 32px));
+	padding: 12px 40px 12px 12px;
+	background: var(--adz-frame-bg);
+	border: 1px solid var(--adz-frame-line);
+	border-radius: var(--adz-radius);
+	box-shadow: var(--adz-shadow-3);
+}
+
+.adzworld-rotation--corner .adzworld-carousel {
+	padding-inline: 0;
+}
+
+.adzworld-dismiss {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	color: var(--adz-muted);
+	font-size: 18px;
+	line-height: 1;
+	background: transparent;
+	border: 1px solid transparent;
+	border-radius: 50%;
+	cursor: pointer;
+}
+
+.adzworld-dismiss:hover,
+.adzworld-dismiss:focus-visible {
+	color: var(--adz-ink);
+	background: #f0f0f1;
+	border-color: var(--adz-frame-line);
+}
+
+/* ------------------------------------------------------------ Fixed sizes */
+
+/*
+ * The standard fixed creative sizes, one class each. The dimensions are here
+ * rather than in a style attribute because a size written inline is an inline
+ * style. Each frame caps its width at the space available, so a 970px
+ * billboard in a 320px column shrinks instead of overflowing, and the height
+ * is a minimum so a creative is never cropped.
+ */
+.adzworld-rotation[class*="adzworld-rotation--size-"] .adzworld-slide {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.adzworld-rotation--size-300x250 .adzworld-creative,
+.adzworld-rotation--size-300x250 .adzworld-provider {
+	width: min(300px, 100%);
+	min-height: 250px;
+}
+
+.adzworld-rotation--size-336x280 .adzworld-creative,
+.adzworld-rotation--size-336x280 .adzworld-provider {
+	width: min(336px, 100%);
+	min-height: 280px;
+}
+
+.adzworld-rotation--size-250x250 .adzworld-creative,
+.adzworld-rotation--size-250x250 .adzworld-provider {
+	width: min(250px, 100%);
+	min-height: 250px;
+}
+
+.adzworld-rotation--size-200x200 .adzworld-creative,
+.adzworld-rotation--size-200x200 .adzworld-provider {
+	width: min(200px, 100%);
+	min-height: 200px;
+}
+
+.adzworld-rotation--size-180x150 .adzworld-creative,
+.adzworld-rotation--size-180x150 .adzworld-provider {
+	width: min(180px, 100%);
+	min-height: 150px;
+}
+
+.adzworld-rotation--size-728x90 .adzworld-creative,
+.adzworld-rotation--size-728x90 .adzworld-provider {
+	width: min(728px, 100%);
+	min-height: 90px;
+}
+
+.adzworld-rotation--size-970x90 .adzworld-creative,
+.adzworld-rotation--size-970x90 .adzworld-provider {
+	width: min(970px, 100%);
+	min-height: 90px;
+}
+
+.adzworld-rotation--size-970x250 .adzworld-creative,
+.adzworld-rotation--size-970x250 .adzworld-provider {
+	width: min(970px, 100%);
+	min-height: 250px;
+}
+
+.adzworld-rotation--size-468x60 .adzworld-creative,
+.adzworld-rotation--size-468x60 .adzworld-provider {
+	width: min(468px, 100%);
+	min-height: 60px;
+}
+
+.adzworld-rotation--size-234x60 .adzworld-creative,
+.adzworld-rotation--size-234x60 .adzworld-provider {
+	width: min(234px, 100%);
+	min-height: 60px;
+}
+
+.adzworld-rotation--size-300x600 .adzworld-creative,
+.adzworld-rotation--size-300x600 .adzworld-provider {
+	width: min(300px, 100%);
+	min-height: 600px;
+}
+
+.adzworld-rotation--size-160x600 .adzworld-creative,
+.adzworld-rotation--size-160x600 .adzworld-provider {
+	width: min(160px, 100%);
+	min-height: 600px;
+}
+
+.adzworld-rotation--size-120x600 .adzworld-creative,
+.adzworld-rotation--size-120x600 .adzworld-provider {
+	width: min(120px, 100%);
+	min-height: 600px;
+}
+
+.adzworld-rotation--size-320x50 .adzworld-creative,
+.adzworld-rotation--size-320x50 .adzworld-provider {
+	width: min(320px, 100%);
+	min-height: 50px;
+}
+
+.adzworld-rotation--size-320x100 .adzworld-creative,
+.adzworld-rotation--size-320x100 .adzworld-provider {
+	width: min(320px, 100%);
+	min-height: 100px;
+}
+
+/* ------------------------------------------- motion and narrow viewports */
+
+@media (prefers-reduced-motion: reduce) {
+
+	.adzworld-rotation .adzworld-slide,
+	.adzworld-rotation .adzworld-slides {
+		transition: none !important;
+		animation: none !important;
+	}
+
+	.adzworld-rotation--filmstrip .adzworld-slides {
+		scroll-behavior: auto;
+	}
+}
+
+@media (max-width: 600px) {
+
+	/*
+	 * Narrow viewports: the tall vertical formats would push the content off
+	 * the screen, so they stop reserving 600px of height, and the docks lose
+	 * their horizontal padding.
+	 */
+	.adzworld-rotation--skyscraper .adzworld-creative,
+	.adzworld-rotation--skyscraper .adzworld-provider,
+	.adzworld-rotation--rail-left .adzworld-creative,
+	.adzworld-rotation--rail-right .adzworld-creative,
+	.adzworld-rotation--rail-left .adzworld-provider,
+	.adzworld-rotation--rail-right .adzworld-provider,
+	.adzworld-rotation--size-300x600 .adzworld-creative,
+	.adzworld-rotation--size-160x600 .adzworld-creative,
+	.adzworld-rotation--size-120x600 .adzworld-creative,
+	.adzworld-rotation--size-300x600 .adzworld-provider,
+	.adzworld-rotation--size-160x600 .adzworld-provider,
+	.adzworld-rotation--size-120x600 .adzworld-provider {
+		min-height: 250px;
+	}
+
+	.adzworld-rotation--dock-bottom,
+	.adzworld-rotation--dock-top {
+		padding-right: 44px;
+		padding-left: 10px;
+	}
+
+	.adzworld-rotation--coverflow.adzworld-enhanced .adzworld-slide {
+		width: 86%;
+	}
+}

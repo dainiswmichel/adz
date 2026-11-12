@@ -21,7 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 function adzworld_affiliate_networks() {
 	return array(
-		'amazon'  => array(
+		'amazon'    => array(
 			'label'   => 'Amazon Associates',
 			'account' => 'https://affiliate-program.amazon.com',
 			'note'    => __( 'The tracking id is the tag on an Associates link, for example sitename-20. The search uses Amazon’s k parameter. One tag works only on the marketplace where it was issued.', 'adz-world' ),
@@ -59,7 +59,7 @@ function adzworld_affiliate_networks() {
 				),
 			),
 		),
-		'walmart' => array(
+		'walmart'   => array(
 			'label'   => 'Walmart Affiliates',
 			'account' => 'https://affiliates.walmart.com',
 			'note'    => __( 'Walmart’s June 2026 agreement uses Impact. Create one tracking link in Impact and copy the three numbers from /c/PARTNER/AD/PROGRAM. The destination is the Walmart search for this request.', 'adz-world' ),
@@ -78,7 +78,7 @@ function adzworld_affiliate_networks() {
 				),
 			),
 		),
-		'awin'    => array(
+		'awin'      => array(
 			'label'   => 'Awin',
 			'account' => 'https://ui.awin.com',
 			'note'    => __( 'ShareASale closed on 6 October 2025 and its publishers moved to Awin. Existing ShareASale links were kept. A new link is Awin’s cread.php deep link. The destination must be that advertiser’s own search URL and must contain {query}.', 'adz-world' ),
@@ -97,7 +97,7 @@ function adzworld_affiliate_networks() {
 				),
 			),
 		),
-		'cj'      => array(
+		'cj'        => array(
 			'label'   => 'CJ Affiliate',
 			'account' => 'https://www.cj.com',
 			'note'    => __( 'Use the publisher website id and link id from a CJ deep link, which has the form click-PID-AID. The destination must be that advertiser’s own search URL and must contain {query}.', 'adz-world' ),
@@ -126,7 +126,7 @@ function adzworld_affiliate_networks() {
 				),
 			),
 		),
-		'rakuten' => array(
+		'rakuten'   => array(
 			'label'   => 'Rakuten Advertising',
 			'account' => 'https://rakutenadvertising.com',
 			'note'    => __( 'The deep link is click.linksynergy.com. id is the publisher site id and mid is the advertiser. The destination must contain {query}.', 'adz-world' ),
@@ -145,7 +145,26 @@ function adzworld_affiliate_networks() {
 				),
 			),
 		),
-		'ebay'    => array(
+		'clickbank' => array(
+			'label'   => 'ClickBank',
+			'account' => 'https://accounts.clickbank.com',
+			'note'    => __( 'ClickBank is a marketplace of single products rather than a searchable catalogue, so a HopLink points at one vendor\'s page and is not built from what a visitor asked for. Enter your account nickname and the vendor nickname of the product you promote. The tracking id is optional and is yours: it is sent to ClickBank exactly as typed, and nothing a visitor entered is ever added to it.', 'adz-world' ),
+			'fields'  => array(
+				'nickname' => array(
+					'label'   => __( 'Your ClickBank nickname', 'adz-world' ),
+					'pattern' => '/^[A-Za-z0-9]{2,25}$/D',
+				),
+				'vendor'   => array(
+					'label'   => __( 'Vendor nickname', 'adz-world' ),
+					'pattern' => '/^[A-Za-z0-9]{2,25}$/D',
+				),
+				'tid'      => array(
+					'label'   => __( 'Tracking id, optional', 'adz-world' ),
+					'pattern' => '/^[A-Za-z0-9_-]{0,24}$/D',
+				),
+			),
+		),
+		'ebay'      => array(
 			'label'   => 'eBay Partner Network',
 			'account' => 'https://partnernetwork.ebay.com',
 			'note'    => __( 'campid is the EPN campaign id. The US rotation id 711-53200-19255-0 and site id 0 are the values in eBay’s link-parameter article for ebay.com. For another marketplace, paste the rotation id and site id from that article. toolid 10001 is eBay’s custom-link tool.', 'adz-world' ),
@@ -306,6 +325,26 @@ function adzworld_affiliate_url( $id, $account, $request ) {
 			return '';
 		}
 		return 'https://click.linksynergy.com/deeplink?id=' . rawurlencode( $account['id'] ) . '&mid=' . rawurlencode( $account['mid'] ) . '&murl=' . rawurlencode( $destination );
+	}
+	if ( 'clickbank' === $id && '' !== $account['nickname'] && '' !== $account['vendor'] ) {
+		/*
+		 * The documented HopLink is the affiliate nickname and the vendor
+		 * nickname as subdomains of hop.clickbank.net. A vendor's own page with
+		 * ?hop=nickname appended is not tracked by ClickBank and is not used.
+		 *
+		 * Nothing derived from the visitor's request is appended. The other
+		 * networks here turn that request into a search, which is the point of
+		 * them; sending a visitor's own words into a third party's reporting is
+		 * the behaviour this plugin exists to avoid. The tracking id is the
+		 * publisher's own static value or nothing.
+		 */
+		$hoplink = 'https://' . rawurlencode( $account['nickname'] ) . '.' . rawurlencode( $account['vendor'] ) . '.hop.clickbank.net';
+
+		if ( '' !== $account['tid'] ) {
+			$hoplink .= '?tid=' . rawurlencode( $account['tid'] );
+		}
+
+		return $hoplink;
 	}
 	if ( 'ebay' === $id && '' !== $account['campid'] && '' !== $account['mkrid'] && '' !== $account['siteid'] ) {
 		return 'https://www.ebay.com/sch/?kw=' . rawurlencode( $request )
