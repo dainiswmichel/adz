@@ -1,4 +1,3 @@
-/Users/dainismichel/.rvm/scripts/rvm:29: operation not permitted: ps
 <?php
 /**
  * Internal Adz: the adz a site owner designs and serves to their own audience.

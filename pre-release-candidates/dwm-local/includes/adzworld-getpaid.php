@@ -1,4 +1,3 @@
-/Users/dainismichel/.rvm/scripts/rvm:29: operation not permitted: ps
 <?php
 /**
  * Get Paid: one card per provider, and the card establishes the connection.
