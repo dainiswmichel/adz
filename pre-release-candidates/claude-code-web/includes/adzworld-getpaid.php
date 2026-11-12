@@ -198,29 +198,35 @@ function adzworld_getpaid_affiliate_card( $provider, $account ) {
 	adzworld_getpaid_card_header( $provider, '1' === $enabled );
 	adzworld_getpaid_registration( $provider );
 
-	echo '<table class="form-table" role="presentation"><tbody>';
+	/*
+	 * Stacked label and full-width input, which is what core uses inside a
+	 * metabox. form-table was used here first and does not fit: it reserves a
+	 * label column, and regular-text is 25em with no max-width, so in a card
+	 * this narrow the two together need about 490px of a 336px content box and
+	 * every input ran past the card border.
+	 */
 	foreach ( $provider['fields'] as $field => $rule ) {
 		$value = isset( $account[ $field ] ) ? $account[ $field ] : '';
 		$input = 'adzworld_affiliate_' . $id . '_' . $field;
 
-		echo '<tr><th scope="row"><label for="' . esc_attr( $input ) . '">' . esc_html( $rule['label'] ) . '</label></th><td>';
+		echo '<p class="adzworld-paid-field">';
+		echo '<label for="' . esc_attr( $input ) . '">' . esc_html( $rule['label'] ) . '</label>';
 		if ( isset( $rule['choices'] ) ) {
-			echo '<select id="' . esc_attr( $input ) . '" name="' . esc_attr( $input ) . '">';
+			echo '<select class="widefat" id="' . esc_attr( $input ) . '" name="' . esc_attr( $input ) . '">';
 			echo '<option value="">' . esc_html__( 'Not connected', 'adz-world' ) . '</option>';
 			foreach ( $rule['choices'] as $choice ) {
 				echo '<option value="' . esc_attr( $choice ) . '"' . selected( $value, $choice, false ) . '>' . esc_html( $choice ) . '</option>';
 			}
 			echo '</select>';
 		} else {
-			echo '<input type="text" class="regular-text code" id="' . esc_attr( $input ) . '" name="' . esc_attr( $input ) . '" value="' . esc_attr( $value ) . '">';
+			echo '<input type="text" class="widefat code" id="' . esc_attr( $input ) . '" name="' . esc_attr( $input ) . '" value="' . esc_attr( $value ) . '">';
 		}
-		echo '</td></tr>';
+		echo '</p>';
 	}
 
-	echo '<tr><th scope="row">' . esc_html__( 'Connection', 'adz-world' ) . '</th><td><label>';
+	echo '<p class="adzworld-paid-connect"><label>';
 	echo '<input type="checkbox" name="' . esc_attr( 'adzworld_affiliate_' . $id . '_enabled' ) . '" value="1"' . checked( $enabled, '1', false ) . '> ';
-	echo esc_html__( 'Use this account on this site', 'adz-world' ) . '</label></td></tr>';
-	echo '</tbody></table>';
+	echo esc_html__( 'Use this account on this site', 'adz-world' ) . '</label></p>';
 
 	echo '</div></div>';
 }

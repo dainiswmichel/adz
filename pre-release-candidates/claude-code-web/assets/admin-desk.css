@@ -1067,7 +1067,7 @@
 .adzworld-paid-grid {
 	display: grid;
 	gap: 16px;
-	grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+	grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
 	align-items: start;
 }
 
@@ -1142,15 +1142,47 @@
 	margin-bottom: 6px;
 }
 
-/* form-table is built for a full-width screen; inside a card it stacks. */
-.adzworld-paid-card .form-table th {
-	width: 11em;
-	padding: 12px 10px 12px 0;
-	font-size: 13px;
+/*
+ * Stacked fields, not form-table. A card is too narrow for a reserved label
+ * column, and core's regular-text is 25em with no max-width, so the two
+ * together overflowed the card.
+ */
+.adzworld-paid-field {
+	margin: 0 0 12px;
 }
 
-.adzworld-paid-card .form-table td {
-	padding: 12px 0;
+.adzworld-paid-field label {
+	display: block;
+	margin-bottom: 4px;
+	color: #1d2327;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.adzworld-paid-connect {
+	margin: 14px 0 0;
+	padding-top: 12px;
+	border-top: 1px solid #f0f0f1;
+}
+
+/*
+ * Nothing inside a card may set its own pixel width. adzworld_network_render_row()
+ * is shared with other screens and uses regular-text, so it is constrained
+ * here rather than changed there.
+ */
+.adzworld-paid-card input[type="text"],
+.adzworld-paid-card input[type="url"],
+.adzworld-paid-card input[type="number"],
+.adzworld-paid-card select,
+.adzworld-paid-card textarea,
+.adzworld-paid-card .regular-text {
+	box-sizing: border-box;
+	width: 100%;
+	max-width: 100%;
+}
+
+.adzworld-paid-card fieldset {
+	min-width: 0;
 }
 
 @media (max-width: 782px) {
