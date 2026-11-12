@@ -1,0 +1,47 @@
+<!-- wp:heading -->
+<h2>Platform Compliance</h2>
+<!-- /wp:heading -->
+<!-- wp:paragraph -->
+<p>adz.world is distributed as a WordPress plugin and runs alongside third-party advertising networks. This page states how it meets the requirements of those platforms.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2>WordPress.org</h2>
+<!-- /wp:heading -->
+<!-- wp:list -->
+<ul>
+<li>Licensed under the GPLv3, with full source readable in the plugin directory</li>
+<li>All output escaped where rendered; all input sanitised and validated against an allowlist</li>
+<li>Administrative actions require both a capability check and a nonce</li>
+<li>Database queries are prepared; no request value selects which option is read or written</li>
+<li>No PHP file executes when requested directly</li>
+<li>Every external service is disclosed in the readme and in our <a href="/privacy/">Privacy Policy</a></li>
+</ul>
+<!-- /wp:list -->
+
+<!-- wp:heading -->
+<h2>Advertising Networks</h2>
+<!-- /wp:heading -->
+<!-- wp:paragraph -->
+<p>Where a site owner connects a network, the plugin builds that network's unit from the identifiers the owner entered. It does not paste or execute third-party script written by anyone else.</p>
+<!-- /wp:paragraph -->
+<!-- wp:paragraph -->
+<p>What a network returns is rendered exactly as that network built it. It is not resized, cropped, restyled or clipped, because a modified or obscured unit breaches network policy. Many themes ship rules that would silently resize an advertisement; the slot is built so neither the theme nor the plugin can reach the creative.</p>
+<!-- /wp:paragraph -->
+<!-- wp:paragraph -->
+<p>Networks prohibit serving into a hidden container. Carousel formats hide inactive slides, so a rotation carrying a network unit should use the Single format.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2>Site Owner Responsibilities</h2>
+<!-- /wp:heading -->
+<!-- wp:paragraph -->
+<p>You hold your own accounts with each network and accepted their terms. The plugin cannot accept terms on your behalf, create accounts, or certify that a placement is approved. Where your jurisdiction requires consent before third-party advertising scripts run, obtaining it is handled by your consent management platform, not by this plugin.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2>Reporting</h2>
+<!-- /wp:heading -->
+<!-- wp:paragraph -->
+<p>Security issues and compliance concerns can be raised through the platform. Security reports are acted on before feature work.</p>
+<!-- /wp:paragraph -->
