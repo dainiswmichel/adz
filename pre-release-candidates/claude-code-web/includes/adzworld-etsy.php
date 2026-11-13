@@ -46,7 +46,16 @@ function adzworld_etsy_account() {
  * @return bool
  */
 function adzworld_etsy_account_ready( $account ) {
-	foreach ( array( 'keystring', 'shared_secret', 'id', 'mid' ) as $field ) {
+	/*
+	 * Only the two Etsy credentials are required. The other two are a Rakuten
+	 * publisher site id and the Etsy advertiser id, which come from a separate
+	 * company and a separate approval; Etsy's own API key is what returns
+	 * listings. Requiring all four meant no listing appeared until Rakuten had
+	 * approved a publisher application, so a site with Etsy credentials alone
+	 * shows real listings now, with plain untracked links, and starts earning
+	 * on them the day the Rakuten ids are pasted in.
+	 */
+	foreach ( array( 'keystring', 'shared_secret' ) as $field ) {
 		if ( empty( $account[ $field ] ) ) {
 			return false;
 		}
@@ -184,7 +193,13 @@ function adzworld_etsy_map_listing( $listing, $account ) {
 	if ( '' === $page ) {
 		$page = adzworld_etsy_page_url( 'https://www.etsy.com/listing/' . $listing_id );
 	}
-	$url   = adzworld_etsy_tracked_url( $page, $account );
+	$url = adzworld_etsy_tracked_url( $page, $account );
+
+	/* No Rakuten ids yet means no deep link: link the listing plainly. */
+	if ( '' === $url ) {
+		$url = $page;
+	}
+
 	$title = isset( $listing['title'] ) ? sanitize_text_field( (string) $listing['title'] ) : '';
 	if ( '' === $url || '' === $title ) {
 		return null;
@@ -323,11 +338,11 @@ function adzworld_etsy_register_network( $networks ) {
 				'secret'  => true,
 			),
 			'id'            => array(
-				'label'   => __( 'Rakuten publisher site id', 'adz-world' ),
+				'label'   => __( 'Rakuten publisher site id (optional)', 'adz-world' ),
 				'pattern' => '/^[A-Za-z0-9]{1,20}$/D',
 			),
 			'mid'           => array(
-				'label'   => __( 'Etsy advertiser id', 'adz-world' ),
+				'label'   => __( 'Etsy advertiser id (optional)', 'adz-world' ),
 				'pattern' => '/^[A-Za-z0-9]{1,20}$/D',
 			),
 		),
