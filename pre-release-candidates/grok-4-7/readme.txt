@@ -1,0 +1,280 @@
+=== adz-world ===
+Contributors: dainismichel
+Donate link: https://dainis.net/donate/
+Tags: advertising, consent, privacy, ads, ad management
+Requires at least: 6.2
+Tested up to: 7.1
+Requires PHP: 7.4
+Stable tag: 1.0.9
+License: GPLv3
+License URI: https://www.gnu.org/licenses/gpl-3.0.html
+
+Run your website like a TV station. Use the adz-world plugin to create an enjoyable, profitable, wholesome advertising ecosystem for your audience!
+
+== Description ==
+
+= Configurable rotations and permission-based adz =
+
+[adz_rotation name="adzworld_showcase"]
+
+Create named rotations under adz-world > Rotation. Each ordered slot can contain
+the permission invitation, a published local adz, an enabled advertising-network
+unit, another saved rotation, or an administrator-approved provider shortcode.
+The same slot may be repeated. Display format, controls, size and slots are
+stored with the rotation. The list cycles and then repeats. The shortcode names
+the saved rotation; it does not silently add advertisements. Without JavaScript,
+configured slides remain readable.
+
+adz-world > Connections registers a shortcode supplied by an advertising plugin
+already installed on your site. Saving or removing a source requires an
+administrator with unfiltered HTML permission and a valid nonce. This uses
+the existing plugin's rendering; it does not create network accounts, issue
+credentials, or certify any provider's approval of a placement.
+
+Single mode shows one slot per page view and advances to the next slot on the
+next view. A carousel shows the saved list and repeats in the browser. A page
+cache can keep one single-mode slot until the page is regenerated. Provider
+units are not refreshed by navigation. Provider rules and existing consent
+configuration still apply; no claim of universal network compatibility is made.
+Carousel slides other than the active slide become hidden or inert. Providers
+that prohibit hidden placements must use single mode, not a carousel. No provider
+tag is automatically refreshed or re-requested as a slide changes.
+
+The Dashboard links the Manual, Connections, Affiliate programs, Rotation,
+Earnings, Templates, and Starter packs screens. An administrator adds a network
+row. That row is a section for the parameters the network assigned, including
+an API key when that is what the network requires. A listed network with a
+complete, enabled row mounts its official unit. A network that is not in the
+list below stores its parameters in WordPress. An empty or rejected identifier
+stays off. A stored parameter is not printed on the public page and does not
+load a script. Header-bidding exchanges are demand inside the listed accounts.
+Pop and push networks are not connections. A provider shortcode from an
+installed plugin can still be saved on Connections. adz-world does not recreate
+a provider's account, inventory, auction, reporting, or payment system.
+
+The invitation accepts categories and refinements in the visitor's own words.
+Logged-out preferences use a server-side PHP session identified by a session
+cookie and start fresh after 24 hours; signed-in guest and member preferences
+use user metadata. Visible editable pills show the visitor's categories and
+refinements, matching local adz are prioritised, and explicit -100 to 100
+evaluations add positive or negative weight. Untouched adz remain distinct from
+an explicit neutral rating.
+Configured provider sources remain responsible for their own inventory,
+targeting, consent rules, and request behavior.
+
+Legacy page, popup, and gated-content requests now carry a configuration-bound
+nonce as well as the public advertising nonce. Changing the target, rotation,
+sequence, template, interval, repeat count, or operation invalidates the request.
+This is request-integrity protection, not administrator authorization or proof
+that an ad was viewed. Public tokens can be replayed for their original
+configuration until WordPress expires them. Cached pages containing expired
+tokens require a cache refresh. Each signed field is limited to 8192 bytes.
+
+The legacy ad renderer permits ordinary safe post HTML and the plugin's
+adzworld_iframe shortcode. Advertising responses cannot execute unrelated site
+shortcodes or inject scripts. Existing administrator-registered provider sources
+use their installed provider plugin's renderer instead.
+
+<strong>adz-world is the ultimate advertising plugin for creating an enjoyable and profitable advertising ecosystem, serving adz to your audience in a healthy way, generating advertising revenue from freelines, and requiring advertising views in exchange for access to content. Facilitate the dawning of a true Age of Accordance for humanity, where all agreements are made in the spirit of enjoyable mutual consent. Join us and help us become the most wholesome advertising community in the world.</strong>
+
+adz-world lets you easily run adz on your published web content with layover popups, thru pages, or directly within your pages and posts.
+
+adz-world allows your website visitors to select their adz preferences, so that you can earn from purchases they make while surfing your site.
+
+[youtube  https://youtu.be/LDVaFYDve9I]
+
+
+
+= Run your website like a TV station =
+
+Set “within page” adz to come up every 7 minutes and relax. Especially if you prepare your audience and let them know that they will be served adz that offer related products, there to help and not disturb their surfing experience, well then you’re on the road to having a healthy consent-based advertising ecosystem! Good for you!
+
+
+
+= Customize the appearance of your adz =
+you can make your own adz or serve adz from external ad networks, so the adz themselves can be styled any way you want. Your adz-world template header and footer can be customized so that you always have the perfect message for your audience!
+
+<strong>Features available in adz-world include:</strong>
+
+* make sure adz never show on these pages
+* adz rotation name
+* show adz on selected pages or posts, within selected categories, or where selected tags are present
+* show adz in sequence or randomize. currently random always serves all selected adz
+* select which adz to serve by highlighting their titles
+* number of seconds to serve adz, number of seconds to allow access to content
+* loop adz infinite yes/no
+* duplicate adz rotation
+* trash adz rotation
+
+
+
+== External services ==
+
+By default, adz-world contacts no external service. Local advertisements and
+rotations work without registration. Every connection below is optional and
+must be configured by a WordPress administrator.
+
+= adz-world.com network and earnings =
+
+The optional adz-world.com connection supplies permission-based adz and can
+synchronize advertisements created by the publisher. It is off until an
+administrator enables it under adz-world > Connections. Registration sends the
+site URL, site title and administrator email address. Network requests send the
+publisher identifier, access token, referral code and the visitor IP address
+when requesting an adz or checking network visitor state. Publishing or deleting
+a network adz sends that adz's title, content and categories. Switching the
+connection off stops network delivery and synchronization.
+
+The separate Earnings connection is also off by default. Only an administrator's
+explicit statement request sends the saved publisher identifier and read-only
+token to https://adz-world.com/wp-json/adz-world/v1/earnings. The server also
+receives the requesting server's IP address. Disconnecting removes the token.
+
+Terms: https://adz-world.com/terms/
+Privacy: https://adz-world.com/privacy/
+
+= Display advertising networks =
+
+An administrator adds the networks to connect. The plugin stores only the
+identifiers that administrator enters. A listed network with an empty
+identifier loads nothing. A network outside this list stores parameters only.
+The provider's
+official JavaScript is loaded only when that provider's rotation slot is
+displayed. The visitor's browser then connects directly to the provider host
+and sends the normal web-request information required by that provider, which
+can include the visitor IP address, browser information, referrer, provider
+cookies and the configured publisher/unit identifiers. The provider controls
+targeting, consent, inventory, reporting and payment. Viewing the WordPress
+administration screen does not contact these providers. Connections includes
+the registration procedure for Google AdSense and Google Ad Manager. The
+Register control opens that provider’s sign-up page when an administrator
+clicks it. The plugin does not create the account.
+
+* Google AdSense — pagead2.googlesyndication.com — Terms: https://www.google.com/adsense/terms/ ; Privacy: https://policies.google.com/privacy
+* Google Ad Manager — securepubads.g.doubleclick.net — Terms: https://admanager.google.com/home/terms/ ; Privacy: https://policies.google.com/privacy
+* Taboola — cdn.taboola.com — Terms: https://www.taboola.com/policies/publisher-terms-and-conditions ; Privacy: https://www.taboola.com/policies/privacy-policy
+* Teads (Outbrain widget) — widgets.outbrain.com — Terms: https://www.outbrain.com/legal/terms-of-use/ ; Privacy: https://www.outbrain.com/privacy/
+* Teads inRead — a.teads.tv — Terms: https://www.teads.com/teads-website-terms-and-conditions/ ; Privacy: https://www.teads.com/privacy-policy/
+* Media.net — contextual.media.net — Terms: https://www.media.net/terms ; Privacy: https://www.media.net/privacy-policy
+* Amazon Publisher Services — c.amazon-adsystem.com — Terms: https://aps.amazon.com/aps/terms-of-service.html ; Privacy: https://www.amazon.com/gp/help/customer/display.html?nodeId=GX7NJQ4ZB8MHFRNJ
+* Ezoic — www.ezojs.com, ezoicanalytics.com, cmp.gatekeeperconsent.com, the.gatekeeperconsent.com — Terms: https://www.ezoic.com/terms/ ; Privacy: https://www.ezoic.com/privacy/
+* Mediavine — scripts.mediavine.com — Terms: https://www.mediavine.com/terms-of-service/ ; Privacy: https://www.mediavine.com/privacy-policy/
+* Raptive — ads.adthrive.com — Terms: https://raptive.com/terms/ ; Privacy: https://raptive.com/privacy/
+* Monumetric — monu.delivery — Terms: https://www.monumetric.com/terms/ ; Privacy: https://www.monumetric.com/privacy-policy/
+* MGID — jsc.mgid.com — Terms: https://www.mgid.com/terms-and-conditions ; Privacy: https://www.mgid.com/privacy-policy
+* RevContent — assets.revcontent.com and trends.revcontent.com — Terms: https://www.revcontent.com/publisher-terms ; Privacy: https://www.revcontent.com/privacy-policy
+* Carbon — cdn.carbonads.com — Terms: https://www.buysellads.com/about/terms ; Privacy: https://www.buysellads.com/about/privacy
+* Criteo — static.criteo.net — Terms: https://www.criteo.com/terms-and-conditions/ ; Privacy: https://www.criteo.com/privacy/
+* Dianomi — www.dianomi.com — Terms: https://www.dianomi.com/legal/terms ; Privacy: https://www.dianomi.com/legal/privacy
+* Snigel — cdn.snigelweb.com — Terms: https://snigel.com/terms ; Privacy: https://snigel.com/privacy-policy
+* Freestar — a.pub.network — Terms: https://freestar.com/terms/ ; Privacy: https://freestar.com/privacy-policy/
+
+= Affiliate links =
+
+An administrator can save and enable identifiers for Amazon Associates,
+Best Buy through Impact, Walmart Affiliates through Impact, Awin, CJ Affiliate,
+Rakuten Advertising, ClickBank, or eBay Partner Network. A public sponsored
+link contains the publisher's identifiers. Except for ClickBank, its destination
+search uses the category and refinements entered by the visitor. ClickBank uses
+only the administrator's saved affiliate, vendor, and optional tracking
+identifiers; visitor preference text is not sent to ClickBank. When a visitor
+follows a sponsored link, the browser connects to that network and sends the URL
+parameters plus normal request information such as IP address, browser data and
+referrer. The network performs attribution and pays the publisher under its own
+agreement. Connections includes the registration procedure for each programme.
+The Register control opens that programme’s sign-up page when an administrator
+clicks it. The plugin does not create the account.
+
+When a Best Buy connection is enabled and both required identifiers are saved,
+the site server sends the category and that category's refinements, the Best Buy
+API key and the Impact Partner ID to https://api.bestbuy.com/v1/products. Best
+Buy returns product names, images, current prices and attributed product URLs.
+The response is cached on the site for 15 minutes. The visitor's browser loads
+the returned product image and the required Best Buy logo from Best Buy hosts.
+Disabling the connection stops these requests. The API key is never printed in
+the public page.
+
+* Amazon Associates — Sign up: https://associates.amazon.com/signup ; Agreement: https://affiliate-program.amazon.com/help/operating/agreement/ ; Privacy: https://www.amazon.com/gp/help/customer/display.html?nodeId=GX7NJQ4ZB8MHFRNJ
+* Best Buy Developer API and Publisher Program — API terms and branding: https://developer.bestbuy.com/legal ; Privacy: https://www.bestbuy.com/site/help-topics/privacy-policy/pcmcat204400050062.c?id=pcmcat204400050062
+* Walmart/Impact — Sign up: https://app.impact.com/login.user ; Program: https://affiliates.walmart.com/ ; Privacy: https://impact.com/privacy-policy/
+* Awin — Sign up: https://www.awin.com/us/publishers ; Publisher terms: https://www.awin.com/us/publisher-terms ; Privacy: https://www.awin.com/us/privacy
+* CJ Affiliate — Sign up: https://signup.cj.com/member/signup/publisher/ ; Legal terms and privacy: https://www.cj.com/legal
+* Rakuten Advertising — Terms: https://rakutenadvertising.com/legal-notices/terms-conditions/ ; Privacy: https://rakutenadvertising.com/legal-notices/services-privacy-policy/
+* ClickBank — Sign up: https://accounts.clickbank.com/master/makebank.html ; Client contract: https://support.clickbank.com/hc/en-us/articles/220376507-ClickBank-Client-Contract ; Privacy: https://www.clickbank.com/privacy-policy/
+* eBay Partner Network — Agreement: https://partnernetwork.ebay.com/page/network-agreement ; Privacy: https://www.ebay.com/help/policies/member-behavior-policies/user-privacy-notice-privacy-policy?id=4260
+
+= Administrator links and iframe destinations =
+
+The Earnings tab contains a voluntary support link to
+https://dainis.net/donate/. It is opened only when the administrator clicks the
+button; no background request is made and no tracking parameter is added.
+
+The optional adzworld_iframe shortcode connects a visitor's browser to the URL
+explicitly entered by the site owner. The destination receives normal request
+information such as IP address and browser headers. The shortcode has no
+default URL and renders nothing until a site owner supplies one. The selected
+destination's own terms and privacy policy apply.
+
+== Installation ==
+
+WordPress Installation Instructions:
+
+1. Upload the adz-world plugin to your /wp-content/plugins/ directory
+2. Activate the plugin through the 'Plugins' menu in WordPress
+3. Create a local advertisement and configure where it should appear
+4. Review the external-service disclosure before optionally enabling the
+   adz-world.com network or earnings connection
+5. Save the desired ad rotation and display settings
+
+
+
+== Frequently Asked Questions ==
+
+= What is adz-world really? =
+adz-world is the brainchild of composer, human rights advocate, and entrepreneur dainis w michel. The goal of adz-world is for website publishers to be able to generate income without necessarily charging money for access to content. Dainis W. Michel was confronted with a dilemma, when his father left a project behind that they had planned to do together.
+
+Upon the passing of Rev. Dr. Walter L. Michel, his son Dainis found numbered and labeled VHS tapes, almost perfectly arranged, in a closet, dust-free, as if they’d planned to meet and continue where they’d left off 20 years prior.
+
+Dainis had the tapes digitized, but found himself in a quandary regarding how he could offset the expenses of putting his father’s digitized lectures online.
+
+Instead of charging for access or creating a physical product, Dainis developed the adz-world plugin to give web publishers a way to create healthy advertising ecosystems that their audiences would enjoy — so that websites that provide content that people generally don’t pay for could become self-sustaining and could generate revenue & ensure their longevity.
+
+One of the first websites to deploy the adz-world plugin is https://www.bible-experts.com, where visitors can increase their knowledge of the Bible while experiencing faith-related advertisements that help finance the website. As is one of the fundamental purposes of the adz-world plugin, while learning about the Bible, if visitors have expressed interest in other products in their adz-world accounts, then bible-experts.com can receive affiliate commissions for the purchase of really any products purchased while visiting bible-experts.com.
+
+= Does the plugin require the adz-world.com service? =
+No. Local advertisements and rotations work without registration or an
+external-service connection. The network and earnings connections are separate,
+administrator-controlled opt-ins.
+
+
+
+== Screenshots ==
+
+1. Register and accept TOS and our Data Protection Mandate
+2. Create an adz rotation
+3. Set where to display your adz rotation
+4. Set adz rotation display timing and type
+
+== Changelog ==
+
+= 1.0.9 =
+* Remediated the WordPress.org closure findings: portable AJAX URLs, current metadata, five tags, matching text domain, escaped shortcodes, configured rotation identifiers, and removal of deprecated Chosen and screen-icon code.
+* Removed PHP/HTML/JavaScript inline styling and runtime style mutation in favor of enqueued styles and state classes.
+* Replaced raw-IP custom-table view tracking with expiring, salted-key WordPress transients.
+* Removed unused direct-cURL, client-certificate, Basic-auth, and payment-sandbox prototypes.
+* Scoped administrator assets to adz-world screens, removed the iframe's external default URL, and added explicit local/network consent boundaries.
+* Added safer template settings and WPCS-clean code and tests.
+* Added named mixed-source rotations, administrator slot previews, established network and affiliate connections, earnings guidance, and starter packs.
+* Added invitation categories with scoped refinements, editable category navigation, collision-safe storage, and anonymous preference reset after 24 hours.
+* Separated local advertisement creative from matching refinements: editor content or a featured image is the ad, while the excerpt is matching data and is never presented as the ad.
+
+
+== Upgrade Notice ==
+= 1.0.9 =
+Security, privacy, compatibility, and WordPress coding-standards remediation.
+
+= 1.0.1 =
+* https tweaks
+
+= 1.0.0 =
+Initial release

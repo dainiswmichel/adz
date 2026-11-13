@@ -1,0 +1,81 @@
+.adz_content_wrapper {
+	text-align: center;
+	height: 600px;
+	overflow: scroll;
+}
+
+#adz_header_container {
+	background: #4a7354;
+	border: 1px solid #104a1f;
+	left: 0;
+	position: fixed;
+	top: 0;
+	width: 100%;
+}
+
+#adz_header_content {
+	margin: 0 auto;
+	width: 100%;
+}
+
+#adz_container {
+	margin: 0 auto;
+	overflow: auto;
+	padding: 80px 0;
+	text-align: center;
+}
+
+#adz_footer_container {
+	background: #4a7354;
+	border: 1px solid #104a1f;
+	bottom: 0;
+	height: 60px;
+	left: 0;
+	position: fixed;
+	width: 100%;
+}
+
+#adz_footer_content {
+	line-height: 60px;
+	margin: 0 auto;
+	width: 100%;
+}
+
+.adz_popup #adz_header_container,
+.adz-world-container #adz_header_container,
+.adz-world-category-wapper #adz_header_container,
+.adz_popup #adz_footer_container,
+.adz-world-container #adz_footer_container,
+.adz-world-category-wapper #adz_footer_container {
+	position: inherit;
+}
+
+.adz_header_text,
+.adz_footer_text {
+	color: #fff;
+}
+
+.adz_timer {
+	font-size: 22px;
+}
+
+.adz_popup #adz_container {
+	max-height: 600px;
+	overflow-y: scroll;
+}
+
+.adzworld-align-left {
+	text-align: left;
+}
+
+.adzworld-align-center {
+	text-align: center;
+}
+
+.adzworld-align-right {
+	text-align: right;
+}
+
+.adzworld-is-hidden {
+	display: none;
+}
