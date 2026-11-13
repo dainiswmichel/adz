@@ -269,13 +269,20 @@
 	}
 
 	/**
-	 * Remember that the next render must visibly return to the user hub.
+	 * Remember the slide that is on screen, including across a reload.
+	 *
+	 * An empty category is the hub. A named category is that adz.
+	 *
+	 * @param {string} category Category name.
+	 * @param {number} slot     Zero-based category slot.
 	 */
-	function rememberHubReturn() {
+	function rememberSlide( category, slot ) {
 		try {
-			window.sessionStorage.setItem( 'adzworldReturnToHub', '1' );
+			window.sessionStorage.setItem( 'adzworldSlideCategory', category || '' );
+			window.sessionStorage.setItem( 'adzworldSlideSlot', String( slot || 0 ) );
+			window.sessionStorage.removeItem( 'adzworldReturnToHub' );
 		} catch ( error ) {
-			// Navigation still works when browser storage is unavailable.
+			// The hub remains available when browser storage is unavailable.
 		}
 	}
 
@@ -299,6 +306,55 @@
 	 *
 	 * @param {HTMLElement} rotation Rotation root.
 	 */
+	/**
+	 * Move between search-result networks inside one category slide.
+	 *
+	 * Buttons here use their own step attribute. The category carousel reads a
+	 * different attribute, and a click inside this carousel returns before that
+	 * listener runs.
+	 *
+	 * @param {HTMLElement} results Results carousel.
+	 */
+	function prepareResults( results ) {
+		var slides = Array.from( results.querySelectorAll( ':scope > .adzworld-results__slides > .adzworld-results__slide' ) );
+		var navigation = results.querySelector( ':scope > .adzworld-results__navigation' );
+		var current = 0;
+
+		if ( slides.length < 2 ) {
+			return;
+		}
+
+		function show( position ) {
+			current = ( position + slides.length ) % slides.length;
+			slides.forEach(
+				function ( slide, index ) {
+					var active = index === current;
+
+					slide.hidden = ! active;
+					slide.setAttribute( 'aria-hidden', String( ! active ) );
+				}
+			);
+		}
+
+		results.addEventListener(
+			'click',
+			function ( event ) {
+				var button = event.target.closest( '[data-adzworld-result-step]' );
+
+				if ( ! button || ! results.contains( button ) ) {
+					return;
+				}
+				event.stopPropagation();
+				show( current + Number( button.dataset.adzworldResultStep ) );
+			}
+		);
+
+		show( 0 );
+		if ( navigation ) {
+			navigation.hidden = false;
+		}
+	}
+
 	function prepareRotation( rotation ) {
 		var slides = Array.from( rotation.querySelectorAll( ':scope > .adzworld-carousel > .adzworld-slides > .adzworld-slide' ) );
 		var current = 0;
@@ -308,6 +364,7 @@
 			return;
 		}
 
+		rotation.querySelectorAll( '.adzworld-results' ).forEach( prepareResults );
 		rotation.classList.add( 'adzworld-enhanced' );
 
 		/*
@@ -350,6 +407,7 @@
 			} else {
 				mountNetworkUnit( slides[ current ] );
 			}
+			rememberSlide( activeCategory, activeSlot );
 			rotation.querySelectorAll( '[data-adzworld-category-slot-category], [data-adz-category-slot-category]' ).forEach(
 				function ( button ) {
 					var category;
@@ -415,7 +473,7 @@
 				var categorySlot;
 				var status;
 
-				if ( ! button ) {
+				if ( ! button || button.closest( '.adzworld-results' ) ) {
 					return;
 				}
 				if ( button.hasAttribute( 'data-adzworld-category-first' ) ) {
@@ -533,25 +591,29 @@
 			navigation.hidden = slides.length < 2 || ! navigation.children.length;
 		}
 
-		show( 0 );
-		try {
-			if ( '1' === window.sessionStorage.getItem( 'adzworldReturnToHub' ) ) {
-				window.sessionStorage.removeItem( 'adzworldReturnToHub' );
-				window.requestAnimationFrame( showHub );
-			} else if ( window.sessionStorage.getItem( 'adzworldReturnCategory' ) ) {
-				window.requestAnimationFrame(
-					function () {
-						var category = window.sessionStorage.getItem( 'adzworldReturnCategory' ) || '';
-						var slot = Number( window.sessionStorage.getItem( 'adzworldReturnCategorySlot' ) || 0 );
+		var startCategory = '';
+		var startSlot = 0;
 
-						window.sessionStorage.removeItem( 'adzworldReturnCategory' );
-						window.sessionStorage.removeItem( 'adzworldReturnCategorySlot' );
-						showCategory( category, slot );
-					}
-				);
+		try {
+			window.sessionStorage.removeItem( 'adzworldReturnToHub' );
+			if ( window.sessionStorage.getItem( 'adzworldReturnCategory' ) ) {
+				startCategory = window.sessionStorage.getItem( 'adzworldReturnCategory' ) || '';
+				startSlot = Number( window.sessionStorage.getItem( 'adzworldReturnCategorySlot' ) || 0 );
+				window.sessionStorage.removeItem( 'adzworldReturnCategory' );
+				window.sessionStorage.removeItem( 'adzworldReturnCategorySlot' );
+			} else {
+				startCategory = window.sessionStorage.getItem( 'adzworldSlideCategory' ) || '';
+				startSlot = Number( window.sessionStorage.getItem( 'adzworldSlideSlot' ) || 0 );
 			}
 		} catch ( error ) {
-			// The hub remains the first slide when browser storage is unavailable.
+			startCategory = '';
+		}
+
+		if ( startCategory ) {
+			showCategory( startCategory, startSlot );
+		}
+		if ( ! rotation.querySelector( '.adzworld-slide.adzworld-active' ) ) {
+			show( 0 );
 		}
 	}
 
@@ -601,7 +663,6 @@
 				).then(
 					function ( payload ) {
 						if ( payload && payload.success ) {
-							rememberHubReturn();
 							window.location.reload();
 						} else if ( status ) {
 							status.textContent = payload && payload.data ? payload.data.message : '';
@@ -634,7 +695,6 @@
 					).then(
 						function ( payload ) {
 							if ( payload && payload.success ) {
-								rememberHubReturn();
 								window.location.reload();
 							} else if ( status ) {
 								status.textContent = payload && payload.data ? payload.data.message : '';
@@ -663,7 +723,6 @@
 					).then(
 						function ( payload ) {
 							if ( payload && payload.success ) {
-								rememberHubReturn();
 								window.location.reload();
 							} else if ( status ) {
 								status.textContent = payload && payload.data ? payload.data.message : '';

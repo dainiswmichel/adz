@@ -151,9 +151,10 @@ function adzworld_category_refinement_chips( $preference, $category ) {
  * @param string $target       Stable adz or provider identifier.
  * @param string $category     Category represented by this adz.
  * @param bool   $can_evaluate Whether an actual advertisement is present to evaluate.
+ * @param bool   $show_category Whether to repeat the category inside the expanded control.
  * @return string Evaluation markup.
  */
-function adzworld_feedback_control( $target, $category, $can_evaluate = true ) {
+function adzworld_feedback_control( $target, $category, $can_evaluate = true, $show_category = true ) {
 	$target       = sanitize_key( $target );
 	$category     = mb_substr( sanitize_text_field( $category ), 0, 80 );
 	$feedback     = adzworld_current_feedback();
@@ -193,6 +194,13 @@ function adzworld_feedback_control( $target, $category, $can_evaluate = true ) {
 		<p class="adzworld-evaluation__status" role="status" aria-live="polite"></p>
 		<?php endif; ?>
 		<div class="adzworld-improve">
+			<?php if ( $show_category && '' !== $category ) : ?>
+				<p class="adzworld-improve__category">
+					<span class="adz-panel__chip adz-panel__chip--categories adz-panel__chip--tone-0 is-active">
+						<span class="adz-panel__chiptext"><?php echo esc_html( $category ); ?></span>
+					</span>
+				</p>
+			<?php endif; ?>
 			<div class="adzworld-improve__heading">
 				<label for="<?php echo esc_attr( $refine_id ); ?>"><?php echo esc_html( $refine_label ); ?></label>
 				<details class="adzworld-improve__information">
@@ -201,11 +209,11 @@ function adzworld_feedback_control( $target, $category, $can_evaluate = true ) {
 				</details>
 			</div>
 			<form class="adzworld-improve__form" method="post" data-adz-panel data-adz-improve-target="<?php echo esc_attr( $target ); ?>">
+				<div class="adz-panel__chips" data-adz-chips><?php adzworld_render_chips( $chips ); ?></div>
 				<div class="adzworld-improve__row">
 					<textarea id="<?php echo esc_attr( $refine_id ); ?>" class="adz-panel__input adzworld-improve__input" name="adzworld_refinement" rows="2" placeholder="<?php esc_attr_e( 'Be specific: size, dates, colour, price range, brands, location, or other preferences.', 'adz-world' ); ?>" <?php disabled( ! $can_refine ); ?>></textarea>
 					<button type="submit" class="adz-panel__submit" name="adzworld_mode" value="improve" <?php disabled( ! $can_refine ); ?>><?php esc_html_e( 'Refine', 'adz-world' ); ?></button>
 				</div>
-				<div class="adz-panel__chips" data-adz-chips><?php adzworld_render_chips( $chips ); ?></div>
 				<p class="adz-panel__status" data-adz-status role="status" aria-live="polite"></p>
 			</form>
 		</div>

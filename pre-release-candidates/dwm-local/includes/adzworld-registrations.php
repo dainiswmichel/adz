@@ -64,11 +64,11 @@ function adzworld_registration_catalog() {
 		'amazon'    => array(
 			'label'        => 'Amazon Associates',
 			'group'        => 'affiliate',
-			'signup'       => 'https://associates.amazon.com/signup',
+			'signup'       => 'https://affiliate-program.amazon.com/',
 			'signup_label' => __( 'Register at Amazon Associates', 'adz-world' ),
 			'pays'         => __( 'The tracking id pays this site on the marketplace that issued it.', 'adz-world' ),
 			'steps'        => array(
-				__( 'Use Register at Amazon Associates for the marketplace this site will link. A United States tracking id is issued from associates.amazon.com.', 'adz-world' ),
+				__( 'Use Register at Amazon Associates. A United States tracking id is issued at affiliate-program.amazon.com.', 'adz-world' ),
 				__( 'Amazon emails the tracking id. It looks like sitename-20. One tracking id pays only on the marketplace that issued it.', 'adz-world' ),
 				__( 'Select that marketplace in this section and paste the tracking id.', 'adz-world' ),
 				__( 'Enable the account and save. Extra sub-tags are ids Amazon issues. A sub-tag stays separate from a specific visitor.', 'adz-world' ),
@@ -314,7 +314,7 @@ function adzworld_registration_desk() {
 		echo '<article class="adzworld-pay-account' . ( $is_ready ? ' is-ready' : '' ) . '" id="adzworld-pay-' . esc_attr( $id ) . '">';
 		echo '<div class="adzworld-pay-head">';
 		echo '<h3>' . esc_html( $item['label'] ) . '</h3>';
-		echo '<span class="adzworld-connection-status' . ( $is_ready ? ' is-enabled' : '' ) . '">' . esc_html( $is_ready ? __( 'Paying this site', 'adz-world' ) : __( 'Registration open', 'adz-world' ) ) . '</span>';
+		echo '<span class="adzworld-connection-status' . ( $is_ready ? ' is-enabled' : '' ) . '">' . esc_html( $is_ready ? __( 'Connected', 'adz-world' ) : __( 'Registration open', 'adz-world' ) ) . '</span>';
 		echo '<p class="adzworld-pay-pays">' . esc_html( $item['pays'] ) . '</p>';
 		echo '</div>';
 		echo '<p class="adzworld-pay-actions">';

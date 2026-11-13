@@ -10,9 +10,9 @@
  * an image and a link is a complete adz and nothing more is required. This is
  * not an editor for building HTML; WordPress already has one.
  *
- * Two things the post type did not carry are added here, because a rotation
- * cannot place an adz without them:
+ * Three things the post type did not carry are added here:
  *
+ *   title row    the line above the creative, written on the adz itself
  *   size         which of the standard creative sizes this adz is drawn at,
  *                so a slot can reserve the right space and refuse an adz that
  *                does not fit it
@@ -30,8 +30,11 @@ const ADZWORLD_INTERNAL_SIZE_KEY = 'adzworld_size';
 /** Meta key holding the click destination. */
 const ADZWORLD_INTERNAL_URL_KEY = 'adzworld_destination';
 
+/** Meta key holding the title row printed above the creative. */
+const ADZWORLD_INTERNAL_TITLE_KEY = 'adzworld_title_row';
+
 /**
- * Register the two fields an internal adz needs.
+ * Register the fields an internal adz needs.
  *
  * Registered rather than saved by hand so the REST API, revisions and the
  * block editor all see them, and so the sanitiser runs on every write path
@@ -64,6 +67,21 @@ function adzworld_internal_register_meta() {
 			'default'           => '',
 			'show_in_rest'      => true,
 			'sanitize_callback' => 'adzworld_internal_sanitize_destination',
+			'auth_callback'     => static function () {
+				return current_user_can( 'edit_posts' );
+			},
+		)
+	);
+
+	register_post_meta(
+		'adz_ad',
+		ADZWORLD_INTERNAL_TITLE_KEY,
+		array(
+			'type'              => 'string',
+			'single'            => true,
+			'default'           => '',
+			'show_in_rest'      => true,
+			'sanitize_callback' => 'adzworld_internal_sanitize_title_row',
 			'auth_callback'     => static function () {
 				return current_user_can( 'edit_posts' );
 			},
@@ -107,6 +125,30 @@ function adzworld_internal_sanitize_destination( $url ) {
 }
 
 /**
+ * Validate the title row printed above an adz.
+ *
+ * @param mixed $title Candidate title.
+ * @return string Title of at most 120 characters.
+ */
+function adzworld_internal_sanitize_title_row( $title ) {
+	$title = is_scalar( $title ) ? sanitize_text_field( (string) $title ) : '';
+
+	return mb_substr( $title, 0, 120 );
+}
+
+/**
+ * The title row saved on one adz.
+ *
+ * @param WP_Post|int $ad Adz post or its id.
+ * @return string Saved title, empty when the ad has none.
+ */
+function adzworld_internal_title_row( $ad ) {
+	$ad_id = $ad instanceof WP_Post ? $ad->ID : (int) $ad;
+
+	return adzworld_internal_sanitize_title_row( get_post_meta( $ad_id, ADZWORLD_INTERNAL_TITLE_KEY, true ) );
+}
+
+/**
  * Apply an internal adz destination to its rendered creative.
  *
  * The destination field is the canonical click target. Existing anchor tags
@@ -118,9 +160,21 @@ function adzworld_internal_sanitize_destination( $url ) {
  * @return string Linked creative, or the original creative without a destination.
  */
 function adzworld_internal_link_creative( $creative, $ad_id ) {
-	$destination = adzworld_internal_sanitize_destination(
+	return adzworld_internal_link_markup(
+		$creative,
 		get_post_meta( (int) $ad_id, ADZWORLD_INTERNAL_URL_KEY, true )
 	);
+}
+
+/**
+ * Wrap one creative in a sponsored link.
+ *
+ * @param string $creative    Creative markup.
+ * @param string $destination Click target.
+ * @return string Linked creative, or the original creative without a destination.
+ */
+function adzworld_internal_link_markup( $creative, $destination ) {
+	$destination = adzworld_internal_sanitize_destination( $destination );
 
 	if ( '' === $destination || '' === trim( $creative ) ) {
 		return $creative;
@@ -162,10 +216,10 @@ function adzworld_internal_size( $ad_id ) {
 }
 
 /**
- * The two fields, on the adz editing screen.
+ * The placement fields, on the adz editing screen.
  *
- * Deliberately two fields and nothing else. The body of the adz is ordinary
- * post content, written in the editor WordPress already provides.
+ * The body of the adz is ordinary post content, written in the editor
+ * WordPress already provides. The title row is the line above the creative.
  *
  * @return void
  */
@@ -192,7 +246,12 @@ function adzworld_internal_meta_box_markup( $post ) {
 
 	$size        = adzworld_internal_sanitize_size( get_post_meta( $post->ID, ADZWORLD_INTERNAL_SIZE_KEY, true ) );
 	$destination = get_post_meta( $post->ID, ADZWORLD_INTERNAL_URL_KEY, true );
+	$title       = adzworld_internal_title_row( $post );
 	$presets     = function_exists( 'adzworld_rotation_size_presets' ) ? adzworld_rotation_size_presets() : array();
+
+	echo '<p><label for="adzworld-internal-title"><strong>' . esc_html__( 'Title row', 'adz-world' ) . '</strong></label><br>';
+	echo '<input type="text" class="widefat" id="adzworld-internal-title" name="adzworld_internal_title" maxlength="120" value="' . esc_attr( $title ) . '">';
+	echo '<span class="description">' . esc_html__( 'The line above this adz. For example, Amazon adz showcase.', 'adz-world' ) . '</span></p>';
 
 	echo '<p><label for="adzworld-internal-size"><strong>' . esc_html__( 'Creative size', 'adz-world' ) . '</strong></label><br>';
 	echo '<select class="widefat" id="adzworld-internal-size" name="adzworld_internal_size">';
@@ -229,15 +288,19 @@ function adzworld_internal_save( $post_id ) {
 		return;
 	}
 
-	$size = isset( $_POST['adzworld_internal_size'] ) && is_string( $_POST['adzworld_internal_size'] )
+	$size  = isset( $_POST['adzworld_internal_size'] ) && is_string( $_POST['adzworld_internal_size'] )
 		? sanitize_text_field( wp_unslash( $_POST['adzworld_internal_size'] ) )
 		: '';
-	$url  = isset( $_POST['adzworld_internal_url'] ) && is_string( $_POST['adzworld_internal_url'] )
+	$url   = isset( $_POST['adzworld_internal_url'] ) && is_string( $_POST['adzworld_internal_url'] )
 		? sanitize_text_field( wp_unslash( $_POST['adzworld_internal_url'] ) )
+		: '';
+	$title = isset( $_POST['adzworld_internal_title'] ) && is_string( $_POST['adzworld_internal_title'] )
+		? sanitize_text_field( wp_unslash( $_POST['adzworld_internal_title'] ) )
 		: '';
 
 	update_post_meta( $post_id, ADZWORLD_INTERNAL_SIZE_KEY, adzworld_internal_sanitize_size( $size ) );
 	update_post_meta( $post_id, ADZWORLD_INTERNAL_URL_KEY, adzworld_internal_sanitize_destination( $url ) );
+	update_post_meta( $post_id, ADZWORLD_INTERNAL_TITLE_KEY, adzworld_internal_sanitize_title_row( $title ) );
 }
 add_action( 'save_post_adz_ad', 'adzworld_internal_save' );
 
