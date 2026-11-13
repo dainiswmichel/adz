@@ -712,23 +712,55 @@ function adzworld_amazon_result_slide( $result, $index, $count ) {
  * @return string Result markup.
  */
 function adzworld_affiliate_result_slide( $result, $index, $count ) {
-	$price = '';
+	$price       = '';
+	$offer_class = 'adzworld-results__offer';
 	if ( '' !== $result['price'] ) {
 		$price = '<span class="adzworld-results__price">' . esc_html( $result['price'] ) . '</span>';
 	}
+	$media = '';
+	if ( ! empty( $result['image'] ) ) {
+		$media = '<span class="adzworld-results__media"><img class="adzworld-results__image" src="' . esc_url( $result['image'] ) . '" alt="" loading="lazy" decoding="async"></span>';
+	} else {
+		$offer_class .= ' adzworld-results__offer--text';
+	}
 	$source = '';
-	if ( ! empty( $result['source_image'] ) && ! empty( $result['source_label'] ) && ! empty( $result['source_url'] ) ) {
+	if ( ! empty( $result['source'] ) ) {
+		$source = '<span class="adzworld-results__source">' . esc_html( $result['source'] ) . '</span>';
+	} elseif ( ! empty( $result['source_image'] ) && ! empty( $result['source_label'] ) && ! empty( $result['source_url'] ) ) {
 		$source = '<a class="adzworld-results__source" href="' . esc_url( $result['source_url'] ) . '" target="_blank" rel="noopener noreferrer"><img class="adzworld-results__source-image" src="' . esc_url( $result['source_image'] ) . '" alt="' . esc_attr( $result['source_label'] ) . '" loading="lazy" decoding="async"></a>';
 	} elseif ( ! empty( $result['source_label'] ) ) {
 		$source = '<span class="adzworld-results__source">' . esc_html( $result['source_label'] ) . '</span>';
 	}
 
 	return '<section class="adzworld-results__slide"' . ( 0 === $index ? '' : ' hidden' ) . ' aria-roledescription="' . esc_attr__( 'slide', 'adz-world' ) . '" aria-label="'
-		. esc_attr( ( $index + 1 ) . ' / ' . $count ) . '"><a class="adzworld-results__offer" href="' . esc_url( $result['url'] ) . '" rel="sponsored nofollow" target="_blank">'
-		. '<span class="adzworld-results__media"><img class="adzworld-results__image" src="' . esc_url( $result['image'] ) . '" alt="" loading="lazy" decoding="async"></span>'
+		. esc_attr( ( $index + 1 ) . ' / ' . $count ) . '"><a class="' . esc_attr( $offer_class ) . '" href="' . esc_url( $result['url'] ) . '" rel="sponsored nofollow" target="_blank">'
+		. $media
 		. '<span class="adzworld-results__body"><span class="adzworld-results__product-title">' . esc_html( $result['title'] ) . '</span>'
 		. $price . '</span></a>' . $source . '</section>';
 }
+
+/**
+ * Add Amazon Creators API products to the shared collector.
+ *
+ * @param array<int,array<string,string>> $results Rows from earlier providers.
+ * @param string                          $request Reader's request.
+ * @return array<int,array<string,string>> Rows with Amazon products appended.
+ */
+function adzworld_amazon_append_product_results( $results, $request ) {
+	$amazon = adzworld_amazon_product_results( $request );
+	if ( is_wp_error( $amazon ) || ! is_array( $amazon ) ) {
+		return $results;
+	}
+
+	foreach ( $amazon as $row ) {
+		$row['provider'] = 'amazon';
+		$results[]       = $row;
+	}
+
+	return $results;
+}
+
+add_filter( 'adzworld_affiliate_product_results', 'adzworld_amazon_append_product_results', 5, 2 );
 
 /**
  * Collect normalized product results from every configured search provider.
@@ -737,20 +769,7 @@ function adzworld_affiliate_result_slide( $result, $index, $count ) {
  * @return array<int,array<string,string>> Product results.
  */
 function adzworld_affiliate_product_results( $request ) {
-	$amazon  = adzworld_amazon_product_results( $request );
-	$results = is_wp_error( $amazon ) || ! is_array( $amazon ) ? array() : $amazon;
-
-	/**
-	 * Filters the product results for one permission-based request.
-	 *
-	 * Each result must contain image, title, price, and an attributed URL.
-	 *
-	 * @param array<int,array<string,string>> $results Existing results.
-	 * @param string                          $request Category and refinements.
-	 */
-	$results = apply_filters( 'adzworld_affiliate_product_results', $results, $request );
-
-	return is_array( $results ) ? array_values( $results ) : array();
+	return adzworld_products_collect( $request );
 }
 
 /**
@@ -767,7 +786,7 @@ function adzworld_affiliate_product_results( $request ) {
  */
 function adzworld_affiliate_showcase( $pref, $category, $title = '' ) {
 	$request = adzworld_affiliate_request_string( $pref, $category );
-	$results = adzworld_affiliate_product_results( $request );
+	$results = adzworld_products_collect( $request );
 	$title   = function_exists( 'adzworld_internal_sanitize_title_row' )
 		? adzworld_internal_sanitize_title_row( $title )
 		: sanitize_text_field( (string) $title );
@@ -782,9 +801,6 @@ function adzworld_affiliate_showcase( $pref, $category, $title = '' ) {
 	$row     = '';
 
 	foreach ( $results as $index => $result ) {
-		if ( ! is_array( $result ) || empty( $result['image'] ) || empty( $result['title'] ) || empty( $result['url'] ) || ! isset( $result['price'] ) ) {
-			continue;
-		}
 		$slides .= adzworld_affiliate_result_slide( $result, (int) $index, $count );
 	}
 	if ( '' === $slides ) {
