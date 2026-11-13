@@ -827,6 +827,14 @@
 	font-variant-numeric: tabular-nums;
 }
 
+/* Which marketplace the offer came from. A reader is told, not left guessing. */
+.adzworld-rotation .adzworld-product__source {
+	color: var(--adz-muted);
+	font-size: 11px;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+}
+
 .adzworld-rotation :focus-visible {
 	outline: 2px solid var(--adz-accent);
 	outline-offset: 2px;
@@ -855,7 +863,8 @@
 		grid-template-columns: 64px 1fr;
 		grid-template-areas:
 			"media title"
-			"media price";
+			"media price"
+			"media source";
 		align-items: center;
 	}
 
@@ -869,6 +878,10 @@
 
 	.adzworld-rotation .adzworld-product__price {
 		grid-area: price;
+	}
+
+	.adzworld-rotation .adzworld-product__source {
+		grid-area: source;
 	}
 }
 

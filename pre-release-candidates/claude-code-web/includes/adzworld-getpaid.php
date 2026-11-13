@@ -37,7 +37,7 @@ defined( 'ABSPATH' ) || exit;
  * @return array<string,bool> Affiliate id => whether the request is sent.
  */
 function adzworld_getpaid_affiliate_serves_adz() {
-	return array(
+	$serves = array(
 		'amazon'    => true,
 		'walmart'   => true,
 		'awin'      => true,
@@ -46,6 +46,8 @@ function adzworld_getpaid_affiliate_serves_adz() {
 		'ebay'      => true,
 		'clickbank' => false,
 	);
+
+	return apply_filters( 'adzworld_getpaid_affiliate_serves_adz', $serves );
 }
 
 /**

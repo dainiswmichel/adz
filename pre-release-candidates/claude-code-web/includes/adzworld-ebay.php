@@ -56,7 +56,16 @@ function adzworld_ebay_account() {
 		return array();
 	}
 
-	foreach ( array( 'clientid', 'clientsecret', 'campid' ) as $required ) {
+	/*
+	 * Only the two developer credentials are required. The campaign id is an
+	 * eBay Partner Network value and that approval takes days, while a
+	 * developer keyset is issued at once. Requiring the campaign id here meant
+	 * a publisher could not see a single product until an unrelated
+	 * application was approved, so a site with developer keys alone serves
+	 * real products now and starts earning on them the day the campaign id is
+	 * pasted in.
+	 */
+	foreach ( array( 'clientid', 'clientsecret' ) as $required ) {
 		if ( empty( $account[ $required ] ) ) {
 			return array();
 		}
@@ -85,7 +94,7 @@ function adzworld_ebay_token( $account ) {
 	$response = wp_remote_post(
 		'https://api.ebay.com/identity/v1/oauth2/token',
 		array(
-			'timeout' => 10,
+			'timeout' => 8,
 			'headers' => array(
 				'Content-Type'  => 'application/x-www-form-urlencoded',
 				'Authorization' => 'Basic ' . base64_encode( $account['clientid'] . ':' . $account['clientsecret'] ),
@@ -151,6 +160,22 @@ function adzworld_ebay_search( $request, $limit = ADZWORLD_EBAY_LIMIT ) {
 		return array();
 	}
 
+	$headers = array(
+		'Authorization'           => 'Bearer ' . $token,
+		'X-EBAY-C-MARKETPLACE-ID' => 'EBAY_US',
+	);
+
+	/*
+	 * The affiliate context is what makes eBay return a tagged
+	 * itemAffiliateWebUrl rather than a plain link, so the publisher is
+	 * credited for a sale. Without a campaign id the same products come back
+	 * with plain item links: the slot works and earns nothing, which is the
+	 * right state while the Partner Network application is pending.
+	 */
+	if ( '' !== $account['campid'] ) {
+		$headers['X-EBAY-C-ENDUSERCTX'] = 'affiliateCampaignId=' . $account['campid'] . ',affiliateReferenceId=adzworld';
+	}
+
 	$response = wp_remote_get(
 		add_query_arg(
 			array(
@@ -160,18 +185,8 @@ function adzworld_ebay_search( $request, $limit = ADZWORLD_EBAY_LIMIT ) {
 			'https://api.ebay.com/buy/browse/v1/item_summary/search'
 		),
 		array(
-			'timeout' => 10,
-			'headers' => array(
-				'Authorization'           => 'Bearer ' . $token,
-				'X-EBAY-C-MARKETPLACE-ID' => 'EBAY_US',
-
-				/*
-				 * The affiliate context is what makes eBay return a tagged
-				 * itemAffiliateWebUrl rather than a plain link, so the
-				 * publisher is credited for a sale.
-				 */
-				'X-EBAY-C-ENDUSERCTX'     => 'affiliateCampaignId=' . $account['campid'] . ',affiliateReferenceId=adzworld',
-			),
+			'timeout' => 8,
+			'headers' => $headers,
 		)
 	);
 
@@ -231,57 +246,19 @@ function adzworld_ebay_search( $request, $limit = ADZWORLD_EBAY_LIMIT ) {
 }
 
 /**
- * Product cards for a request, above the plain sponsored links.
+ * Append eBay's products to the shared result set.
  *
- * Returns an empty string whenever products cannot be fetched, so the caller's
- * existing link list is the whole output and nothing is lost.
- *
- * @param string $request Reader's request.
- * @return string Markup, or an empty string.
+ * @param array<int,array<string,string>> $results Rows from earlier providers.
+ * @param string                          $request Reader's request.
+ * @return array<int,array<string,string>> Rows with eBay's appended.
  */
-function adzworld_ebay_markup( $request ) {
-	$request = adzworld_ebay_request( $request );
-	$results = adzworld_ebay_search( $request );
-
-	if ( ! $results ) {
-		return '';
+function adzworld_ebay_append_product_results( $results, $request ) {
+	foreach ( adzworld_ebay_search( $request ) as $row ) {
+		$row['provider'] = 'ebay';
+		$results[]       = $row;
 	}
 
-	$html = '<div class="adzworld-products">';
-
-	$html .= '<p class="adzworld-products__head">'
-		. esc_html(
-			sprintf(
-				/* translators: %s: the reader's own request text. */
-				__( 'Matching %s right now', 'adz-world' ),
-				$request
-			)
-		)
-		. '</p>';
-
-	$html .= '<ul class="adzworld-products__list">';
-
-	foreach ( $results as $result ) {
-		$html .= '<li class="adzworld-product">';
-		$html .= '<a class="adzworld-product__link" href="' . esc_url( $result['url'] ) . '" rel="sponsored nofollow" target="_blank">';
-
-		if ( '' !== $result['image'] ) {
-			/*
-			 * The title sits beside the picture, so the picture carries no
-			 * alternative text of its own and is not announced twice.
-			 */
-			$html .= '<span class="adzworld-product__media"><img class="adzworld-product__img" src="'
-				. esc_url( $result['image'] ) . '" alt="" loading="lazy" decoding="async"></span>';
-		}
-
-		$html .= '<span class="adzworld-product__title">' . esc_html( $result['title'] ) . '</span>';
-
-		if ( '' !== $result['price'] ) {
-			$html .= '<span class="adzworld-product__price">' . esc_html( $result['price'] ) . '</span>';
-		}
-
-		$html .= '</a></li>';
-	}
-
-	return $html . '</ul></div>';
+	return $results;
 }
+
+add_filter( 'adzworld_affiliate_product_results', 'adzworld_ebay_append_product_results', 10, 2 );

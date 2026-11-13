@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @return array<string,array<string,mixed>>
  */
 function adzworld_affiliate_networks() {
-	return array(
+	$networks = array(
 		'amazon'    => array(
 			'label'   => 'Amazon Associates',
 			'account' => 'https://associates.amazon.com/signup',
@@ -170,7 +170,7 @@ function adzworld_affiliate_networks() {
 			'note'    => __( 'campid is the EPN campaign id. The US rotation id 711-53200-19255-0 and site id 0 are the values in eBay’s link-parameter article for ebay.com. For another marketplace, paste the rotation id and site id from that article. toolid 10001 is eBay’s custom-link tool.', 'adz-world' ),
 			'fields'  => array(
 				'campid'       => array(
-					'label'   => __( 'Campaign id', 'adz-world' ),
+					'label'   => __( 'Campaign id (optional until EPN approves)', 'adz-world' ),
 					'pattern' => '/^[0-9]{6,12}$/D',
 				),
 				'mkrid'        => array(
@@ -190,16 +190,23 @@ function adzworld_affiliate_networks() {
 				 * which is the difference between a link and an adzad.
 				 */
 				'clientid'     => array(
-					'label'   => __( 'Developer App ID (optional)', 'adz-world' ),
+					'label'   => __( 'Developer App ID', 'adz-world' ),
 					'pattern' => '/^[A-Za-z0-9\-]{10,80}$/D',
 				),
 				'clientsecret' => array(
-					'label'   => __( 'Developer Cert ID (optional)', 'adz-world' ),
+					'label'   => __( 'Developer Cert ID', 'adz-world' ),
 					'pattern' => '/^[A-Za-z0-9\-]{10,80}$/D',
 				),
 			),
 		),
 	);
+
+	/*
+	 * A provider file adds its own credential fields here rather than this
+	 * array being edited for each one. Three fetchers were written against
+	 * three different shapes of that edit; this is the one shape.
+	 */
+	return apply_filters( 'adzworld_affiliate_networks', $networks );
 }
 
 /**
@@ -415,17 +422,29 @@ function adzworld_affiliate_connected_count() {
  */
 function adzworld_affiliate_markup( $pref, $category ) {
 	$request = adzworld_affiliate_request_string( $pref, $category );
-	$links   = adzworld_affiliate_links( $request );
-	if ( ! $links ) {
+
+	if ( '' === $request ) {
 		return '';
 	}
 
+	$links = adzworld_affiliate_links( $request );
+
 	/*
-	 * eBay is the one connected marketplace that returns products for the
-	 * reader's own words rather than a search page. When it does, those cards
-	 * come first and the link list below them stays as the way to see more.
+	 * Any provider that can answer the reader's own words with products rather
+	 * than a search page contributes cards here. The link list below them is
+	 * the way to see more.
+	 *
+	 * Products are collected before the links are tested, because a provider
+	 * can return products without appearing in that list at all: Etsy and Best
+	 * Buy build their tracked URL per product rather than one search link for
+	 * the category. Returning early on an empty list would have shown a reader
+	 * nothing on a site connected only to those two.
 	 */
-	$html = adzworld_ebay_markup( $request );
+	$html = adzworld_products_markup( adzworld_products_collect( $request ), $request );
+
+	if ( ! $links ) {
+		return $html;
+	}
 
 	$html .= '<ul class="adzworld-affiliate-offers">';
 	foreach ( $links as $link ) {

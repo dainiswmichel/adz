@@ -12,7 +12,10 @@
  * @package adz-world
  */
 
-// phpcs:disable WordPress.WP.AlternativeFunctions, WordPress.Security.EscapeOutput, WordPress.PHP.DevelopmentFunctions
+// phpcs:disable WordPress.Security.EscapeOutput -- CLI harness: output goes to a terminal, not a page.
+// phpcs:disable WordPress.WP.AlternativeFunctions, WordPress.PHP.DevelopmentFunctions -- stubs stand in for the WordPress functions under test.
+// phpcs:disable WordPress.WP.GlobalVariablesOverride -- $adz_* globals are this harness's own state.
+// phpcs:disable Universal.NamingConventions.NoReservedKeywordParameterNames, Generic.CodeAnalysis.UnusedFunctionParameter -- stub signatures must match WordPress.
 
 define( 'ABSPATH', __DIR__ );
 
@@ -189,6 +192,20 @@ function __( $text, $domain = null ) {
 	return $text;
 }
 
+
+/**
+ * Record a filter registration; this harness calls the fetcher directly.
+ *
+ * @param string   $hook     Hook name.
+ * @param callable $callback Callback.
+ * @param int      $priority Unused.
+ * @param int      $args     Unused.
+ * @return void
+ */
+function add_filter( $hook, $callback, $priority = 10, $args = 1 ) {
+	global $adz_filters;
+	$adz_filters[ $hook ][] = $callback;
+}
 
 require __DIR__ . '/../' . $adz_src . '/includes/adzworld-ebay.php';
 
@@ -459,62 +476,43 @@ foreach ( array(
 	adz_check( "$label: returns an empty list, no notice, no crash", array() === $out, var_export( $out, true ) );
 }
 
-echo "\n9. Markup\n";
+echo "\n9. Developer keys alone, no Partner Network approval yet\n";
+adz_reset( array( 'campid' => '' ), array( $adz_token_ok, $adz_search_ok ) );
+$rows = adzworld_ebay_search( 'couch' );
+adz_check( 'products are still returned', 2 === count( $rows ), count( $rows ) . ' rows' );
+$ctx = null;
+foreach ( $GLOBALS['adz_calls'] as $call ) {
+	if ( 'get' === $call[0] ) {
+		$ctx = isset( $call[2]['headers']['X-EBAY-C-ENDUSERCTX'] ) ? $call[2]['headers']['X-EBAY-C-ENDUSERCTX'] : '';
+	}
+}
+adz_check( 'no affiliate context is sent without a campaign id', '' === $ctx, var_export( $ctx, true ) );
+adz_check( 'the links are the plain item urls', false === strpos( $rows[1]['url'], 'campid' ), $rows[1]['url'] );
+
+echo "\n10. What eBay hands to the shared collector\n";
 adz_reset( array(), array( $adz_token_ok, $adz_search_ok ) );
-$html = adzworld_ebay_markup( 'couch mid-century walnut' );
-adz_check( 'two cards rendered', 2 === substr_count( $html, 'adzworld-product__link' ), substr_count( $html, 'adzworld-product__link' ) . ' cards' );
-adz_check( 'every outbound link is marked sponsored', 2 === substr_count( $html, 'rel="sponsored nofollow"' ) );
-adz_check( 'no inline style attribute', false === strpos( $html, 'style=' ) );
-adz_check( 'images lazy-loaded', 2 === substr_count( $html, 'loading="lazy"' ) );
-adz_check( 'image carries empty alt, since the title is beside it', 2 === substr_count( $html, 'alt=""' ) );
-adz_check( 'the request is echoed back to the reader in the heading', false !== strpos( $html, 'Matching couch mid-century walnut right now' ) );
+$rows = adzworld_ebay_append_product_results( array(), 'couch mid-century walnut' );
+adz_check( 'two rows appended', 2 === count( $rows ), count( $rows ) . ' rows' );
+adz_check( 'each row names eBay as its provider', 'ebay' === $rows[0]['provider'] && 'ebay' === $rows[1]['provider'] );
+adz_check( 'rows carry the four fields the renderer needs', isset( $rows[0]['title'], $rows[0]['url'], $rows[0]['image'], $rows[0]['price'] ) );
+adz_check( 'rows already present are preserved, not replaced', 3 === count( adzworld_ebay_append_product_results( array( array( 'title' => 'prior' ) ), 'couch mid-century walnut' ) ) );
 
-/*
- * adzworld-creative is the wrapper around a creative a network returned, and
- * rotation.css carries an explicit contract that nothing resizes, restyles or
- * clips one. These cards are this plugin's own markup and must never borrow
- * that class, in either direction: the contract rules would deform the cards,
- * and card rules would reach a network's unit and breach its terms.
- */
-adz_check( 'cards do not borrow the protected network-creative class', false === strpos( $html, 'class="adzworld-creative"' ) && false === strpos( $html, 'adzworld-creative__' ), $html );
-
-echo "\n10. Escaping: a hostile response cannot inject markup\n";
+echo "\n11. With no credentials eBay adds nothing and breaks nothing\n";
 adz_reset(
-	array(),
 	array(
-		$adz_token_ok,
-		array(
-			'code' => 200,
-			'body' => wp_json_encode_shim(
-				array(
-					'itemSummaries' => array(
-						array(
-							'title'      => '<script>alert(1)</script>"onmouseover="x',
-							'itemWebUrl' => 'javascript:alert(1)',
-							'image'      => array( 'imageUrl' => '" onerror="alert(1)' ),
-							'price'      => array(
-								'value'    => '<b>9</b>',
-								'currency' => 'US"D',
-							),
-						),
-					),
-				)
-			),
-		),
+		'clientid'     => '',
+		'clientsecret' => '',
 	)
 );
-$html = adzworld_ebay_markup( 'couch' );
-adz_check( 'no executable script tag survives', false === strpos( $html, '<script' ), $html );
-adz_check( 'the title cannot close an attribute: its quote is encoded', false === strpos( $html, '"onmouseover="' ) && false !== strpos( $html, '&quot;onmouseover=' ), $html );
-adz_check( 'the image url cannot close an attribute: its quote is encoded', false === strpos( $html, '" onerror="' ), $html );
-adz_check( 'no bold tag from the price', false === strpos( $html, '<b>' ) );
+$prior       = array( array( 'title' => 'from another provider' ) );
+$after_prior = adzworld_ebay_append_product_results( $prior, 'couch' );
+adz_check( 'the earlier rows come back untouched', $after_prior === $prior );
+adz_check( 'and no HTTP request was made', 0 === count( $GLOBALS['adz_calls'] ) );
 
-echo "\n11. A hostile reader request is not reflected unescaped\n";
-adz_reset( array(), array( $adz_token_ok, $adz_search_ok ) );
-$html = adzworld_ebay_markup( '<img src=x onerror=alert(1)> couch' );
-adz_check( 'tags stripped before the request is sent or shown', false === strpos( $html, '<img src=x' ), substr( $html, 0, 200 ) );
-adz_check( 'the heading shows the request as actually sent, not the raw input', false !== strpos( $html, 'Matching couch right now' ), $html );
-adz_check( 'nothing from the payload is left in the heading', false === strpos( $html, 'onerror=alert' ), $html );
+/*
+ * Rendering, escaping and the merge across providers are proved in
+ * tools/test-product-merge.php, which owns the shared renderer.
+ */
 
 /**
  * Encode as JSON under a name the sniffs do not object to.

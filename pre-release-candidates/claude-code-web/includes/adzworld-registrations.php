@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @return array<string,array<string,mixed>>
  */
 function adzworld_registration_catalog() {
-	return array(
+	$catalog = array(
 		'adsense'   => array(
 			'label'        => 'Google AdSense',
 			'group'        => 'display',
@@ -140,6 +140,8 @@ function adzworld_registration_catalog() {
 			),
 		),
 	);
+
+	return apply_filters( 'adzworld_registration_catalog', $catalog );
 }
 
 /**
@@ -203,7 +205,14 @@ function adzworld_registration_ready( $id ) {
 	if ( ! isset( $accounts[ $id ] ) || '1' !== $accounts[ $id ]['enabled'] ) {
 		return false;
 	}
-	return '' !== adzworld_affiliate_url( $id, $accounts[ $id ], 'registration' );
+	$ready = '' !== adzworld_affiliate_url( $id, $accounts[ $id ], 'registration' );
+
+	/*
+	 * A provider that builds its tracked URL per product, rather than one
+	 * search link for the whole category, produces nothing above and would
+	 * read as never connected. It answers for its own saved credentials here.
+	 */
+	return (bool) apply_filters( 'adzworld_affiliate_account_ready', $ready, $id, $accounts[ $id ] );
 }
 
 /**
