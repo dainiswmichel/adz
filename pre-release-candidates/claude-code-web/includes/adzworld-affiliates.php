@@ -169,17 +169,33 @@ function adzworld_affiliate_networks() {
 			'account' => 'https://partnernetwork.ebay.com/',
 			'note'    => __( 'campid is the EPN campaign id. The US rotation id 711-53200-19255-0 and site id 0 are the values in eBay’s link-parameter article for ebay.com. For another marketplace, paste the rotation id and site id from that article. toolid 10001 is eBay’s custom-link tool.', 'adz-world' ),
 			'fields'  => array(
-				'campid' => array(
+				'campid'       => array(
 					'label'   => __( 'Campaign id', 'adz-world' ),
 					'pattern' => '/^[0-9]{6,12}$/D',
 				),
-				'mkrid'  => array(
+				'mkrid'        => array(
 					'label'   => __( 'Rotation id', 'adz-world' ),
 					'pattern' => '/^[0-9]{3}-[0-9]{5}-[0-9]{5}-[0-9]$/D',
 				),
-				'siteid' => array(
+				'siteid'       => array(
 					'label'   => __( 'Site id', 'adz-world' ),
 					'pattern' => '/^[0-9]{1,4}$/D',
+				),
+
+				/*
+				 * The two below are the eBay developer App ID and Cert ID, not
+				 * the Partner Network identifiers above. They are optional: a
+				 * campaign id alone still builds a tagged search link. With
+				 * them, the Browse API returns products the reader asked for,
+				 * which is the difference between a link and an adzad.
+				 */
+				'clientid'     => array(
+					'label'   => __( 'Developer App ID (optional)', 'adz-world' ),
+					'pattern' => '/^[A-Za-z0-9\-]{10,80}$/D',
+				),
+				'clientsecret' => array(
+					'label'   => __( 'Developer Cert ID (optional)', 'adz-world' ),
+					'pattern' => '/^[A-Za-z0-9\-]{10,80}$/D',
 				),
 			),
 		),
@@ -403,7 +419,15 @@ function adzworld_affiliate_markup( $pref, $category ) {
 	if ( ! $links ) {
 		return '';
 	}
-	$html = '<ul class="adzworld-affiliate-offers">';
+
+	/*
+	 * eBay is the one connected marketplace that returns products for the
+	 * reader's own words rather than a search page. When it does, those cards
+	 * come first and the link list below them stays as the way to see more.
+	 */
+	$html = adzworld_ebay_markup( $request );
+
+	$html .= '<ul class="adzworld-affiliate-offers">';
 	foreach ( $links as $link ) {
 		$html .= '<li><a class="adzworld-affiliate-offer" href="' . esc_url( $link['url'] ) . '" rel="sponsored nofollow" target="_blank">'
 			. esc_html( $link['label'] . ': ' . $request ) . '</a></li>';

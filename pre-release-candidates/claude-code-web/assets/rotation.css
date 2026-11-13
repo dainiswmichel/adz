@@ -754,6 +754,79 @@
 	text-decoration: underline;
 }
 
+/* Product cards returned for the reader's own request, above the link list. */
+
+.adzworld-rotation .adzworld-products {
+	margin: var(--adz-gap) 0 0;
+}
+
+.adzworld-rotation .adzworld-products__head {
+	margin: 0 0 8px;
+	color: var(--adz-muted);
+	font-size: 12px;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+}
+
+.adzworld-rotation .adzworld-products__list {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+	gap: 10px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.adzworld-rotation .adzworld-product__link {
+	display: grid;
+	gap: 6px;
+	height: 100%;
+	padding: 8px;
+	border: 1px solid var(--adz-line);
+	border-radius: var(--adz-radius);
+	background: var(--adz-surface-raised);
+	color: inherit;
+	text-decoration: none;
+	align-content: start;
+}
+
+.adzworld-rotation .adzworld-product__link:hover,
+.adzworld-rotation .adzworld-product__link:focus-visible {
+	border-color: var(--adz-line-strong);
+	background: var(--adz-surface-sunken);
+}
+
+.adzworld-rotation .adzworld-product__media {
+	display: block;
+	overflow: hidden;
+	max-height: 170px;
+	aspect-ratio: 4 / 3;
+	border-radius: calc(var(--adz-radius) - 4px);
+	background: var(--adz-surface-sunken);
+}
+
+.adzworld-rotation .adzworld-product__img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+}
+
+.adzworld-rotation .adzworld-product__title {
+	display: -webkit-box;
+	overflow: hidden;
+	font-size: 13px;
+	line-height: 1.3;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+}
+
+.adzworld-rotation .adzworld-product__price {
+	color: var(--adz-muted);
+	font-size: 12px;
+	font-variant-numeric: tabular-nums;
+}
+
 .adzworld-rotation :focus-visible {
 	outline: 2px solid var(--adz-accent);
 	outline-offset: 2px;
@@ -773,6 +846,32 @@
  * window and a 300px sidebar in a wide window need the same layout, and a wide
  * window says nothing about a narrow container.
  */
+@container adzworld (max-width: 500px) {
+	.adzworld-rotation .adzworld-products__list {
+		grid-template-columns: 1fr;
+	}
+
+	.adzworld-rotation .adzworld-product__link {
+		grid-template-columns: 64px 1fr;
+		grid-template-areas:
+			"media title"
+			"media price";
+		align-items: center;
+	}
+
+	.adzworld-rotation .adzworld-product__media {
+		grid-area: media;
+	}
+
+	.adzworld-rotation .adzworld-product__title {
+		grid-area: title;
+	}
+
+	.adzworld-rotation .adzworld-product__price {
+		grid-area: price;
+	}
+}
+
 @container adzworld (max-width: 600px) {
 	.adzworld-carousel {
 		padding-inline: 46px;
