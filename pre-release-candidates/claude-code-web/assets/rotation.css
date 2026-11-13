@@ -306,8 +306,16 @@
 
 .adzworld-rotation .adzworld-dots button[aria-pressed="true"] {
 	width: 22px;
-	background: linear-gradient(90deg, var(--adz-accent-solid), color-mix(in oklab, var(--adz-accent-solid) 58%, #fff));
+	background:
+		radial-gradient(
+			circle at 50% 50%,
+			color-mix(in oklab, var(--adz-accent-solid) 55%, #fff),
+			var(--adz-accent-solid) 70%
+		);
 	border-radius: 5px;
+
+	/* No x or y offset: an offset shadow is what made it look thrown. */
+	box-shadow: 0 0 10px color-mix(in oklab, var(--adz-accent-solid) 55%, transparent);
 }
 
 .adzworld-rotation .adzworld-dots button:hover {
@@ -315,9 +323,32 @@
 }
 
 .adzworld-rotation .adzworld-dots .adzworld-hub-position {
+	margin-right: 10px;
 	background: transparent;
 	border: 2px solid var(--adz-accent);
 	border-radius: 2px;
+}
+
+/*
+ * A position holding a rotation is drawn as a ring rather than a filled dot,
+ * so a reader can see which positions answer a refinement before turning to
+ * them. Fixed adz are solid.
+ */
+.adzworld-rotation .adzworld-dots .adzworld-live-position {
+	background: transparent;
+	box-shadow: inset 0 0 0 2px var(--adz-accent);
+}
+
+/*
+ * Selected, a live position stays hollow. Filling it would make it identical
+ * to a selected fixed position, and a reader would lose the one cue that says
+ * this slot answers a refinement, exactly when they are looking at it.
+ */
+.adzworld-rotation .adzworld-dots .adzworld-live-position[aria-pressed="true"] {
+	background: transparent;
+	box-shadow:
+		inset 0 0 0 2px var(--adz-accent-solid),
+		0 0 10px color-mix(in oklab, var(--adz-accent-solid) 55%, transparent);
 }
 
 .adzworld-rotation .adzworld-dots .adzworld-hub-position[aria-pressed="true"] {
@@ -833,6 +864,76 @@
 	font-size: 11px;
 	letter-spacing: 0.02em;
 	text-transform: uppercase;
+}
+
+/* The request as assembled: where it started, what the reader added, the result. */
+
+.adzworld-rotation .adzworld-request {
+	margin: var(--adz-gap) 0 0;
+	padding: 10px 12px;
+	border: 1px solid var(--adz-line);
+	border-radius: var(--adz-radius);
+	background: var(--adz-surface-sunken);
+}
+
+.adzworld-rotation .adzworld-request__head {
+	margin: 0 0 6px;
+	color: var(--adz-muted);
+	font-size: 11px;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+.adzworld-rotation .adzworld-request__parts {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.adzworld-rotation .adzworld-request__part {
+	display: flex;
+	gap: 8px;
+	align-items: baseline;
+	margin: 0 0 2px;
+}
+
+.adzworld-rotation .adzworld-request__kind {
+	flex: 0 0 auto;
+	min-width: 56px;
+	color: var(--adz-muted);
+	font-size: 11px;
+	letter-spacing: 0.02em;
+}
+
+.adzworld-rotation .adzworld-request__text {
+	font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+	font-size: 13px;
+	overflow-wrap: anywhere;
+}
+
+/* The one string the parts above add up to. */
+.adzworld-rotation .adzworld-request__result {
+	margin: 8px 0 0;
+	padding-top: 8px;
+	border-top: 1px solid var(--adz-line);
+	font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+	font-size: 13px;
+	overflow-wrap: anywhere;
+}
+
+.adzworld-rotation .adzworld-request__sent {
+	margin: 8px 0 0;
+	padding: 0;
+	list-style: none;
+	font-size: 12px;
+}
+
+.adzworld-rotation .adzworld-request__sent a {
+	color: var(--adz-accent);
+}
+
+.adzworld-rotation .adzworld-request__sent--none {
+	color: var(--adz-muted);
 }
 
 .adzworld-rotation :focus-visible {

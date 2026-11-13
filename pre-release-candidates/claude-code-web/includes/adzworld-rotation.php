@@ -1423,6 +1423,17 @@ function adzworld_render_rotation_level( $attributes ) {
 		if ( 'intro' === $slot['type'] ) {
 			$dot_class = ' class="adzworld-hub-position"';
 			$dot_label = __( 'Show your adz hub', 'adz-world' );
+		} elseif ( 'r' === $slot['type'] ) {
+			/*
+			 * A position holding a rotation answers a refinement; a position
+			 * holding one fixed adzad does not. The reader can see which is
+			 * which before choosing, so the refine control does not appear
+			 * and disappear as the wheel turns.
+			 */
+			++$adz_index;
+			$dot_class = ' class="adzworld-live-position"';
+			/* translators: %d: adz position, excluding the user hub. */
+			$dot_label = sprintf( __( 'Show rotation %d, which answers refinements', 'adz-world' ), $adz_index );
 		} else {
 			++$adz_index;
 			$dot_class = '';

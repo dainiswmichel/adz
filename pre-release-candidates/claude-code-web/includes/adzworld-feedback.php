@@ -173,7 +173,7 @@ function adzworld_feedback_control( $target, $category ) {
 	ob_start();
 	?>
 	<details class="adzworld-evaluation" data-adzworld-feedback-target="<?php echo esc_attr( $target ); ?>">
-		<summary><?php esc_html_e( 'Improve', 'adz-world' ); ?></summary>
+		<summary><?php esc_html_e( 'Refine', 'adz-world' ); ?></summary>
 		<div class="adzworld-evaluation__control">
 			<span aria-hidden="true"><?php esc_html_e( 'Dislike', 'adz-world' ); ?></span>
 			<label class="screen-reader-text" for="<?php echo esc_attr( $input_id ); ?>">
@@ -201,9 +201,84 @@ function adzworld_feedback_control( $target, $category ) {
 				<p class="adz-panel__status" data-adz-status role="status" aria-live="polite"></p>
 			</form>
 		</div>
+		<?php adzworld_render_request_panel( $category ); ?>
 	</details>
 	<?php
 	return (string) ob_get_clean();
+}
+
+/**
+ * Show the request as it is actually assembled, part by part.
+ *
+ * A slot that displays only the finished string reads as though a single word
+ * was searched. What makes the refinement loop legible is the accumulation:
+ * the category it started from, each refinement the reader added, and the one
+ * string those produce. This panel shows all three, and where it is sent.
+ *
+ * Output goes straight out, escaped value by value, matching
+ * adzworld_render_chips(). Nothing is returned, so no caller has to decide
+ * whether what it received was already safe.
+ *
+ * @param string $category Category represented by this adz.
+ * @return void
+ */
+function adzworld_render_request_panel( $category ) {
+	$category = trim( (string) $category );
+
+	if ( '' === $category ) {
+		return;
+	}
+
+	$preference = adzworld_current_preference();
+	$request    = adzworld_affiliate_request_string( $preference, $category );
+
+	if ( '' === $request ) {
+		return;
+	}
+
+	$links = function_exists( 'adzworld_affiliate_links' ) ? adzworld_affiliate_links( $request ) : array();
+	?>
+	<div class="adzworld-request">
+		<p class="adzworld-request__head"><?php esc_html_e( 'Request string', 'adz-world' ); ?></p>
+		<ol class="adzworld-request__parts">
+			<li class="adzworld-request__part">
+				<span class="adzworld-request__kind"><?php esc_html_e( 'category', 'adz-world' ); ?></span>
+				<span class="adzworld-request__text"><?php echo esc_html( $category ); ?></span>
+			</li>
+			<?php
+			foreach ( adzworld_category_refinement_chips( $preference, $category ) as $chip ) {
+				$split = adzworld_pair_split( (string) $chip['value'] );
+				$text  = isset( $split[1] ) ? trim( $split[1] ) : '';
+
+				if ( '' === $text ) {
+					continue;
+				}
+				?>
+				<li class="adzworld-request__part">
+					<span class="adzworld-request__kind"><?php esc_html_e( 'refine', 'adz-world' ); ?></span>
+					<span class="adzworld-request__text"><?php echo esc_html( $text ); ?></span>
+				</li>
+				<?php
+			}
+			?>
+		</ol>
+		<p class="adzworld-request__result"><?php echo esc_html( $request ); ?></p>
+		<?php if ( $links ) : ?>
+			<ul class="adzworld-request__sent">
+				<?php foreach ( $links as $link ) : ?>
+					<li>
+						<span class="adzworld-request__kind"><?php esc_html_e( 'sent to', 'adz-world' ); ?></span>
+						<a href="<?php echo esc_url( $link['url'] ); ?>" rel="sponsored nofollow" target="_blank"><?php echo esc_html( $link['label'] ); ?></a>
+					</li>
+				<?php endforeach; ?>
+			</ul>
+		<?php else : ?>
+			<p class="adzworld-request__sent adzworld-request__sent--none">
+				<?php esc_html_e( 'No provider is connected yet, so this string is not being sent anywhere.', 'adz-world' ); ?>
+			</p>
+		<?php endif; ?>
+	</div>
+	<?php
 }
 
 /**
