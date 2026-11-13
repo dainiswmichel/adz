@@ -318,10 +318,37 @@
 	function prepareResults( results ) {
 		var slides = Array.from( results.querySelectorAll( ':scope > .adzworld-results__slides > .adzworld-results__slide' ) );
 		var navigation = results.querySelector( ':scope > .adzworld-results__navigation' );
+		var evaluation = results.querySelector( ':scope > .adzworld-evaluation' );
 		var current = 0;
 
-		if ( slides.length < 2 ) {
+		if ( ! slides.length ) {
 			return;
+		}
+
+		function selectEvaluation( slide ) {
+			var input;
+			var output;
+			var status;
+			var score;
+
+			if ( ! evaluation || ! slide ) {
+				return;
+			}
+			input = evaluation.querySelector( 'input[type="range"]' );
+			output = evaluation.querySelector( 'output' );
+			status = evaluation.querySelector( '.adzworld-evaluation__status' );
+			score = Number( slide.dataset.adzworldResultScore || 0 );
+			evaluation.dataset.adzworldFeedbackTarget = slide.dataset.adzworldResultTarget || '';
+			if ( input ) {
+				input.value = String( score );
+				input.dispatchEvent( new window.Event( 'input', { bubbles: true } ) );
+			}
+			if ( output ) {
+				output.textContent = evaluationLabel( score );
+			}
+			if ( status ) {
+				status.textContent = '';
+			}
 		}
 
 		function show( position ) {
@@ -334,6 +361,7 @@
 					slide.setAttribute( 'aria-hidden', String( ! active ) );
 				}
 			);
+			selectEvaluation( slides[ current ] );
 		}
 
 		results.addEventListener(
@@ -350,7 +378,7 @@
 		);
 
 		show( 0 );
-		if ( navigation ) {
+		if ( navigation && slides.length > 1 ) {
 			navigation.hidden = false;
 		}
 	}
@@ -899,6 +927,12 @@
 		input.addEventListener(
 			'change',
 			function () {
+				var results = control.closest( '[data-adzworld-results]' );
+				var active = results ? results.querySelector( '.adzworld-results__slide:not([hidden])' ) : null;
+
+				if ( active ) {
+					active.dataset.adzworldResultScore = input.value;
+				}
 				post(
 					'adzworld_evaluate',
 					settings.feedbackNonce,

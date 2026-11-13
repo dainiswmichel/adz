@@ -152,9 +152,10 @@ function adzworld_category_refinement_chips( $preference, $category ) {
  * @param string $category     Category represented by this adz.
  * @param bool   $can_evaluate Whether an actual advertisement is present to evaluate.
  * @param bool   $show_category Whether to repeat the category inside the expanded control.
+ * @param string $provider      Provider used by this slot, when fixed.
  * @return string Evaluation markup.
  */
-function adzworld_feedback_control( $target, $category, $can_evaluate = true, $show_category = true ) {
+function adzworld_feedback_control( $target, $category, $can_evaluate = true, $show_category = true, $provider = '' ) {
 	$target       = sanitize_key( $target );
 	$category     = mb_substr( sanitize_text_field( $category ), 0, 80 );
 	$feedback     = adzworld_current_feedback();
@@ -217,7 +218,7 @@ function adzworld_feedback_control( $target, $category, $can_evaluate = true, $s
 				<p class="adz-panel__status" data-adz-status role="status" aria-live="polite"></p>
 			</form>
 		</div>
-		<?php adzworld_render_request_panel( $category ); ?>
+		<?php adzworld_render_request_panel( $category, $provider ); ?>
 	</details>
 	<?php
 	return (string) ob_get_clean();
@@ -227,10 +228,12 @@ function adzworld_feedback_control( $target, $category, $can_evaluate = true, $s
  * Show the accumulated category and refinements sent to connected providers.
  *
  * @param string $category Category represented by this adz.
+ * @param string $provider Provider used by this slot, when fixed.
  * @return void
  */
-function adzworld_render_request_panel( $category ) {
+function adzworld_render_request_panel( $category, $provider = '' ) {
 	$category = trim( (string) $category );
+	$provider = sanitize_key( (string) $provider );
 	if ( '' === $category ) {
 		return;
 	}
@@ -241,7 +244,8 @@ function adzworld_render_request_panel( $category ) {
 		return;
 	}
 
-	$links = function_exists( 'adzworld_affiliate_links' ) ? adzworld_affiliate_links( $request ) : array();
+	$links  = '' === $provider && function_exists( 'adzworld_affiliate_links' ) ? adzworld_affiliate_links( $request ) : array();
+	$labels = function_exists( 'adzworld_products_provider_labels' ) ? adzworld_products_provider_labels() : array();
 	?>
 	<div class="adzworld-request">
 		<p class="adzworld-request__head"><?php esc_html_e( 'Request string', 'adz-world' ); ?></p>
@@ -267,7 +271,12 @@ function adzworld_render_request_panel( $category ) {
 			?>
 		</ol>
 		<p class="adzworld-request__result"><?php echo esc_html( $request ); ?></p>
-		<?php if ( $links ) : ?>
+		<?php if ( '' !== $provider && isset( $labels[ $provider ] ) ) : ?>
+			<p class="adzworld-request__sent">
+				<span class="adzworld-request__kind"><?php esc_html_e( 'sent to', 'adz-world' ); ?></span>
+				<?php echo esc_html( $labels[ $provider ] ); ?>
+			</p>
+		<?php elseif ( $links ) : ?>
 			<ul class="adzworld-request__sent">
 				<?php foreach ( $links as $link ) : ?>
 					<li>

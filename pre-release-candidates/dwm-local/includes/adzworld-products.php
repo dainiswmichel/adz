@@ -100,6 +100,7 @@ function adzworld_products_normalise_row( $row, $provider_id = '' ) {
 		'price'    => isset( $row['price'] ) ? trim( wp_strip_all_tags( (string) $row['price'] ) ) : '',
 		'provider' => $provider,
 		'source'   => isset( $labels[ $provider ] ) ? $labels[ $provider ] : '',
+		'item_id'  => isset( $row['item_id'] ) ? sanitize_key( (string) $row['item_id'] ) : '',
 	);
 }
 

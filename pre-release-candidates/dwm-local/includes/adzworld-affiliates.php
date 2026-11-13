@@ -712,6 +712,14 @@ function adzworld_amazon_result_slide( $result, $index, $count ) {
  * @return string Result markup.
  */
 function adzworld_affiliate_result_slide( $result, $index, $count ) {
+	$provider = isset( $result['provider'] ) ? sanitize_key( (string) $result['provider'] ) : '';
+	$item_id  = isset( $result['item_id'] ) ? sanitize_key( (string) $result['item_id'] ) : '';
+	if ( '' === $item_id ) {
+		$item_id = md5( (string) $result['url'] );
+	}
+	$target      = sanitize_key( 'provider-' . $provider . '-' . $item_id );
+	$feedback    = adzworld_current_feedback();
+	$score       = isset( $feedback[ $target ]['score'] ) ? (int) $feedback[ $target ]['score'] : 0;
 	$price       = '';
 	$offer_class = 'adzworld-results__offer';
 	if ( '' !== $result['price'] ) {
@@ -732,7 +740,7 @@ function adzworld_affiliate_result_slide( $result, $index, $count ) {
 		$source = '<span class="adzworld-results__source">' . esc_html( $result['source_label'] ) . '</span>';
 	}
 
-	return '<section class="adzworld-results__slide"' . ( 0 === $index ? '' : ' hidden' ) . ' aria-roledescription="' . esc_attr__( 'slide', 'adz-world' ) . '" aria-label="'
+	return '<section class="adzworld-results__slide" data-adzworld-result-target="' . esc_attr( $target ) . '" data-adzworld-result-score="' . esc_attr( (string) $score ) . '"' . ( 0 === $index ? '' : ' hidden' ) . ' aria-roledescription="' . esc_attr__( 'slide', 'adz-world' ) . '" aria-label="'
 		. esc_attr( ( $index + 1 ) . ' / ' . $count ) . '"><a class="' . esc_attr( $offer_class ) . '" href="' . esc_url( $result['url'] ) . '" rel="sponsored nofollow" target="_blank">'
 		. $media
 		. '<span class="adzworld-results__body"><span class="adzworld-results__product-title">' . esc_html( $result['title'] ) . '</span>'
@@ -788,9 +796,32 @@ function adzworld_affiliate_product_results( $request ) {
 function adzworld_affiliate_showcase( $pref, $category, $title = '', $provider = '' ) {
 	$request = adzworld_affiliate_request_string( $pref, $category );
 	$results = adzworld_products_collect( $request, $provider );
+	$scoped  = adzworld_category_refinement_preference( $pref, $category );
 	$title   = function_exists( 'adzworld_internal_sanitize_title_row' )
 		? adzworld_internal_sanitize_title_row( $title )
 		: sanitize_text_field( (string) $title );
+
+	if ( ! $results ) {
+		return '';
+	}
+
+	if ( ! empty( $scoped['exclude'] ) ) {
+		$results = array_values(
+			array_filter(
+				$results,
+				static function ( $result ) use ( $scoped ) {
+					$title = strtolower( (string) $result['title'] );
+					foreach ( $scoped['exclude'] as $term ) {
+						if ( preg_match( '/\b' . preg_quote( strtolower( (string) $term ), '/' ) . '\b/', $title ) ) {
+							return false;
+						}
+					}
+
+					return true;
+				}
+			)
+		);
+	}
 
 	if ( ! $results ) {
 		return '';
@@ -819,10 +850,16 @@ function adzworld_affiliate_showcase( $pref, $category, $title = '', $provider =
 			. esc_html__( 'Next result', 'adz-world' ) . '</span></button>';
 	}
 
+	$first_target = isset( $results[0]['item_id'] ) && '' !== $results[0]['item_id']
+		? sanitize_key( 'provider-' . $results[0]['provider'] . '-' . $results[0]['item_id'] )
+		: sanitize_key( 'provider-' . $results[0]['provider'] . '-' . md5( $results[0]['url'] ) );
+
 	return '<div class="adzworld-results" data-adzworld-results role="region" aria-label="' . esc_attr( '' !== $title ? $title : __( 'Search results', 'adz-world' ) ) . '">'
 		. $row
 		. '<div class="adzworld-results__slides">' . $slides . '</div>'
-		. '<div class="adzworld-results__navigation" hidden>' . $buttons . '</div></div>';
+		. '<div class="adzworld-results__navigation" hidden>' . $buttons . '</div>'
+		. adzworld_feedback_control( $first_target, $category, true, false, $provider )
+		. '</div>';
 }
 
 /**

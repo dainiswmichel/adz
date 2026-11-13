@@ -251,6 +251,9 @@ function adzworld_etsy_api_get( $url, $account ) {
 function adzworld_etsy_product_results( $request ) {
 	$account = adzworld_etsy_account();
 	$request = trim( wp_strip_all_tags( (string) $request ) );
+	$parsed  = adzworld_parse_refinement( $request );
+	$terms   = array_values( array_unique( array_merge( $parsed['include'], $parsed['attributes'] ) ) );
+	$query   = trim( implode( ' ', $terms ) );
 	if ( ! adzworld_etsy_account_ready( $account ) ) {
 		return new WP_Error( 'adzworld_etsy_credentials', __( 'Etsy API credentials are incomplete.', 'adz-world' ) );
 	}
@@ -259,6 +262,9 @@ function adzworld_etsy_product_results( $request ) {
 	}
 	if ( strlen( $request ) > 2000 ) {
 		return new WP_Error( 'adzworld_etsy_request_length', __( 'The Etsy listing request exceeds the length this endpoint accepts.', 'adz-world' ) );
+	}
+	if ( '' === $query ) {
+		$query = $request;
 	}
 
 	$result_key = 'adzworld_etsy_results_' . md5( $account['keystring'] . '|' . $account['mid'] . '|' . $request );
@@ -270,8 +276,8 @@ function adzworld_etsy_product_results( $request ) {
 	$data = adzworld_etsy_api_get(
 		add_query_arg(
 			array(
-				'keywords' => $request,
-				'limit'    => 3,
+				'keywords' => $query,
+				'limit'    => 12,
 				'sort_on'  => 'score',
 			),
 			'https://api.etsy.com/v3/application/listings/active'
@@ -289,6 +295,11 @@ function adzworld_etsy_product_results( $request ) {
 		if ( null === $mapped ) {
 			continue;
 		}
+		foreach ( $parsed['exclude'] as $excluded ) {
+			if ( preg_match( '/\b' . preg_quote( strtolower( (string) $excluded ), '/' ) . '\b/', strtolower( $mapped['title'] ) ) ) {
+				continue 2;
+			}
+		}
 		if ( '' === $mapped['image'] ) {
 			$images = adzworld_etsy_api_get(
 				'https://api.etsy.com/v3/application/listings/' . $mapped['listing_id'] . '/images',
@@ -301,6 +312,7 @@ function adzworld_etsy_product_results( $request ) {
 		if ( '' === $mapped['image'] ) {
 			continue;
 		}
+		$mapped['item_id'] = $mapped['listing_id'];
 		unset( $mapped['listing_id'] );
 		$results[] = $mapped;
 		if ( 3 === count( $results ) ) {
