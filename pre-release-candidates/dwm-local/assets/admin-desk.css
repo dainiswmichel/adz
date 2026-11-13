@@ -1064,29 +1064,66 @@
 	margin-bottom: 1.2em;
 }
 
+/*
+ * Two columns is the layout. One column when the form is narrower than two
+ * cards. There is no third column. The query is on the form because the
+ * admin menu already uses part of the window.
+ */
+form:has(> .adzworld-paid-grid) {
+	container-name: adzworld-paid;
+	container-type: inline-size;
+}
+
+.adzworld-paid-actions .submit {
+	margin: 0 0 16px;
+	padding: 0;
+}
+
 .adzworld-paid-grid {
 	display: grid;
 	gap: 16px;
-	grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+	grid-template-columns: repeat(2, minmax(0, 1fr));
 	align-items: start;
+	width: 100%;
+	min-width: 0;
+}
+
+@container adzworld-paid (max-width: 759px) {
+	.adzworld-paid-grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+@media screen and (max-width: 782px) {
+	.adzworld-paid-grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
 }
 
 .adzworld-paid-card {
 	margin: 0;
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
+	overflow: hidden;
 }
 
-/*
- * The provider name and what it does sit on one line, with the name taking
- * the space it needs and the capability pushed to the end, so a column of
- * cards can be scanned down either edge.
- */
-.adzworld-paid-card .postbox-header .hndle {
+.adzworld-paid-card > .postbox-header .hndle {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 6px 12px;
 	align-items: baseline;
 	justify-content: space-between;
+	box-sizing: border-box;
 	width: 100%;
+	padding: 12px 16px;
+}
+
+.adzworld-paid-card > .inside {
+	box-sizing: border-box;
+	min-width: 0;
+	max-width: 100%;
+	padding: 4px 16px 16px;
 }
 
 .adzworld-paid-name {
@@ -1142,21 +1179,69 @@
 	margin-bottom: 6px;
 }
 
-/* form-table is built for a full-width screen; inside a card it stacks. */
-.adzworld-paid-card .form-table th {
-	width: 11em;
-	padding: 12px 10px 12px 0;
+/*
+ * Core keeps a form-table as label beside field, and .regular-text is 25em.
+ * Inside a card that pair is wider than the card, so the controls paint
+ * outside the border. Stack the label over the field and lock the control
+ * to the card's content box. body.wp-admin raises the selector above forms.css.
+ */
+body.wp-admin .adzworld-paid-card table.form-table,
+body.wp-admin .adzworld-paid-card table.form-table > tbody,
+body.wp-admin .adzworld-paid-card table.form-table tr,
+body.wp-admin .adzworld-paid-card table.form-table > tbody > tr > th,
+body.wp-admin .adzworld-paid-card table.form-table > tbody > tr > td {
+	display: block;
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+	float: none;
+}
+
+body.wp-admin .adzworld-paid-card table.form-table > tbody > tr > th {
+	padding: 12px 0 0;
 	font-size: 13px;
+	font-weight: 600;
 }
 
-.adzworld-paid-card .form-table td {
-	padding: 12px 0;
+body.wp-admin .adzworld-paid-card table.form-table > tbody > tr > td {
+	padding: 4px 0 12px;
 }
 
-@media (max-width: 782px) {
-	.adzworld-paid-grid {
-		grid-template-columns: 1fr;
-	}
+body.wp-admin .adzworld-paid-card table.form-table input.regular-text,
+body.wp-admin .adzworld-paid-card table.form-table input.code,
+body.wp-admin .adzworld-paid-card table.form-table input[type="text"],
+body.wp-admin .adzworld-paid-card table.form-table select,
+body.wp-admin .adzworld-paid-card .adzworld-connection-card input[type="text"],
+body.wp-admin .adzworld-paid-card .adzworld-connection-card select {
+	display: block;
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	margin: 0;
+	box-sizing: border-box;
+}
+
+.adzworld-paid-card .description,
+.adzworld-paid-card code,
+.adzworld-paid-card label {
+	overflow-wrap: break-word;
+}
+
+.adzworld-paid-card .adzworld-connection-card {
+	min-width: 0;
+	max-width: 100%;
+	margin: 12px 0 0;
+	background: transparent;
+	border: 0;
+	border-top: 1px solid #dcdcde;
+	border-radius: 0;
+	padding: 12px 0 0;
+}
+
+.adzworld-paid-card .adzworld-connection-card legend {
+	padding: 0;
+	font-size: 13px;
 }
 
 /* ==========================================================================

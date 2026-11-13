@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @return array<string,array<string,mixed>>
  */
 function adzworld_registration_catalog() {
-	return array(
+	$catalog = array(
 		'adsense'   => array(
 			'label'        => 'Google AdSense',
 			'group'        => 'display',
@@ -64,11 +64,11 @@ function adzworld_registration_catalog() {
 		'amazon'    => array(
 			'label'        => 'Amazon Associates',
 			'group'        => 'affiliate',
-			'signup'       => 'https://associates.amazon.com/signup',
+			'signup'       => 'https://affiliate-program.amazon.com/',
 			'signup_label' => __( 'Register at Amazon Associates', 'adz-world' ),
 			'pays'         => __( 'The tracking id pays this site on the marketplace that issued it.', 'adz-world' ),
 			'steps'        => array(
-				__( 'Use Register at Amazon Associates for the marketplace this site will link. A United States tracking id is issued from associates.amazon.com.', 'adz-world' ),
+				__( 'Use Register at Amazon Associates. A United States tracking id is issued at affiliate-program.amazon.com.', 'adz-world' ),
 				__( 'Amazon emails the tracking id. It looks like sitename-20. One tracking id pays only on the marketplace that issued it.', 'adz-world' ),
 				__( 'Select that marketplace in this section and paste the tracking id.', 'adz-world' ),
 				__( 'Enable the account and save. Extra sub-tags are ids Amazon issues. A sub-tag stays separate from a specific visitor.', 'adz-world' ),
@@ -126,6 +126,19 @@ function adzworld_registration_catalog() {
 				__( 'Paste an advertiser search URL that contains {query} exactly once, then paste the ids, enable the account, and save.', 'adz-world' ),
 			),
 		),
+		'etsy'      => array(
+			'label'        => 'Etsy',
+			'group'        => 'affiliate',
+			'signup'       => 'https://www.etsy.com/developers/your-apps',
+			'signup_label' => __( 'Open your Etsy apps', 'adz-world' ),
+			'pays'         => __( 'The Rakuten publisher site id pays this site.', 'adz-world' ),
+			'steps'        => array(
+				__( 'Create an Etsy app and copy its keystring and shared secret. The shared secret is stored as a secret.', 'adz-world' ),
+				__( 'Join the Etsy programme on Rakuten Advertising. Etsy is moving the affiliate programme from Awin to Rakuten.', 'adz-world' ),
+				__( 'Copy your Rakuten publisher site id and the Etsy advertiser id from that programme.', 'adz-world' ),
+				__( 'Paste the four values in this section, enable the account, and save. The fetcher sends the category and its refinements as the listing keywords.', 'adz-world' ),
+			),
+		),
 		'ebay'      => array(
 			'label'        => 'eBay Partner Network',
 			'group'        => 'affiliate',
@@ -140,6 +153,13 @@ function adzworld_registration_catalog() {
 			),
 		),
 	);
+
+	/**
+	 * Filters the provider registration procedures shown to administrators.
+	 *
+	 * @param array<string,array<string,mixed>> $catalog Registration procedures.
+	 */
+	return apply_filters( 'adzworld_registration_catalog', $catalog );
 }
 
 /**
@@ -196,14 +216,14 @@ function adzworld_registration_ready( $id ) {
 		$row = adzworld_network_preset_row( $id );
 		return is_array( $row ) && isset( $row['enabled'] ) && '1' === (string) $row['enabled'];
 	}
-	if ( ! function_exists( 'adzworld_affiliate_accounts' ) || ! function_exists( 'adzworld_affiliate_url' ) ) {
+	if ( ! function_exists( 'adzworld_affiliate_accounts' ) || ! function_exists( 'adzworld_affiliate_account_ready' ) ) {
 		return false;
 	}
 	$accounts = adzworld_affiliate_accounts();
 	if ( ! isset( $accounts[ $id ] ) || '1' !== $accounts[ $id ]['enabled'] ) {
 		return false;
 	}
-	return '' !== adzworld_affiliate_url( $id, $accounts[ $id ], 'registration' );
+	return adzworld_affiliate_account_ready( $id, $accounts[ $id ] );
 }
 
 /**
@@ -314,7 +334,7 @@ function adzworld_registration_desk() {
 		echo '<article class="adzworld-pay-account' . ( $is_ready ? ' is-ready' : '' ) . '" id="adzworld-pay-' . esc_attr( $id ) . '">';
 		echo '<div class="adzworld-pay-head">';
 		echo '<h3>' . esc_html( $item['label'] ) . '</h3>';
-		echo '<span class="adzworld-connection-status' . ( $is_ready ? ' is-enabled' : '' ) . '">' . esc_html( $is_ready ? __( 'Paying this site', 'adz-world' ) : __( 'Registration open', 'adz-world' ) ) . '</span>';
+		echo '<span class="adzworld-connection-status' . ( $is_ready ? ' is-enabled' : '' ) . '">' . esc_html( $is_ready ? __( 'Connected', 'adz-world' ) : __( 'Registration open', 'adz-world' ) ) . '</span>';
 		echo '<p class="adzworld-pay-pays">' . esc_html( $item['pays'] ) . '</p>';
 		echo '</div>';
 		echo '<p class="adzworld-pay-actions">';

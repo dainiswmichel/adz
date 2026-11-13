@@ -37,15 +37,23 @@ defined( 'ABSPATH' ) || exit;
  * @return array<string,bool> Affiliate id => whether the request is sent.
  */
 function adzworld_getpaid_affiliate_serves_adz() {
-	return array(
+	$providers = array(
 		'amazon'    => true,
 		'walmart'   => true,
 		'awin'      => true,
 		'cj'        => true,
 		'rakuten'   => true,
 		'ebay'      => true,
+		'etsy'      => true,
 		'clickbank' => false,
 	);
+
+	/**
+	 * Filters whether affiliate providers receive the reader's request.
+	 *
+	 * @param array<string,bool> $providers Provider id and request behavior.
+	 */
+	return apply_filters( 'adzworld_getpaid_affiliate_serves_adz', $providers );
 }
 
 /**
@@ -112,7 +120,7 @@ function adzworld_getpaid_providers() {
 function adzworld_getpaid_is_connected( $provider ) {
 	if ( 'affiliate' === $provider['source'] ) {
 		$accounts = adzworld_affiliate_accounts();
-		return isset( $accounts[ $provider['id'] ]['enabled'] ) && '1' === $accounts[ $provider['id'] ]['enabled'];
+		return isset( $accounts[ $provider['id'] ] ) && adzworld_affiliate_account_ready( $provider['id'], $accounts[ $provider['id'] ] );
 	}
 
 	foreach ( adzworld_network_rows() as $row ) {
@@ -175,7 +183,7 @@ function adzworld_getpaid_card_header( $provider, $connected ) {
 	printf(
 		'<p class="adzworld-paid-state"><span class="notice notice-%1$s inline"><span>%2$s</span></span></p>',
 		$connected ? 'success' : 'info',
-		esc_html( $connected ? __( 'Paying this site', 'adz-world' ) : __( 'Not connected yet', 'adz-world' ) )
+		esc_html( $connected ? __( 'Connected', 'adz-world' ) : __( 'Not connected yet', 'adz-world' ) )
 	);
 
 	if ( '' !== $provider['note'] ) {
@@ -211,6 +219,11 @@ function adzworld_getpaid_affiliate_card( $provider, $account ) {
 				echo '<option value="' . esc_attr( $choice ) . '"' . selected( $value, $choice, false ) . '>' . esc_html( $choice ) . '</option>';
 			}
 			echo '</select>';
+		} elseif ( ! empty( $rule['secret'] ) ) {
+			echo '<input type="password" class="regular-text code" id="' . esc_attr( $input ) . '" name="' . esc_attr( $input ) . '" value="" autocomplete="new-password">';
+			if ( '' !== $value ) {
+				echo '<p class="description">' . esc_html__( 'A secret is saved. Leave this blank to keep it.', 'adz-world' ) . '</p>';
+			}
 		} else {
 			echo '<input type="text" class="regular-text code" id="' . esc_attr( $input ) . '" name="' . esc_attr( $input ) . '" value="' . esc_attr( $value ) . '">';
 		}
@@ -323,6 +336,9 @@ function adzworld_getpaid_page() {
 	echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 	echo '<input type="hidden" name="action" value="adzworld_save_affiliates">';
 	wp_nonce_field( 'adzworld_affiliate_accounts', 'adzworld_affiliate_nonce' );
+	echo '<div class="adzworld-paid-actions">';
+	submit_button( __( 'Save affiliate connections', 'adz-world' ) );
+	echo '</div>';
 	echo '<div class="adzworld-paid-grid">';
 	foreach ( $providers as $provider ) {
 		if ( 'affiliate' !== $provider['source'] ) {
@@ -346,6 +362,9 @@ function adzworld_getpaid_page() {
 	echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 	echo '<input type="hidden" name="action" value="adzworld_save_networks">';
 	wp_nonce_field( 'adzworld_save_networks', 'adzworld_network_nonce' );
+	echo '<div class="adzworld-paid-actions">';
+	submit_button( __( 'Save network connections', 'adz-world' ) );
+	echo '</div>';
 	echo '<div class="adzworld-paid-grid">';
 	foreach ( $providers as $provider ) {
 		if ( 'network' !== $provider['source'] ) {

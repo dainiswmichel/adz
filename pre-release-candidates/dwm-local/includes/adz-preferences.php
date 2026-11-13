@@ -807,7 +807,7 @@ function adzworld_category_matches_text( $category, $text ) {
  * Resolve the category represented by a local advertisement.
  *
  * A category the visitor typed takes precedence when its words are in the ad.
- * Otherwise the ad is its own category: one published ad, one thing.
+ * Otherwise the category assigned by the adzadmin is used.
  *
  * @param WP_Post $post Advertisement post.
  * @param array   $pref Current preference hierarchy.
@@ -831,31 +831,25 @@ function adzworld_ad_category( $post, $pref ) {
 		}
 	}
 
-	$thing = adzworld_ad_thing( $post );
-
-	if ( '' !== $thing ) {
-		return $thing;
-	}
-
 	foreach ( $pref['categories'] as $category ) {
 		if ( adzworld_category_matches_text( $category, $text ) ) {
 			return $category;
 		}
 	}
 
-	return '';
+	return adzworld_ad_assigned_category( $post );
 }
 
 /**
- * The one thing an advertisement is: its category, which starts with this ad.
+ * The category an adzadmin assigned to one adzad.
  *
- * A published ad is a category that holds a single ad. The label is the thing
- * itself, such as couch, car, or bicycle, not the sentence around it.
+ * This reads the adzad's ad_taxonomy term and nothing else. An adzad without
+ * an assigned term has no category; its title is not guessed into one.
  *
- * @param WP_Post $post Advertisement post.
- * @return string Category label, or an empty string.
+ * @param WP_Post $post Adzad post.
+ * @return string Assigned category, or an empty string.
  */
-function adzworld_ad_thing( $post ) {
+function adzworld_ad_assigned_category( $post ) {
 	if ( ! $post instanceof WP_Post ) {
 		return '';
 	}
@@ -863,33 +857,13 @@ function adzworld_ad_thing( $post ) {
 	$terms = wp_get_post_terms( $post->ID, 'ad_taxonomy', array( 'fields' => 'names' ) );
 	$terms = is_wp_error( $terms ) ? array() : $terms;
 
-	if ( ! empty( $terms ) ) {
-		$term = adzworld_normalize_category( (string) reset( $terms ) );
-
-		if ( adzworld_valid_category( $term ) ) {
-			return $term;
-		}
-	}
-
-	$parsed  = adzworld_parse_refinement( $post->post_title );
-	$residue = array( 'year', 'years', 'old', 'yo', 'aged', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve' );
-	$words   = array();
-
-	foreach ( $parsed['include'] as $word ) {
-		if ( is_numeric( $word ) || in_array( $word, $residue, true ) ) {
-			continue;
-		}
-
-		$words[] = $word;
-	}
-
-	if ( empty( $words ) ) {
+	if ( empty( $terms ) ) {
 		return '';
 	}
 
-	$thing = adzworld_normalize_category( (string) end( $words ) );
+	$term = adzworld_normalize_category( (string) reset( $terms ) );
 
-	return adzworld_valid_category( $thing ) ? $thing : '';
+	return adzworld_valid_category( $term ) ? $term : '';
 }
 
 /**
@@ -922,7 +896,7 @@ function adzworld_catalog_categories() {
 	);
 
 	foreach ( $posts as $post ) {
-		$thing = adzworld_ad_thing( $post );
+		$thing = adzworld_ad_assigned_category( $post );
 
 		if ( '' !== $thing && ! in_array( $thing, $names, true ) ) {
 			$names[] = $thing;

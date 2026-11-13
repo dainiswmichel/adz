@@ -172,21 +172,30 @@ clicks it. The plugin does not create the account.
 = Affiliate links =
 
 An administrator can save and enable identifiers for Amazon Associates,
-Walmart Affiliates through Impact, Awin, CJ Affiliate, Rakuten Advertising,
-ClickBank, or eBay Partner Network. No affiliate request runs on activation or
-page view. A public sponsored link contains the publisher's identifiers. Except
-for ClickBank, its destination search uses the category and refinements entered
-by the visitor. ClickBank uses only the administrator's saved affiliate,
-vendor, and optional tracking identifiers; visitor preference text is not sent
-to ClickBank. When a visitor follows a sponsored link, the browser connects to
-that network and sends the URL parameters plus normal request information such
-as IP address, browser data and referrer. The network performs attribution and
-pays the publisher under its own agreement. Connections includes the
-registration procedure for each programme. The Register control opens that
-programme’s sign-up page when an administrator clicks it. The plugin does not
-create the account.
+Best Buy through Impact, Walmart Affiliates through Impact, Awin, CJ Affiliate,
+Rakuten Advertising, ClickBank, or eBay Partner Network. A public sponsored
+link contains the publisher's identifiers. Except for ClickBank, its destination
+search uses the category and refinements entered by the visitor. ClickBank uses
+only the administrator's saved affiliate, vendor, and optional tracking
+identifiers; visitor preference text is not sent to ClickBank. When a visitor
+follows a sponsored link, the browser connects to that network and sends the URL
+parameters plus normal request information such as IP address, browser data and
+referrer. The network performs attribution and pays the publisher under its own
+agreement. Connections includes the registration procedure for each programme.
+The Register control opens that programme’s sign-up page when an administrator
+clicks it. The plugin does not create the account.
+
+When a Best Buy connection is enabled and both required identifiers are saved,
+the site server sends the category and that category's refinements, the Best Buy
+API key and the Impact Partner ID to https://api.bestbuy.com/v1/products. Best
+Buy returns product names, images, current prices and attributed product URLs.
+The response is cached on the site for 15 minutes. The visitor's browser loads
+the returned product image and the required Best Buy logo from Best Buy hosts.
+Disabling the connection stops these requests. The API key is never printed in
+the public page.
 
 * Amazon Associates — Sign up: https://associates.amazon.com/signup ; Agreement: https://affiliate-program.amazon.com/help/operating/agreement/ ; Privacy: https://www.amazon.com/gp/help/customer/display.html?nodeId=GX7NJQ4ZB8MHFRNJ
+* Best Buy Developer API and Publisher Program — API terms and branding: https://developer.bestbuy.com/legal ; Privacy: https://www.bestbuy.com/site/help-topics/privacy-policy/pcmcat204400050062.c?id=pcmcat204400050062
 * Walmart/Impact — Sign up: https://app.impact.com/login.user ; Program: https://affiliates.walmart.com/ ; Privacy: https://impact.com/privacy-policy/
 * Awin — Sign up: https://www.awin.com/us/publishers ; Publisher terms: https://www.awin.com/us/publisher-terms ; Privacy: https://www.awin.com/us/privacy
 * CJ Affiliate — Sign up: https://signup.cj.com/member/signup/publisher/ ; Legal terms and privacy: https://www.cj.com/legal

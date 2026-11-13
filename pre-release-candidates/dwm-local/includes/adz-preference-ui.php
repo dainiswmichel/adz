@@ -446,15 +446,11 @@ function adzworld_render_preference_panel( $pref, $has_pref, $intro = 'full' ) {
 	$input_id    = wp_unique_id( 'adz-panel-input-' );
 	$input_label = __( 'What are you looking to buy?', 'adz-world' );
 	$panel_title = $has_pref ? __( 'Your adz hub', 'adz-world' ) : __( 'Advertising by invitation', 'adz-world' );
-	$active      = isset( $pref['active_category'] ) ? (string) $pref['active_category'] : '';
 	$chips       = array_values(
 		array_filter(
 			$all_chips,
-			static function ( $chip ) use ( $active ) {
-				$parts = adzworld_pair_split( $chip['value'] );
-
-				return 'categories' === $chip['facet']
-					|| ( 'category_refinements' === $chip['facet'] && 2 === count( $parts ) && '' !== $active && $active === $parts[0] );
+			static function ( $chip ) {
+				return 'categories' === $chip['facet'] || 'category_refinements' === $chip['facet'];
 			}
 		)
 	);
@@ -487,7 +483,7 @@ function adzworld_render_preference_panel( $pref, $has_pref, $intro = 'full' ) {
 				placeholder="<?php esc_attr_e( 'couch: light fabric, two-seater', 'adz-world' ); ?>"
 			></textarea>
 			<button type="submit" class="adz-panel__submit" value="category" name="adzworld_mode">
-				<?php esc_html_e( 'Show me', 'adz-world' ); ?>
+				<?php esc_html_e( 'Search', 'adz-world' ); ?>
 			</button>
 		</div>
 

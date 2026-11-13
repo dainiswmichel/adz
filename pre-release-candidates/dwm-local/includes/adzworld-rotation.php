@@ -933,10 +933,11 @@ function adzworld_rotation_weighted_slot( $slots, $draw ) {
  * The editor content and featured image are the advertisement itself. The
  * excerpt is matching information and is never displayed as an advertisement.
  *
- * @param WP_Post $ad adz post.
+ * @param WP_Post $ad   adz post.
+ * @param string  $link Click target. Empty uses the destination saved on the adz.
  * @return string adz slide content.
  */
-function adzworld_local_ad_slide( $ad ) {
+function adzworld_local_ad_slide( $ad, $link = '' ) {
 	if ( ! $ad instanceof WP_Post ) {
 		return '';
 	}
@@ -944,7 +945,9 @@ function adzworld_local_ad_slide( $ad ) {
 	$content   = wp_kses_post( $ad->post_content );
 	$thumbnail = get_the_post_thumbnail( $ad, 'large', array( 'class' => 'adzworld-creative__image' ) );
 	$creative  = trim( $thumbnail . $content );
-	if ( function_exists( 'adzworld_internal_link_creative' ) ) {
+	if ( '' !== $link && function_exists( 'adzworld_internal_link_markup' ) ) {
+		$creative = adzworld_internal_link_markup( $creative, $link );
+	} elseif ( function_exists( 'adzworld_internal_link_creative' ) ) {
 		$creative = adzworld_internal_link_creative( $creative, $ad->ID );
 	}
 
@@ -1037,23 +1040,26 @@ function adzworld_category_slot_control( $category, $count, $current_slot ) {
 				__( 'Add another %s adz slot', 'adz-world' ),
 				$category
 			)
-		) . '"><span aria-hidden="true">+</span></button></div>'
-		. '<div class="adzworld-category-slots__positions" aria-label="' . esc_attr( $label ) . '">';
+		) . '"><span aria-hidden="true">+</span></button></div>';
 
-	for ( $index = 0; $index < $count; ++$index ) {
-		$markup .= '<button type="button" data-adzworld-category-slot-category="' . esc_attr( $category ) . '" data-adzworld-category-slot="'
-			. esc_attr( (string) $index ) . '" aria-pressed="' . ( $index === $current_slot ? 'true' : 'false' ) . '" aria-label="'
-			. esc_attr(
-				sprintf(
-					/* translators: 1: category name, 2: slot number. */
-					__( 'Show %1$s adz %2$d', 'adz-world' ),
-					$category,
-					$index + 1
-				)
-			) . '"><span class="screen-reader-text">' . esc_html( (string) ( $index + 1 ) ) . '</span></button>';
+	if ( $count > 1 ) {
+		$markup .= '<div class="adzworld-category-slots__positions" aria-label="' . esc_attr( $label ) . '">';
+		for ( $index = 0; $index < $count; ++$index ) {
+			$markup .= '<button type="button" data-adzworld-category-slot-category="' . esc_attr( $category ) . '" data-adzworld-category-slot="'
+				. esc_attr( (string) $index ) . '" aria-pressed="' . ( $index === $current_slot ? 'true' : 'false' ) . '" aria-label="'
+				. esc_attr(
+					sprintf(
+						/* translators: 1: category name, 2: slot number. */
+						__( 'Show %1$s adz %2$d', 'adz-world' ),
+						$category,
+						$index + 1
+					)
+				) . '"><span class="screen-reader-text">' . esc_html( (string) ( $index + 1 ) ) . '</span></button>';
+		}
+		$markup .= '</div>';
 	}
 
-	return $markup . '</div><span class="adzworld-category-slots__status" data-adzworld-category-slot-status role="status" aria-live="polite"></span></div>';
+	return $markup . '<span class="adzworld-category-slots__status" data-adzworld-category-slot-status role="status" aria-live="polite"></span></div>';
 }
 
 /**
@@ -1405,13 +1411,35 @@ function adzworld_render_rotation_level( $attributes ) {
 				$category = adzworld_ad_category( $ad, $pref );
 			}
 			$has_creative = adzworld_local_ad_has_creative( $ad );
-			$html         = adzworld_local_ad_slide( $ad )
-				. adzworld_feedback_control( 'ad-' . $ad->ID, $category, $has_creative );
+			$title_row    = function_exists( 'adzworld_internal_title_row' ) ? adzworld_internal_title_row( $ad ) : '';
+			$category_url = function_exists( 'adzworld_affiliate_category_url' ) ? adzworld_affiliate_category_url( $pref, $category ) : '';
+			$creative_url = defined( 'ADZWORLD_INTERNAL_URL_KEY' ) ? get_post_meta( $ad->ID, ADZWORLD_INTERNAL_URL_KEY, true ) : '';
+			if ( '' === $creative_url ) {
+				$creative_url = $category_url;
+			}
+			$showcase = '';
+			if ( in_array( $category, $pref['categories'], true ) && 0 === $category_slot && function_exists( 'adzworld_affiliate_showcase' ) ) {
+				$showcase = adzworld_affiliate_showcase( $pref, $category, $title_row );
+			}
+			if ( $has_creative ) {
+				$html = adzworld_local_ad_slide( $ad, $creative_url );
+			} else {
+				$html = '';
+			}
+			if ( '' !== $showcase ) {
+				$html        .= $showcase;
+				$has_creative = true;
+			} elseif ( ! $has_creative ) {
+				$html = adzworld_local_ad_slide( $ad );
+			} elseif ( '' !== $title_row ) {
+				$html = '<div class="adzworld-results__title">' . esc_html( $title_row ) . '</div>' . $html;
+			}
 			if ( in_array( $category, $pref['categories'], true ) ) {
 				$html .= adzworld_category_slot_control( $category, $slot_count, $category_slot );
-				if ( 0 === $category_slot ) {
-					$html .= adzworld_affiliate_markup( $pref, $category );
-				}
+			}
+			$html .= adzworld_feedback_control( 'ad-' . $ad->ID, $category, $has_creative, false );
+			if ( function_exists( 'adzworld_affiliate_category_search_link' ) ) {
+				$html .= adzworld_affiliate_category_search_link( $pref, $category );
 			}
 		} elseif ( 'r' === $slot['type'] ) {
 			$inner = adzworld_render_rotation(
@@ -1438,6 +1466,11 @@ function adzworld_render_rotation_level( $attributes ) {
 		if ( 'intro' === $slot['type'] ) {
 			$dot_class = ' class="adzworld-hub-position"';
 			$dot_label = __( 'Show your adz hub', 'adz-world' );
+		} elseif ( 'r' === $slot['type'] ) {
+			++$adz_index;
+			$dot_class = ' class="adzworld-live-position"';
+			/* translators: %d: adz position, excluding the user hub. */
+			$dot_label = sprintf( __( 'Show rotation %d, which answers refinements', 'adz-world' ), $adz_index );
 		} else {
 			++$adz_index;
 			$dot_class = '';
