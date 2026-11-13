@@ -676,7 +676,6 @@
 			'change',
 			function ( event ) {
 				var categoryName = event.target.closest( '.adz-panel__category-name' );
-				var refinementName = event.target.closest( '.adz-panel__refinement-name' );
 
 				if ( categoryName && categoryName.value.trim() === categoryName.dataset.adzCategoryOriginal ) {
 					closeEditor( categoryName );
@@ -706,32 +705,6 @@
 					return;
 				}
 
-				if ( refinementName && refinementName.value.trim() === refinementName.dataset.adzRefinementText ) {
-					closeEditor( refinementName );
-					return;
-				}
-
-				if ( refinementName ) {
-					post(
-						'adzworld_refine',
-						settings.preferenceNonce,
-						{
-							mode: 'rename_refinement',
-							refinement: refinementName.value,
-							value: refinementName.dataset.adzRefinementOriginal || ''
-						}
-					).then(
-						function ( payload ) {
-							if ( payload && payload.success ) {
-								window.location.reload();
-							} else if ( status ) {
-								status.textContent = payload && payload.data ? payload.data.message : '';
-								refinementName.value = refinementName.dataset.adzRefinementText || '';
-								closeEditor( refinementName );
-							}
-						}
-					);
-				}
 			}
 		);
 
@@ -741,8 +714,49 @@
 				var category = event.target.closest( '.adz-panel__category' );
 				var categorySlot = event.target.closest( '.adz-panel__category-slot' );
 				var edit = event.target.closest( '.adz-panel__chipedit' );
+				var refinementAction = event.target.closest( '[data-adz-refinement-action]' );
 				var control;
+				var refinementEditor;
+				var refinementName;
 				var rotation = form.closest( '.adzworld-rotation' );
+
+				if ( refinementAction ) {
+					event.preventDefault();
+					refinementEditor = refinementAction.closest( '.adz-panel__refinement-editor' );
+					refinementName = refinementEditor ? refinementEditor.querySelector( '.adz-panel__refinement-name' ) : null;
+					if ( ! refinementEditor || ! refinementName ) {
+						return;
+					}
+					if ( 'cancel' === refinementAction.dataset.adzRefinementAction ) {
+						refinementName.value = refinementName.dataset.adzRefinementText || '';
+						closeEditor( refinementEditor );
+						return;
+					}
+					post(
+						'adzworld_refine',
+						settings.preferenceNonce,
+						'delete' === refinementAction.dataset.adzRefinementAction
+							? {
+								mode: 'drop',
+								facet: 'category_refinements',
+								value: refinementName.dataset.adzRefinementOriginal || ''
+							}
+							: {
+								mode: 'rename_refinement',
+								refinement: refinementName.value,
+								value: refinementName.dataset.adzRefinementOriginal || ''
+							}
+					).then(
+						function ( payload ) {
+							if ( payload && payload.success ) {
+								window.location.reload();
+							} else if ( status ) {
+								status.textContent = payload && payload.data ? payload.data.message : '';
+							}
+						}
+					);
+					return;
+				}
 
 				if ( categorySlot ) {
 					event.preventDefault();
@@ -787,8 +801,9 @@
 						edit.parentElement.querySelector( '.adz-panel__category, .adz-panel__chiptext' ).hidden = true;
 						control.hidden = false;
 						edit.setAttribute( 'aria-expanded', 'true' );
-						control.focus();
-						control.select();
+						refinementName = control.querySelector ? control.querySelector( '.adz-panel__refinement-name' ) : null;
+						( refinementName || control ).focus();
+						( refinementName || control ).select();
 					}
 				}
 			}
@@ -798,18 +813,26 @@
 			'keydown',
 			function ( event ) {
 				var editor = event.target.closest( '.adz-panel__category-name, .adz-panel__refinement-name' );
+				var refinementEditor;
+				var action;
 
 				if ( ! editor ) {
 					return;
 				}
 				if ( 'Enter' === event.key ) {
 					event.preventDefault();
-					editor.blur();
+					refinementEditor = editor.closest( '.adz-panel__refinement-editor' );
+					if ( refinementEditor ) {
+						action = refinementEditor.querySelector( '[data-adz-refinement-action="save"]' );
+						action.click();
+					} else {
+						editor.blur();
+					}
 				}
 				if ( 'Escape' === event.key ) {
 					event.preventDefault();
 					editor.value = editor.dataset.adzCategoryOriginal || editor.dataset.adzRefinementText || '';
-					closeEditor( editor );
+					closeEditor( editor.closest( '.adz-panel__refinement-editor' ) || editor );
 				}
 			}
 		);

@@ -724,6 +724,65 @@
 	background: var(--adz-surface-sunken);
 }
 
+.adzworld-rotation .adz-panel__refinement-editor[hidden] {
+	display: none;
+}
+
+.adzworld-rotation .adz-panel__refinement-editor {
+	display: flex;
+	flex: 1 1 15rem;
+	flex-direction: column;
+	gap: 5px;
+	min-width: min(15rem, 70vw);
+	padding: 3px 4px 4px;
+}
+
+.adzworld-rotation .adz-panel__refinement-editor .adz-panel__refinement-name {
+	width: 100%;
+	max-width: none;
+	padding: 5px 7px;
+	border: 1px solid var(--adz-line);
+	border-radius: 4px;
+}
+
+.adzworld-rotation .adz-panel__refinement-actions {
+	display: flex;
+	gap: 12px;
+	align-items: center;
+	justify-content: flex-end;
+	padding-inline: 2px;
+}
+
+.adzworld-rotation .adz-panel__refinement-action {
+	min-width: 0;
+	min-height: 0;
+	padding: 1px 0;
+	color: var(--adz-muted);
+	font: inherit;
+	font-size: 12px;
+	line-height: 1.4;
+	text-decoration: underline;
+	text-underline-offset: 2px;
+	background: transparent;
+	border: 0;
+	border-radius: 0;
+	cursor: pointer;
+}
+
+.adzworld-rotation .adz-panel__refinement-action--delete {
+	color: var(--adzworld-bad);
+}
+
+.adzworld-rotation .adz-panel__refinement-action--save {
+	color: var(--adz-accent);
+	font-weight: 600;
+}
+
+.adzworld-rotation .adz-panel__refinement-action:hover,
+.adzworld-rotation .adz-panel__refinement-action:focus-visible {
+	text-decoration-thickness: 2px;
+}
+
 .adzworld-rotation .adz-panel__chip--categories.is-active .adz-panel__chipedit {
 	color: var(--adz-on-accent);
 }

@@ -594,7 +594,10 @@ function adzworld_render_chips( $chips ) {
 		<p class="adz-panel__section-label"><?php esc_html_e( 'Refinements', 'adz-world' ); ?></p>
 		<ul class="adz-panel__chiplist">
 			<?php foreach ( $refinements as $chip ) : ?>
-				<?php $refinement_id = wp_unique_id( 'adz-refinement-' ); ?>
+				<?php
+				$refinement_id       = wp_unique_id( 'adz-refinement-' );
+				$refinement_input_id = $refinement_id . '-input';
+				?>
 				<li class="adz-panel__chip adz-panel__chip--<?php echo esc_attr( $chip['facet'] ); ?>">
 					<span class="adz-panel__chiptext"><?php echo esc_html( $chip['label'] ); ?></span>
 					<button
@@ -607,19 +610,25 @@ function adzworld_render_chips( $chips ) {
 						<span class="screen-reader-text"><?php esc_html_e( 'Edit refinement', 'adz-world' ); ?></span>
 						<span aria-hidden="true">&#9998;</span>
 					</button>
-					<label class="screen-reader-text" for="<?php echo esc_attr( $refinement_id ); ?>">
+				<div id="<?php echo esc_attr( $refinement_id ); ?>" class="adz-panel__refinement-editor" hidden>
+					<label class="screen-reader-text" for="<?php echo esc_attr( $refinement_input_id ); ?>">
 						<?php esc_html_e( 'Edit refinement', 'adz-world' ); ?>
 					</label>
 					<input
-						id="<?php echo esc_attr( $refinement_id ); ?>"
+						id="<?php echo esc_attr( $refinement_input_id ); ?>"
 						class="adz-panel__refinement-name"
 						type="text"
 						value="<?php echo esc_attr( $chip['label'] ); ?>"
 						maxlength="<?php echo esc_attr( (string) ADZWORLD_REFINEMENT_MAX_LENGTH ); ?>"
 						data-adz-refinement-original="<?php echo esc_attr( $chip['value'] ); ?>"
 						data-adz-refinement-text="<?php echo esc_attr( $chip['label'] ); ?>"
-						hidden
 					>
+					<div class="adz-panel__refinement-actions">
+						<button type="button" class="adz-panel__refinement-action" data-adz-refinement-action="cancel"><?php esc_html_e( 'Cancel', 'adz-world' ); ?></button>
+						<button type="button" class="adz-panel__refinement-action adz-panel__refinement-action--delete" data-adz-refinement-action="delete"><?php esc_html_e( 'Delete', 'adz-world' ); ?></button>
+						<button type="button" class="adz-panel__refinement-action adz-panel__refinement-action--save" data-adz-refinement-action="save"><?php esc_html_e( 'Save', 'adz-world' ); ?></button>
+					</div>
+				</div>
 				</li>
 			<?php endforeach; ?>
 		</ul>
