@@ -783,19 +783,26 @@ function adzworld_ad_category( $post, $pref ) {
 		}
 	}
 
-	$thing = adzworld_ad_thing( $post );
-
-	if ( '' !== $thing ) {
-		return $thing;
-	}
-
+	/*
+	 * A category the visitor stated outranks one this plugin guessed.
+	 *
+	 * adzworld_ad_thing() picks a noun out of the title, and on a title like
+	 * "Kids bicycle, 20 inch, suits ages 8 to 11" it returned "ages". That
+	 * guess used to be checked first and win, so the adzad's category was
+	 * "ages" while the visitor's refinements were filed under "bicycle".
+	 * adzworld_category_refinement_preference() then looked for an "ages--"
+	 * prefix, found none, and every refinement scored nothing: the slot
+	 * ignored what the visitor had asked for. The guess is still a useful
+	 * fallback for an adzad outside every stated category, so it stays, below
+	 * the visitor.
+	 */
 	foreach ( $pref['categories'] as $category ) {
 		if ( adzworld_category_matches_text( $category, $text ) ) {
 			return $category;
 		}
 	}
 
-	return '';
+	return adzworld_ad_thing( $post );
 }
 
 /**

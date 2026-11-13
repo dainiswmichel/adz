@@ -1,4 +1,15 @@
 <?php
+/**
+ * Matching and scoring checks for one candidate tree.
+ *
+ * @package adz-world
+ */
+
+// phpcs:disable WordPress.Security.EscapeOutput -- CLI harness: output goes to a terminal, not a page.
+// phpcs:disable WordPress.WP.AlternativeFunctions, WordPress.PHP.DevelopmentFunctions -- stubs stand in for the WordPress functions under test.
+// phpcs:disable WordPress.WP.GlobalVariablesOverride -- $adz_* globals are this harness's own state.
+// phpcs:disable Squiz.Commenting, Generic.Files.OneObjectStructurePerFile, Universal.Files.SeparateFunctionsFromOO, Generic.CodeAnalysis.UnusedFunctionParameter, WordPress.Files.FileName -- stub signatures and the stub WP_Post must match WordPress.
+
 require __DIR__ . '/wp-stub.php';
 /*
  * The tree under test. Defaults to the claude-code-web candidate; pass another
@@ -49,9 +60,9 @@ function get_post( $id = 0 ) {
 	if ( ! isset( $GLOBALS['adz_catalogue'][ $id ] ) ) {
 		return null;
 	}
-	$p = new WP_Post();
-	$p->ID = $id;
-	$p->post_title = $GLOBALS['adz_catalogue'][ $id ];
+	$p               = new WP_Post();
+	$p->ID           = $id;
+	$p->post_title   = $GLOBALS['adz_catalogue'][ $id ];
 	$p->post_content = '';
 	return $p;
 }
@@ -63,7 +74,7 @@ define( 'MINUTE_IN_SECONDS', 60 );
 
 function get_posts( $args = array() ) {
 	$GLOBALS['adz_get_posts_args'] = $args;
-	$out = array();
+	$out                           = array();
 	foreach ( $GLOBALS['adz_catalogue'] as $id => $title ) {
 		$out[] = get_post( $id );
 	}
@@ -82,7 +93,7 @@ function wp_cache_get( $key, $group = '' ) {
 }
 function wp_cache_set( $key, $value, $group = '', $ttl = 0 ) {
 	$GLOBALS['adz_cache'][ $group ][ $key ] = $value;
-	$GLOBALS['adz_cache_writes'] = ( $GLOBALS['adz_cache_writes'] ?? 0 ) + 1;
+	$GLOBALS['adz_cache_writes']            = ( $GLOBALS['adz_cache_writes'] ?? 0 ) + 1;
 	return true;
 }
 function wp_cache_delete( $key, $group = '' ) {
@@ -95,7 +106,8 @@ $base = $adz_plugin . '/includes/';
 require $base . 'adz-preferences.php';
 require $base . 'adz-preference-ui.php';
 
-$pass = 0; $fail = 0;
+$pass = 0;
+$fail = 0;
 function check( $label, $got, $want ) {
 	global $pass, $fail;
 	$ok = ( $got === $want );
@@ -103,12 +115,17 @@ function check( $label, $got, $want ) {
 	printf( "  [%s] %-46s got %s\n", $ok ? 'ok' : 'FAIL', $label, var_export( $got, true ) );
 }
 function titles( $ids ) {
-	return array_map( function ( $i ) { return $GLOBALS['adz_catalogue'][ $i ]; }, $ids );
+	return array_map(
+		function ( $i ) {
+			return $GLOBALS['adz_catalogue'][ $i ];
+		},
+		$ids
+	);
 }
 
 echo "=== a visitor who has typed nothing still gets adz ===\n";
 $empty = adzworld_empty_preference();
-$ids = adzworld_match_adz( $empty, 3 );
+$ids   = adzworld_match_adz( $empty, 3 );
 check( 'no preference returns adz', count( $ids ) > 0, true );
 check( 'returns up to the limit', count( $ids ), 3 );
 check( 'original order preserved', $ids, array( 11, 12, 13 ) );
@@ -117,21 +134,21 @@ echo "\n=== count=0 means none, which is the shortcode's job not the matcher's =
 check( 'matcher never returns zero on request', count( adzworld_match_adz( $empty, 1 ) ), 1 );
 
 echo "\n=== a preference reorders rather than gates ===\n";
-$p = adzworld_parse_refinement( 'a light couch for 2 ppl', null );
+$p   = adzworld_parse_refinement( 'a light couch for 2 ppl', null );
 $ids = adzworld_match_adz( $p, 6 );
 echo '  ' . implode( "\n  ", titles( $ids ) ) . "\n";
 check( 'best match first', $ids[0], 13 );
 check( 'unmatched adz still present', count( $ids ), 6 );
 
 echo "\n=== an exclusion is absolute, not a demotion ===\n";
-$p = adzworld_parse_refinement( 'a couch but not leather', null );
+$p   = adzworld_parse_refinement( 'a couch but not leather', null );
 $ids = adzworld_match_adz( $p, 6 );
 echo '  ' . implode( "\n  ", titles( $ids ) ) . "\n";
 check( 'leather sofa excluded entirely', in_array( 14, $ids, true ), false );
 check( 'fabric couch kept', in_array( 13, $ids, true ), true );
 
 echo "\n=== the car example ranks buying a used car over leasing ===\n";
-$p = adzworld_parse_refinement( 'i do not want to lease a car i want to purchase a used car', null );
+$p   = adzworld_parse_refinement( 'i do not want to lease a car i want to purchase a used car', null );
 $ids = adzworld_match_adz( $p, 6 );
 echo '  ' . implode( "\n  ", titles( $ids ) ) . "\n";
 check( 'used car first', $ids[0], 11 );
@@ -147,7 +164,7 @@ check( 'ordering is deterministic', count( array_unique( $runs ) ), 1 );
 echo "\n=== the plugin's own adzworld_get_all_ad_ids() runs, not a stub ===\n";
 $GLOBALS['adz_cache']        = array();
 $GLOBALS['adz_cache_writes'] = 0;
-$ids = adzworld_get_all_ad_ids();
+$ids                         = adzworld_get_all_ad_ids();
 check( 'returns the published adz', $ids, array( 11, 12, 13, 14, 15, 16 ) );
 check( 'caches on first call', $GLOBALS['adz_cache_writes'], 1 );
 adzworld_get_all_ad_ids();
@@ -159,6 +176,58 @@ check( 'pool size is capped', $GLOBALS['adz_get_posts_args']['posts_per_page'], 
 check( 'asks for published adz only', $GLOBALS['adz_get_posts_args']['post_status'], 'publish' );
 check( 'asks for the adz post type', $GLOBALS['adz_get_posts_args']['post_type'], 'adz_ad' );
 check( 'requests objects so the post cache primes', isset( $GLOBALS['adz_get_posts_args']['fields'] ), false );
+
+echo "\n=== a refinement changes which adzad is shown ===\n";
+/*
+ * The claim: the loop works on internal adz alone, with no network and no
+ * API. A refinement is scoped to a category, so it has to reorder the adz
+ * inside that category and must not reach adz in another one.
+ */
+$GLOBALS['adz_catalogue'] = array(
+	21 => 'Kids bicycle, 20 inch, suits ages 8 to 11',
+	22 => 'Toddler balance bicycle, pink, ages 2 to 5',
+	23 => 'Light grey two seater fabric couch, free delivery',
+);
+adzworld_flush_ad_pool();
+
+$base               = adzworld_empty_preference();
+$base['categories'] = array( 'bicycle' );
+$before             = adzworld_match_adz( $base, 3 );
+
+$refined                         = $base;
+$refined['category_refinements'] = array( adzworld_pair_join( 'bicycle', 'pink' ) );
+$after                           = adzworld_match_adz( $refined, 3 );
+
+check( 'with no refinement the newest bicycle adzad leads', $before[0], 21 );
+check( 'after refining, the matching adzad leads instead', $after[0], 22 );
+check( 'nothing is dropped, only reordered', count( $after ), count( $before ) );
+
+/*
+ * The bug this covers: adzworld_ad_thing() guessed "ages" from these titles
+ * and that guess outranked the category the visitor stated, so refinements
+ * were filed under "bicycle" while the adzad was scored as "ages" and nothing
+ * matched. The visitor's own category wins now.
+ */
+check( 'the adzad takes the category the visitor stated', adzworld_ad_category( get_post( 21 ), $base ), 'bicycle' );
+
+/*
+ * A refinement stated for one category must not score adz in another, or a
+ * slot drifts away from what was asked for in the slot it was asked in.
+ */
+$couch               = adzworld_empty_preference();
+$couch['categories'] = array( 'couch' );
+$couch_refined       = $couch;
+
+$couch_refined['category_refinements'] = array( adzworld_pair_join( 'bicycle', 'pink' ) );
+check( 'a bicycle refinement does not score a couch', adzworld_score_ad( 23, $couch_refined ), adzworld_score_ad( 23, $couch ) );
+
+/* "no pedals" is read as a negation, so it excludes rather than demotes. */
+$GLOBALS['adz_catalogue'][24] = 'Junior bicycle with pedals and training wheels';
+adzworld_flush_ad_pool();
+$negated                         = $base;
+$negated['category_refinements'] = array( adzworld_pair_join( 'bicycle', 'no pedals' ) );
+check( 'an adzad the visitor ruled out is removed', in_array( 24, adzworld_match_adz( $negated, 4 ), true ), false );
+check( 'and the others are kept', in_array( 22, adzworld_match_adz( $negated, 4 ), true ), true );
 
 printf( "\n%d passed, %d failed\n", $pass, $fail );
 exit( $fail > 0 ? 1 : 0 );
