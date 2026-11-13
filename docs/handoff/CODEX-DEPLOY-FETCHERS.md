@@ -1,4 +1,4 @@
-# Codex deploy: five fetchers and the UI
+# Codex deploy: six fetchers and the UI
 
 Source: `pre-release-candidates/claude-code-web/` on branch
 `claude/design-display-library`, commit `e7dfd33`.
@@ -18,6 +18,7 @@ tree you cannot diff.
 | `includes/adzworld-bestbuy.php` | Best Buy (Codex's, plus provider stamp) |
 | `includes/adzworld-avantlink.php` | AvantLink ProductSearch |
 | `includes/adzworld-itunes.php` | Apple Search. Needs no credential at all. |
+| `includes/adzworld-travelpayouts.php` | Travelpayouts flight fares |
 
 ## 2. `adz-world.php`
 
@@ -31,6 +32,7 @@ require_once __DIR__ . '/includes/adzworld-etsy.php';
 require_once __DIR__ . '/includes/adzworld-bestbuy.php';
 require_once __DIR__ . '/includes/adzworld-avantlink.php';
 require_once __DIR__ . '/includes/adzworld-itunes.php';
+require_once __DIR__ . '/includes/adzworld-travelpayouts.php';
 ```
 
 ## 3. Five filter seams in core
@@ -46,6 +48,7 @@ the Best Buy fetcher before this work.
 | `includes/adzworld-registrations.php` | `adzworld_registration_catalog()` | `return apply_filters( 'adzworld_registration_catalog', $catalog );` |
 | `includes/adzworld-registrations.php` | `adzworld_registration_ready()` | `return (bool) apply_filters( 'adzworld_affiliate_account_ready', $ready, $id, $accounts[ $id ] );` |
 | `includes/adzworld-affiliates.php` | `adzworld_affiliate_markup()` | collect products **before** testing `$links`; see §5 |
+| `includes/adzworld-getpaid.php` | `adzworld_getpaid_account_earns()` | new; applies `adzworld_affiliate_account_earns`, and the card warns "Serving, but not earning" for an enabled account that cannot be credited |
 
 ## 4. Other core edits
 
@@ -87,15 +90,16 @@ the Best Buy fetcher before this work.
 find pre-release-candidates/dwm-local -name '*.php' -print0 | xargs -0 -n1 php -l
 .phpcs/vendor/bin/phpcs --standard=WordPress --extensions=php pre-release-candidates/dwm-local/
 for t in tools/test-avantlink-fetcher.php tools/test-ebay-fetcher.php \
-         tools/test-itunes-fetcher.php tools/test-product-merge.php \
-         tools/tests/test-matching.php tools/tests/test-preferences.php; do
+         tools/test-itunes-fetcher.php tools/test-travelpayouts-fetcher.php \
+         tools/test-product-merge.php tools/tests/test-matching.php \
+         tools/tests/test-preferences.php; do
   ADZ_SRC=pre-release-candidates/dwm-local php "$t"
 done
 ```
 
 Expected: lint clean; PHPCS **0 errors** with one `base64_encode()` warning in
-`adzworld-ebay.php` that HTTP Basic auth requires; **47 / 57 / 39 / 31 / 29 /
-42**, zero failures.
+`adzworld-ebay.php` that HTTP Basic auth requires; **47 / 57 / 39 / 51 / 31 /
+29 / 42**, zero failures.
 
 ## 7. What each provider needs to serve
 
@@ -109,6 +113,7 @@ credential alone and start earning when the affiliate id is added later.
 | Best Buy | API key | + Impact Partner ID |
 | AvantLink | affiliate id + website id | the same two; the Buy URL is already tracked |
 | Apple Search | **nothing — enable it** | + an Apple performance-partners token |
+| Travelpayouts | API token + origin airport | + the affiliate marker |
 
 Apple Search is the only one that serves on the day it is installed. Its
 catalogue is Apple media only, with no physical goods, so it ships disabled
