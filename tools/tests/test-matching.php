@@ -211,6 +211,15 @@ check( 'nothing is dropped, only reordered', count( $after ), count( $before ) )
 check( 'the adzad takes the category the visitor stated', adzworld_ad_category( get_post( 21 ), $base ), 'bicycle' );
 
 /*
+ * The title guesser is gone. An adzad outside every stated category now has
+ * no category rather than one invented from the last noun in its title. The
+ * stub returns no ad_taxonomy terms, so this is the no-term case.
+ */
+check( 'an adzad outside every stated category has no category', adzworld_ad_category( get_post( 21 ), adzworld_empty_preference() ), '' );
+check( 'nothing guesses a category from the title', function_exists( 'adzworld_ad_thing' ), false );
+check( 'the assigned-category reader exists under its own name', function_exists( 'adzworld_ad_assigned_category' ), true );
+
+/*
  * A refinement stated for one category must not score adz in another, or a
  * slot drifts away from what was asked for in the slot it was asked in.
  */

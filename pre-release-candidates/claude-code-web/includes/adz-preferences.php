@@ -786,15 +786,12 @@ function adzworld_ad_category( $post, $pref ) {
 	/*
 	 * A category the visitor stated outranks one this plugin guessed.
 	 *
-	 * adzworld_ad_thing() picks a noun out of the title, and on a title like
-	 * "Kids bicycle, 20 inch, suits ages 8 to 11" it returned "ages". That
-	 * guess used to be checked first and win, so the adzad's category was
-	 * "ages" while the visitor's refinements were filed under "bicycle".
+	 * A guess used to be checked first and win, so an adzad could be filed
+	 * under "ages" while the visitor's refinements were filed under "bicycle".
 	 * adzworld_category_refinement_preference() then looked for an "ages--"
 	 * prefix, found none, and every refinement scored nothing: the slot
-	 * ignored what the visitor had asked for. The guess is still a useful
-	 * fallback for an adzad outside every stated category, so it stays, below
-	 * the visitor.
+	 * ignored what the visitor had asked for. Below the visitor sits the
+	 * category the adzadmin assigned, which is stated data, not a guess.
 	 */
 	foreach ( $pref['categories'] as $category ) {
 		if ( adzworld_category_matches_text( $category, $text ) ) {
@@ -802,19 +799,24 @@ function adzworld_ad_category( $post, $pref ) {
 		}
 	}
 
-	return adzworld_ad_thing( $post );
+	return adzworld_ad_assigned_category( $post );
 }
 
 /**
- * The one thing an advertisement is: its category, which starts with this ad.
+ * The category an adzadmin assigned to one adzad.
  *
- * A published ad is a category that holds a single ad. The label is the thing
- * itself, such as couch, car, or bicycle, not the sentence around it.
+ * This reads the adzad's ad_taxonomy term and nothing else. It used to be
+ * called adzworld_ad_thing(), and when no term was assigned it guessed: it
+ * parsed the post title as though it were a refinement and took end() of the
+ * surviving words, on the assumption that a title's last noun is its subject.
+ * On "Kids bicycle, 20 inch, suits ages 8 to 11" that produced "ages". The
+ * guess is gone. An adzad with no term assigned has no category, which is the
+ * truth, and the adzadmin can assign one.
  *
- * @param WP_Post $post Advertisement post.
- * @return string Category label, or an empty string.
+ * @param WP_Post $post Adzad post.
+ * @return string Assigned category, or an empty string.
  */
-function adzworld_ad_thing( $post ) {
+function adzworld_ad_assigned_category( $post ) {
 	if ( ! $post instanceof WP_Post ) {
 		return '';
 	}
@@ -822,33 +824,13 @@ function adzworld_ad_thing( $post ) {
 	$terms = wp_get_post_terms( $post->ID, 'ad_taxonomy', array( 'fields' => 'names' ) );
 	$terms = is_wp_error( $terms ) ? array() : $terms;
 
-	if ( ! empty( $terms ) ) {
-		$term = adzworld_normalize_category( (string) reset( $terms ) );
-
-		if ( adzworld_valid_category( $term ) ) {
-			return $term;
-		}
-	}
-
-	$parsed  = adzworld_parse_refinement( $post->post_title );
-	$residue = array( 'year', 'years', 'old', 'yo', 'aged', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve' );
-	$words   = array();
-
-	foreach ( $parsed['include'] as $word ) {
-		if ( is_numeric( $word ) || in_array( $word, $residue, true ) ) {
-			continue;
-		}
-
-		$words[] = $word;
-	}
-
-	if ( empty( $words ) ) {
+	if ( empty( $terms ) ) {
 		return '';
 	}
 
-	$thing = adzworld_normalize_category( (string) end( $words ) );
+	$term = adzworld_normalize_category( (string) reset( $terms ) );
 
-	return adzworld_valid_category( $thing ) ? $thing : '';
+	return adzworld_valid_category( $term ) ? $term : '';
 }
 
 /**
@@ -881,7 +863,7 @@ function adzworld_catalog_categories() {
 	);
 
 	foreach ( $posts as $post ) {
-		$thing = adzworld_ad_thing( $post );
+		$thing = adzworld_ad_assigned_category( $post );
 
 		if ( '' !== $thing && ! in_array( $thing, $names, true ) ) {
 			$names[] = $thing;
