@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @return array<string,array<string,mixed>>
  */
 function adzworld_affiliate_networks() {
-	return array(
+	$networks = array(
 		'amazon'    => array(
 			'label'   => 'Amazon Associates',
 			'account' => 'https://affiliate-program.amazon.com',
@@ -184,6 +184,8 @@ function adzworld_affiliate_networks() {
 			),
 		),
 	);
+
+	return apply_filters( 'adzworld_affiliate_networks', $networks );
 }
 
 /**
@@ -421,14 +423,20 @@ function adzworld_affiliate_save() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( esc_html__( 'Administrator permission is required.', 'adz-world' ), '', array( 'response' => 403 ) );
 	}
+	$previous = adzworld_affiliate_accounts();
 	$accounts = array();
 	foreach ( adzworld_affiliate_networks() as $id => $network ) {
 		$row = array(
 			'enabled' => isset( $_POST[ 'adzworld_affiliate_' . $id . '_enabled' ] ) ? '1' : '0',
 		);
-		foreach ( array_keys( $network['fields'] ) as $field ) {
-			$key           = 'adzworld_affiliate_' . $id . '_' . $field;
-			$row[ $field ] = isset( $_POST[ $key ] ) && is_string( $_POST[ $key ] ) ? sanitize_text_field( wp_unslash( $_POST[ $key ] ) ) : '';
+		foreach ( $network['fields'] as $field => $rule ) {
+			$key = 'adzworld_affiliate_' . $id . '_' . $field;
+			$raw = isset( $_POST[ $key ] ) && is_string( $_POST[ $key ] ) ? wp_strip_all_tags( wp_unslash( $_POST[ $key ] ) ) : '';
+			if ( ! empty( $rule['secret'] ) ) {
+				$row[ $field ] = '' === $raw && isset( $previous[ $id ][ $field ] ) ? $previous[ $id ][ $field ] : $raw;
+			} else {
+				$row[ $field ] = sanitize_text_field( $raw );
+			}
 		}
 		$accounts[ $id ] = $row;
 	}
@@ -486,6 +494,8 @@ function adzworld_affiliate_page( $embedded = false ) {
 					echo '<option value="' . esc_attr( $choice ) . '"' . selected( $value, $choice, false ) . '>' . esc_html( $choice ) . '</option>';
 				}
 				echo '</select>';
+			} elseif ( ! empty( $rule['secret'] ) ) {
+				echo '<input class="regular-text" type="password" autocomplete="new-password" id="' . esc_attr( $input ) . '" name="' . esc_attr( $input ) . '" value="" placeholder="' . esc_attr( '' !== $value ? __( 'Saved; leave blank to keep', 'adz-world' ) : __( 'Not connected', 'adz-world' ) ) . '">';
 			} else {
 				echo '<input class="regular-text" id="' . esc_attr( $input ) . '" name="' . esc_attr( $input ) . '" value="' . esc_attr( $value ) . '">';
 			}

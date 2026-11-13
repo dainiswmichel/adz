@@ -48,7 +48,7 @@ fi
 OUT=$(php "$ROOT/tools/resolve-calls.php" "$PLUGIN" --quiet 2>&1)
 report "resolve-calls" "$?" "$(echo "$OUT" | tail -1)"
 
-for t in preferences matching rotation; do
+for t in preferences matching rotation bestbuy; do
 	OUT=$(php "$ROOT/tools/tests/test-$t.php" "$PLUGIN" 2>&1)
 	report "test-$t" "$?" "$(echo "$OUT" | tail -1)"
 done
