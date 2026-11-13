@@ -1388,15 +1388,22 @@
 	display: contents;
 }
 
-/*
- * An enabled account that cannot be credited. It works, it looks right, and it
- * earns the publisher nothing, which is the one state worth interrupting for.
- */
-.adzworld-paid-unpaid {
-	margin: 8px 0 0;
-	padding: 8px 10px;
-	border-left: 4px solid #dba617;
-	background: #fcf9e8;
+/* A short note under a field, where a paragraph would be too loud. */
+.adzworld-paid-hint {
+	display: block;
+	margin-top: 4px;
+	color: #646970;
 	font-size: 12px;
-	line-height: 1.5;
+	line-height: 1.4;
+}
+
+/*
+ * Save sits in the card. The page-level button is below every card, which is
+ * a long scroll from whichever one was just edited.
+ */
+.adzworld-paid-save {
+	margin: 12px 0 0;
+	padding-top: 12px;
+	border-top: 1px solid #dcdcde;
+	text-align: right;
 }
