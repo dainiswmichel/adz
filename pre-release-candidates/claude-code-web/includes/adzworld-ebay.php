@@ -288,3 +288,25 @@ function adzworld_ebay_append_product_results( $results, $request ) {
 }
 
 add_filter( 'adzworld_affiliate_product_results', 'adzworld_ebay_append_product_results', 10, 2 );
+
+/**
+ * Whether this account is credited for a sale.
+ *
+ * The eBay Partner Network campaign id is what the network pays
+ * against. Without it the products still serve and the publisher earns
+ * nothing from them.
+ *
+ * @param bool                 $earns   Whether the account earns.
+ * @param string               $id      Provider id.
+ * @param array<string,string> $account Saved provider fields.
+ * @return bool
+ */
+function adzworld_ebay_filter_account_earns( $earns, $id, $account ) {
+	if ( 'ebay' !== $id ) {
+		return $earns;
+	}
+
+	return ! empty( $account['campid'] );
+}
+
+add_filter( 'adzworld_affiliate_account_earns', 'adzworld_ebay_filter_account_earns', 10, 3 );

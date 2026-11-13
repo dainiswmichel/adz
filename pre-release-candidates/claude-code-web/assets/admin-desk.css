@@ -1387,3 +1387,16 @@
 .adzworld-paid-connect-form {
 	display: contents;
 }
+
+/*
+ * An enabled account that cannot be credited. It works, it looks right, and it
+ * earns the publisher nothing, which is the one state worth interrupting for.
+ */
+.adzworld-paid-unpaid {
+	margin: 8px 0 0;
+	padding: 8px 10px;
+	border-left: 4px solid #dba617;
+	background: #fcf9e8;
+	font-size: 12px;
+	line-height: 1.5;
+}
