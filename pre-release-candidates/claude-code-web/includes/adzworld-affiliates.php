@@ -189,6 +189,10 @@ function adzworld_affiliate_networks() {
 				 * them, the Browse API returns products the reader asked for,
 				 * which is the difference between a link and an adzad.
 				 */
+				'environment'  => array(
+					'label'   => __( 'Environment (sandbox needs no production approval)', 'adz-world' ),
+					'choices' => array( 'production', 'sandbox' ),
+				),
 				'clientid'     => array(
 					'label'   => __( 'Developer App ID', 'adz-world' ),
 					'pattern' => '/^[A-Za-z0-9\-]{10,80}$/D',

@@ -31,9 +31,15 @@ function adzworld_products_provider_labels() {
 	return apply_filters(
 		'adzworld_products_provider_labels',
 		array(
-			'ebay'    => 'eBay',
-			'etsy'    => 'Etsy',
-			'bestbuy' => 'Best Buy',
+			'ebay'         => 'eBay',
+
+			/*
+			 * Labelled as a test, always. Sandbox inventory is invented, and a
+			 * reader shown it as a real offer would be misled.
+			 */
+			'ebay-sandbox' => 'eBay sandbox (test data)',
+			'etsy'         => 'Etsy',
+			'bestbuy'      => 'Best Buy',
 		)
 	);
 }

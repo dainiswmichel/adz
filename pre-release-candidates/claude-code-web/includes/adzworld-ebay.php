@@ -75,6 +75,24 @@ function adzworld_ebay_account() {
 }
 
 /**
+ * Which eBay to call: production, or the sandbox.
+ *
+ * A production keyset can sit behind an account review for a business day or
+ * more, while sandbox credentials from the same keyset page work at once. The
+ * sandbox serves test inventory over the identical endpoints, so the
+ * refinement loop can be seen working end to end before production opens, and
+ * switching over is this one setting.
+ *
+ * @param array<string,string> $account Saved account.
+ * @return string API host, with no trailing slash.
+ */
+function adzworld_ebay_host( $account ) {
+	$environment = isset( $account['environment'] ) ? (string) $account['environment'] : '';
+
+	return 'sandbox' === $environment ? 'https://api.sandbox.ebay.com' : 'https://api.ebay.com';
+}
+
+/**
  * An application access token for the Browse API.
  *
  * Client-credentials grant: the token identifies this site, never a reader.
@@ -84,7 +102,8 @@ function adzworld_ebay_account() {
  * @return string Token, or an empty string when one could not be obtained.
  */
 function adzworld_ebay_token( $account ) {
-	$key    = 'adzworld_ebay_token_' . md5( $account['clientid'] );
+	$host   = adzworld_ebay_host( $account );
+	$key    = 'adzworld_ebay_token_' . md5( $host . '|' . $account['clientid'] );
 	$cached = get_transient( $key );
 
 	if ( is_string( $cached ) && '' !== $cached ) {
@@ -92,7 +111,7 @@ function adzworld_ebay_token( $account ) {
 	}
 
 	$response = wp_remote_post(
-		'https://api.ebay.com/identity/v1/oauth2/token',
+		$host . '/identity/v1/oauth2/token',
 		array(
 			'timeout' => 8,
 			'headers' => array(
@@ -147,7 +166,8 @@ function adzworld_ebay_search( $request, $limit = ADZWORLD_EBAY_LIMIT ) {
 		return array();
 	}
 
-	$key    = 'adzworld_ebay_q_' . md5( $request . '|' . $limit . '|' . $account['campid'] );
+	$host   = adzworld_ebay_host( $account );
+	$key    = 'adzworld_ebay_q_' . md5( $host . '|' . $request . '|' . $limit . '|' . $account['campid'] );
 	$cached = get_transient( $key );
 
 	if ( is_array( $cached ) ) {
@@ -182,7 +202,7 @@ function adzworld_ebay_search( $request, $limit = ADZWORLD_EBAY_LIMIT ) {
 				'q'     => rawurlencode( $request ),
 				'limit' => $limit,
 			),
-			'https://api.ebay.com/buy/browse/v1/item_summary/search'
+			$host . '/buy/browse/v1/item_summary/search'
 		),
 		array(
 			'timeout' => 8,
@@ -253,8 +273,14 @@ function adzworld_ebay_search( $request, $limit = ADZWORLD_EBAY_LIMIT ) {
  * @return array<int,array<string,string>> Rows with eBay's appended.
  */
 function adzworld_ebay_append_product_results( $results, $request ) {
+	$account = adzworld_ebay_account();
+
+	if ( empty( $account ) ) {
+		return $results;
+	}
+
 	foreach ( adzworld_ebay_search( $request ) as $row ) {
-		$row['provider'] = 'ebay';
+		$row['provider'] = false !== strpos( adzworld_ebay_host( $account ), 'sandbox' ) ? 'ebay-sandbox' : 'ebay';
 		$results[]       = $row;
 	}
 

@@ -249,6 +249,7 @@ function adz_reset( $account, $responses = array() ) {
 			'campid'       => '5338001234',
 			'mkrid'        => '711-53200-19255-0',
 			'siteid'       => '0',
+			'environment'  => '',
 			'clientid'     => 'DainisWM-adzworld-PRD-abc123',
 			'clientsecret' => 'PRD-secret-0123456789',
 		),
@@ -497,7 +498,54 @@ adz_check( 'each row names eBay as its provider', 'ebay' === $rows[0]['provider'
 adz_check( 'rows carry the four fields the renderer needs', isset( $rows[0]['title'], $rows[0]['url'], $rows[0]['image'], $rows[0]['price'] ) );
 adz_check( 'rows already present are preserved, not replaced', 3 === count( adzworld_ebay_append_product_results( array( array( 'title' => 'prior' ) ), 'couch mid-century walnut' ) ) );
 
-echo "\n11. With no credentials eBay adds nothing and breaks nothing\n";
+echo "\n11. The sandbox, which needs no production approval\n";
+adz_reset( array( 'environment' => 'sandbox' ), array( $adz_token_ok, $adz_search_ok ) );
+$rows          = adzworld_ebay_search( 'couch' );
+$sandbox_hosts = array();
+foreach ( $GLOBALS['adz_calls'] as $call ) {
+	if ( 'post' === $call[0] || 'get' === $call[0] ) {
+		$sandbox_hosts[] = $call[1];
+	}
+}
+adz_check( 'products come back from the sandbox', 2 === count( $rows ), count( $rows ) . ' rows' );
+adz_check( 'the token comes from the sandbox host', 0 === strpos( $sandbox_hosts[0], 'https://api.sandbox.ebay.com/identity' ), $sandbox_hosts[0] );
+adz_check( 'the search goes to the sandbox host', 0 === strpos( $sandbox_hosts[1], 'https://api.sandbox.ebay.com/buy/browse' ), $sandbox_hosts[1] );
+adz_check( 'no call reaches production', false === strpos( wp_json_encode_shim( $sandbox_hosts ), '//api.ebay.com' ), wp_json_encode_shim( $sandbox_hosts ) );
+
+$sandbox_rows = adzworld_ebay_append_product_results( array(), 'couch' );
+adz_check( 'sandbox rows are marked as sandbox, never as eBay', 'ebay-sandbox' === $sandbox_rows[0]['provider'], $sandbox_rows[0]['provider'] );
+
+adz_reset( array( 'environment' => 'production' ), array( $adz_token_ok, $adz_search_ok ) );
+adzworld_ebay_search( 'couch' );
+$production_hosts = array();
+foreach ( $GLOBALS['adz_calls'] as $call ) {
+	if ( 'post' === $call[0] || 'get' === $call[0] ) {
+		$production_hosts[] = $call[1];
+	}
+}
+adz_check( 'production is the default and uses the live host', 0 === strpos( $production_hosts[0], 'https://api.ebay.com/' ), $production_hosts[0] );
+adz_check( 'and never touches the sandbox', false === strpos( wp_json_encode_shim( $production_hosts ), 'sandbox' ) );
+
+/* Test inventory and real inventory must never share a cache entry. */
+adz_reset( array( 'environment' => 'sandbox' ), array( $adz_token_ok, $adz_search_ok ) );
+adzworld_ebay_search( 'couch' );
+$sandbox_keys = array();
+foreach ( $GLOBALS['adz_calls'] as $call ) {
+	if ( 'set_transient' === $call[0] ) {
+		$sandbox_keys[] = $call[1];
+	}
+}
+adz_reset( array( 'environment' => 'production' ), array( $adz_token_ok, $adz_search_ok ) );
+adzworld_ebay_search( 'couch' );
+$production_keys = array();
+foreach ( $GLOBALS['adz_calls'] as $call ) {
+	if ( 'set_transient' === $call[0] ) {
+		$production_keys[] = $call[1];
+	}
+}
+adz_check( 'the two environments cache separately', array() === array_intersect( $sandbox_keys, $production_keys ), wp_json_encode_shim( array( $sandbox_keys, $production_keys ) ) );
+
+echo "\n12. With no credentials eBay adds nothing and breaks nothing\n";
 adz_reset(
 	array(
 		'clientid'     => '',
