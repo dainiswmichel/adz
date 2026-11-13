@@ -38,11 +38,11 @@ function adzworld_itunes_register_network( $networks ) {
 	$networks['itunes'] = array(
 		'label'   => 'Apple Search',
 		'account' => 'https://performance-partners.apple.com/',
-		'note'    => __( 'The Apple Search API needs no key, so enabling this account is enough to serve real products at once. Its catalogue is Apple media only: music, films, TV, audiobooks, books and apps, with no physical goods, so it suits a rotation whose subject is media. The affiliate token is optional and is what makes the links earn.', 'adz-world' ),
+		'note'    => __( 'The Apple Search API needs no key, so enabling this account is enough to serve real products at once. Its catalogue is Apple media only, with no physical goods. Choose films, books or audiobooks if you want the links to earn: Apple pays commission on those sales, and discontinued commission on app sales in 2018. Individual music purchases are not listed as commissionable either; Apple pays on Apple Music memberships rather than track sales. The affiliate token is what makes a link earn and comes from the Apple Services Performance Partners programme, which is free but accepts a limited number of partners.', 'adz-world' ),
 		'fields'  => array(
 			'media' => array(
 				'label'   => __( 'Catalogue', 'adz-world' ),
-				'choices' => array( 'all', 'music', 'movie', 'audiobook', 'ebook', 'podcast', 'software' ),
+				'choices' => array( 'movie', 'ebook', 'audiobook', 'music', 'podcast', 'software', 'all' ),
 			),
 			'at'    => array(
 				'label'   => __( 'Affiliate token (optional)', 'adz-world' ),
@@ -69,7 +69,8 @@ function adzworld_itunes_register_catalog( $catalog ) {
 		'pays'         => __( 'The affiliate token pays this site. Without it the products still serve, with plain store links.', 'adz-world' ),
 		'steps'        => array(
 			__( 'Nothing is required to serve products: enable this account and choose a catalogue.', 'adz-world' ),
-			__( 'To earn from the links, apply to Apple Services Performance Partners and copy the affiliate token it issues.', 'adz-world' ),
+			__( 'Choose films, books or audiobooks if the links are to earn. Apple pays commission on those sales. It discontinued commission on app sales in 2018, and pays on Apple Music memberships rather than on individual track purchases.', 'adz-world' ),
+			__( 'To earn, apply at performance-partners.apple.com. Joining is free, but Apple states it accepts a limited number of partners, so approval is not assured. Tracking runs through a Partnerize account Apple issues on acceptance.', 'adz-world' ),
 			__( 'Paste the token here and save. Existing links gain the token at once.', 'adz-world' ),
 		),
 	);
