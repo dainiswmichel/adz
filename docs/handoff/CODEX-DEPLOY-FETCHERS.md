@@ -1,4 +1,4 @@
-# Codex deploy: four fetchers and the UI
+# Codex deploy: five fetchers and the UI
 
 Source: `pre-release-candidates/claude-code-web/` on branch
 `claude/design-display-library`, commit `e7dfd33`.
@@ -17,6 +17,7 @@ tree you cannot diff.
 | `includes/adzworld-etsy.php` | Etsy (Grok's, plus filter registration) |
 | `includes/adzworld-bestbuy.php` | Best Buy (Codex's, plus provider stamp) |
 | `includes/adzworld-avantlink.php` | AvantLink ProductSearch |
+| `includes/adzworld-itunes.php` | Apple Search. Needs no credential at all. |
 
 ## 2. `adz-world.php`
 
@@ -29,6 +30,7 @@ require_once __DIR__ . '/includes/adzworld-ebay.php';
 require_once __DIR__ . '/includes/adzworld-etsy.php';
 require_once __DIR__ . '/includes/adzworld-bestbuy.php';
 require_once __DIR__ . '/includes/adzworld-avantlink.php';
+require_once __DIR__ . '/includes/adzworld-itunes.php';
 ```
 
 ## 3. Five filter seams in core
@@ -85,15 +87,15 @@ the Best Buy fetcher before this work.
 find pre-release-candidates/dwm-local -name '*.php' -print0 | xargs -0 -n1 php -l
 .phpcs/vendor/bin/phpcs --standard=WordPress --extensions=php pre-release-candidates/dwm-local/
 for t in tools/test-avantlink-fetcher.php tools/test-ebay-fetcher.php \
-         tools/test-product-merge.php tools/tests/test-matching.php \
-         tools/tests/test-preferences.php; do
+         tools/test-itunes-fetcher.php tools/test-product-merge.php \
+         tools/tests/test-matching.php tools/tests/test-preferences.php; do
   ADZ_SRC=pre-release-candidates/dwm-local php "$t"
 done
 ```
 
 Expected: lint clean; PHPCS **0 errors** with one `base64_encode()` warning in
-`adzworld-ebay.php` that HTTP Basic auth requires; **47 / 57 / 31 / 29 / 42**,
-zero failures.
+`adzworld-ebay.php` that HTTP Basic auth requires; **47 / 57 / 39 / 31 / 29 /
+42**, zero failures.
 
 ## 7. What each provider needs to serve
 
@@ -106,6 +108,11 @@ credential alone and start earning when the affiliate id is added later.
 | Etsy | keystring + shared secret | + Rakuten site id and Etsy advertiser id |
 | Best Buy | API key | + Impact Partner ID |
 | AvantLink | affiliate id + website id | the same two; the Buy URL is already tracked |
+| Apple Search | **nothing — enable it** | + an Apple performance-partners token |
+
+Apple Search is the only one that serves on the day it is installed. Its
+catalogue is Apple media only, with no physical goods, so it ships disabled
+and suits a rotation whose subject is media. Do not enable it by default.
 
 ## 8. Release
 
@@ -114,5 +121,20 @@ agree or `.github/scripts/check-version.sh` fails the deploy. **Dainis decides
 the new number.** Do not bump it yourself, do not force-push, do not rewrite
 history, do not delete `.git`.
 
-Not verified by anyone: no live call has been made to any of the four APIs.
-Each is proven against recorded or documented response shapes only.
+Verified live: Apple Search was called over the network through the plugin's
+own code path and returned real products, and a refined request returned
+different products. Its test bodies are abridged from those real responses.
+
+Not verified: no live call has been made to eBay, Etsy, Best Buy or AvantLink.
+Each is proven against recorded or documented response shapes only. AvantLink's
+parameters and field list come from its published API help page.
+
+## 9. Two things a publisher must do that no code can
+
+- **Assign an `ad_taxonomy` term to every internal adzad.** The suggested
+  category chips are now built only from assigned terms, because the function
+  that guessed them from post titles is deleted. An adzad with no term
+  contributes no suggestion, and an assigned term is also what makes
+  refinement scoping land on the right category reliably.
+- **Enable at least one provider in Get Paid.** Every fetcher is off until its
+  account is enabled; none of them turns itself on.
