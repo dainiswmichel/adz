@@ -1440,9 +1440,7 @@ function adzworld_render_rotation_level( $attributes ) {
 			if ( in_array( $category, $pref['categories'], true ) ) {
 				$html .= adzworld_category_slot_control( $category, $slot_count, $category_slot );
 			}
-			if ( '' === $showcase ) {
-				$html .= adzworld_feedback_control( 'ad-' . $ad->ID, $category, $has_creative, false, $provider );
-			}
+			$html .= adzworld_feedback_control( 'ad-' . $ad->ID, $category, $has_creative, false, $provider );
 			if ( '' === $provider && function_exists( 'adzworld_affiliate_category_search_link' ) ) {
 				$html .= adzworld_affiliate_category_search_link( $pref, $category );
 			}

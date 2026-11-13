@@ -318,7 +318,7 @@
 	function prepareResults( results ) {
 		var slides = Array.from( results.querySelectorAll( ':scope > .adzworld-results__slides > .adzworld-results__slide' ) );
 		var navigation = results.querySelector( ':scope > .adzworld-results__navigation' );
-		var evaluation = results.querySelector( ':scope > .adzworld-evaluation' );
+		var evaluation = results.parentElement ? results.parentElement.querySelector( ':scope > .adzworld-evaluation' ) : null;
 		var current = 0;
 
 		if ( ! slides.length ) {

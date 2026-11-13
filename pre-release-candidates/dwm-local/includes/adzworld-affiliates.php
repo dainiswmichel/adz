@@ -850,16 +850,10 @@ function adzworld_affiliate_showcase( $pref, $category, $title = '', $provider =
 			. esc_html__( 'Next result', 'adz-world' ) . '</span></button>';
 	}
 
-	$first_target = isset( $results[0]['item_id'] ) && '' !== $results[0]['item_id']
-		? sanitize_key( 'provider-' . $results[0]['provider'] . '-' . $results[0]['item_id'] )
-		: sanitize_key( 'provider-' . $results[0]['provider'] . '-' . md5( $results[0]['url'] ) );
-
 	return '<div class="adzworld-results" data-adzworld-results role="region" aria-label="' . esc_attr( '' !== $title ? $title : __( 'Search results', 'adz-world' ) ) . '">'
 		. $row
 		. '<div class="adzworld-results__slides">' . $slides . '</div>'
-		. '<div class="adzworld-results__navigation" hidden>' . $buttons . '</div>'
-		. adzworld_feedback_control( $first_target, $category, true, false, $provider )
-		. '</div>';
+		. '<div class="adzworld-results__navigation" hidden>' . $buttons . '</div></div>';
 }
 
 /**
