@@ -289,6 +289,7 @@
 }
 
 .adzworld-rotation .adzworld-dots button {
+	display: grid;
 	width: 9px;
 	min-width: 9px;
 	height: 9px;
@@ -298,28 +299,48 @@
 	border: 0;
 	border-radius: 50%;
 	cursor: pointer;
+	place-items: center;
 }
 
+/*
+ * The centre mark. A selected position lengthens into a bar and carries a
+ * mark in the middle of it, so the eye reads a detent on a knob rather than
+ * something thrown to one side. Unselected positions have no mark: a fixed
+ * one is a solid dot, a live one a bullseye.
+ */
 .adzworld-rotation .adzworld-dots button::before {
-	content: none;
+	display: block;
+	width: 0;
+	height: 0;
+	border-radius: 50%;
+	content: "";
 }
 
+/* Selected: the bar. */
 .adzworld-rotation .adzworld-dots button[aria-pressed="true"] {
-	width: 22px;
-	background:
-		radial-gradient(
-			circle at 50% 50%,
-			color-mix(in oklab, var(--adz-accent-solid) 55%, #fff),
-			var(--adz-accent-solid) 70%
-		);
+	width: 24px;
+	background: color-mix(in oklab, var(--adz-accent-solid) 28%, transparent);
 	border-radius: 5px;
+}
 
-	/* No x or y offset: an offset shadow is what made it look thrown. */
-	box-shadow: 0 0 10px color-mix(in oklab, var(--adz-accent-solid) 55%, transparent);
+/*
+ * Selected: the mark in the middle of that bar. The home square is excluded,
+ * because it already reads correctly as a lengthening square and a mark
+ * inside it is noise rather than a detent.
+ */
+.adzworld-rotation .adzworld-dots button[aria-pressed="true"]:not(.adzworld-hub-position)::before {
+	width: 7px;
+	height: 7px;
+	background: var(--adz-accent-solid);
 }
 
 .adzworld-rotation .adzworld-dots button:hover {
 	transform: scale(1.2);
+}
+
+.adzworld-rotation .adzworld-dots .adzworld-hub-position::before {
+	width: 0;
+	height: 0;
 }
 
 .adzworld-rotation .adzworld-dots .adzworld-hub-position {
@@ -334,25 +355,41 @@
  * so a reader can see which positions answer a refinement before turning to
  * them. Fixed adz are solid.
  */
+/*
+ * A position holding a rotation is a bullseye, a position holding one fixed
+ * adzad a solid dot, so a reader can see which positions answer a refinement
+ * before turning to them.
+ */
 .adzworld-rotation .adzworld-dots .adzworld-live-position {
 	background: transparent;
 	box-shadow: inset 0 0 0 2px var(--adz-accent);
 }
 
+.adzworld-rotation .adzworld-dots button.adzworld-live-position::before {
+	width: 3px;
+	height: 3px;
+	background: var(--adz-accent);
+}
+
 /*
- * Selected, a live position stays hollow. Filling it would make it identical
- * to a selected fixed position, and a reader would lose the one cue that says
- * this slot answers a refinement, exactly when they are looking at it.
+ * Selected, a live position keeps its bullseye: the centre mark becomes a
+ * ring instead of a disc. Filling it solid would make it identical to a
+ * selected fixed position and lose the one cue that says this slot answers a
+ * refinement, exactly when the reader is looking at it.
  */
 .adzworld-rotation .adzworld-dots .adzworld-live-position[aria-pressed="true"] {
+	box-shadow: none;
+}
+
+.adzworld-rotation .adzworld-dots button.adzworld-live-position[aria-pressed="true"]::before {
+	width: 9px;
+	height: 9px;
 	background: transparent;
-	box-shadow:
-		inset 0 0 0 2px var(--adz-accent-solid),
-		0 0 10px color-mix(in oklab, var(--adz-accent-solid) 55%, transparent);
+	box-shadow: inset 0 0 0 2px var(--adz-accent-solid);
 }
 
 .adzworld-rotation .adzworld-dots .adzworld-hub-position[aria-pressed="true"] {
-	width: 22px;
+	width: 24px;
 	background: var(--adz-accent);
 	border-radius: 2px;
 }
