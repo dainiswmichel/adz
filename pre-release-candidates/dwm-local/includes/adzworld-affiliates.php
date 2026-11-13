@@ -782,11 +782,12 @@ function adzworld_affiliate_product_results( $request ) {
  * @param array  $pref     Preference hierarchy.
  * @param string $category Category.
  * @param string $title    Title row saved on the adz. Empty prints no row.
+ * @param string $provider Optional provider id for a provider-specific slot.
  * @return string Results markup, empty when no search account is connected.
  */
-function adzworld_affiliate_showcase( $pref, $category, $title = '' ) {
+function adzworld_affiliate_showcase( $pref, $category, $title = '', $provider = '' ) {
 	$request = adzworld_affiliate_request_string( $pref, $category );
-	$results = adzworld_products_collect( $request );
+	$results = adzworld_products_collect( $request, $provider );
 	$title   = function_exists( 'adzworld_internal_sanitize_title_row' )
 		? adzworld_internal_sanitize_title_row( $title )
 		: sanitize_text_field( (string) $title );

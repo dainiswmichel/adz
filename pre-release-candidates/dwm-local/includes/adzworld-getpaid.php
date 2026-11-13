@@ -349,6 +349,12 @@ function adzworld_getpaid_page() {
 	}
 
 	$providers = adzworld_getpaid_providers();
+	usort(
+		$providers,
+		static function ( $first, $second ) {
+			return strcasecmp( $first['label'], $second['label'] );
+		}
+	);
 	$serving   = 0;
 	$connected = 0;
 	foreach ( $providers as $provider ) {

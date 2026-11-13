@@ -1412,6 +1412,9 @@ function adzworld_render_rotation_level( $attributes ) {
 			}
 			$has_creative = adzworld_local_ad_has_creative( $ad );
 			$title_row    = function_exists( 'adzworld_internal_title_row' ) ? adzworld_internal_title_row( $ad ) : '';
+			$provider     = defined( 'ADZWORLD_INTERNAL_PROVIDER_KEY' )
+				? adzworld_internal_sanitize_provider( get_post_meta( $ad->ID, ADZWORLD_INTERNAL_PROVIDER_KEY, true ) )
+				: '';
 			$category_url = function_exists( 'adzworld_affiliate_category_url' ) ? adzworld_affiliate_category_url( $pref, $category ) : '';
 			$creative_url = defined( 'ADZWORLD_INTERNAL_URL_KEY' ) ? get_post_meta( $ad->ID, ADZWORLD_INTERNAL_URL_KEY, true ) : '';
 			if ( '' === $creative_url ) {
@@ -1419,7 +1422,7 @@ function adzworld_render_rotation_level( $attributes ) {
 			}
 			$showcase = '';
 			if ( in_array( $category, $pref['categories'], true ) && 0 === $category_slot && function_exists( 'adzworld_affiliate_showcase' ) ) {
-				$showcase = adzworld_affiliate_showcase( $pref, $category, $title_row );
+				$showcase = adzworld_affiliate_showcase( $pref, $category, $title_row, $provider );
 			}
 			if ( $has_creative ) {
 				$html = adzworld_local_ad_slide( $ad, $creative_url );

@@ -146,11 +146,13 @@ function adzworld_products_interleave( $rows, $limit = ADZWORLD_PRODUCTS_LIMIT )
 /**
  * Every provider's products for one request, merged and ready to render.
  *
- * @param string $request Reader's request: the category and its refinements.
+ * @param string $request  Reader's request: the category and its refinements.
+ * @param string $provider Optional provider id for a provider-specific slot.
  * @return array<int,array<string,string>> Normalised, interleaved rows.
  */
-function adzworld_products_collect( $request ) {
-	$request = trim( wp_strip_all_tags( (string) $request ) );
+function adzworld_products_collect( $request, $provider = '' ) {
+	$request  = trim( wp_strip_all_tags( (string) $request ) );
+	$provider = sanitize_key( (string) $provider );
 
 	if ( '' === $request ) {
 		return array();
@@ -177,6 +179,9 @@ function adzworld_products_collect( $request ) {
 	foreach ( $rows as $row ) {
 		$normal = adzworld_products_normalise_row( $row );
 		if ( null === $normal ) {
+			continue;
+		}
+		if ( '' !== $provider && $provider !== $normal['provider'] ) {
 			continue;
 		}
 

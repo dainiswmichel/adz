@@ -33,6 +33,9 @@ const ADZWORLD_INTERNAL_URL_KEY = 'adzworld_destination';
 /** Meta key holding the title row printed above the creative. */
 const ADZWORLD_INTERNAL_TITLE_KEY = 'adzworld_title_row';
 
+/** Meta key restricting a dynamic adz to one search provider. */
+const ADZWORLD_INTERNAL_PROVIDER_KEY = 'adzworld_provider';
+
 /**
  * Register the fields an internal adz needs.
  *
@@ -87,6 +90,21 @@ function adzworld_internal_register_meta() {
 			},
 		)
 	);
+
+	register_post_meta(
+		'adz_ad',
+		ADZWORLD_INTERNAL_PROVIDER_KEY,
+		array(
+			'type'              => 'string',
+			'single'            => true,
+			'default'           => '',
+			'show_in_rest'      => true,
+			'sanitize_callback' => 'adzworld_internal_sanitize_provider',
+			'auth_callback'     => static function () {
+				return current_user_can( 'edit_posts' );
+			},
+		)
+	);
 }
 add_action( 'init', 'adzworld_internal_register_meta' );
 
@@ -134,6 +152,18 @@ function adzworld_internal_sanitize_title_row( $title ) {
 	$title = is_scalar( $title ) ? sanitize_text_field( (string) $title ) : '';
 
 	return mb_substr( $title, 0, 120 );
+}
+
+/**
+ * Validate a dynamic search provider.
+ *
+ * @param mixed $provider Candidate provider id.
+ * @return string Supported provider id, or an empty string for every provider.
+ */
+function adzworld_internal_sanitize_provider( $provider ) {
+	$provider = is_scalar( $provider ) ? sanitize_key( (string) $provider ) : '';
+
+	return in_array( $provider, array( 'etsy', 'itunes' ), true ) ? $provider : '';
 }
 
 /**
@@ -247,6 +277,7 @@ function adzworld_internal_meta_box_markup( $post ) {
 	$size        = adzworld_internal_sanitize_size( get_post_meta( $post->ID, ADZWORLD_INTERNAL_SIZE_KEY, true ) );
 	$destination = get_post_meta( $post->ID, ADZWORLD_INTERNAL_URL_KEY, true );
 	$title       = adzworld_internal_title_row( $post );
+	$provider    = adzworld_internal_sanitize_provider( get_post_meta( $post->ID, ADZWORLD_INTERNAL_PROVIDER_KEY, true ) );
 	$presets     = function_exists( 'adzworld_rotation_size_presets' ) ? adzworld_rotation_size_presets() : array();
 
 	echo '<p><label for="adzworld-internal-title"><strong>' . esc_html__( 'Title row', 'adz-world' ) . '</strong></label><br>';
@@ -266,6 +297,14 @@ function adzworld_internal_meta_box_markup( $post ) {
 	echo '<p><label for="adzworld-internal-url"><strong>' . esc_html__( 'Destination', 'adz-world' ) . '</strong></label><br>';
 	echo '<input type="url" class="widefat code" id="adzworld-internal-url" name="adzworld_internal_url" value="' . esc_attr( (string) $destination ) . '" placeholder="https://">';
 	echo '<span class="description">' . esc_html__( 'Where a reader goes when they click. The link is marked as sponsored automatically.', 'adz-world' ) . '</span></p>';
+
+	echo '<p><label for="adzworld-internal-provider"><strong>' . esc_html__( 'Dynamic provider', 'adz-world' ) . '</strong></label><br>';
+	echo '<select class="widefat" id="adzworld-internal-provider" name="adzworld_internal_provider">';
+	echo '<option value="">' . esc_html__( 'All connected search providers', 'adz-world' ) . '</option>';
+	echo '<option value="etsy"' . selected( $provider, 'etsy', false ) . '>' . esc_html__( 'Etsy', 'adz-world' ) . '</option>';
+	echo '<option value="itunes"' . selected( $provider, 'itunes', false ) . '>' . esc_html__( 'Apple Search', 'adz-world' ) . '</option>';
+	echo '</select>';
+	echo '<span class="description">' . esc_html__( 'Limits an empty adz slot to results from this provider.', 'adz-world' ) . '</span></p>';
 }
 
 /**
@@ -288,19 +327,23 @@ function adzworld_internal_save( $post_id ) {
 		return;
 	}
 
-	$size  = isset( $_POST['adzworld_internal_size'] ) && is_string( $_POST['adzworld_internal_size'] )
+	$size     = isset( $_POST['adzworld_internal_size'] ) && is_string( $_POST['adzworld_internal_size'] )
 		? sanitize_text_field( wp_unslash( $_POST['adzworld_internal_size'] ) )
 		: '';
-	$url   = isset( $_POST['adzworld_internal_url'] ) && is_string( $_POST['adzworld_internal_url'] )
+	$url      = isset( $_POST['adzworld_internal_url'] ) && is_string( $_POST['adzworld_internal_url'] )
 		? sanitize_text_field( wp_unslash( $_POST['adzworld_internal_url'] ) )
 		: '';
-	$title = isset( $_POST['adzworld_internal_title'] ) && is_string( $_POST['adzworld_internal_title'] )
+	$title    = isset( $_POST['adzworld_internal_title'] ) && is_string( $_POST['adzworld_internal_title'] )
 		? sanitize_text_field( wp_unslash( $_POST['adzworld_internal_title'] ) )
+		: '';
+	$provider = isset( $_POST['adzworld_internal_provider'] ) && is_string( $_POST['adzworld_internal_provider'] )
+		? sanitize_key( wp_unslash( $_POST['adzworld_internal_provider'] ) )
 		: '';
 
 	update_post_meta( $post_id, ADZWORLD_INTERNAL_SIZE_KEY, adzworld_internal_sanitize_size( $size ) );
 	update_post_meta( $post_id, ADZWORLD_INTERNAL_URL_KEY, adzworld_internal_sanitize_destination( $url ) );
 	update_post_meta( $post_id, ADZWORLD_INTERNAL_TITLE_KEY, adzworld_internal_sanitize_title_row( $title ) );
+	update_post_meta( $post_id, ADZWORLD_INTERNAL_PROVIDER_KEY, adzworld_internal_sanitize_provider( $provider ) );
 }
 add_action( 'save_post_adz_ad', 'adzworld_internal_save' );
 
