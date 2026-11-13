@@ -324,3 +324,25 @@ add_filter( 'adzworld_registration_catalog', 'adzworld_avantlink_register_catalo
 add_filter( 'adzworld_getpaid_affiliate_serves_adz', 'adzworld_avantlink_register_request_behavior' );
 add_filter( 'adzworld_affiliate_account_ready', 'adzworld_avantlink_filter_account_ready', 10, 3 );
 add_filter( 'adzworld_affiliate_product_results', 'adzworld_avantlink_append_product_results', 10, 2 );
+
+/**
+ * Whether this account is credited for a sale.
+ *
+ * AvantLink builds the tracked Buy URL from the same affiliate id it needs to
+ * return products at all, so an AvantLink account that can serve can also
+ * earn. It is the only provider here for which those are one credential.
+ *
+ * @param bool                 $earns   Whether the account earns.
+ * @param string               $id      Provider id.
+ * @param array<string,string> $account Saved provider fields.
+ * @return bool
+ */
+function adzworld_avantlink_filter_account_earns( $earns, $id, $account ) {
+	if ( 'avantlink' !== $id ) {
+		return $earns;
+	}
+
+	return ! empty( $account['affiliate_id'] ) && ! empty( $account['website_id'] );
+}
+
+add_filter( 'adzworld_affiliate_account_earns', 'adzworld_avantlink_filter_account_earns', 10, 3 );

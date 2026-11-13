@@ -430,3 +430,24 @@ add_filter( 'adzworld_affiliate_networks', 'adzworld_etsy_register_network' );
 add_filter( 'adzworld_registration_catalog', 'adzworld_etsy_register_catalog' );
 add_filter( 'adzworld_getpaid_affiliate_serves_adz', 'adzworld_etsy_register_request_behavior' );
 add_filter( 'adzworld_affiliate_product_results', 'adzworld_etsy_append_product_results', 10, 2 );
+
+/**
+ * Whether this account is credited for a sale.
+ *
+ * Etsy's programme runs through Rakuten, so both the Rakuten publisher site
+ * id and the Etsy advertiser id are needed before a click is credited.
+ *
+ * @param bool                 $earns   Whether the account earns.
+ * @param string               $id      Provider id.
+ * @param array<string,string> $account Saved provider fields.
+ * @return bool
+ */
+function adzworld_etsy_filter_account_earns( $earns, $id, $account ) {
+	if ( 'etsy' !== $id ) {
+		return $earns;
+	}
+
+	return ! empty( $account['id'] ) && ! empty( $account['mid'] );
+}
+
+add_filter( 'adzworld_affiliate_account_earns', 'adzworld_etsy_filter_account_earns', 10, 3 );

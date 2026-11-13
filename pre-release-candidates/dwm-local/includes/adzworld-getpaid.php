@@ -235,7 +235,46 @@ function adzworld_getpaid_affiliate_card( $provider, $account ) {
 	echo esc_html__( 'Use this account on this site', 'adz-world' ) . '</label></td></tr>';
 	echo '</tbody></table>';
 
+	/*
+	 * An enabled account that cannot be credited is the state worth warning
+	 * about: it works, it looks right, and it earns the publisher nothing.
+	 */
+	if ( '1' === (string) $enabled && ! adzworld_getpaid_account_earns( $id, $account ) ) {
+		echo '<p class="adzworld-paid-unpaid">';
+		echo esc_html__( 'Serving, but not earning. This account can show products, but a click is not credited to you until the identifier this network pays against is saved above.', 'adz-world' );
+		echo '</p>';
+	}
+
 	echo '</div></div>';
+}
+
+/**
+ * Whether a saved account can actually pay the publisher.
+ *
+ * Serving a product and earning from it are two different credentials. Every
+ * fetcher here deliberately serves on the developer credential alone, so that
+ * an application pending at a network does not leave a slot empty. That is a
+ * stopgap, not the goal: a slot that serves without earning hands a reader to
+ * a merchant for nothing, which is worse for a publisher than showing no
+ * adzad at all. A provider answers here for its own saved fields.
+ *
+ * @param string               $id      Provider id.
+ * @param array<string,string> $account Saved provider fields.
+ * @return bool Whether a click on this provider's adz is credited.
+ */
+function adzworld_getpaid_account_earns( $id, $account ) {
+	/**
+	 * Whether a provider's saved account is credited for a sale.
+	 *
+	 * A provider file returns true only when the identifier its network pays
+	 * against is present. The default is false, so a provider that says
+	 * nothing is reported as not earning rather than assumed to be.
+	 *
+	 * @param bool                 $earns   Whether the account earns.
+	 * @param string               $id      Provider id.
+	 * @param array<string,string> $account Saved provider fields.
+	 */
+	return (bool) apply_filters( 'adzworld_affiliate_account_earns', false, $id, $account );
 }
 
 /**

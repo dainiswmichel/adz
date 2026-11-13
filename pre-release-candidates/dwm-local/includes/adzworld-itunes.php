@@ -266,3 +266,25 @@ add_filter( 'adzworld_registration_catalog', 'adzworld_itunes_register_catalog' 
 add_filter( 'adzworld_getpaid_affiliate_serves_adz', 'adzworld_itunes_register_request_behavior' );
 add_filter( 'adzworld_affiliate_account_ready', 'adzworld_itunes_filter_account_ready', 10, 3 );
 add_filter( 'adzworld_affiliate_product_results', 'adzworld_itunes_append_product_results', 10, 2 );
+
+/**
+ * Whether this account is credited for a sale.
+ *
+ * The Apple performance-partners token is what the network pays
+ * against. Without it the products still serve and the publisher earns
+ * nothing from them.
+ *
+ * @param bool                 $earns   Whether the account earns.
+ * @param string               $id      Provider id.
+ * @param array<string,string> $account Saved provider fields.
+ * @return bool
+ */
+function adzworld_itunes_filter_account_earns( $earns, $id, $account ) {
+	if ( 'itunes' !== $id ) {
+		return $earns;
+	}
+
+	return ! empty( $account['at'] );
+}
+
+add_filter( 'adzworld_affiliate_account_earns', 'adzworld_itunes_filter_account_earns', 10, 3 );
