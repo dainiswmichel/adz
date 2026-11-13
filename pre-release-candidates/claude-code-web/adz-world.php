@@ -91,6 +91,7 @@ require_once __DIR__ . '/includes/adzworld-ebay.php';
 require_once __DIR__ . '/includes/adzworld-etsy.php';
 require_once __DIR__ . '/includes/adzworld-bestbuy.php';
 require_once __DIR__ . '/includes/adzworld-avantlink.php';
+require_once __DIR__ . '/includes/adzworld-itunes.php';
 require_once __DIR__ . '/includes/adzworld-getpaid.php';
 require_once __DIR__ . '/includes/adzworld-internal.php';
 require_once __DIR__ . '/includes/adzworld-networks.php';
