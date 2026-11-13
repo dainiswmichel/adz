@@ -168,9 +168,10 @@ function adzworld_getpaid_registration( $provider ) {
  *
  * @param array<string,mixed> $provider Provider.
  * @param bool                $connected Whether it is connected.
+ * @param bool                $earning   Whether it can pay the publisher.
  * @return void
  */
-function adzworld_getpaid_card_header( $provider, $connected ) {
+function adzworld_getpaid_card_header( $provider, $connected, $earning = false ) {
 	$serves = 'adz' === $provider['serves']
 		? __( 'Sends the reader’s request', 'adz-world' )
 		: __( 'Placement only', 'adz-world' );
@@ -180,10 +181,22 @@ function adzworld_getpaid_card_header( $provider, $connected ) {
 	echo '<span class="adzworld-paid-serves adzworld-paid-serves--' . esc_attr( $provider['serves'] ) . '">' . esc_html( $serves ) . '</span>';
 	echo '</h2></div>';
 	echo '<div class="inside">';
+
+	if ( ! $connected ) {
+		$tone  = 'info';
+		$state = __( 'Not connected yet', 'adz-world' );
+	} elseif ( ! $earning ) {
+		$tone  = 'warning';
+		$state = __( 'Serving — not earning yet', 'adz-world' );
+	} else {
+		$tone  = 'success';
+		$state = __( 'Connected and earning', 'adz-world' );
+	}
+
 	printf(
 		'<p class="adzworld-paid-state"><span class="notice notice-%1$s inline"><span>%2$s</span></span></p>',
-		$connected ? 'success' : 'info',
-		esc_html( $connected ? __( 'Connected', 'adz-world' ) : __( 'Not connected yet', 'adz-world' ) )
+		esc_attr( $tone ),
+		esc_html( $state )
 	);
 
 	if ( '' !== $provider['note'] ) {
@@ -203,7 +216,7 @@ function adzworld_getpaid_affiliate_card( $provider, $account ) {
 	$enabled = isset( $account['enabled'] ) ? (string) $account['enabled'] : '0';
 
 	echo '<div class="postbox adzworld-paid-card" id="adzworld-paid-affiliate-' . esc_attr( $id ) . '">';
-	adzworld_getpaid_card_header( $provider, '1' === $enabled );
+	adzworld_getpaid_card_header( $provider, '1' === $enabled, adzworld_getpaid_account_earns( $id, $account ) );
 	adzworld_getpaid_registration( $provider );
 
 	echo '<table class="form-table" role="presentation"><tbody>';
@@ -220,9 +233,12 @@ function adzworld_getpaid_affiliate_card( $provider, $account ) {
 			}
 			echo '</select>';
 		} elseif ( ! empty( $rule['secret'] ) ) {
-			echo '<input type="password" class="regular-text code" id="' . esc_attr( $input ) . '" name="' . esc_attr( $input ) . '" value="" autocomplete="new-password">';
-			if ( '' !== $value ) {
-				echo '<p class="description">' . esc_html__( 'A secret is saved. Leave this blank to keep it.', 'adz-world' ) . '</p>';
+			$saved = '' !== $value;
+			echo '<input type="password" class="regular-text code" id="' . esc_attr( $input ) . '" name="' . esc_attr( $input ) . '" value=""'
+				. ( $saved ? ' placeholder="' . esc_attr( str_repeat( '•', 24 ) ) . '"' : '' )
+				. ' autocomplete="off">';
+			if ( $saved ) {
+				echo '<span class="adzworld-paid-hint">' . esc_html__( 'Saved. Leave blank to keep it, or paste a new one to replace it.', 'adz-world' ) . '</span>';
 			}
 		} else {
 			echo '<input type="text" class="regular-text code" id="' . esc_attr( $input ) . '" name="' . esc_attr( $input ) . '" value="' . esc_attr( $value ) . '">';
@@ -232,18 +248,13 @@ function adzworld_getpaid_affiliate_card( $provider, $account ) {
 
 	echo '<tr><th scope="row">' . esc_html__( 'Connection', 'adz-world' ) . '</th><td><label>';
 	echo '<input type="checkbox" name="' . esc_attr( 'adzworld_affiliate_' . $id . '_enabled' ) . '" value="1"' . checked( $enabled, '1', false ) . '> ';
-	echo esc_html__( 'Use this account on this site', 'adz-world' ) . '</label></td></tr>';
+	echo esc_html__( 'Active', 'adz-world' ) . '</label>';
+	echo '<span class="adzworld-paid-hint">' . esc_html__( 'Clear this to pause the account without losing what you pasted.', 'adz-world' ) . '</span></td></tr>';
 	echo '</tbody></table>';
 
-	/*
-	 * An enabled account that cannot be credited is the state worth warning
-	 * about: it works, it looks right, and it earns the publisher nothing.
-	 */
-	if ( '1' === (string) $enabled && ! adzworld_getpaid_account_earns( $id, $account ) ) {
-		echo '<p class="adzworld-paid-unpaid">';
-		echo esc_html__( 'Serving, but not earning. This account can show products, but a click is not credited to you until the identifier this network pays against is saved above.', 'adz-world' );
-		echo '</p>';
-	}
+	echo '<p class="adzworld-paid-save">';
+	submit_button( __( 'Save', 'adz-world' ), 'primary', 'submit', false );
+	echo '</p>';
 
 	echo '</div></div>';
 }
@@ -299,7 +310,7 @@ function adzworld_getpaid_network_card( $provider, $rows ) {
 	}
 
 	echo '<div class="postbox adzworld-paid-card" id="adzworld-paid-network-' . esc_attr( $provider['id'] ) . '">';
-	adzworld_getpaid_card_header( $provider, $connected );
+	adzworld_getpaid_card_header( $provider, $connected, $connected );
 	adzworld_getpaid_registration( $provider );
 
 	if ( '' !== $provider['host'] ) {
