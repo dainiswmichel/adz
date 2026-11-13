@@ -1421,7 +1421,7 @@ function adzworld_render_rotation_level( $attributes ) {
 				$creative_url = $category_url;
 			}
 			$showcase = '';
-			if ( in_array( $category, $pref['categories'], true ) && 0 === $category_slot && function_exists( 'adzworld_affiliate_showcase' ) ) {
+			if ( in_array( $category, $pref['categories'], true ) && function_exists( 'adzworld_affiliate_showcase' ) ) {
 				$showcase = adzworld_affiliate_showcase( $pref, $category, $title_row, $provider );
 			}
 			if ( $has_creative ) {
