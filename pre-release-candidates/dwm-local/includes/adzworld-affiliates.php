@@ -141,20 +141,23 @@ function adzworld_affiliate_networks() {
 		),
 		'rakuten'   => array(
 			'label'   => 'Rakuten Advertising',
-			'account' => 'https://rakutenadvertising.com/',
-			'note'    => __( 'The deep link is click.linksynergy.com. id is the publisher site id and mid is the advertiser. The destination must contain {query}.', 'adz-world' ),
+			'account' => 'https://publisher.rakutenadvertising.com/',
+			'note'    => __( 'SID identifies this publisher site. MID identifies one approved advertiser. Both are required for a tracked deep link, but the advertiser partnership, active offer and product eligibility must also be confirmed in Rakuten.', 'adz-world' ),
 			'fields'  => array(
 				'id'          => array(
-					'label'   => __( 'Publisher site id', 'adz-world' ),
+					'label'   => __( 'Publisher site ID (SID)', 'adz-world' ),
 					'pattern' => '/^[A-Za-z0-9]{1,20}$/D',
+					'help'    => __( 'Shown beside your publisher account in the Rakuten dashboard. This identifies the publisher site; it is not an advertiser or product ID.', 'adz-world' ),
 				),
 				'mid'         => array(
-					'label'   => __( 'Advertiser id', 'adz-world' ),
+					'label'   => __( 'Current advertiser ID (MID)', 'adz-world' ),
 					'pattern' => '/^[A-Za-z0-9]{1,20}$/D',
+					'help'    => __( 'Choose an advertiser with an approved partnership and active offer. Rakuten shows its MID in advertiser and link details.', 'adz-world' ),
 				),
 				'destination' => array(
-					'label'   => __( 'Advertiser search URL', 'adz-world' ),
+					'label'   => __( 'Eligible advertiser search URL', 'adz-world' ),
 					'pattern' => 'url',
+					'help'    => __( 'Use an advertiser URL permitted for product or deep linking and put {query} where the reader request belongs. Not every advertiser permits deep links.', 'adz-world' ),
 				),
 			),
 		),

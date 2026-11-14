@@ -116,14 +116,16 @@ function adzworld_registration_catalog() {
 		'rakuten'   => array(
 			'label'        => 'Rakuten Advertising',
 			'group'        => 'affiliate',
-			'signup'       => 'https://rakutenadvertising.com/',
-			'signup_label' => __( 'Register at Rakuten', 'adz-world' ),
-			'pays'         => __( 'The publisher site id pays this site.', 'adz-world' ),
+			'signup'       => 'https://publisher.rakutenadvertising.com/',
+			'signup_label' => __( 'Open Rakuten Publisher Dashboard', 'adz-world' ),
+			'pays'         => __( 'SID identifies this publisher. Commission requires an approved advertiser partnership, an active offer and a Rakuten-tracked eligible link; payout also requires completed tax and payment details.', 'adz-world' ),
 			'steps'        => array(
-				__( 'Use Register at Rakuten and choose Become a Publisher.', 'adz-world' ),
-				__( 'Register with email, verify it, and accept the publisher membership agreement. Add this site.', 'adz-world' ),
-				__( 'Apply to an advertiser. Copy the publisher site id and the advertiser id from a deep link. Rakuten is moving advertiser programmes onto Impact. A programme that has moved is applied for from the Impact account.', 'adz-world' ),
-				__( 'Paste an advertiser search URL that contains {query} exactly once, then paste the ids, enable the account, and save.', 'adz-world' ),
+				__( 'Open Advertisers and apply to a programme. Wait until Rakuten shows an active partnership.', 'adz-world' ),
+				__( 'Confirm an active offer and its commission terms. The SID identifies your publisher site; the MID identifies the advertiser.', 'adz-world' ),
+				__( 'Open Links → Find Links → Product Links and select a product the advertiser makes eligible. If the advertiser permits deep linking, an eligible advertiser search URL may contain {query} exactly once.', 'adz-world' ),
+				__( 'There is no network-wide top-seller list. After this site records sales, use Reports → Product Success or Individual Item to find its actual top-selling products.', 'adz-world' ),
+				__( 'Under Account → Account Details, complete tax information and select and verify a payment method.', 'adz-world' ),
+				__( 'Paste the SID, MID and eligible advertiser URL here, switch the account to Active, and save. Test the generated link before publishing the adz.', 'adz-world' ),
 			),
 		),
 		'etsy'      => array(

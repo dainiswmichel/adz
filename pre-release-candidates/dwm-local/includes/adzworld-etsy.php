@@ -338,24 +338,28 @@ function adzworld_etsy_register_network( $networks ) {
 	$networks['etsy'] = array(
 		'label'   => 'Etsy',
 		'account' => 'https://www.etsy.com/developers/your-apps',
-		'note'    => __( 'The keystring and shared secret come from an Etsy app. Since 9 February 2026 the x-api-key header is keystring:shared_secret. The fetcher sends the request string as the listing keywords. Etsy’s affiliate programme is moving from Awin to Rakuten, so id is the Rakuten publisher site id and mid is the Etsy advertiser id from the programme you joined. Neither id is supplied by this plugin.', 'adz-world' ),
+		'note'    => __( 'The Etsy API credentials fetch listings but do not create commission tracking. Credited Etsy links additionally require an approved Etsy advertiser partnership in Rakuten, this site’s SID and Etsy’s MID.', 'adz-world' ),
 		'fields'  => array(
 			'keystring'     => array(
 				'label'   => __( 'Etsy keystring', 'adz-world' ),
 				'pattern' => '/^[A-Za-z0-9]{8,80}$/D',
+				'help'    => __( 'Provides Etsy listing access. It does not identify the Rakuten publisher who should receive commission.', 'adz-world' ),
 			),
 			'shared_secret' => array(
 				'label'   => __( 'Etsy shared secret', 'adz-world' ),
 				'pattern' => '/^[^\x00-\x20\x7F:]{8,128}$/D',
 				'secret'  => true,
+				'help'    => __( 'Used with the keystring to fetch Etsy listings. It is stored as a secret.', 'adz-world' ),
 			),
 			'id'            => array(
-				'label'   => __( 'Rakuten publisher site id (optional)', 'adz-world' ),
+				'label'   => __( 'Rakuten publisher site ID (SID)', 'adz-world' ),
 				'pattern' => '/^[A-Za-z0-9]{1,20}$/D',
+				'help'    => __( 'Required for commission tracking. This is the SID shown beside your Rakuten publisher account.', 'adz-world' ),
 			),
 			'mid'           => array(
-				'label'   => __( 'Etsy advertiser id (optional)', 'adz-world' ),
+				'label'   => __( 'Etsy advertiser ID (MID)', 'adz-world' ),
 				'pattern' => '/^[A-Za-z0-9]{1,20}$/D',
+				'help'    => __( 'Required for commission tracking. Save the MID from the approved Etsy advertiser partnership in Rakuten.', 'adz-world' ),
 			),
 		),
 	);
@@ -375,12 +379,13 @@ function adzworld_etsy_register_catalog( $catalog ) {
 		'group'        => 'affiliate',
 		'signup'       => 'https://www.etsy.com/developers/your-apps',
 		'signup_label' => __( 'Open your Etsy apps', 'adz-world' ),
-		'pays'         => __( 'The Rakuten publisher site id pays this site.', 'adz-world' ),
+		'pays'         => __( 'Etsy API credentials provide listings. Rakuten SID, Etsy MID, an approved partnership and an eligible offer provide commission tracking.', 'adz-world' ),
 		'steps'        => array(
 			__( 'Create an Etsy app and copy its keystring and shared secret. The shared secret is stored as a secret.', 'adz-world' ),
-			__( 'Join the Etsy programme on Rakuten Advertising. Etsy is moving the affiliate programme from Awin to Rakuten.', 'adz-world' ),
-			__( 'Copy your Rakuten publisher site id and the Etsy advertiser id from that programme.', 'adz-world' ),
-			__( 'Paste the four values in this section, enable the account, and save. The fetcher sends the category and its refinements as the listing keywords.', 'adz-world' ),
+			__( 'In Rakuten, apply to the Etsy advertiser programme and wait for an active partnership. Confirm the active offer covers the products you promote.', 'adz-world' ),
+			__( 'Copy your publisher site ID (SID) and Etsy advertiser ID (MID) from Rakuten.', 'adz-world' ),
+			__( 'Complete tax information and a payment method under Rakuten Account Details.', 'adz-world' ),
+			__( 'Paste the four values in this section, switch the account to Active, and save. The fetcher sends the category and its refinements as Etsy listing keywords.', 'adz-world' ),
 		),
 	);
 
