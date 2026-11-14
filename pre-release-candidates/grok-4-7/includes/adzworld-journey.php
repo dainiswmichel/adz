@@ -2,38 +2,29 @@
 /**
  * The slot journey.
  *
- * One slot keeps what the reader stated. The opening request is the category
- * string. Each round, numbered from 1 by its place in the list, holds the ad
- * that was shown, the rating word the reader chose, and the refinement they
- * typed next.
+ * One slot keeps what the reader stated, in order. The opening request is
+ * the category string. Round 1 holds the first ad id and the full response
+ * to it. Round 2 holds the next ad id and the full response to that ad.
  *
- * The rating words are strongly dislike, dislike, neutral, like, and strongly
- * like. An empty rating means the reader did not respond. The word neutral is
- * stored only when the reader chose it.
+ * The specific value on a round is the rating number the reader set, from
+ * -100 to 100. Store that number as set. Do not divide it. Do not replace
+ * it with a word. An empty rating means the reader did not respond. Zero
+ * is a response.
  *
- * The search string for a provider is the opening request and those
- * refinements, in order, with one space between them. The rating and the ad
- * id stay on the round. This file does not decide which ad comes next.
+ * A translation may be stored on the same round. It is the coarser label:
+ * strongly dislike, dislike, neutral, like, strongly like, or no response.
+ * A collected translation is kept. When none was collected, the label uses
+ * the same cut points as adzworld_feedback_label(). The number stays the
+ * specific value, so two different numbers may share one translation.
+ *
+ * The search string for a provider is the opening request and the typed
+ * refinements, in order. The rating, the translation, and the ad id stay
+ * on the round. This file does not decide which ad comes next.
  *
  * @package adz-world
  */
 
 defined( 'ABSPATH' ) || exit;
-
-/**
- * Rating words a reader can choose.
- *
- * @return string[]
- */
-function adzworld_journey_rating_words() {
-	return array(
-		'strongly dislike',
-		'dislike',
-		'neutral',
-		'like',
-		'strongly like',
-	);
-}
 
 /**
  * Keep a stated string whole.
@@ -58,52 +49,146 @@ function adzworld_journey_statement( $text ) {
 }
 
 /**
- * Reduce a rating to one of the five words, or to no response.
+ * Reduce a rating to the number the reader set, or to no response.
  *
- * @param mixed $rating A rating word, empty for no response, or something else.
- * @return string|null|false The word, null when the reader did not respond, false when the value is not a rating word.
+ * A word is not a rating. This function does not turn a word into a number.
+ *
+ * @param mixed $rating Integer from -100 to 100, a numeric string in that range, empty for no response, or something else.
+ * @return int|null|false The number, null when the reader did not respond, false when the value is not that number.
  */
 function adzworld_journey_normalize_rating( $rating ) {
 	if ( null === $rating || false === $rating ) {
 		return null;
 	}
 
-	if ( ! is_string( $rating ) ) {
+	if ( is_string( $rating ) ) {
+		$rating = trim( $rating );
+
+		if ( '' === $rating ) {
+			return null;
+		}
+	}
+
+	if ( is_int( $rating ) ) {
+		$number = $rating;
+	} elseif ( is_float( $rating ) || ( is_string( $rating ) && is_numeric( $rating ) ) ) {
+		$number = (int) $rating;
+
+		if ( (string) $number !== (string) $rating && (float) $number !== (float) $rating ) {
+			return false;
+		}
+	} else {
 		return false;
 	}
 
-	$rating = strtolower( trim( wp_strip_all_tags( $rating ) ) );
-
-	if ( '' === $rating ) {
-		return null;
+	if ( $number < -100 || $number > 100 ) {
+		return false;
 	}
 
-	if ( in_array( $rating, adzworld_journey_rating_words(), true ) ) {
-		return $rating;
-	}
-
-	return false;
+	return $number;
 }
 
 /**
- * The word for a stored rating. Empty storage is no response.
+ * Recognize a collected translation.
  *
- * @param string|null $rating Stored rating.
- * @return string
+ * The stored word is one of the six record labels. "like a lot" is the same
+ * label as "strongly like". Any other text is left off the translation.
+ *
+ * @param mixed $translation Collected label.
+ * @return string A record label, or an empty string when none was collected.
  */
-function adzworld_journey_rating_word( $rating ) {
-	if ( is_string( $rating ) && in_array( $rating, adzworld_journey_rating_words(), true ) ) {
-		return $rating;
+function adzworld_journey_normalize_translation( $translation ) {
+	if ( ! is_string( $translation ) ) {
+		return '';
 	}
 
-	return 'no response';
+	$translation = strtolower( $translation );
+	$collapsed   = preg_replace( '/\s+/', ' ', $translation );
+
+	if ( ! is_string( $collapsed ) ) {
+		return '';
+	}
+
+	$translation = trim( $collapsed );
+
+	if ( 'like a lot' === $translation ) {
+		$translation = 'strongly like';
+	}
+
+	$words = array(
+		'strongly dislike',
+		'dislike',
+		'neutral',
+		'like',
+		'strongly like',
+		'no response',
+	);
+
+	if ( in_array( $translation, $words, true ) ) {
+		return $translation;
+	}
+
+	return '';
+}
+
+/**
+ * Coarser label for a rating number.
+ *
+ * The cut points are the ones in adzworld_feedback_label(): -75, -25, 25,
+ * and 75. Null uses the label for an unmoved control. The number is unchanged.
+ *
+ * @param int|null $rating Rating number, or null when the reader did not respond.
+ * @return string One of the six record labels.
+ */
+function adzworld_journey_project_translation( $rating ) {
+	if ( null === $rating ) {
+		return 'no response';
+	}
+
+	if ( $rating <= -75 ) {
+		return 'strongly dislike';
+	}
+
+	if ( $rating <= -25 ) {
+		return 'dislike';
+	}
+
+	if ( $rating < 25 ) {
+		return 'neutral';
+	}
+
+	if ( $rating < 75 ) {
+		return 'like';
+	}
+
+	return 'strongly like';
+}
+
+/**
+ * Translation stored on a round.
+ *
+ * A collected label is kept, including when it is coarser than the number.
+ * An empty or unrecognized label uses the projection of the number.
+ *
+ * @param int|null $rating      Rating number, or null.
+ * @param mixed    $translation Collected label.
+ * @return string
+ */
+function adzworld_journey_resolve_translation( $rating, $translation ) {
+	$collected = adzworld_journey_normalize_translation( $translation );
+
+	if ( '' !== $collected ) {
+		return $collected;
+	}
+
+	return adzworld_journey_project_translation( $rating );
 }
 
 /**
  * An empty journey for one slot.
  *
  * @param string $request Opening category string.
- * @return array{request:string,rounds:array<int,array{ad:string,rating:?string,refinement:string}>}
+ * @return array{request:string,rounds:array<int,array{ad:string,rating:?int,translation:string,refinement:string}>}
  */
 function adzworld_journey_start( $request ) {
 	return array(
@@ -115,16 +200,18 @@ function adzworld_journey_start( $request ) {
 /**
  * Append one round.
  *
- * A round without an ad is not stored. A rating that is not one of the five
- * words is not stored and is not replaced with another word.
+ * A round without an ad is not stored. A rating outside -100 to 100, or a
+ * word in the rating argument, is not stored and is not turned into a number.
+ * The translation argument is the coarser label and does not change the number.
  *
- * @param array<string,mixed> $journey    Journey.
- * @param string              $ad         Ad id, as provider:id.
- * @param mixed               $rating     Rating word, or empty for no response.
- * @param string              $refinement Refinement the reader typed. May be empty.
+ * @param array<string,mixed> $journey     Journey.
+ * @param string              $ad          Ad id.
+ * @param mixed               $rating      Rating number, or empty for no response.
+ * @param string              $refinement  Refinement the reader typed. May be empty.
+ * @param mixed               $translation Collected translation. Empty when none was collected.
  * @return array<string,mixed> Journey, with the round appended when the ad and rating are usable.
  */
-function adzworld_journey_add( $journey, $ad, $rating, $refinement ) {
+function adzworld_journey_add( $journey, $ad, $rating, $refinement, $translation = null ) {
 	$journey    = adzworld_journey_sanitize( $journey );
 	$ad         = adzworld_journey_statement( $ad );
 	$refinement = adzworld_journey_statement( $refinement );
@@ -135,9 +222,10 @@ function adzworld_journey_add( $journey, $ad, $rating, $refinement ) {
 	}
 
 	$journey['rounds'][] = array(
-		'ad'         => $ad,
-		'rating'     => $rating,
-		'refinement' => $refinement,
+		'ad'          => $ad,
+		'rating'      => $rating,
+		'translation' => adzworld_journey_resolve_translation( $rating, $translation ),
+		'refinement'  => $refinement,
 	);
 
 	return $journey;
@@ -147,7 +235,7 @@ function adzworld_journey_add( $journey, $ad, $rating, $refinement ) {
  * Reduce stored data to the journey shape.
  *
  * @param mixed $stored Raw value.
- * @return array{request:string,rounds:array<int,array{ad:string,rating:?string,refinement:string}>}
+ * @return array{request:string,rounds:array<int,array{ad:string,rating:?int,translation:string,refinement:string}>}
  */
 function adzworld_journey_sanitize( $stored ) {
 	$request = '';
@@ -167,15 +255,17 @@ function adzworld_journey_sanitize( $stored ) {
 		$ad         = isset( $round['ad'] ) ? adzworld_journey_statement( $round['ad'] ) : '';
 		$refinement = isset( $round['refinement'] ) ? adzworld_journey_statement( $round['refinement'] ) : '';
 		$rating     = array_key_exists( 'rating', $round ) ? adzworld_journey_normalize_rating( $round['rating'] ) : null;
+		$collected  = array_key_exists( 'translation', $round ) ? $round['translation'] : null;
 
 		if ( '' === $ad || false === $rating ) {
 			continue;
 		}
 
 		$journey['rounds'][] = array(
-			'ad'         => $ad,
-			'rating'     => $rating,
-			'refinement' => $refinement,
+			'ad'          => $ad,
+			'rating'      => $rating,
+			'translation' => adzworld_journey_resolve_translation( $rating, $collected ),
+			'refinement'  => $refinement,
 		);
 	}
 
@@ -207,7 +297,7 @@ function adzworld_journey_seen( $journey ) {
  * The search string a provider can take.
  *
  * The opening request, then each refinement that was typed, in order. Rating
- * words and ad ids are not included.
+ * numbers, translations, and ad ids are left on the round.
  *
  * @param array<string,mixed> $journey Journey.
  * @return string
@@ -232,10 +322,12 @@ function adzworld_journey_keywords( $journey ) {
 /**
  * The record of the slot, with rounds numbered from 1.
  *
- * This is the log. It is not the search string.
+ * Each round is an ad id and the full response. The rating number is the
+ * specific value. The translation is the coarser label on that same round.
+ * The refinement is the text the reader typed.
  *
  * @param array<string,mixed> $journey Journey.
- * @return array{request:string,rounds:array<int,array{round:int,ad:string,rating:string,refinement:string}>}
+ * @return array{request:string,rounds:array<int,array{round:int,ad:string,rating:?int,translation:string,refinement:string}>}
  */
 function adzworld_journey_record( $journey ) {
 	$journey = adzworld_journey_sanitize( $journey );
@@ -245,10 +337,11 @@ function adzworld_journey_record( $journey ) {
 	foreach ( $journey['rounds'] as $round ) {
 		++$number;
 		$rows[] = array(
-			'round'      => $number,
-			'ad'         => $round['ad'],
-			'rating'     => adzworld_journey_rating_word( $round['rating'] ),
-			'refinement' => $round['refinement'],
+			'round'       => $number,
+			'ad'          => $round['ad'],
+			'rating'      => $round['rating'],
+			'translation' => $round['translation'],
+			'refinement'  => $round['refinement'],
 		);
 	}
 
