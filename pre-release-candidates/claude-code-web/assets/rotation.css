@@ -571,6 +571,19 @@
  * above and the accent for the active state: one tone instead of several,
  * which is a loss of distinction and not a loss of function.
  */
+/*
+ * The whole creative is the click target, so the anchor fills its box and
+ * carries no underline or link colour of its own: the adzad is the thing a
+ * reader sees, not a styled link wrapped around it.
+ */
+.adzworld-creative__destination {
+	display: block;
+	width: 100%;
+	height: 100%;
+	color: inherit;
+	text-decoration: none;
+}
+
 .adzworld-rotation .adz-panel__chip--categories.is-active {
 	background: linear-gradient(135deg, #30586d 0%, #3e6d86 100%);
 	border-color: #30586d;

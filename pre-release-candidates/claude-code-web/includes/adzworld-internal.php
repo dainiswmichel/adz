@@ -490,3 +490,56 @@ function adzworld_internal_page() {
 		echo '</section>';
 	}
 }
+
+/**
+ * Apply an adzad's destination to its rendered creative.
+ *
+ * The destination field is the click target, and without this the field was
+ * stored, shown in the editor and counted towards an adzad being "ready"
+ * while the adzad itself was not clickable. An advertisement nobody can
+ * click is not an advertisement.
+ *
+ * @since 1.0.0
+ *
+ * @param string $creative Filtered creative markup.
+ * @param int    $ad_id    Adzad post id.
+ * @return string Linked creative, or the creative unchanged when no
+ *                destination is stored.
+ */
+function adzworld_internal_link_creative( $creative, $ad_id ) {
+	return adzworld_internal_link_markup(
+		$creative,
+		get_post_meta( (int) $ad_id, ADZWORLD_INTERNAL_URL_KEY, true )
+	);
+}
+
+/**
+ * Wrap one creative in a sponsored link.
+ *
+ * Any anchor already inside the creative is removed while its text is kept.
+ * Nesting one link inside another is invalid, and it would let a link the
+ * adzadmin pasted into the body outrank the destination they set, so the
+ * sponsored relationship covers the whole adzad and nothing else competes
+ * with it.
+ *
+ * @since 1.0.0
+ *
+ * @param string $creative    Creative markup.
+ * @param string $destination Click target.
+ * @return string Linked creative, or the original creative when there is no
+ *                destination to send anyone to.
+ */
+function adzworld_internal_link_markup( $creative, $destination ) {
+	$destination = adzworld_internal_sanitize_destination( $destination );
+
+	if ( '' === $destination || '' === trim( $creative ) ) {
+		return $creative;
+	}
+
+	$allowed = wp_kses_allowed_html( 'post' );
+	unset( $allowed['a'] );
+	$creative = wp_kses( $creative, $allowed );
+
+	return '<a class="adzworld-creative__destination" href="' . esc_url( $destination )
+		. '" rel="sponsored nofollow">' . $creative . '</a>';
+}

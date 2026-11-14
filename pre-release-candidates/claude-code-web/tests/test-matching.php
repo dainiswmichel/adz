@@ -103,7 +103,51 @@ function wp_cache_delete( $key, $group = '' ) {
 $GLOBALS['adz_cache'] = array();
 
 $base = $adz_plugin . '/includes/';
+/*
+ * What adzworld-internal.php needs from WordPress to decide a destination
+ * and wrap a creative in it. Close enough to the real behaviour to test the
+ * decision, not a reimplementation of WordPress.
+ */
+function esc_url_raw( $url, $schemes = array( 'http', 'https' ) ) {
+	$url = trim( (string) $url );
+
+	if ( ! filter_var( $url, FILTER_VALIDATE_URL ) ) {
+		return '';
+	}
+
+	return in_array( strtolower( (string) wp_parse_url( $url, PHP_URL_SCHEME ) ), $schemes, true ) ? $url : '';
+}
+
+function esc_url( $url ) {
+	return esc_url_raw( $url );
+}
+
+function wp_parse_url( $url, $component = -1 ) {
+	return parse_url( $url, $component );
+}
+
+function wp_kses_allowed_html( $context = 'post' ) {
+	return array(
+		'a'   => array( 'href' => true, 'rel' => true ),
+		'img' => array( 'src' => true, 'alt' => true ),
+		'p'   => array(),
+	);
+}
+
+function wp_kses( $text, $allowed ) {
+	$tags = '';
+
+	foreach ( array_keys( (array) $allowed ) as $tag ) { $tags .= '<' . $tag . '>'; }
+
+	return strip_tags( (string) $text, $tags );
+}
+
+function get_post_meta( $id, $key = '', $single = false ) {
+	return isset( $GLOBALS['adz_meta'][ (int) $id ] ) ? $GLOBALS['adz_meta'][ (int) $id ] : '';
+}
+
 require $base . 'adz-preferences.php';
+require $base . 'adzworld-internal.php';
 require $base . 'adz-preference-ui.php';
 
 $pass                    = 0;
@@ -332,6 +376,27 @@ $known               = adzworld_empty_preference();
 $known['categories'] = array( 'bicycle' );
 $known['exclude']    = array( 'pedals' );
 check( 'known limitation: "no pedals" copy is still excluded by "pedals"', in_array( 44, adzworld_match_adz( $known, 2 ), true ), false );
+
+echo "\n=== an adzad goes where the adzadmin sent it ===\n";
+
+
+/* The destination field is the click target. */
+$GLOBALS['adz_meta'] = array( 412 => 'https://link.amazon/B0blGdIeA' );
+
+$linked = adzworld_internal_link_markup( '<img src="https://x.test/a.png" alt="">', 'https://link.amazon/B0blGdIeA' );
+check( 'the creative becomes a link', false !== strpos( $linked, 'adzworld-creative__destination' ), true );
+check( 'to the destination', false !== strpos( $linked, 'https://link.amazon/B0blGdIeA' ), true );
+check( 'marked sponsored', false !== strpos( $linked, 'rel="sponsored nofollow"' ), true );
+
+/* A link already in the body must not nest inside the destination link. */
+$nested = adzworld_internal_link_markup( '<a href="https://spam.test/">click</a> me', 'https://link.amazon/B0blGdIeA' );
+check( 'an inner anchor is unwrapped', substr_count( $nested, '<a ' ), 1 );
+check( 'and its text is kept', false !== strpos( $nested, 'click me' ), true );
+check( 'while the pasted url is gone', false !== strpos( $nested, 'spam.test' ), false );
+
+/* No destination means no link, not an empty one. */
+check( 'no destination leaves it alone', adzworld_internal_link_markup( 'plain', '' ), 'plain' );
+check( 'and an empty creative is untouched', adzworld_internal_link_markup( '', 'https://x.test/' ), '' );
 
 printf( "\n%d passed, %d failed\n", $pass, $fail );
 exit( $fail > 0 ? 1 : 0 );
