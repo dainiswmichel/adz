@@ -148,6 +148,43 @@ function adzworld_sanitize_journey( $stored ) {
 }
 
 /**
+ * How a reader's rating is said to a provider.
+ *
+ * Three states, which is what a provider can act on today:
+ *
+ *   dislike       the reader rated it below zero
+ *   no response   the reader did not rate it
+ *   like          the reader rated it above zero
+ *
+ * The -100 to 100 scale is kept whole in storage. This is only how it is
+ * expressed outward, so the slider keeps every notch it has.
+ *
+ * A rating of exactly zero reports as no response. A reader who moves the
+ * slider to the middle has said neither dislike nor like, and those are the
+ * only other two words available.
+ *
+ * @param mixed $rating The stored rating, or null.
+ * @return string One of dislike, no response, like.
+ */
+function adzworld_journey_response( $rating ) {
+	if ( ! is_numeric( $rating ) ) {
+		return 'no response';
+	}
+
+	$rating = (int) $rating;
+
+	if ( $rating < 0 ) {
+		return 'dislike';
+	}
+
+	if ( $rating > 0 ) {
+		return 'like';
+	}
+
+	return 'no response';
+}
+
+/**
  * The adzad ids already shown in one slot.
  *
  * @param array<string,mixed> $journey The journey.
@@ -167,15 +204,60 @@ function adzworld_journey_seen( $journey ) {
 }
 
 /**
- * The request string: the opening request, then every refinement in order.
+ * The full request: what was shown, what the reader thought, what they said.
  *
- * Each refinement is quoted so it reaches the provider as the reader wrote
- * it. Nothing is edited.
+ * This is the whole record projected outward, in the order it happened:
+ *
+ *   couch dislike ebay:110588014268 "no i want a brown couch"
+ *         like etsy:1566104376 "show only 3 seater brown couches"
+ *
+ * No provider connected today can read it. Every one of them searches for
+ * each word, so "dislike" and "ebay:110588014268" are words they would hunt
+ * for in product titles and never find. It is built because it is the whole
+ * truth of what the reader did, and because a provider that can act on a
+ * sequence should be handed the sequence.
+ *
+ * For what goes over the wire today, use adzworld_journey_keywords().
  *
  * @param array<string,mixed> $journey The journey.
- * @return string Request string.
+ * @return string Full request.
  */
 function adzworld_journey_request_string( $journey ) {
+	$journey = adzworld_sanitize_slot_journey( $journey );
+	$parts   = '' === $journey['request'] ? array() : array( $journey['request'] );
+
+	foreach ( $journey['rounds'] as $round ) {
+		$said = array();
+
+		if ( '' !== $round['ad'] ) {
+			$said[] = adzworld_journey_response( $round['rating'] ) . ' ' . $round['ad'];
+		}
+
+		if ( '' !== $round['refinement'] ) {
+			$said[] = '"' . str_replace( '"', "'", $round['refinement'] ) . '"';
+		}
+
+		if ( $said ) {
+			$parts[] = implode( ' ', $said );
+		}
+	}
+
+	return trim( implode( ' ', $parts ) );
+}
+
+/**
+ * The same journey as keywords, for a provider that searches word by word.
+ *
+ * The opening request and every refinement, each one quoted and whole. What
+ * is left out is what a keyword search cannot use: the adzad ids and the
+ * response words, which it would look for in product titles.
+ *
+ * Nothing inside a refinement is altered. Whole statements are carried.
+ *
+ * @param array<string,mixed> $journey The journey.
+ * @return string Keyword request.
+ */
+function adzworld_journey_keywords( $journey ) {
 	$journey = adzworld_sanitize_slot_journey( $journey );
 	$parts   = '' === $journey['request'] ? array() : array( $journey['request'] );
 
