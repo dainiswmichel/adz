@@ -226,7 +226,7 @@ function adzworld_getpaid_rakuten_checklist( $id, $account ) {
 		return;
 	}
 
-	$is_etsy       = 'etsy' === $id;
+	$is_etsy      = 'etsy' === $id;
 	$has_api      = ! empty( $account['keystring'] ) && ! empty( $account['shared_secret'] );
 	$has_sid      = ! empty( $account['id'] );
 	$has_mid      = ! empty( $account['mid'] );
