@@ -2519,3 +2519,43 @@ Release packaging must continue to exclude macOS <code>._*</code> metadata.
 The tested feature commit is <code>8a24eb0</code>; it was preserved in the
 GitHub main-branch merge history.</p>
 </section>
+
+<section id="ccw-adzlogs-2026y-11m-14d">
+<h2>claude-code-web, AdzLogs and category tone, 2026y-11m-14d-UTC</h2>
+<p class="status">Contribution from the agent that owns <code>pre-release-candidates/claude-code-web/</code>. No task in the index is claimed or closed. Nothing here is INTEGRATED VERIFIED: the integrated source was not touched. Candidate commit <code>b471d0b</code>, placed on main at <code>1b39508</code>.</p>
+
+<h3>A. What changed</h3>
+<p>Assembled on the brief for a single uploadable candidate carrying AdzLogs, with the reader's refinements concatenated rather than parsed.</p>
+<ul>
+<li><strong>AdzLogs.</strong> <code>includes/adzworld-logs.php</code> was taken from the <code>grok-4-7</code> candidate and registered in the desk. Registering the tab alone would have rendered an empty page, because nothing called the recording functions. The call sites are now in place: <code>adzworld-rotation.php</code> records every served slot, naming both what it served and what the administrator configured; <code>adzworld-feedback.php</code> records the rating against the slot it was given in; <code>adz-preference-ui.php</code> records a category change and a refinement, each against the adzad that was on screen when it was made. <code>assets/rotation.js</code> gains <code>placeFields()</code>, <code>assignPlace()</code> and <code>showingAd()</code>, which read the place from the DOM rather than assume it.</li>
+<li><strong>Nested rotations.</strong> The rotation accepts <code>outer_rotation</code> and <code>outer_slot</code>, passes them into a nested rotation and prints them on the wrapper, so a nested rotation's rows say which outer slot they came from. A nested place writes two rows, the outer slot and the inner one.</li>
+<li><strong>Category tone.</strong> The chip tone came from the category's position in the list, so position two was always green and every chip was repainted whenever the list changed. Green, yellow and red are the scoring colours (<code>--adzworld-good</code>, <code>--adzworld-neutral</code>, <code>--adzworld-bad</code>), so a green category chip stated a rating the category did not have. <code>adzworld_category_tone()</code> now derives a hue from the category's own name over a 200-305 degree band that excludes all three. The four hardcoded tone classes are gone.</li>
+<li><strong>Ranking.</strong> <code>adzworld_rank_ad()</code> matches the reader's refinement phrases verbatim through the new <code>adzworld_category_refinement_phrases()</code>. No facet parsing feeds ranking.</li>
+</ul>
+
+<h3>B. A defect the harness caught</h3>
+<p>The first version of the rotation call site passed <code>internal:412</code> as the configured token, following the journey module's prefix. <code>adzworld_logs_configured()</code> accepts <code>ad:</code>, <code>source:</code> and <code>r:</code> and discards anything else, so the field was stored empty and the log row would have said nothing about how the slot was configured. The new harness asserted the value and found it empty. The call site now passes <code>ad:412</code>.</p>
+
+<h3>C. Evidence</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>Check</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td><code>php -l</code>, whole candidate</td><td>Clean.</td></tr>
+<tr><td><code>tests/run-all.sh</code></td><td>42 / 62 / 35 / 57 / 39 / 48 / 51 / 36, zero failures. <code>test-adzlogs</code> is new: a logs round trip, a response landing on the adzad it answered, nested places writing two rows, the sent string for an external slot, and the export text.</td></tr>
+<tr><td>PHPCS <code>WordPress</code>, <code>adz-world.php</code> and <code>includes/</code></td><td>0 errors. 1 warning, pre-existing: <code>base64_encode()</code> in <code>adzworld-ebay.php</code>, which builds the HTTP Basic auth header for eBay's token endpoint.</td></tr>
+<tr><td>Suppressions</td><td>Zero <code>phpcs:ignore</code> and zero <code>phpcs:disable</code>, confirmed by grep.</td></tr>
+<tr><td>Plugin Check</td><td><strong>Not run.</strong></td></tr>
+<tr><td>Clean-WordPress activation with <code>WP_DEBUG</code> and <code>WP_DEBUG_LOG</code></td><td><strong>Not run.</strong> The AdzLogs pipeline is proven by harness, not by a page view. No runtime reproduction in a browser.</td></tr>
+</tbody>
+</table>
+</div>
+<p>The test harnesses themselves are not WPCS-clean and were not before this change (<code>test-preferences.php</code> 27 errors, <code>wp-stub.php</code> 29, the new <code>test-adzlogs.php</code> 20). They are development tools and are not in the release artifact. This is stated rather than fixed.</p>
+
+<h3>D. Still open in this candidate</h3>
+<ul>
+<li>The 30-day <code>adzworld_log_visit</code> cookie in <code>adzworld-logs.php</code> is not session-scoped. Inherited with the file, not introduced here.</li>
+<li><code>adzworld_parse_refinement()</code> still has call sites feeding <code>$pref['exclude']</code>, although it no longer feeds ranking.</li>
+<li>Behaviour changed on purpose, and recorded here so it is not discovered later: category chips change colour; the rotation accepts two new sanitised shortcode attributes; slides and the rotation wrapper carry new data attributes; three AJAX requests carry the place they came from.</li>
+</ul>
+</section>
