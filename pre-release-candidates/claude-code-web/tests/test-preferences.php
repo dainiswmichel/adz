@@ -171,5 +171,36 @@ foreach ( array_merge( $names, array( 'x', 'bike', 'rug', 'tv', 'hat', 'pan', 'b
 
 check( 'never reaches green, yellow or red', $lowest > 180, true );
 
+echo "\n=== whatever is typed becomes a category, however long ===\n";
+$typed = array(
+	'couch'                                               => array( 'couch', '' ),
+	'couch brown leather no arms'                         => array( 'couch brown leather', 'no arms' ),
+	'dinner in atlanta vegetarian outdoor seating'        => array( 'dinner in atlanta', 'vegetarian outdoor seating' ),
+	'  spaced   out   words  here  '                      => array( 'spaced out words', 'here' ),
+);
+
+foreach ( $typed as $text => $want ) {
+	$got = adzworld_split_category_input( $text );
+	check( 'category from "' . substr( $text, 0, 22 ) . '"', $got['category'], $want[0] );
+	check( 'refinement from it', $got['refinement'], $want[1] );
+	check( 'the category is always valid', adzworld_valid_category( $got['category'] ), true );
+}
+
+/* A sentence of any length is accepted, never refused. */
+$long = str_repeat( 'word ', 60 );
+$got  = adzworld_split_category_input( $long );
+check( 'a very long sentence still gives a category', '' !== $got['category'], true );
+check( 'and it is within the limits', adzworld_valid_category( $got['category'] ), true );
+check( 'the rest is kept as the refinement', '' !== $got['refinement'], true );
+
+/* A single word longer than the limit still names something. */
+$huge = str_repeat( 'z', 120 );
+$got  = adzworld_split_category_input( $huge );
+check( 'one enormous word is cut, not refused', adzworld_valid_category( $got['category'] ), true );
+
+/* Nothing typed gives nothing, and that is not an error either. */
+$got = adzworld_split_category_input( '   ' );
+check( 'empty in, empty out', $got['category'], '' );
+
 printf( "\n%d passed, %d failed\n", $pass, $fail );
 exit( $fail > 0 ? 1 : 0 );

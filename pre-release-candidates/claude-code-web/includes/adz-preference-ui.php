@@ -649,11 +649,28 @@ function adzworld_ajax_refine() {
 			? adzworld_normalize_category( sanitize_text_field( wp_unslash( $_POST['refinement'] ) ) )
 			: '';
 
-		if ( ! in_array( $old, $pref['categories'], true ) || ! adzworld_valid_category( $category ) ) {
-			wp_send_json_error( array( 'message' => __( 'Categories can use up to 3 words and 48 characters.', 'adz-world' ) ), 400 );
+		/*
+		 * A rename reads the same way as a first entry: the opening words
+		 * name the thing, the rest describes it. Nothing typed here is
+		 * refused for its length.
+		 */
+		$renamed  = adzworld_split_category_input( $category );
+		$category = $renamed['category'];
+
+		if ( ! in_array( $old, $pref['categories'], true ) || '' === $category ) {
+			wp_send_json_success( array( 'message' => __( 'Category unchanged.', 'adz-world' ) ) );
 		}
 
 		$pref = adzworld_rename_category( $pref, $old, $category );
+
+		if ( '' !== $renamed['refinement'] ) {
+			$pair = mb_substr( adzworld_pair_join( $category, $renamed['refinement'] ), 0, 240 );
+
+			if ( ! in_array( $pair, $pref['category_refinements'], true ) ) {
+				$pref['category_refinements'][] = $pair;
+			}
+		}
+
 		adzworld_store_preference( $pref );
 		wp_send_json_success( array( 'message' => __( 'Category updated.', 'adz-world' ) ) );
 	}
@@ -738,12 +755,29 @@ function adzworld_ajax_refine() {
 			$known    = adzworld_preference_with_catalog( $pref );
 			$category = adzworld_refinement_category_for_target( $target, $known );
 
+			/*
+			 * The adzad may sit in a category the reader has never named.
+			 * That is not their mistake to be told about: fall back to the
+			 * one they are working in, and if there is none, the words they
+			 * just typed name it.
+			 */
 			if ( '' === $category || ! in_array( $category, $known['categories'], true ) ) {
-				wp_send_json_error( array( 'message' => __( 'Add or select this category in the invitation hub before refining it.', 'adz-world' ) ), 400 );
+				$category = isset( $pref['active_category'] ) ? (string) $pref['active_category'] : '';
 			}
 
-			if ( '' === trim( $text ) ) {
-				wp_send_json_error( array( 'message' => __( 'Enter a refinement to keep improving these adz.', 'adz-world' ) ), 400 );
+			if ( '' === $category && ! empty( $pref['categories'] ) ) {
+				$category = (string) $pref['categories'][0];
+			}
+
+			if ( '' === $category ) {
+				$made     = adzworld_split_category_input( $text );
+				$category = $made['category'];
+				$text     = '' !== $made['refinement'] ? $made['refinement'] : $text;
+
+				if ( '' !== $category && ! in_array( $category, $pref['categories'], true ) ) {
+					$pref['categories'][]    = $category;
+					$pref['active_category'] = $category;
+				}
 			}
 
 			$pair = mb_substr( adzworld_pair_join( $category, $text ), 0, 240 );
@@ -771,10 +805,6 @@ function adzworld_ajax_refine() {
 			$split    = adzworld_split_category_input( $text );
 			$category = $split['category'];
 
-			if ( ! adzworld_valid_category( $category ) ) {
-				wp_send_json_error( array( 'message' => __( 'Enter what you are looking for.', 'adz-world' ) ), 400 );
-			}
-
 			if ( ! in_array( $category, $pref['categories'], true ) ) {
 				$pref['categories'][] = $category;
 			}
@@ -790,19 +820,45 @@ function adzworld_ajax_refine() {
 			}
 
 			$message = __( 'Category added.', 'adz-world' );
-		} elseif ( empty( $pref['categories'] ) ) {
-			wp_send_json_error( array( 'message' => __( 'Add a category in the invitation hub before refining it.', 'adz-world' ) ), 400 );
 		} else {
-			$active = isset( $pref['active_category'] ) ? $pref['active_category'] : $pref['categories'][0];
-			if ( '' === trim( $text ) ) {
-				wp_send_json_error( array( 'message' => __( 'Enter a refinement to keep improving these adz.', 'adz-world' ) ), 400 );
+			/*
+			 * Typing into the refine box before naming anything is not an
+			 * error to be corrected. The words name the thing, and whatever
+			 * follows describes it, exactly as the first box would read it.
+			 */
+			if ( empty( $pref['categories'] ) ) {
+				$made = adzworld_split_category_input( $text );
+
+				if ( '' !== $made['category'] ) {
+					$pref['categories'][]    = $made['category'];
+					$pref['active_category'] = $made['category'];
+					$text                    = '' !== $made['refinement'] ? $made['refinement'] : '';
+				}
 			}
 
-			$pair = mb_substr( adzworld_pair_join( $active, $text ), 0, 240 );
-			if ( ! in_array( $pair, $pref['category_refinements'], true ) ) {
-				$pref['category_refinements'][] = $pair;
+			$text = trim( $text );
+
+			if ( empty( $pref['categories'] ) ) {
+				/* Nothing usable was typed, so nothing changes and nothing fails. */
+				$message = __( 'Nothing to add.', 'adz-world' );
+			} else {
+				$active = isset( $pref['active_category'] ) && '' !== $pref['active_category']
+					? $pref['active_category']
+					: $pref['categories'][0];
+
+				if ( '' === $text ) {
+					/* The words were the category. There is no description to keep. */
+					$message = __( 'Category added.', 'adz-world' );
+				} else {
+					$pair = mb_substr( adzworld_pair_join( $active, $text ), 0, 240 );
+
+					if ( ! in_array( $pair, $pref['category_refinements'], true ) ) {
+						$pref['category_refinements'][] = $pair;
+					}
+
+					$message = __( 'Refinement added.', 'adz-world' );
+				}
 			}
-			$message = __( 'Refinement added.', 'adz-world' );
 		}
 	}
 
