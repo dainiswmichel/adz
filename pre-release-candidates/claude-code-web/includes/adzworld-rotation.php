@@ -941,13 +941,27 @@ function adzworld_local_ad_slide( $ad ) {
 	$plain     = trim( wp_strip_all_tags( $ad->post_content ) );
 	$has_media = (bool) preg_match( '/<(?:img|picture|video|audio|iframe|svg)\b/i', $ad->post_content );
 
+	/*
+	 * The adzad goes where the adzadmin said it should. Without this the
+	 * destination was stored and shown in the editor while the adzad itself
+	 * was not clickable.
+	 */
+	$content = adzworld_internal_link_creative( $content, $ad->ID );
+
 	if ( $has_media ) {
 		return '<div class="adzworld-creative">' . $content . '</div>'
 			. '<p class="adzworld-caption">' . esc_html( $ad->post_title ) . '</p>';
 	}
 
 	if ( mb_strlen( $plain ) <= 180 ) {
-		return '<p class="adzworld-caption">' . esc_html( $plain ) . '</p>';
+		/*
+		 * A short adzad is its own words, so it carries the destination the
+		 * same way a picture does. esc_html() first, then the link, so the
+		 * reader's text is escaped and the anchor is not.
+		 */
+		$caption = adzworld_internal_link_creative( esc_html( $plain ), $ad->ID );
+
+		return '<p class="adzworld-caption">' . $caption . '</p>';
 	}
 
 	return '<details class="adzworld-caption adzworld-caption--expandable"><summary>'
