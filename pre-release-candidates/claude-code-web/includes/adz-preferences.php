@@ -20,11 +20,16 @@
 
 defined( 'ABSPATH' ) || exit; // Exit if accessed directly.
 
-/** Maximum number of words in a user-created adz category. */
-const ADZWORLD_CATEGORY_MAX_WORDS = 3;
-
-/** Maximum number of characters in a user-created adz category. */
-const ADZWORLD_CATEGORY_MAX_LENGTH = 48;
+/*
+ * A category is cut by length, not by word count. The limit exists so a pill
+ * stays a pill; it says nothing about how many words name a thing. "dinner in
+ * atlanta" and "second hand mountain bike" are each one category.
+ *
+ * Words are never cut in half: the category takes whole words up to this
+ * length and everything after them becomes a refinement of it, so a reader
+ * types one sentence and it lands in two places by itself.
+ */
+const ADZWORLD_CATEGORY_MAX_LENGTH = 24;
 
 /** Maximum number of visible result slots a category can request. */
 const ADZWORLD_CATEGORY_MAX_SLOTS = 8;
@@ -72,7 +77,7 @@ function adzworld_split_category_input( $text ) {
 	foreach ( $words as $word ) {
 		$next = implode( ' ', array_merge( $taken, array( $word ) ) );
 
-		if ( count( $taken ) >= ADZWORLD_CATEGORY_MAX_WORDS || mb_strlen( $next ) > ADZWORLD_CATEGORY_MAX_LENGTH ) {
+		if ( mb_strlen( $next ) > ADZWORLD_CATEGORY_MAX_LENGTH ) {
 			break;
 		}
 
@@ -104,7 +109,7 @@ function adzworld_valid_category( $category ) {
 
 	return '' !== $category
 		&& mb_strlen( $category ) <= ADZWORLD_CATEGORY_MAX_LENGTH
-		&& count( $words ) <= ADZWORLD_CATEGORY_MAX_WORDS;
+		&& ! empty( $words );
 }
 
 /**
