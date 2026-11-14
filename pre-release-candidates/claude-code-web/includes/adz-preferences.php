@@ -924,9 +924,14 @@ function adzworld_category_refinement_preference( $pref, $category ) {
 /**
  * Whether a term the reader stated appears in an adzad's text.
  *
- * Matched on word boundaries. A plain substring test made "pedals" match
- * inside "no pedals", so a reader who ruled pedals out had the one adzad
- * advertising "no pedals" ruled out with them.
+ * Matched on word boundaries, so an exclusion of "cat" no longer rules out
+ * an adzad about a catalogue.
+ *
+ * What this does NOT fix, said plainly because an earlier version of this
+ * comment claimed it did: an adzad whose own copy reads "no pedals" is still
+ * ruled out by a reader excluding "pedals". The word is genuinely in the
+ * text. Reading the negation in an adzad's own copy means interpreting it,
+ * which is not done here.
  *
  * @param string $haystack The adzad's text, lowercased.
  * @param string $term     The term the reader stated.
@@ -997,12 +1002,23 @@ function adzworld_rank_ad( $ad_id, $pref ) {
 	 */
 	$feedback = function_exists( 'adzworld_current_feedback' ) ? adzworld_current_feedback() : array();
 	$key      = sanitize_key( 'ad-' . $post->ID );
-	$rating   = isset( $feedback[ $key ]['score'] ) ? (int) $feedback[ $key ]['score'] : 0;
+	$rated    = isset( $feedback[ $key ]['score'] );
 
+	/*
+	 * A reader who moved the control to the middle engaged with this adzad. A
+	 * reader who never touched it did not. Both used to rank as 0 and that
+	 * difference was lost, so engagement is its own key.
+	 *
+	 * It sits below the rating, not above it. Above it, an adzad rated -4
+	 * outranked one never rated, purely for having been touched, which is the
+	 * opposite of what the reader said. Below it, the two only ever meet at a
+	 * tie, which is exactly the case it exists to separate.
+	 */
 	return array(
 		'in_category' => in_array( $category, $pref['categories'], true ) ? 1 : 0,
 		'matched'     => $matched,
-		'rating'      => $rating,
+		'engaged'     => $rated ? 1 : 0,
+		'rating'      => $rated ? (int) $feedback[ $key ]['score'] : 0,
 	);
 }
 
@@ -1014,7 +1030,7 @@ function adzworld_rank_ad( $ad_id, $pref ) {
  * @return int Comparison result.
  */
 function adzworld_compare_rank( $first, $second ) {
-	foreach ( array( 'in_category', 'matched', 'rating' ) as $key ) {
+	foreach ( array( 'in_category', 'matched', 'rating', 'engaged' ) as $key ) {
 		if ( $first[ $key ] !== $second[ $key ] ) {
 			return $second[ $key ] <=> $first[ $key ];
 		}

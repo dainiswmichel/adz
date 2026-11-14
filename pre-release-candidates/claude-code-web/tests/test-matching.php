@@ -282,6 +282,20 @@ $GLOBALS['adz_feedback'] = array(
 );
 check( 'and the order follows the reader, not the catalogue', adzworld_match_adz( $rated, 2 )[0], 31 );
 
+/*
+ * A reader who moved the control to the middle engaged. One who never touched
+ * it did not. Both used to rank as 0 and the difference was lost. Engagement
+ * sits below the rating, so it only ever decides a tie: an adzad rated below
+ * zero must not outrank an unrated one just for having been touched.
+ */
+$GLOBALS['adz_feedback'] = array( 'ad-32' => array( 'score' => 0 ) );
+check( 'a chosen zero outranks an adzad never rated', adzworld_match_adz( $rated, 2 )[0], 32 );
+check( 'the chosen zero is marked as engaged', adzworld_rank_ad( 32, $rated )['engaged'], 1 );
+check( 'the untouched one is not', adzworld_rank_ad( 31, $rated )['engaged'], 0 );
+
+$GLOBALS['adz_feedback'] = array( 'ad-31' => array( 'score' => -4 ) );
+check( 'and engagement never outranks a rating', adzworld_match_adz( $rated, 2 )[0], 32 );
+
 echo "\n=== a term matches on word boundaries, not as a substring ===\n";
 $GLOBALS['adz_catalogue'] = array(
 	41 => 'Bicycle catalogue, 2026 edition',

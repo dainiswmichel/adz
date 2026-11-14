@@ -1349,6 +1349,7 @@ function adzworld_render_rotation_level( $attributes ) {
 			'in_category' => 0,
 			'matched'     => 0,
 			'rating'      => 0,
+			'engaged'     => 0,
 		);
 
 		foreach ( $slots as $index => $candidate ) {
