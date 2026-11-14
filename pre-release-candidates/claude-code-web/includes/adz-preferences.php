@@ -373,79 +373,78 @@ function adzworld_parse_refinement( $text, $onto = null ) {
 }
 
 /**
- * Join a category and a refinement into one stored pair.
+ * The words that separate the two halves of a stored pair.
  *
- * The pair is read back by matching the category and a `--` separator at the
- * start of the string. A category may itself contain `--`, because
- * adzworld_normalize_category() only collapses whitespace, and then two
- * different pairs produce the same string:
+ * They are words rather than punctuation because punctuation is typeable. A
+ * reader writing "brown -- no arms" collided with a "--" delimiter, and the
+ * fix was to percent-encode both halves, which left the database holding
+ * things like dinner%20in%20Atlanta--vegetarian%20outdoor. Labels keep the
+ * stored value readable and need no encoding at all.
+ */
+const ADZWORLD_PAIR_CATEGORY   = 'Category: ';
+const ADZWORLD_PAIR_REFINEMENT = ' Refinements: ';
+
+/**
+ * Join a category and a refinement into one stored value.
  *
- *     category 'a',    refinement 'b--c'  ->  'a--b--c'
- *     category 'a--b', refinement 'c'     ->  'a--b--c'
- *
- * Matching the prefix 'a--' returns the second pair's refinement to category
- * 'a'. Encoding each half, and escaping the hyphen inside it, means neither
- * half can contain a `-` at all, so the separator is unambiguous.
+ * Neither half is altered. "brown -- no arms" is stored exactly as typed.
  *
  * @param string $category   Category.
  * @param string $refinement Refinement.
  * @return string Stored pair.
  */
 function adzworld_pair_join( $category, $refinement ) {
-	return adzworld_pair_escape( $category ) . '--' . adzworld_pair_escape( $refinement );
+	return ADZWORLD_PAIR_CATEGORY . trim( (string) $category ) . ADZWORLD_PAIR_REFINEMENT . trim( (string) $refinement );
 }
 
 /**
- * Split a stored pair back into its category and refinement.
+ * Split a stored pair back into its two halves.
  *
- * Accepts the unescaped form written by earlier versions, so a preference
- * saved before this change still reads. An unescaped pair is ambiguous by
- * definition; it is split on the first separator, which is what the previous
- * code did.
+ * The split is on the FIRST label only, so a refinement that itself contains
+ * the word "Refinements:" survives whole in the second half.
+ *
+ * A value with no label is a legacy pair from when the delimiter was "--".
+ * Those are still read, so a reader's saved preferences survive the change.
  *
  * @param string $pair Stored pair.
  * @return array{0:string,1:string} Category and refinement.
  */
 function adzworld_pair_split( $pair ) {
-	$parts      = explode( '--', (string) $pair, 2 );
-	$category   = isset( $parts[0] ) ? $parts[0] : '';
-	$refinement = isset( $parts[1] ) ? $parts[1] : '';
+	$pair = (string) $pair;
 
-	return array( adzworld_pair_unescape( $category ), adzworld_pair_unescape( $refinement ) );
+	if ( 0 === strpos( $pair, ADZWORLD_PAIR_CATEGORY ) ) {
+		$rest = substr( $pair, strlen( ADZWORLD_PAIR_CATEGORY ) );
+		$at   = strpos( $rest, ADZWORLD_PAIR_REFINEMENT );
+
+		if ( false === $at ) {
+			return array( trim( $rest ), '' );
+		}
+
+		return array(
+			trim( substr( $rest, 0, $at ) ),
+			trim( substr( $rest, $at + strlen( ADZWORLD_PAIR_REFINEMENT ) ) ),
+		);
+	}
+
+	/* Legacy: percent-escaped halves joined by "--". */
+	$parts = explode( '--', $pair, 2 );
+
+	return array(
+		rawurldecode( isset( $parts[0] ) ? $parts[0] : '' ),
+		rawurldecode( isset( $parts[1] ) ? $parts[1] : '' ),
+	);
 }
 
 /**
- * The prefix a stored pair for this category begins with.
+ * The opening of every pair stored for one category.
+ *
+ * Used to find a category's own refinements among all of them.
  *
  * @param string $category Category.
- * @return string Prefix including the separator.
+ * @return string Prefix.
  */
 function adzworld_pair_prefix( $category ) {
-	return adzworld_pair_escape( $category ) . '--';
-}
-
-/**
- * Escape one half of a pair so it cannot contain the separator.
- *
- * The hyphen is escaped after rawurlencode(), which leaves it alone. The
- * result is restricted to characters sanitize_text_field() leaves untouched,
- * which the stored preference depends on.
- *
- * @param string $value Raw value.
- * @return string Escaped value.
- */
-function adzworld_pair_escape( $value ) {
-	return str_replace( '-', '%2D', rawurlencode( (string) $value ) );
-}
-
-/**
- * Reverse adzworld_pair_escape(). Safe on an unescaped legacy value.
- *
- * @param string $value Escaped value.
- * @return string Raw value.
- */
-function adzworld_pair_unescape( $value ) {
-	return rawurldecode( (string) $value );
+	return ADZWORLD_PAIR_CATEGORY . trim( (string) $category ) . ADZWORLD_PAIR_REFINEMENT;
 }
 
 /**
@@ -912,7 +911,7 @@ function adzworld_category_refinement_preference( $pref, $category ) {
 	foreach ( $pref['category_refinements'] as $stored ) {
 		if ( 0 === strpos( $stored, $prefix ) ) {
 			$scoped = adzworld_parse_refinement(
-				adzworld_pair_unescape( substr( $stored, strlen( $prefix ) ) ),
+				substr( $stored, strlen( $prefix ) ),
 				$scoped
 			);
 		}
