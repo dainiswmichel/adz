@@ -173,10 +173,10 @@ check( 'never reaches green, yellow or red', $lowest > 180, true );
 
 echo "\n=== whatever is typed becomes a category, however long ===\n";
 $typed = array(
-	'couch'                                               => array( 'couch', '' ),
-	'couch brown leather no arms'                         => array( 'couch brown leather', 'no arms' ),
-	'dinner in atlanta vegetarian outdoor seating'        => array( 'dinner in atlanta', 'vegetarian outdoor seating' ),
-	'  spaced   out   words  here  '                      => array( 'spaced out words', 'here' ),
+	'couch'                                        => array( 'couch', '' ),
+	'couch brown leather no arms'                  => array( 'couch brown leather no', 'arms' ),
+	'dinner in atlanta vegetarian outdoor seating' => array( 'dinner in atlanta', 'vegetarian outdoor seating' ),
+	'second hand mountain bike frame under 200'    => array( 'second hand mountain', 'bike frame under 200' ),
 );
 
 foreach ( $typed as $text => $want ) {
@@ -184,7 +184,20 @@ foreach ( $typed as $text => $want ) {
 	check( 'category from "' . substr( $text, 0, 22 ) . '"', $got['category'], $want[0] );
 	check( 'refinement from it', $got['refinement'], $want[1] );
 	check( 'the category is always valid', adzworld_valid_category( $got['category'] ), true );
+	check( 'and fits a pill', mb_strlen( $got['category'] ) <= ADZWORLD_CATEGORY_MAX_LENGTH, true );
 }
+
+/* A category is no longer capped at three words, only at a pill's width. */
+$got = adzworld_split_category_input( 'dinner in atlanta tonight' );
+check( 'four words are one category', $got['category'], 'dinner in atlanta' );
+$got = adzworld_split_category_input( 'red leather couch' );
+check( 'three words stay together', $got['category'], 'red leather couch' );
+check( 'with nothing pushed out', $got['refinement'], '' );
+
+/* Words are never cut in half. */
+$got = adzworld_split_category_input( 'extraordinarily comfortable chair' );
+check( 'a word is never split', $got['category'], 'extraordinarily' );
+check( 'the rest follows whole', $got['refinement'], 'comfortable chair' );
 
 /* A sentence of any length is accepted, never refused. */
 $long = str_repeat( 'word ', 60 );
