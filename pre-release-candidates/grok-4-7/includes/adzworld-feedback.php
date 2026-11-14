@@ -285,10 +285,33 @@ function adzworld_ajax_evaluate() {
 	);
 	adzworld_store_feedback( $feedback );
 
+	if ( function_exists( 'adzworld_logs_record_response' ) ) {
+		$log_rotation   = isset( $_POST['rotation'] ) && is_string( $_POST['rotation'] ) ? sanitize_key( wp_unslash( $_POST['rotation'] ) ) : '';
+		$log_slot       = isset( $_POST['slot'] ) && is_string( $_POST['slot'] ) ? sanitize_text_field( wp_unslash( $_POST['slot'] ) ) : '-1';
+		$log_outer      = isset( $_POST['outer_rotation'] ) && is_string( $_POST['outer_rotation'] ) ? sanitize_key( wp_unslash( $_POST['outer_rotation'] ) ) : '';
+		$log_outer_slot = isset( $_POST['outer_slot'] ) && is_string( $_POST['outer_slot'] ) ? sanitize_text_field( wp_unslash( $_POST['outer_slot'] ) ) : '0';
+		adzworld_logs_record_response(
+			$log_rotation,
+			$log_slot,
+			$log_outer,
+			$log_outer_slot,
+			$target,
+			array(
+				'rating' => (int) $score,
+			),
+			0 === strpos( $target, 'source-' )
+		);
+	}
+
+	$log_message = __( 'Evaluation saved.', 'adz-world' );
+	if ( 0 === strpos( $target, 'ad-' ) && function_exists( 'adzworld_slot_journey_thanks' ) ) {
+		$log_message = adzworld_slot_journey_thanks();
+	}
+
 	wp_send_json_success(
 		array(
 			'label'   => adzworld_feedback_label( (int) $score ),
-			'message' => __( 'Evaluation saved.', 'adz-world' ),
+			'message' => $log_message,
 		)
 	);
 }

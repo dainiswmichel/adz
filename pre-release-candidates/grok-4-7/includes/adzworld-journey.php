@@ -1,25 +1,17 @@
 <?php
 /**
- * The slot journey.
+ * One slot journey is in the rotation.
  *
- * One slot keeps what the reader stated, in order. The opening request is
- * the category string. Round 1 holds the first ad id and the full response
- * to it. Round 2 holds the next ad id and the full response to that ad.
+ * The slot record is the rotation, the slot, the category, and the
+ * refinements. The slot journey is the ads that then appear.
  *
- * The specific value on a round is the rating number the reader set, from
- * -100 to 100. Store that number as set. Do not divide it. Do not replace
- * it with a word. An empty rating means the reader did not respond. Zero
- * is a response.
+ * Ad 1 is at that rotation, slot, category, and refinements. Each later ad
+ * is at the same rotation and slot. A response on an ad is its category,
+ * rating, and refinements.
  *
- * A translation may be stored on the same round. It is the coarser label:
- * strongly dislike, dislike, neutral, like, strongly like, or no response.
- * A collected translation is kept. When none was collected, the label uses
- * the same cut points as adzworld_feedback_label(). The number stays the
- * specific value, so two different numbers may share one translation.
- *
- * The search string for a provider is the opening request and the typed
- * refinements, in order. The rating, the translation, and the ad id stay
- * on the round. This file does not decide which ad comes next.
+ * Internal feedback is sent to the site. External feedback keeps those three
+ * fields and carries the modified string. This file does not call a provider
+ * and does not choose the next ad.
  *
  * @package adz-world
  */
@@ -29,14 +21,10 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Keep a stated string whole.
  *
- * HTML tags and NUL bytes cannot be stored. The words are not lowercased,
- * stemmed, or rewritten. A stated phrase uses the refinement length already
- * set for this plugin.
- *
  * @param string $text Reader's text, or an ad id.
  * @return string
  */
-function adzworld_journey_statement( $text ) {
+function adzworld_slot_journey_text( $text ) {
 	$text = wp_strip_all_tags( (string) $text );
 	$text = str_replace( "\0", '', $text );
 	$text = trim( $text );
@@ -49,14 +37,40 @@ function adzworld_journey_statement( $text ) {
 }
 
 /**
- * Reduce a rating to the number the reader set, or to no response.
+ * Refinements as the reader set them.
  *
- * A word is not a rating. This function does not turn a word into a number.
+ * A list of phrases stays in that order, one space between phrases.
  *
- * @param mixed $rating Integer from -100 to 100, a numeric string in that range, empty for no response, or something else.
- * @return int|null|false The number, null when the reader did not respond, false when the value is not that number.
+ * @param mixed $refinements One phrase, or a list of phrases.
+ * @return string
  */
-function adzworld_journey_normalize_rating( $rating ) {
+function adzworld_slot_journey_refinements( $refinements ) {
+	if ( is_array( $refinements ) ) {
+		$parts = array();
+
+		foreach ( $refinements as $phrase ) {
+			$phrase = adzworld_slot_journey_text( $phrase );
+			if ( '' !== $phrase ) {
+				$parts[] = $phrase;
+			}
+		}
+
+		return implode( ' ', $parts );
+	}
+
+	return adzworld_slot_journey_text( $refinements );
+}
+
+/**
+ * The rating number, when the reader set one.
+ *
+ * Empty, a word, and a number outside -100 to 100 stay off the rating.
+ * Zero stays zero.
+ *
+ * @param mixed $rating Rating number, or empty when the reader did not set one.
+ * @return int|null
+ */
+function adzworld_slot_journey_rating( $rating ) {
 	if ( null === $rating || false === $rating ) {
 		return null;
 	}
@@ -75,278 +89,258 @@ function adzworld_journey_normalize_rating( $rating ) {
 		$number = (int) $rating;
 
 		if ( (string) $number !== (string) $rating && (float) $number !== (float) $rating ) {
-			return false;
+			return null;
 		}
 	} else {
-		return false;
+		return null;
 	}
 
 	if ( $number < -100 || $number > 100 ) {
-		return false;
+		return null;
 	}
 
 	return $number;
 }
 
 /**
- * Recognize a collected translation.
+ * The modified string for an external slot.
  *
- * The stored word is one of the six record labels. "like a lot" is the same
- * label as "strongly like". Any other text is left off the translation.
+ * Category, rating number, refinements, one space between the parts that are present.
  *
- * @param mixed $translation Collected label.
- * @return string A record label, or an empty string when none was collected.
- */
-function adzworld_journey_normalize_translation( $translation ) {
-	if ( ! is_string( $translation ) ) {
-		return '';
-	}
-
-	$translation = strtolower( $translation );
-	$collapsed   = preg_replace( '/\s+/', ' ', $translation );
-
-	if ( ! is_string( $collapsed ) ) {
-		return '';
-	}
-
-	$translation = trim( $collapsed );
-
-	if ( 'like a lot' === $translation ) {
-		$translation = 'strongly like';
-	}
-
-	$words = array(
-		'strongly dislike',
-		'dislike',
-		'neutral',
-		'like',
-		'strongly like',
-		'no response',
-	);
-
-	if ( in_array( $translation, $words, true ) ) {
-		return $translation;
-	}
-
-	return '';
-}
-
-/**
- * Coarser label for a rating number.
- *
- * The cut points are the ones in adzworld_feedback_label(): -75, -25, 25,
- * and 75. Null uses the label for an unmoved control. The number is unchanged.
- *
- * @param int|null $rating Rating number, or null when the reader did not respond.
- * @return string One of the six record labels.
- */
-function adzworld_journey_project_translation( $rating ) {
-	if ( null === $rating ) {
-		return 'no response';
-	}
-
-	if ( $rating <= -75 ) {
-		return 'strongly dislike';
-	}
-
-	if ( $rating <= -25 ) {
-		return 'dislike';
-	}
-
-	if ( $rating < 25 ) {
-		return 'neutral';
-	}
-
-	if ( $rating < 75 ) {
-		return 'like';
-	}
-
-	return 'strongly like';
-}
-
-/**
- * Translation stored on a round.
- *
- * A collected label is kept, including when it is coarser than the number.
- * An empty or unrecognized label uses the projection of the number.
- *
+ * @param string   $category    Category.
  * @param int|null $rating      Rating number, or null.
- * @param mixed    $translation Collected label.
+ * @param string   $refinements Refinements.
  * @return string
  */
-function adzworld_journey_resolve_translation( $rating, $translation ) {
-	$collected = adzworld_journey_normalize_translation( $translation );
+function adzworld_slot_journey_string( $category, $rating, $refinements ) {
+	$parts = array();
 
-	if ( '' !== $collected ) {
-		return $collected;
+	if ( '' !== $category ) {
+		$parts[] = $category;
 	}
 
-	return adzworld_journey_project_translation( $rating );
-}
-
-/**
- * An empty journey for one slot.
- *
- * @param string $request Opening category string.
- * @return array{request:string,rounds:array<int,array{ad:string,rating:?int,translation:string,refinement:string}>}
- */
-function adzworld_journey_start( $request ) {
-	return array(
-		'request' => adzworld_journey_statement( $request ),
-		'rounds'  => array(),
-	);
-}
-
-/**
- * Append one round.
- *
- * A round without an ad is not stored. A rating outside -100 to 100, or a
- * word in the rating argument, is not stored and is not turned into a number.
- * The translation argument is the coarser label and does not change the number.
- *
- * @param array<string,mixed> $journey     Journey.
- * @param string              $ad          Ad id.
- * @param mixed               $rating      Rating number, or empty for no response.
- * @param string              $refinement  Refinement the reader typed. May be empty.
- * @param mixed               $translation Collected translation. Empty when none was collected.
- * @return array<string,mixed> Journey, with the round appended when the ad and rating are usable.
- */
-function adzworld_journey_add( $journey, $ad, $rating, $refinement, $translation = null ) {
-	$journey    = adzworld_journey_sanitize( $journey );
-	$ad         = adzworld_journey_statement( $ad );
-	$refinement = adzworld_journey_statement( $refinement );
-	$rating     = adzworld_journey_normalize_rating( $rating );
-
-	if ( '' === $ad || false === $rating ) {
-		return $journey;
+	if ( is_int( $rating ) ) {
+		$parts[] = (string) $rating;
 	}
 
-	$journey['rounds'][] = array(
-		'ad'          => $ad,
-		'rating'      => $rating,
-		'translation' => adzworld_journey_resolve_translation( $rating, $translation ),
-		'refinement'  => $refinement,
-	);
-
-	return $journey;
-}
-
-/**
- * Reduce stored data to the journey shape.
- *
- * @param mixed $stored Raw value.
- * @return array{request:string,rounds:array<int,array{ad:string,rating:?int,translation:string,refinement:string}>}
- */
-function adzworld_journey_sanitize( $stored ) {
-	$request = '';
-
-	if ( is_array( $stored ) && isset( $stored['request'] ) ) {
-		$request = adzworld_journey_statement( $stored['request'] );
-	}
-
-	$journey = adzworld_journey_start( $request );
-	$rounds  = ( is_array( $stored ) && isset( $stored['rounds'] ) && is_array( $stored['rounds'] ) ) ? $stored['rounds'] : array();
-
-	foreach ( $rounds as $round ) {
-		if ( ! is_array( $round ) ) {
-			continue;
-		}
-
-		$ad         = isset( $round['ad'] ) ? adzworld_journey_statement( $round['ad'] ) : '';
-		$refinement = isset( $round['refinement'] ) ? adzworld_journey_statement( $round['refinement'] ) : '';
-		$rating     = array_key_exists( 'rating', $round ) ? adzworld_journey_normalize_rating( $round['rating'] ) : null;
-		$collected  = array_key_exists( 'translation', $round ) ? $round['translation'] : null;
-
-		if ( '' === $ad || false === $rating ) {
-			continue;
-		}
-
-		$journey['rounds'][] = array(
-			'ad'          => $ad,
-			'rating'      => $rating,
-			'translation' => adzworld_journey_resolve_translation( $rating, $collected ),
-			'refinement'  => $refinement,
-		);
-	}
-
-	return $journey;
-}
-
-/**
- * Ad ids already shown, oldest first.
- *
- * @param array<string,mixed> $journey Journey.
- * @return string[]
- */
-function adzworld_journey_seen( $journey ) {
-	$journey = adzworld_journey_sanitize( $journey );
-	$seen    = array();
-
-	foreach ( $journey['rounds'] as $round ) {
-		if ( '' === $round['ad'] || isset( $seen[ $round['ad'] ] ) ) {
-			continue;
-		}
-
-		$seen[ $round['ad'] ] = true;
-	}
-
-	return array_keys( $seen );
-}
-
-/**
- * The search string a provider can take.
- *
- * The opening request, then each refinement that was typed, in order. Rating
- * numbers, translations, and ad ids are left on the round.
- *
- * @param array<string,mixed> $journey Journey.
- * @return string
- */
-function adzworld_journey_keywords( $journey ) {
-	$journey = adzworld_journey_sanitize( $journey );
-	$parts   = array();
-
-	if ( '' !== $journey['request'] ) {
-		$parts[] = $journey['request'];
-	}
-
-	foreach ( $journey['rounds'] as $round ) {
-		if ( '' !== $round['refinement'] ) {
-			$parts[] = $round['refinement'];
-		}
+	if ( '' !== $refinements ) {
+		$parts[] = $refinements;
 	}
 
 	return implode( ' ', $parts );
 }
 
 /**
- * The record of the slot, with rounds numbered from 1.
+ * The sentence shown when internal feedback is sent to the site.
  *
- * Each round is an ad id and the full response. The rating number is the
- * specific value. The translation is the coarser label on that same round.
- * The refinement is the text the reader typed.
- *
- * @param array<string,mixed> $journey Journey.
- * @return array{request:string,rounds:array<int,array{round:int,ad:string,rating:?int,translation:string,refinement:string}>}
+ * @return string
  */
-function adzworld_journey_record( $journey ) {
-	$journey = adzworld_journey_sanitize( $journey );
-	$rows    = array();
-	$number  = 0;
+function adzworld_slot_journey_thanks() {
+	return __( 'Thank you for your feedback.', 'adz-world' );
+}
 
-	foreach ( $journey['rounds'] as $round ) {
-		++$number;
-		$rows[] = array(
-			'round'       => $number,
-			'ad'          => $round['ad'],
-			'rating'      => $round['rating'],
-			'translation' => $round['translation'],
-			'refinement'  => $round['refinement'],
+/**
+ * One slot in a rotation, before any ad appears.
+ *
+ * @param string $rotation    Rotation name.
+ * @param int    $slot        Zero-based slot index.
+ * @param string $category    Opening category.
+ * @param mixed  $refinements Opening refinements.
+ * @return array{rotation:string,slot:int,category:string,refinements:string,journey:array<int,array{ad:string,feedback:?array}>}
+ */
+function adzworld_slot_journey_start( $rotation, $slot, $category, $refinements ) {
+	return array(
+		'rotation'    => adzworld_slot_journey_text( $rotation ),
+		'slot'        => (int) $slot,
+		'category'    => adzworld_slot_journey_text( $category ),
+		'refinements' => adzworld_slot_journey_refinements( $refinements ),
+		'journey'     => array(),
+	);
+}
+
+/**
+ * Append the ad that appeared in this slot.
+ *
+ * @param array<string,mixed> $journey Slot record.
+ * @param string              $ad      Ad id.
+ * @return array<string,mixed>
+ */
+function adzworld_slot_journey_show( $journey, $ad ) {
+	$journey = adzworld_slot_journey_sanitize( $journey );
+	$ad      = adzworld_slot_journey_text( $ad );
+
+	if ( '' === $ad ) {
+		return $journey;
+	}
+
+	$journey['journey'][] = array(
+		'ad'       => $ad,
+		'feedback' => null,
+	);
+
+	return $journey;
+}
+
+/**
+ * Store the response on the ad that just appeared.
+ *
+ * Internal feedback is sent to the site. External feedback keeps the three
+ * fields and adds the modified string.
+ *
+ * @param array<string,mixed> $journey     Slot record.
+ * @param string              $category    Category the reader set.
+ * @param mixed               $rating      Rating number, or empty.
+ * @param mixed               $refinements Refinements the reader set.
+ * @param bool                $external    True when the modified string goes to an API.
+ * @return array<string,mixed>
+ */
+function adzworld_slot_journey_respond( $journey, $category, $rating, $refinements, $external = false ) {
+	$journey     = adzworld_slot_journey_sanitize( $journey );
+	$category    = adzworld_slot_journey_text( $category );
+	$refinements = adzworld_slot_journey_refinements( $refinements );
+	$number      = adzworld_slot_journey_rating( $rating );
+	$last        = count( $journey['journey'] ) - 1;
+
+	if ( $last < 0 || ( '' === $category && null === $number && '' === $refinements ) ) {
+		return $journey;
+	}
+
+	$feedback = array(
+		'category'    => $category,
+		'rating'      => $number,
+		'refinements' => $refinements,
+	);
+
+	if ( $external ) {
+		$feedback['string'] = adzworld_slot_journey_string( $category, $number, $refinements );
+	} else {
+		$feedback['site'] = true;
+	}
+
+	$journey['journey'][ $last ]['feedback'] = $feedback;
+
+	return $journey;
+}
+
+/**
+ * Reduce stored data to the slot record.
+ *
+ * @param mixed $stored Raw value.
+ * @return array{rotation:string,slot:int,category:string,refinements:string,journey:array<int,array{ad:string,feedback:?array}>}
+ */
+function adzworld_slot_journey_sanitize( $stored ) {
+	$rotation    = '';
+	$slot        = 0;
+	$category    = '';
+	$refinements = '';
+
+	if ( is_array( $stored ) ) {
+		if ( isset( $stored['rotation'] ) ) {
+			$rotation = adzworld_slot_journey_text( $stored['rotation'] );
+		}
+		if ( isset( $stored['slot'] ) && is_numeric( $stored['slot'] ) ) {
+			$slot = (int) $stored['slot'];
+		}
+		if ( isset( $stored['category'] ) ) {
+			$category = adzworld_slot_journey_text( $stored['category'] );
+		}
+		if ( isset( $stored['refinements'] ) ) {
+			$refinements = adzworld_slot_journey_refinements( $stored['refinements'] );
+		}
+	}
+
+	$journey = adzworld_slot_journey_start( $rotation, $slot, $category, $refinements );
+	$rows    = ( is_array( $stored ) && isset( $stored['journey'] ) && is_array( $stored['journey'] ) ) ? $stored['journey'] : array();
+
+	foreach ( $rows as $row ) {
+		if ( ! is_array( $row ) ) {
+			continue;
+		}
+
+		$ad = isset( $row['ad'] ) ? adzworld_slot_journey_text( $row['ad'] ) : '';
+		if ( '' === $ad ) {
+			continue;
+		}
+
+		$feedback = null;
+		if ( isset( $row['feedback'] ) && is_array( $row['feedback'] ) ) {
+			$feedback_category    = isset( $row['feedback']['category'] ) ? adzworld_slot_journey_text( $row['feedback']['category'] ) : '';
+			$feedback_refinements = isset( $row['feedback']['refinements'] ) ? adzworld_slot_journey_refinements( $row['feedback']['refinements'] ) : '';
+			$feedback_rating      = array_key_exists( 'rating', $row['feedback'] ) ? adzworld_slot_journey_rating( $row['feedback']['rating'] ) : null;
+
+			if ( '' !== $feedback_category || null !== $feedback_rating || '' !== $feedback_refinements ) {
+				$feedback = array(
+					'category'    => $feedback_category,
+					'rating'      => $feedback_rating,
+					'refinements' => $feedback_refinements,
+				);
+
+				if ( ! empty( $row['feedback']['string'] ) ) {
+					$feedback['string'] = adzworld_slot_journey_string( $feedback_category, $feedback_rating, $feedback_refinements );
+				} else {
+					$feedback['site'] = true;
+				}
+			}
+		}
+
+		$journey['journey'][] = array(
+			'ad'       => $ad,
+			'feedback' => $feedback,
 		);
 	}
 
+	return $journey;
+}
+
+/**
+ * Where one ad in the slot journey sits.
+ *
+ * The first ad sits at the rotation, the slot, the category, and the refinements.
+ * Each later ad sits at the rotation and the slot.
+ *
+ * @param array<string,mixed> $journey Slot record.
+ * @param int                 $index   Zero-based ad index.
+ * @return array<string,mixed>
+ */
+function adzworld_slot_journey_where( $journey, $index ) {
+	$where = array(
+		'rotation' => $journey['rotation'],
+		'slot'     => $journey['slot'],
+	);
+
+	if ( 0 === (int) $index ) {
+		$where['category']    = $journey['category'];
+		$where['refinements'] = $journey['refinements'];
+	}
+
+	return $where;
+}
+
+/**
+ * The slot record, with the journey in order.
+ *
+ * @param array<string,mixed> $journey Slot record.
+ * @return array{rotation:string,slot:int,category:string,refinements:string,journey:array<int,array{ad:string,where:array<string,mixed>,feedback:?array}>}
+ */
+function adzworld_slot_journey_record( $journey ) {
+	$journey = adzworld_slot_journey_sanitize( $journey );
+	$rows    = array();
+	$index   = 0;
+
+	foreach ( $journey['journey'] as $row ) {
+		$rows[] = array(
+			'ad'       => $row['ad'],
+			'where'    => adzworld_slot_journey_where( $journey, $index ),
+			'feedback' => $row['feedback'],
+		);
+		++$index;
+	}
+
 	return array(
-		'request' => $journey['request'],
-		'rounds'  => $rows,
+		'rotation'    => $journey['rotation'],
+		'slot'        => $journey['slot'],
+		'category'    => $journey['category'],
+		'refinements' => $journey['refinements'],
+		'journey'     => $rows,
 	);
 }

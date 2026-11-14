@@ -1331,7 +1331,9 @@ function adzworld_render_rotation( $attributes ) {
 function adzworld_render_rotation_level( $attributes ) {
 	$attributes = shortcode_atts(
 		array(
-			'name' => '',
+			'name'           => '',
+			'outer_rotation' => '',
+			'outer_slot'     => 0,
 		),
 		$attributes,
 		'adz_rotation'
@@ -1352,6 +1354,9 @@ function adzworld_render_rotation_level( $attributes ) {
 	$slots                  = adzworld_parse_rotation( $attributes['slots'] );
 	if ( is_wp_error( $slots ) ) {
 		return '<p class="adzworld-rotation-error" role="alert">' . esc_html( $slots->get_error_message() ) . '</p>';
+	}
+	foreach ( $slots as $index => $slot ) {
+		$slots[ $index ]['order'] = $index;
 	}
 	$formats = adzworld_rotation_display_formats();
 	$sizes   = adzworld_rotation_size_presets();
@@ -1403,6 +1408,10 @@ function adzworld_render_rotation_level( $attributes ) {
 		$category      = isset( $slot['category'] ) ? (string) $slot['category'] : '';
 		$category_slot = isset( $slot['category_slot'] ) ? (int) $slot['category_slot'] : 0;
 		$slot_count    = isset( $slot['category_slot_count'] ) ? (int) $slot['category_slot_count'] : 1;
+		$slot_index    = isset( $slot['order'] ) ? (int) $slot['order'] : (int) $index;
+		$served        = '';
+		$configured    = '';
+		$ad            = null;
 		if ( 'intro' === $slot['type'] ) {
 			$html = adzworld_rotation_introduction( $slide_id );
 		} elseif ( 'ad' === $slot['type'] ) {
@@ -1441,10 +1450,16 @@ function adzworld_render_rotation_level( $attributes ) {
 			if ( function_exists( 'adzworld_affiliate_category_search_link' ) ) {
 				$html .= adzworld_affiliate_category_search_link( $pref, $category );
 			}
+			if ( $ad instanceof WP_Post ) {
+				$served     = 'ad-' . $ad->ID;
+				$configured = 'ad:' . $ad->ID;
+			}
 		} elseif ( 'r' === $slot['type'] ) {
 			$inner = adzworld_render_rotation(
 				array(
-					'name' => $slot['value'],
+					'name'           => $slot['value'],
+					'outer_rotation' => $name,
+					'outer_slot'     => isset( $slot['order'] ) ? (int) $slot['order'] : (int) $index,
 				)
 			);
 			$html  = '<div class="adzworld-nested-rotation">' . $inner . '</div>'
@@ -1453,15 +1468,48 @@ function adzworld_render_rotation_level( $attributes ) {
 			$html = '<div class="adzworld-provider-placeholder"><p>' . esc_html( (string) $slot['value'] ) . '</p><p>'
 				. esc_html__( 'This provider unit is not connected yet. The shortcode already names it.', 'adz-world' ) . '</p></div>';
 		} else {
-			$category = isset( $pref['active_category'] ) ? (string) $pref['active_category'] : '';
-			$html     = '<div class="adzworld-provider" aria-label="' . esc_attr( $sources[ $slot['value'] ]['label'] ) . '">'
+			$category   = isset( $pref['active_category'] ) ? (string) $pref['active_category'] : '';
+			$html       = '<div class="adzworld-provider" aria-label="' . esc_attr( $sources[ $slot['value'] ]['label'] ) . '">'
 				. do_shortcode( $sources[ $slot['value'] ]['shortcode'] ) . '</div>'
 				. '<p class="adzworld-match-label">' . esc_html( $sources[ $slot['value'] ]['label'] ) . '</p>'
 				. adzworld_feedback_control( 'source-' . $slot['value'], $category );
+			$served     = 'source-' . $slot['value'];
+			$configured = 'source:' . $slot['value'];
+		}
+		$shown_rating           = null;
+		$shown_refinements_text = '';
+		if ( '' !== $served && function_exists( 'adzworld_logs_remember_ad' ) && function_exists( 'adzworld_logs_place' ) ) {
+			$shown_feedback = function_exists( 'adzworld_current_feedback' ) ? adzworld_current_feedback() : array();
+			if ( isset( $shown_feedback[ $served ]['score'] ) ) {
+				$shown_rating = adzworld_slot_journey_rating( $shown_feedback[ $served ]['score'] );
+			}
+			$shown_phrases          = function_exists( 'adzworld_logs_phrases' ) ? adzworld_logs_phrases( $pref, $category ) : array();
+			$shown_refinements_text = adzworld_slot_journey_refinements( $shown_phrases );
+			adzworld_logs_remember_ad(
+				adzworld_logs_place( $name, $slot_index, $attributes['outer_rotation'], (int) $attributes['outer_slot'] ),
+				$served,
+				$configured,
+				$category,
+				$shown_phrases,
+				$shown_rating
+			);
 		}
 		$category_attribute = '' !== $category ? ' data-adzworld-category="' . esc_attr( $category ) . '"' : '';
 		$slot_attribute     = '' !== $category ? ' data-adzworld-category-slot="' . esc_attr( (string) $category_slot ) . '"' : '';
-		$slides            .= '<section class="adzworld-slide" id="' . esc_attr( $slide_id ) . '"' . $category_attribute . $slot_attribute . ' role="group" aria-roledescription="'
+		$log_attribute      = ' data-adzworld-slot="' . esc_attr( (string) $slot_index ) . '"';
+		if ( '' !== $served ) {
+			$log_attribute .= ' data-adzworld-ad="' . esc_attr( $served ) . '"';
+		}
+		if ( '' !== $configured ) {
+			$log_attribute .= ' data-adzworld-configured="' . esc_attr( $configured ) . '"';
+		}
+		if ( is_int( $shown_rating ) ) {
+			$log_attribute .= ' data-adzworld-rating="' . esc_attr( (string) $shown_rating ) . '"';
+		}
+		if ( '' !== $shown_refinements_text ) {
+			$log_attribute .= ' data-adzworld-refinements="' . esc_attr( $shown_refinements_text ) . '"';
+		}
+		$slides .= '<section class="adzworld-slide" id="' . esc_attr( $slide_id ) . '"' . $category_attribute . $slot_attribute . $log_attribute . ' role="group" aria-roledescription="'
 			. esc_attr__( 'slide', 'adz-world' ) . '" aria-label="' . esc_attr( ( $index + 1 ) . ' / ' . count( $slots ) ) . '">' . $html . '</section>';
 		if ( 'intro' === $slot['type'] ) {
 			$dot_class = ' class="adzworld-hub-position"';
@@ -1509,8 +1557,17 @@ function adzworld_render_rotation_level( $attributes ) {
 			. esc_html__( 'Dismiss this advertising', 'adz-world' ) . '</span></button>';
 	}
 
+	$rotation_attribute = ' data-adzworld-rotation="' . esc_attr( $name ) . '"';
+	$outer_attribute    = '';
+	if ( function_exists( 'adzworld_logs_key' ) ) {
+		$outer_rotation = adzworld_logs_key( $attributes['outer_rotation'] );
+		if ( '' !== $outer_rotation ) {
+			$outer_attribute = ' data-adzworld-outer-rotation="' . esc_attr( $outer_rotation ) . '" data-adzworld-outer-slot="' . esc_attr( (string) (int) $attributes['outer_slot'] ) . '"';
+		}
+	}
+
 	return '<div class="' . esc_attr( $classes ) . '" id="' . esc_attr( $id )
-		. '"' . $multiple . ' role="region" aria-label="' . esc_attr( $attributes['label'] ) . '"><div class="adzworld-carousel"><div class="adzworld-slides">' . $slides
+		. '"' . $rotation_attribute . $outer_attribute . $multiple . ' role="region" aria-label="' . esc_attr( $attributes['label'] ) . '"><div class="adzworld-carousel"><div class="adzworld-slides">' . $slides
 		. '</div><div class="adzworld-navigation" hidden>' . $navigation . '</div>' . $dismiss . '</div></div>';
 }
 

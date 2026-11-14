@@ -1435,3 +1435,94 @@ body.wp-admin .adzworld-paid-card .adzworld-connection-card select {
 @media (prefers-reduced-motion: reduce) {
 	.adz-int-strip { scroll-behavior: auto; }
 }
+
+/* AdzLogs. Served adz on the left. Slot configuration, the request, and refinements on the right. */
+
+.adzworld-log-rotation,
+.adzworld-log-slot {
+	margin: 0 0 8px 0;
+}
+
+.adzworld-log-rotation > summary,
+.adzworld-log-slot > summary {
+	cursor: pointer;
+	font-weight: 600;
+}
+
+.adzworld-log-chat {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	max-width: 880px;
+	margin: 10px 0 16px;
+}
+
+.adzworld-log-turn {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+	gap: 12px;
+	align-items: start;
+}
+
+.adzworld-log-served,
+.adzworld-log-request {
+	box-sizing: border-box;
+	min-width: 0;
+	margin: 0;
+	padding: 10px 12px;
+	border: 1px solid #c3c4c7;
+	border-radius: 8px;
+}
+
+.adzworld-log-served {
+	justify-self: start;
+	background: #f0f6fc;
+}
+
+.adzworld-log-request {
+	justify-self: end;
+	background: #f6f7f7;
+}
+
+.adzworld-log-ad {
+	margin: 0 0 4px;
+	font-weight: 600;
+}
+
+.adzworld-log-mts {
+	margin: 0;
+	color: #646970;
+	font-size: 12px;
+}
+
+.adzworld-log-k {
+	margin: 0;
+	color: #646970;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+.adzworld-log-v {
+	margin: 0 0 8px;
+	overflow-wrap: anywhere;
+}
+
+.adzworld-log-response {
+	margin-top: 4px;
+	padding-top: 8px;
+	border-top: 1px solid #dcdcde;
+}
+
+.adzworld-log-rotation summary:focus-visible,
+.adzworld-log-slot summary:focus-visible {
+	outline: 2px solid #3e6d86;
+	outline-offset: 1px;
+}
+
+@media (max-width: 782px) {
+	.adzworld-log-turn {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}

@@ -21,6 +21,7 @@ function adzworld_desk_tabs() {
 		'affiliates' => __( 'Get Paid', 'adz-world' ),
 		'internal'   => __( 'Internal Adz', 'adz-world' ),
 		'rotation'   => __( 'Rotation', 'adz-world' ),
+		'logs'       => __( 'AdzLogs', 'adz-world' ),
 		'earnings'   => __( 'Earnings', 'adz-world' ),
 		'templates'  => __( 'Templates', 'adz-world' ),
 		'starter'    => __( 'Starter packs', 'adz-world' ),
@@ -56,6 +57,7 @@ function adzworld_desk_submenu_slugs() {
 		'affiliates' => 'adzworld-affiliates',
 		'internal'   => 'adzworld-internal',
 		'rotation'   => 'adzworld-rotation',
+		'logs'       => 'adzworld-logs',
 		'earnings'   => 'adzworld-earnings',
 		'templates'  => 'adzworld-templates',
 		'starter'    => 'adzworld-starter',
@@ -279,6 +281,10 @@ function adzworld_desk_page() {
 	}
 	if ( 'rotation' === $current ) {
 		adzworld_rotation_admin_page();
+		return;
+	}
+	if ( 'logs' === $current ) {
+		adzworld_logs_page();
 		return;
 	}
 	if ( 'networks' === $current ) {

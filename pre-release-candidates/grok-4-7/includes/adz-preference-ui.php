@@ -656,7 +656,8 @@ function adzworld_ajax_refine() {
 		);
 	}
 
-	$pref = adzworld_current_preference();
+	$pref         = adzworld_current_preference();
+	$log_response = array();
 
 	if ( 'select' === $action ) {
 		$category = isset( $_POST['value'] ) ? sanitize_text_field( wp_unslash( $_POST['value'] ) ) : '';
@@ -666,6 +667,24 @@ function adzworld_ajax_refine() {
 		}
 		$pref['active_category'] = $category;
 		adzworld_store_preference( $pref );
+		if ( function_exists( 'adzworld_logs_record_response' ) && isset( $_POST['ad'] ) && is_string( $_POST['ad'] ) ) {
+			$log_rotation   = isset( $_POST['rotation'] ) && is_string( $_POST['rotation'] ) ? sanitize_key( wp_unslash( $_POST['rotation'] ) ) : '';
+			$log_slot       = isset( $_POST['slot'] ) && is_string( $_POST['slot'] ) ? sanitize_text_field( wp_unslash( $_POST['slot'] ) ) : '-1';
+			$log_outer      = isset( $_POST['outer_rotation'] ) && is_string( $_POST['outer_rotation'] ) ? sanitize_key( wp_unslash( $_POST['outer_rotation'] ) ) : '';
+			$log_outer_slot = isset( $_POST['outer_slot'] ) && is_string( $_POST['outer_slot'] ) ? sanitize_text_field( wp_unslash( $_POST['outer_slot'] ) ) : '0';
+			$log_ad         = sanitize_key( wp_unslash( $_POST['ad'] ) );
+			adzworld_logs_record_response(
+				$log_rotation,
+				$log_slot,
+				$log_outer,
+				$log_outer_slot,
+				$log_ad,
+				array(
+					'category' => $category,
+				),
+				0 === strpos( $log_ad, 'source-' )
+			);
+		}
 		wp_send_json_success( array( 'message' => __( 'Category selected.', 'adz-world' ) ) );
 	}
 
@@ -775,7 +794,14 @@ function adzworld_ajax_refine() {
 			if ( ! in_array( $pair, $pref['category_refinements'], true ) ) {
 				$pref['category_refinements'][] = $pair;
 			}
-			$message = __( 'adz refinement added.', 'adz-world' );
+			$log_response = array(
+				'ad'       => $target,
+				'changes'  => array(
+					'refinement' => $text,
+				),
+				'external' => 0 === strpos( $target, 'source-' ),
+			);
+			$message      = __( 'adz refinement added.', 'adz-world' );
 		} elseif ( 'category' === $action ) {
 			$parsed   = adzworld_parse_category_input( $text );
 			$category = $parsed['category'];
@@ -807,6 +833,22 @@ function adzworld_ajax_refine() {
 	}
 
 	adzworld_store_preference( $pref );
+
+	if ( ! empty( $log_response['ad'] ) && function_exists( 'adzworld_logs_record_response' ) ) {
+		$log_rotation   = isset( $_POST['rotation'] ) && is_string( $_POST['rotation'] ) ? sanitize_key( wp_unslash( $_POST['rotation'] ) ) : '';
+		$log_slot       = isset( $_POST['slot'] ) && is_string( $_POST['slot'] ) ? sanitize_text_field( wp_unslash( $_POST['slot'] ) ) : '-1';
+		$log_outer      = isset( $_POST['outer_rotation'] ) && is_string( $_POST['outer_rotation'] ) ? sanitize_key( wp_unslash( $_POST['outer_rotation'] ) ) : '';
+		$log_outer_slot = isset( $_POST['outer_slot'] ) && is_string( $_POST['outer_slot'] ) ? sanitize_text_field( wp_unslash( $_POST['outer_slot'] ) ) : '0';
+		adzworld_logs_record_response(
+			$log_rotation,
+			$log_slot,
+			$log_outer,
+			$log_outer_slot,
+			$log_response['ad'],
+			$log_response['changes'],
+			$log_response['external']
+		);
+	}
 
 	$pref  = adzworld_sanitize_preference( $pref );
 	$chips = adzworld_preference_chips( $pref );
