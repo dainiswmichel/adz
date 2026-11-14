@@ -22,7 +22,12 @@
 define( 'ABSPATH', __DIR__ );
 
 $adz_src   = getenv( 'ADZ_SRC' );
-$adz_src   = $adz_src ? rtrim( $adz_src, '/' ) : 'pre-release-candidates/claude-code-web';
+/*
+ * The default is this harness's own candidate, resolved absolutely. It was a
+ * path relative to the repository root, so the harness only ran when it
+ * happened to be invoked from there and died anywhere else.
+ */
+$adz_src   = $adz_src ? rtrim( $adz_src, '/' ) : dirname( __DIR__ );
 $adz_pass  = 0;
 $adz_fail  = 0;
 $adz_hooks = array();
@@ -107,6 +112,16 @@ function esc_url( $value ) {
  * @param string $value Input.
  * @return string Escaped value.
  */
+/**
+ * Attribute escaping, as the product cards now carry the item identifier.
+ *
+ * @param string $value Raw value.
+ * @return string
+ */
+function esc_attr( $value ) {
+	return htmlspecialchars( (string) $value, ENT_QUOTES, 'UTF-8' );
+}
+
 function esc_html( $value ) {
 	return htmlspecialchars( (string) $value, ENT_QUOTES );
 }
