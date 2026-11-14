@@ -717,12 +717,20 @@ function adzworld_logs_visit() {
 		$_SESSION['adzworld_log_visit'] = $visit;
 	}
 
-	if ( $cookie !== $visit && ! headers_sent() && defined( 'COOKIEPATH' ) && defined( 'DAY_IN_SECONDS' ) ) {
+	if ( $cookie !== $visit && ! headers_sent() && defined( 'COOKIEPATH' ) ) {
 		setcookie(
 			'adzworld_log_visit',
 			$visit,
 			array(
-				'expires'  => time() + ( 30 * DAY_IN_SECONDS ),
+
+				/*
+				 * Expires with the browser, like every other cookie this
+				 * plugin sets. It was 30 days, which is not a session: it
+				 * joined one visit to the next for a month, and the readme
+				 * said "browser-session cookie" while the code did otherwise.
+				 * A visit is a visit.
+				 */
+				'expires'  => 0,
 				'path'     => COOKIEPATH ? COOKIEPATH : '/',
 				'domain'   => defined( 'COOKIE_DOMAIN' ) ? COOKIE_DOMAIN : '',
 				'secure'   => function_exists( 'is_ssl' ) && is_ssl(),
