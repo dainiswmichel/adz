@@ -403,35 +403,25 @@ function adzworld_pair_join( $category, $refinement ) {
  * The split is on the FIRST label only, so a refinement that itself contains
  * the word "Refinements:" survives whole in the second half.
  *
- * A value with no label is a legacy pair from when the delimiter was "--".
- * Those are still read, so a reader's saved preferences survive the change.
- *
  * @param string $pair Stored pair.
  * @return array{0:string,1:string} Category and refinement.
  */
 function adzworld_pair_split( $pair ) {
 	$pair = (string) $pair;
 
-	if ( 0 === strpos( $pair, ADZWORLD_PAIR_CATEGORY ) ) {
-		$rest = substr( $pair, strlen( ADZWORLD_PAIR_CATEGORY ) );
-		$at   = strpos( $rest, ADZWORLD_PAIR_REFINEMENT );
+	$rest = 0 === strpos( $pair, ADZWORLD_PAIR_CATEGORY )
+		? substr( $pair, strlen( ADZWORLD_PAIR_CATEGORY ) )
+		: $pair;
 
-		if ( false === $at ) {
-			return array( trim( $rest ), '' );
-		}
+	$at = strpos( $rest, ADZWORLD_PAIR_REFINEMENT );
 
-		return array(
-			trim( substr( $rest, 0, $at ) ),
-			trim( substr( $rest, $at + strlen( ADZWORLD_PAIR_REFINEMENT ) ) ),
-		);
+	if ( false === $at ) {
+		return array( trim( $rest ), '' );
 	}
 
-	/* Legacy: percent-escaped halves joined by "--". */
-	$parts = explode( '--', $pair, 2 );
-
 	return array(
-		rawurldecode( isset( $parts[0] ) ? $parts[0] : '' ),
-		rawurldecode( isset( $parts[1] ) ? $parts[1] : '' ),
+		trim( substr( $rest, 0, $at ) ),
+		trim( substr( $rest, $at + strlen( ADZWORLD_PAIR_REFINEMENT ) ) ),
 	);
 }
 
