@@ -944,10 +944,20 @@ function adzworld_logs_phrases( $pref, $category ) {
  */
 function adzworld_logs_remember_ad( $place, $ad, $configured, $category, $refinements, $rating = null ) {
 	/*
-	 * Taken whether or not this round is recorded, so identifiers from an
+	 * Taken whether or not this round is recorded, so identifiers left by an
 	 * unrecorded round cannot leak into the next one.
 	 */
 	$items = function_exists( 'adzworld_products_remember_served' ) ? adzworld_products_remember_served() : array();
+
+	/*
+	 * They belong to a provider slot and to nothing else. An adzad this site
+	 * owns is named by its own post and must never be labelled with a
+	 * listing a provider rendered elsewhere on the page.
+	 */
+	if ( 0 !== strpos( adzworld_logs_ad_id( $ad ), 'source-' ) ) {
+		$items = array();
+	}
+
 	$visit = adzworld_logs_visit();
 
 	/* Nothing was consented, so there is nothing to record. */
@@ -990,10 +1000,16 @@ function adzworld_logs_remember_response( $place, $ad, $changes, $external, $ite
 	 * Giving input is the act that consents, so this call establishes the
 	 * session rather than requiring one to exist already.
 	 */
-	$visit   = adzworld_logs_visit( true );
-	$rows    = adzworld_logs_rows();
+	$visit = adzworld_logs_visit( true );
+	$rows  = adzworld_logs_rows();
+	$ad_id = adzworld_logs_ad_id( $ad );
+
+	/* Same rule on the response path: a provider's listings, nowhere else. */
+	if ( 0 !== strpos( $ad_id, 'source-' ) ) {
+		$items = array();
+	}
+
 	$entries = adzworld_logs_entries( $place, $ad, '', '', '', adzworld_michel_timestamp(), null, $items );
-	$ad_id   = adzworld_logs_ad_id( $ad );
 	$items   = adzworld_logs_items( $items );
 
 	if ( '' === $visit ) {
