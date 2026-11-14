@@ -63,8 +63,29 @@ if ( ! function_exists( 'current_user_can' ) ) {
 }
 
 $_SESSION = array();
+$_COOKIE  = array();
+
+/*
+ * The real preference machinery is loaded below, so the consent predicate
+ * is exercised against the code that actually decides it rather than a
+ * stand-in. The session itself is a real PHP session: this run opens one.
+ */
+function map_deep( $value, $callback ) {
+	if ( is_array( $value ) ) {
+		return array_map(
+			function ( $item ) use ( $callback ) {
+				return map_deep( $item, $callback );
+			},
+			$value
+		);
+	}
+
+	return call_user_func( $callback, $value );
+}
+
 
 require $adz_plugin . '/includes/adz-preferences.php';
+require $adz_plugin . '/includes/adz-preference-ui.php';
 require $adz_plugin . '/includes/adzworld-journey.php';
 require $adz_plugin . '/includes/adzworld-logs.php';
 
@@ -93,7 +114,34 @@ function check( $label, $got, $want ) {
 	printf( "  [FAIL] %-42s got %s  want %s\n", $label, var_export( $got, true ), var_export( $want, true ) );
 }
 
-echo "=== a served adzad is remembered against its place ===\n";
+echo "=== a visitor who says nothing leaves no trace ===\n";
+
+/* No preference, no rating, no profile: nothing has been told to the plugin. */
+check( 'nothing consented yet', adzworld_logs_consented(), false );
+check( 'no visit identifier is minted', adzworld_logs_visit(), '' );
+
+adzworld_logs_remember_ad( adzworld_logs_place( 'sidebar', 1 ), 'ad-1', 'ad:1', 'couch', array(), null );
+check( 'a served adzad is not recorded', count( adzworld_logs_rows() ), 0 );
+check( 'and still no identifier exists', adzworld_logs_visit(), '' );
+check( 'and no cookie was set', isset( $_COOKIE['adzworld_log_visit'] ), false );
+
+echo "\n=== the reader types a refinement: that act consents ===\n";
+$pref               = adzworld_empty_preference();
+$pref['categories'] = array( 'couch' );
+adzworld_store_preference( $pref );
+adzworld_logs_record_response( 'sidebar', '1', '', '0', 'ad-1', array( 'refinement' => 'brown -- no arms' ), false );
+
+check( 'now consented', adzworld_logs_consented(), true );
+check( 'the round they answered is created, not dropped', count( adzworld_logs_rows() ), 1 );
+$first = adzworld_logs_rows();
+check( 'it names the adzad that prompted it', $first[0]['ad'], 'ad-1' );
+check( 'and carries what they typed', $first[0]['refinement_change'], 'brown -- no arms' );
+check( 'an identifier now exists', '' !== adzworld_logs_visit(), true );
+
+/* Clear the log so the scenarios below start from a known state. */
+adzworld_logs_save( array() );
+
+echo "\n=== a served adzad is remembered against its place ===\n";
 $place = adzworld_logs_place( 'sidebar', 1 );
 adzworld_logs_remember_ad( $place, 'ad-412', 'ad:412', 'couch', array(), null );
 

@@ -673,15 +673,71 @@ function adzworld_logs_save( $rows ) {
 }
 
 /**
+ * Whether the reader has told this plugin anything.
+ *
+ * Nothing about a reader is recorded, and no session is opened for them,
+ * until they give input of their own accord: a category, a refinement, a
+ * rating, or a profile. Being shown an advertisement is not input, and is
+ * not a reason to start recording someone.
+ *
+ * @since 1.0.0
+ *
+ * @return bool True once the reader has given input.
+ */
+function adzworld_logs_consented() {
+	/* A reader who made a profile told us on purpose. */
+	if ( function_exists( 'adzworld_preference_uses_profile' ) && adzworld_preference_uses_profile() ) {
+		return true;
+	}
+
+	/*
+	 * A reader who typed a category or a refinement told us what they want.
+	 * That act is the consent: nothing is recorded, and no session is opened,
+	 * until they make it.
+	 */
+	if ( function_exists( 'adzworld_current_preference' ) && function_exists( 'adzworld_has_preference' )
+		&& adzworld_has_preference( adzworld_current_preference() ) ) {
+		return true;
+	}
+
+	/* A rating is the same act by a different control. */
+	if ( function_exists( 'adzworld_current_feedback' ) ) {
+		$feedback = adzworld_current_feedback();
+
+		if ( is_array( $feedback ) && ! empty( $feedback ) ) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
  * Visit key for this browser.
  *
  * The preference session holds the key when that session is open. A cookie
  * of the same key covers an account that does not use that session, so a
- * display and the later response stay on the same rows.
+ * display and the later response stay on the same rows. Both expire with
+ * the browser.
  *
- * @return string
+ * @since 1.0.0
+ *
+ * @param bool $establish True when the reader has just given input, which
+ *                        both consents to the session and creates it. False
+ *                        while merely serving, when an identifier is used
+ *                        only if one already exists.
+ * @return string Visit identifier, or empty when there is nothing to file.
  */
-function adzworld_logs_visit() {
+function adzworld_logs_visit( $establish = false ) {
+	/*
+	 * A visitor who has told us nothing gets no session, no cookie and no
+	 * identifier. Serving an adzad to someone is not a reason to start
+	 * recording them.
+	 */
+	if ( ! $establish && ! adzworld_logs_consented() ) {
+		return '';
+	}
+
 	$profile = function_exists( 'adzworld_preference_uses_profile' ) && adzworld_preference_uses_profile();
 
 	if ( ! $profile && PHP_SESSION_ACTIVE !== session_status() && ! headers_sent() && function_exists( 'adzworld_preference_open_session' ) ) {
@@ -820,7 +876,13 @@ function adzworld_logs_phrases( $pref, $category ) {
  * @return void
  */
 function adzworld_logs_remember_ad( $place, $ad, $configured, $category, $refinements, $rating = null ) {
-	$visit   = adzworld_logs_visit();
+	$visit = adzworld_logs_visit();
+
+	/* Nothing was consented, so there is nothing to record. */
+	if ( '' === $visit ) {
+		return;
+	}
+
 	$rows    = adzworld_logs_rows();
 	$entries = adzworld_logs_entries( $place, $ad, $configured, $category, $refinements, adzworld_michel_timestamp(), $rating );
 
@@ -851,10 +913,18 @@ function adzworld_logs_remember_ad( $place, $ad, $configured, $category, $refine
  * @return void
  */
 function adzworld_logs_remember_response( $place, $ad, $changes, $external ) {
-	$visit   = adzworld_logs_visit();
+	/*
+	 * Giving input is the act that consents, so this call establishes the
+	 * session rather than requiring one to exist already.
+	 */
+	$visit   = adzworld_logs_visit( true );
 	$rows    = adzworld_logs_rows();
-	$entries = adzworld_logs_entries( $place, $ad, '', '', '', '' );
+	$entries = adzworld_logs_entries( $place, $ad, '', '', '', adzworld_michel_timestamp() );
 	$ad_id   = adzworld_logs_ad_id( $ad );
+
+	if ( '' === $visit ) {
+		return;
+	}
 
 	if ( empty( $entries ) || '' === $ad_id || ! is_array( $changes ) ) {
 		return;
@@ -876,6 +946,18 @@ function adzworld_logs_remember_response( $place, $ad, $changes, $external ) {
 		}
 
 		if ( $found < 0 ) {
+			/*
+			 * The adzad that prompted this was served before the reader had
+			 * said anything, so it was not recorded. Their input is the
+			 * consent, so the round it answers is created now rather than
+			 * dropped: the first thing a reader says is the most telling.
+			 */
+			$entry['visit']     = $visit;
+			$entry['n']         = count( $rows );
+			$entry['responded'] = 0;
+			$rows[]             = adzworld_logs_apply_response( $entry, $changes, $external );
+			$found_one          = true;
+
 			continue;
 		}
 
