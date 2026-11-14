@@ -26,6 +26,12 @@ const ADZWORLD_PREFERENCE_META = 'adzworld_preference';
 /** Session key holding a visitor's refinements. */
 const ADZWORLD_PREFERENCE_SESSION = 'adzworld_preference';
 
+/** Session key recording when an anonymous preference window began. */
+const ADZWORLD_PREFERENCE_SESSION_STARTED = 'adzworld_preference_started';
+
+/** Anonymous preference windows start fresh after 24 hours. */
+const ADZWORLD_PREFERENCE_SESSION_TTL = DAY_IN_SECONDS;
+
 /**
  * Map of preference facets to their short cookie keys.
  *
@@ -52,10 +58,48 @@ function adzworld_cookie_facets() {
 }
 
 /**
- * Encode a preference as a restricted-charset string.
+ * Encode one cookie value without using percent escapes.
  *
- * Only [a-z0-9,:|_-] can appear in the result. Spaces inside a term become
- * underscores, so an underscore already in a term is folded to a hyphen first.
+ * WordPress removes percent-encoded octets in sanitize_text_field(). A
+ * hexadecimal value uses only characters that survive that sanitization and
+ * cannot collide with the cookie's comma, colon or pipe separators.
+ *
+ * @param string $value Preference value.
+ * @return string Encoded value.
+ */
+function adzworld_cookie_encode_value( $value ) {
+	return 'v1_' . bin2hex( (string) $value );
+}
+
+/**
+ * Decode one cookie value, while continuing to accept legacy plain values.
+ *
+ * @param string $value Encoded or legacy value.
+ * @return string Decoded value.
+ */
+function adzworld_cookie_decode_value( $value ) {
+	$value = (string) $value;
+
+	if ( 0 !== strpos( $value, 'v1_' ) ) {
+		return $value;
+	}
+
+	$payload = substr( $value, 3 );
+	if ( ! preg_match( '/^(?:[0-9a-f]{2})*$/D', $payload ) ) {
+		return '';
+	}
+
+	$decoded = hex2bin( $payload );
+
+	return false === $decoded ? '' : $decoded;
+}
+
+/**
+ * Encode a preference as a reversible restricted-charset string.
+ *
+ * Each value is encoded before the comma, colon and pipe separators are added,
+ * so punctuation inside a category or refinement cannot become a structural
+ * separator.
  *
  * @param array $pref Sanitised preference.
  * @return string
@@ -72,7 +116,7 @@ function adzworld_encode_preference( $pref ) {
 			$terms = array();
 
 			foreach ( $pref[ $facet ] as $term ) {
-				$term = sanitize_key( str_replace( array( '_', ' ' ), array( '-', '_' ), $term ) );
+				$term = adzworld_cookie_encode_value( $term );
 
 				if ( '' !== $term ) {
 					$terms[] = $term;
@@ -86,7 +130,7 @@ function adzworld_encode_preference( $pref ) {
 			continue;
 		}
 
-		$parts[] = $short . ':' . sanitize_key( (string) $pref[ $facet ] );
+		$parts[] = $short . ':' . adzworld_cookie_encode_value( $pref[ $facet ] );
 	}
 
 	return implode( '|', $parts );
@@ -117,13 +161,14 @@ function adzworld_decode_preference( $encoded ) {
 
 		if ( is_array( $pref[ $facet ] ) ) {
 			foreach ( explode( ',', $value ) as $term ) {
-				$pref[ $facet ][] = str_replace( '_', ' ', $term );
+				$decoded          = adzworld_cookie_decode_value( $term );
+				$pref[ $facet ][] = $decoded === $term ? str_replace( '_', ' ', $term ) : $decoded;
 			}
 
 			continue;
 		}
 
-		$pref[ $facet ] = $value;
+		$pref[ $facet ] = adzworld_cookie_decode_value( $value );
 	}
 
 	return adzworld_sanitize_preference( $pref );
@@ -158,6 +203,16 @@ function adzworld_preference_open_session() {
 	}
 
 	session_start();
+
+	$now     = time();
+	$started = isset( $_SESSION[ ADZWORLD_PREFERENCE_SESSION_STARTED ] )
+		? absint( $_SESSION[ ADZWORLD_PREFERENCE_SESSION_STARTED ] )
+		: 0;
+
+	if ( 0 === $started || $now - $started >= ADZWORLD_PREFERENCE_SESSION_TTL ) {
+		unset( $_SESSION[ ADZWORLD_PREFERENCE_SESSION ] );
+		$_SESSION[ ADZWORLD_PREFERENCE_SESSION_STARTED ] = $now;
+	}
 }
 add_action( 'init', 'adzworld_preference_open_session', 1 );
 
@@ -235,7 +290,7 @@ function adzworld_sanitize_preference( $pref ) {
 	$clean = adzworld_empty_preference();
 	$pref  = (array) $pref;
 
-	foreach ( array( 'categories', 'category_refinements', 'include', 'exclude', 'attributes' ) as $list ) {
+	foreach ( array( 'categories', 'include', 'exclude', 'attributes' ) as $list ) {
 		if ( empty( $pref[ $list ] ) || ! is_array( $pref[ $list ] ) ) {
 			continue;
 		}
@@ -245,7 +300,7 @@ function adzworld_sanitize_preference( $pref ) {
 		$limit = 'categories' === $list ? 10 : 20;
 		foreach ( array_slice( $pref[ $list ], 0, $limit ) as $term ) {
 			$term = trim( sanitize_text_field( (string) $term ) );
-			$term = mb_substr( $term, 0, 'category_refinements' === $list ? 160 : ADZWORLD_CATEGORY_MAX_LENGTH );
+			$term = mb_substr( $term, 0, ADZWORLD_CATEGORY_MAX_LENGTH );
 
 			if ( '' !== $term && ( 'categories' !== $list || adzworld_valid_category( $term ) ) ) {
 				$terms[] = $term;
@@ -261,15 +316,33 @@ function adzworld_sanitize_preference( $pref ) {
 		$known = array_values( array_unique( array_merge( $known, adzworld_catalog_categories() ) ) );
 	}
 
+	if ( ! empty( $pref['category_refinements'] ) && is_array( $pref['category_refinements'] ) ) {
+		foreach ( array_slice( $pref['category_refinements'], 0, 20 ) as $stored ) {
+			$parts = adzworld_pair_split( sanitize_text_field( (string) $stored ) );
+			if ( 2 !== count( $parts ) ) {
+				continue;
+			}
+
+			$category   = adzworld_normalize_category( $parts[0] );
+			$refinement = trim( mb_substr( sanitize_text_field( $parts[1] ), 0, ADZWORLD_REFINEMENT_MAX_LENGTH ) );
+			if ( '' === $refinement || ! in_array( $category, $known, true ) ) {
+				continue;
+			}
+
+			$clean['category_refinements'][] = adzworld_pair_join( $category, $refinement );
+		}
+		$clean['category_refinements'] = array_values( array_unique( $clean['category_refinements'] ) );
+	}
+
 	if ( ! empty( $pref['category_slots'] ) && is_array( $pref['category_slots'] ) ) {
 		foreach ( array_slice( $pref['category_slots'], 0, 10 ) as $stored ) {
-			$parts = explode( '--', sanitize_text_field( (string) $stored ), 2 );
+			$parts = adzworld_pair_split( sanitize_text_field( (string) $stored ) );
 			if ( 2 !== count( $parts ) || ! in_array( $parts[0], $known, true ) ) {
 				continue;
 			}
 			$count = max( 1, min( ADZWORLD_CATEGORY_MAX_SLOTS, (int) $parts[1] ) );
 			if ( $count > 1 ) {
-				$clean['category_slots'][] = $parts[0] . '--' . $count;
+				$clean['category_slots'][] = adzworld_pair_join( $parts[0], (string) $count );
 			}
 		}
 	}
@@ -373,14 +446,11 @@ function adzworld_render_preference_panel( $pref, $has_pref, $intro = 'full' ) {
 	$input_id    = wp_unique_id( 'adz-panel-input-' );
 	$input_label = __( 'What are you looking to buy?', 'adz-world' );
 	$panel_title = $has_pref ? __( 'Your adz hub', 'adz-world' ) : __( 'Advertising by invitation', 'adz-world' );
-	$active      = isset( $pref['active_category'] ) ? (string) $pref['active_category'] : '';
-	$prefix      = $active . '--';
 	$chips       = array_values(
 		array_filter(
 			$all_chips,
-			static function ( $chip ) use ( $prefix ) {
-				return 'categories' === $chip['facet']
-					|| ( 'category_refinements' === $chip['facet'] && '' !== $prefix && 0 === strpos( $chip['value'], $prefix ) );
+			static function ( $chip ) {
+				return 'categories' === $chip['facet'] || 'category_refinements' === $chip['facet'];
 			}
 		)
 	);
@@ -400,7 +470,7 @@ function adzworld_render_preference_panel( $pref, $has_pref, $intro = 'full' ) {
 			<?php echo esc_html( $input_label ); ?>
 		</label>
 		<p class="adz-panel__category-guidance" id="<?php echo esc_attr( $guidance_id ); ?>">
-			<?php esc_html_e( 'Categories use up to 3 words and 48 characters.', 'adz-world' ); ?>
+			<?php esc_html_e( 'Enter as much detail as you like. Use a colon before refinements, or a pipe when the category itself contains a colon.', 'adz-world' ); ?>
 		</p>
 
 		<div class="adz-panel__row">
@@ -408,13 +478,12 @@ function adzworld_render_preference_panel( $pref, $has_pref, $intro = 'full' ) {
 				id="<?php echo esc_attr( $input_id ); ?>"
 				class="adz-panel__input"
 				name="adzworld_refinement"
-				maxlength="48"
-				rows="1"
+				rows="2"
 				aria-describedby="<?php echo esc_attr( $guidance_id ); ?>"
-				placeholder="<?php esc_attr_e( 'used electric cars', 'adz-world' ); ?>"
+				placeholder="<?php esc_attr_e( 'couch: light fabric, two-seater', 'adz-world' ); ?>"
 			></textarea>
 			<button type="submit" class="adz-panel__submit" value="category" name="adzworld_mode">
-				<?php esc_html_e( 'Show me', 'adz-world' ); ?>
+				<?php esc_html_e( 'Search', 'adz-world' ); ?>
 			</button>
 		</div>
 
@@ -490,7 +559,6 @@ function adzworld_render_chips( $chips ) {
 									class="adz-panel__category-name"
 									type="text"
 									value="<?php echo esc_attr( $chip['label'] ); ?>"
-									maxlength="48"
 									data-adz-category-original="<?php echo esc_attr( $chip['value'] ); ?>"
 									hidden
 								>
@@ -526,7 +594,10 @@ function adzworld_render_chips( $chips ) {
 		<p class="adz-panel__section-label"><?php esc_html_e( 'Refinements', 'adz-world' ); ?></p>
 		<ul class="adz-panel__chiplist">
 			<?php foreach ( $refinements as $chip ) : ?>
-				<?php $refinement_id = wp_unique_id( 'adz-refinement-' ); ?>
+				<?php
+				$refinement_id       = wp_unique_id( 'adz-refinement-' );
+				$refinement_input_id = $refinement_id . '-input';
+				?>
 				<li class="adz-panel__chip adz-panel__chip--<?php echo esc_attr( $chip['facet'] ); ?>">
 					<span class="adz-panel__chiptext"><?php echo esc_html( $chip['label'] ); ?></span>
 					<button
@@ -539,19 +610,25 @@ function adzworld_render_chips( $chips ) {
 						<span class="screen-reader-text"><?php esc_html_e( 'Edit refinement', 'adz-world' ); ?></span>
 						<span aria-hidden="true">&#9998;</span>
 					</button>
-					<label class="screen-reader-text" for="<?php echo esc_attr( $refinement_id ); ?>">
+				<div id="<?php echo esc_attr( $refinement_id ); ?>" class="adz-panel__refinement-editor" hidden>
+					<label class="screen-reader-text" for="<?php echo esc_attr( $refinement_input_id ); ?>">
 						<?php esc_html_e( 'Edit refinement', 'adz-world' ); ?>
 					</label>
 					<input
-						id="<?php echo esc_attr( $refinement_id ); ?>"
+						id="<?php echo esc_attr( $refinement_input_id ); ?>"
 						class="adz-panel__refinement-name"
 						type="text"
 						value="<?php echo esc_attr( $chip['label'] ); ?>"
-						maxlength="120"
+						maxlength="<?php echo esc_attr( (string) ADZWORLD_REFINEMENT_MAX_LENGTH ); ?>"
 						data-adz-refinement-original="<?php echo esc_attr( $chip['value'] ); ?>"
 						data-adz-refinement-text="<?php echo esc_attr( $chip['label'] ); ?>"
-						hidden
 					>
+					<div class="adz-panel__refinement-actions">
+						<button type="button" class="adz-panel__refinement-action" data-adz-refinement-action="cancel"><?php esc_html_e( 'Cancel', 'adz-world' ); ?></button>
+						<button type="button" class="adz-panel__refinement-action adz-panel__refinement-action--delete" data-adz-refinement-action="delete"><?php esc_html_e( 'Delete', 'adz-world' ); ?></button>
+						<button type="button" class="adz-panel__refinement-action adz-panel__refinement-action--save" data-adz-refinement-action="save"><?php esc_html_e( 'Save', 'adz-world' ); ?></button>
+					</div>
+				</div>
 				</li>
 			<?php endforeach; ?>
 		</ul>
@@ -605,15 +682,22 @@ function adzworld_ajax_refine() {
 		$old      = isset( $_POST['value'] )
 			? adzworld_normalize_category( sanitize_text_field( wp_unslash( $_POST['value'] ) ) )
 			: '';
-		$category = isset( $_POST['refinement'] )
-			? adzworld_normalize_category( sanitize_text_field( wp_unslash( $_POST['refinement'] ) ) )
-			: '';
+		$parsed   = isset( $_POST['refinement'] )
+			? adzworld_parse_category_input( sanitize_textarea_field( wp_unslash( $_POST['refinement'] ) ) )
+			: array(
+				'category'    => '',
+				'refinements' => array(),
+			);
+		$category = $parsed['category'];
 
 		if ( ! in_array( $old, $pref['categories'], true ) || ! adzworld_valid_category( $category ) ) {
-			wp_send_json_error( array( 'message' => __( 'Categories can use up to 3 words and 48 characters.', 'adz-world' ) ), 400 );
+			wp_send_json_error( array( 'message' => __( 'Enter a category.', 'adz-world' ) ), 400 );
 		}
 
 		$pref = adzworld_rename_category( $pref, $old, $category );
+		foreach ( $parsed['refinements'] as $refinement ) {
+			$pref['category_refinements'][] = adzworld_pair_join( $category, $refinement );
+		}
 		adzworld_store_preference( $pref );
 		wp_send_json_success( array( 'message' => __( 'Category updated.', 'adz-world' ) ) );
 	}
@@ -625,14 +709,14 @@ function adzworld_ajax_refine() {
 		$refinement = isset( $_POST['refinement'] )
 			? sanitize_text_field( wp_unslash( $_POST['refinement'] ) )
 			: '';
-		$refinement = trim( mb_substr( str_replace( '--', '-', $refinement ), 0, 120 ) );
-		$parts      = explode( '--', $old, 2 );
+		$refinement = trim( mb_substr( $refinement, 0, ADZWORLD_REFINEMENT_MAX_LENGTH ) );
+		$parts      = adzworld_pair_split( $old );
 
 		if ( ! in_array( $old, $pref['category_refinements'], true ) || 2 !== count( $parts ) || '' === $refinement ) {
 			wp_send_json_error( array( 'message' => __( 'Enter a refinement to keep improving these adz.', 'adz-world' ) ), 400 );
 		}
 
-		$replacement = mb_substr( $parts[0] . '--' . $refinement, 0, 160 );
+		$replacement = adzworld_pair_join( $parts[0], $refinement );
 		foreach ( $pref['category_refinements'] as $index => $stored ) {
 			if ( $old === $stored ) {
 				$pref['category_refinements'][ $index ] = $replacement;
@@ -664,7 +748,7 @@ function adzworld_ajax_refine() {
 		wp_send_json_success(
 			array(
 				'count'   => $count,
-				'message' => __( 'Adz slot added.', 'adz-world' ),
+				'message' => __( 'adz slot added.', 'adz-world' ),
 			)
 		);
 	}
@@ -681,7 +765,7 @@ function adzworld_ajax_refine() {
 		$message = __( 'Removed.', 'adz-world' );
 	} else {
 		$text = isset( $_POST['refinement'] ) ? sanitize_textarea_field( wp_unslash( $_POST['refinement'] ) ) : '';
-		$text = trim( mb_substr( $text, 0, 500 ) );
+		$text = trim( mb_substr( $text, 0, ADZWORLD_REFINEMENT_MAX_LENGTH ) );
 
 		if ( '' === $text ) {
 			wp_send_json_error( array( 'message' => __( 'Nothing was entered.', 'adz-world' ) ), 400 );
@@ -696,27 +780,34 @@ function adzworld_ajax_refine() {
 				wp_send_json_error( array( 'message' => __( 'Add or select this category in the invitation hub before refining it.', 'adz-world' ) ), 400 );
 			}
 
-			$pair = mb_substr( $category . '--' . $text, 0, 160 );
+			$pair = adzworld_pair_join( $category, $text );
 			if ( ! in_array( $pair, $pref['category_refinements'], true ) ) {
 				$pref['category_refinements'][] = $pair;
 			}
-			$message = __( 'Adz refinement added.', 'adz-world' );
+			$message = __( 'adz refinement added.', 'adz-world' );
 		} elseif ( 'category' === $action ) {
-			$category = adzworld_normalize_category( $text );
+			$parsed   = adzworld_parse_category_input( $text );
+			$category = $parsed['category'];
 			if ( ! adzworld_valid_category( $category ) ) {
-				wp_send_json_error( array( 'message' => __( 'Categories can use up to 3 words and 48 characters.', 'adz-world' ) ), 400 );
+				wp_send_json_error( array( 'message' => __( 'Enter a category.', 'adz-world' ) ), 400 );
 			}
 			if ( ! in_array( $category, $pref['categories'], true ) ) {
 				$pref['categories'][] = $category;
 			}
 			$pref['active_category'] = $category;
-			$pref                    = adzworld_parse_refinement( $text, $pref );
-			$message                 = __( 'Category added.', 'adz-world' );
+			$pref                    = adzworld_parse_refinement( $category, $pref );
+			foreach ( $parsed['refinements'] as $refinement ) {
+				$pair = adzworld_pair_join( $category, $refinement );
+				if ( ! in_array( $pair, $pref['category_refinements'], true ) ) {
+					$pref['category_refinements'][] = $pair;
+				}
+			}
+			$message = __( 'Category added.', 'adz-world' );
 		} elseif ( empty( $pref['categories'] ) ) {
 			wp_send_json_error( array( 'message' => __( 'Add a category in the invitation hub before refining it.', 'adz-world' ) ), 400 );
 		} else {
 			$active = isset( $pref['active_category'] ) ? $pref['active_category'] : $pref['categories'][0];
-			$pair   = mb_substr( $active . '--' . $text, 0, 160 );
+			$pair   = adzworld_pair_join( $active, $text );
 			if ( ! in_array( $pair, $pref['category_refinements'], true ) ) {
 				$pref['category_refinements'][] = $pair;
 			}
@@ -725,6 +816,19 @@ function adzworld_ajax_refine() {
 	}
 
 	adzworld_store_preference( $pref );
+	if ( 'improve' === $action && function_exists( 'adzworld_journey_record_refinement' ) ) {
+		$journey_category = isset( $_POST['category'] )
+			? adzworld_journey_statement( sanitize_text_field( wp_unslash( $_POST['category'] ) ) )
+			: $category;
+		adzworld_journey_record_refinement(
+			isset( $_POST['rotation'] ) ? sanitize_key( wp_unslash( $_POST['rotation'] ) ) : '',
+			isset( $_POST['slot'] ) ? absint( wp_unslash( $_POST['slot'] ) ) : 0,
+			$journey_category,
+			isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '',
+			isset( $_POST['item_id'] ) ? sanitize_text_field( wp_unslash( $_POST['item_id'] ) ) : '',
+			$text
+		);
+	}
 
 	$pref  = adzworld_sanitize_preference( $pref );
 	$chips = adzworld_preference_chips( $pref );

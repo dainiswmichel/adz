@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: adz.world
+ * Plugin Name: adz-world
  * Description: Run your website like a TV station by requiring adz views in exchange for access to content.
  * Version: 1.0.9
  * Author: dainismichel
@@ -18,8 +18,59 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 define( 'ADZWORLD_VERSION', '1.0.9' );
+
+/**
+ * Product name and public site.
+ *
+ * A rename edits the Plugin Name header and ADZWORLD_HOME. Screens and links
+ * read those two values. Translation calls keep the literal text domain
+ * adz-world, which is this plugin's WordPress.org identity.
+ */
+$adzworld_plugin_header = get_file_data(
+	__FILE__,
+	array(
+		'Name' => 'Plugin Name',
+	),
+	'plugin'
+);
+$adzworld_plugin_name   = '';
+if ( isset( $adzworld_plugin_header['Name'] ) && is_string( $adzworld_plugin_header['Name'] ) ) {
+	$adzworld_plugin_name = $adzworld_plugin_header['Name'];
+}
+if ( '' === $adzworld_plugin_name ) {
+	$adzworld_plugin_name = 'adz-world';
+}
+define( 'ADZWORLD_NAME', $adzworld_plugin_name );
+define( 'ADZWORLD_HOME', 'https://adz-world.com' );
+unset( $adzworld_plugin_header, $adzworld_plugin_name );
+
+/**
+ * Address on the public site.
+ *
+ * @param string $path Path after the site address. Empty returns the address with a trailing slash.
+ * @return string
+ */
+function adzworld_home_url( $path = '' ) {
+	$home = untrailingslashit( ADZWORLD_HOME );
+	$path = ltrim( (string) $path, '/' );
+	if ( '' === $path ) {
+		return $home . '/';
+	}
+	return $home . '/' . $path;
+}
+
+/**
+ * Host of the public site.
+ *
+ * @return string
+ */
+function adzworld_home_host() {
+	$host = wp_parse_url( ADZWORLD_HOME, PHP_URL_HOST );
+	return is_string( $host ) ? $host : '';
+}
+
 global $adzworld_network_base_url;
-$adzworld_network_base_url = 'https://adz-world.com/';
+$adzworld_network_base_url = adzworld_home_url();
 require_once __DIR__ . '/vendor/eof/eof.php';
 require_once __DIR__ . '/vendor/eof/core/class-eof-field.php';
 require_once __DIR__ . '/vendor/eof/adz-config.php';
@@ -33,10 +84,20 @@ require_once __DIR__ . '/includes/adz-shortcode.php';
 require_once __DIR__ . '/includes/adzworld-earnings.php';
 require_once __DIR__ . '/includes/adz-preferences.php';
 require_once __DIR__ . '/includes/adz-preference-ui.php';
+require_once __DIR__ . '/includes/adzworld-journey.php';
 require_once __DIR__ . '/includes/adzworld-feedback.php';
 require_once __DIR__ . '/includes/adzworld-affiliates.php';
+require_once __DIR__ . '/includes/adzworld-products.php';
+require_once __DIR__ . '/includes/adzworld-ebay.php';
+require_once __DIR__ . '/includes/adzworld-etsy.php';
 require_once __DIR__ . '/includes/adzworld-bestbuy.php';
+require_once __DIR__ . '/includes/adzworld-avantlink.php';
+require_once __DIR__ . '/includes/adzworld-itunes.php';
+require_once __DIR__ . '/includes/adzworld-travelpayouts.php';
+require_once __DIR__ . '/includes/adzworld-getpaid.php';
+require_once __DIR__ . '/includes/adzworld-internal.php';
 require_once __DIR__ . '/includes/adzworld-networks.php';
+require_once __DIR__ . '/includes/adzworld-registrations.php';
 require_once __DIR__ . '/includes/adzworld-desk.php';
 require_once __DIR__ . '/includes/adzworld-rotation.php';
 require_once __DIR__ . '/includes/adzworld-starter.php';
@@ -45,12 +106,43 @@ require_once __DIR__ . '/includes/adzworld-request-context.php';
 define( 'ADZ_WORLD', plugin_dir_path( __FILE__ ) );
 
 /**
+ * Determine whether the current request uses the legacy advertising display.
+ *
+ * The modern rotation renderer loads its own scoped assets. Loading the legacy
+ * presentation assets on every public page adds unused CSS and a blocking
+ * script, so they are limited to legacy shortcodes and configured legacy
+ * page rotations.
+ *
+ * @return bool Whether the legacy frontend assets are required.
+ */
+function adzworld_request_uses_legacy_assets() {
+	global $adzworld_publisher_rotations;
+
+	if ( ! empty( $adzworld_publisher_rotations ) ) {
+		return true;
+	}
+
+	if ( ! is_singular() ) {
+		return false;
+	}
+
+	$post = get_queried_object();
+
+	return $post instanceof WP_Post && has_shortcode( $post->post_content, 'Adzworld' );
+}
+
+/**
  * Enqueue the legacy frontend's styles and required script dependencies.
  */
 function adzworld_enqueue_scripts() {
+	if ( ! adzworld_request_uses_legacy_assets() ) {
+		return;
+	}
+
 	wp_enqueue_style( 'adz_custombox', plugin_dir_url( __FILE__ ) . 'css/overlay.css', array(), '1.0.9' );
 	wp_enqueue_style( 'adz_css', plugin_dir_url( __FILE__ ) . 'css/styles.css', array(), '1.0.9' );
-	wp_enqueue_script( 'adzworld-legacy', plugin_dir_url( __FILE__ ) . 'assets/legacy.js', array( 'jquery' ), '1.0.9', false );
+	wp_enqueue_script( 'jquery' );
+	wp_enqueue_script( 'adzworld-legacy', plugin_dir_url( __FILE__ ) . 'assets/legacy.js', array( 'jquery' ), '1.0.9', true );
 }//end adzworld_enqueue_scripts()
 
 add_action( 'wp_enqueue_scripts', 'adzworld_enqueue_scripts' );

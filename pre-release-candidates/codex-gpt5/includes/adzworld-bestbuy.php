@@ -22,7 +22,7 @@ function adzworld_bestbuy_register_network( $networks ) {
 	$networks['bestbuy'] = array(
 		'label'   => 'Best Buy',
 		'account' => 'https://developer.bestbuy.com/',
-		'note'    => __( 'Product results require a Best Buy Developer API key. Attributed product links require the Impact Partner ID from an approved Best Buy Publisher Program account. Both values are required before this connection serves adz.', 'adz-world' ),
+		'note'    => __( 'Product results require only a Best Buy Developer API key, which developer.bestbuy.com issues at once. The Impact Partner ID comes from an approved Best Buy Publisher Program account and is what makes the links earn; until it is pasted here the products still serve, with plain untracked links.', 'adz-world' ),
 		'fields'  => array(
 			'api_key' => array(
 				'label'   => __( 'Best Buy API key', 'adz-world' ),
@@ -30,7 +30,7 @@ function adzworld_bestbuy_register_network( $networks ) {
 				'secret'  => true,
 			),
 			'ipid'    => array(
-				'label'   => __( 'Impact Partner ID', 'adz-world' ),
+				'label'   => __( 'Impact Partner ID (optional)', 'adz-world' ),
 				'pattern' => '/^[A-Za-z0-9_-]{1,100}$/D',
 			),
 		),
@@ -101,10 +101,17 @@ function adzworld_bestbuy_account() {
  * @return bool
  */
 function adzworld_bestbuy_account_ready( $account ) {
-	return isset( $account['enabled'], $account['api_key'], $account['ipid'] )
+	/*
+	 * The Impact Partner ID is deliberately not required. A Best Buy developer
+	 * key is issued at once and returns products; the Partner ID comes from a
+	 * Publisher Program approval that takes days. Holding the products back
+	 * until then leaves the slot empty for no gain. Without it the links are
+	 * untracked and earn nothing, which is the honest state while the
+	 * application is pending.
+	 */
+	return isset( $account['enabled'], $account['api_key'] )
 		&& '1' === (string) $account['enabled']
-		&& '' !== (string) $account['api_key']
-		&& '' !== (string) $account['ipid'];
+		&& '' !== (string) $account['api_key'];
 }
 
 /**
@@ -135,7 +142,7 @@ function adzworld_bestbuy_filter_account_ready( $ready, $id, $account ) {
  */
 function adzworld_bestbuy_products_url( $request, $account ) {
 	$request = trim( preg_replace( '/\s+/u', ' ', wp_strip_all_tags( (string) $request ) ) );
-	if ( '' === $request || empty( $account['api_key'] ) || empty( $account['ipid'] ) ) {
+	if ( '' === $request || empty( $account['api_key'] ) ) {
 		return '';
 	}
 
@@ -151,14 +158,20 @@ function adzworld_bestbuy_products_url( $request, $account ) {
 	$criteria[] = 'active=true';
 	$criteria[] = 'onlineAvailability=true';
 
+	$query = array(
+		'format'   => 'json',
+		'pageSize' => 3,
+		'show'     => 'sku,name,salePrice,regularPrice,image,largeImage,url,affiliateUrl,onlineAvailability',
+		'apiKey'   => $account['api_key'],
+	);
+
+	/* IPID is what asks Best Buy to return an attributed affiliateUrl. */
+	if ( ! empty( $account['ipid'] ) ) {
+		$query['IPID'] = $account['ipid'];
+	}
+
 	return add_query_arg(
-		array(
-			'format'   => 'json',
-			'pageSize' => 3,
-			'show'     => 'sku,name,salePrice,regularPrice,image,largeImage,affiliateUrl,onlineAvailability',
-			'apiKey'   => $account['api_key'],
-			'IPID'     => $account['ipid'],
-		),
+		$query,
 		'https://api.bestbuy.com/v1/products(' . implode( '&', $criteria ) . ')'
 	);
 }
@@ -206,6 +219,11 @@ function adzworld_bestbuy_map_product( $product ) {
 
 	$title = isset( $product['name'] ) ? sanitize_text_field( (string) $product['name'] ) : '';
 	$url   = isset( $product['affiliateUrl'] ) ? adzworld_bestbuy_https_url( $product['affiliateUrl'] ) : '';
+
+	/* No Partner ID yet means no affiliateUrl: link the product plainly. */
+	if ( '' === $url && isset( $product['url'] ) ) {
+		$url = adzworld_bestbuy_https_url( $product['url'] );
+	}
 	$image = isset( $product['largeImage'] ) ? adzworld_bestbuy_https_url( $product['largeImage'] ) : '';
 	if ( '' === $image && isset( $product['image'] ) ) {
 		$image = adzworld_bestbuy_https_url( $product['image'] );
@@ -235,7 +253,7 @@ function adzworld_bestbuy_product_results( $request ) {
 	$account = adzworld_bestbuy_account();
 	$request = trim( preg_replace( '/\s+/u', ' ', wp_strip_all_tags( (string) $request ) ) );
 	if ( ! adzworld_bestbuy_account_ready( $account ) ) {
-		return new WP_Error( 'adzworld_bestbuy_credentials', __( 'Best Buy API and affiliate credentials are incomplete.', 'adz-world' ) );
+		return new WP_Error( 'adzworld_bestbuy_credentials', __( 'A Best Buy API key is required.', 'adz-world' ) );
 	}
 	if ( '' === $request ) {
 		return new WP_Error( 'adzworld_bestbuy_request', __( 'The Best Buy product request is empty.', 'adz-world' ) );
@@ -255,7 +273,7 @@ function adzworld_bestbuy_product_results( $request ) {
 	$response = wp_safe_remote_get(
 		$url,
 		array(
-			'timeout' => 15,
+			'timeout' => 8,
 		)
 	);
 	if ( is_wp_error( $response ) ) {
@@ -298,7 +316,12 @@ function adzworld_bestbuy_append_product_results( $results, $request ) {
 		return $results;
 	}
 
-	return array_merge( $results, $bestbuy );
+	foreach ( $bestbuy as $row ) {
+		$row['provider'] = 'bestbuy';
+		$results[]       = $row;
+	}
+
+	return $results;
 }
 
 add_filter( 'adzworld_affiliate_networks', 'adzworld_bestbuy_register_network' );
@@ -306,3 +329,25 @@ add_filter( 'adzworld_registration_catalog', 'adzworld_bestbuy_register_catalog'
 add_filter( 'adzworld_getpaid_affiliate_serves_adz', 'adzworld_bestbuy_register_request_behavior' );
 add_filter( 'adzworld_affiliate_account_ready', 'adzworld_bestbuy_filter_account_ready', 10, 3 );
 add_filter( 'adzworld_affiliate_product_results', 'adzworld_bestbuy_append_product_results', 10, 2 );
+
+/**
+ * Whether this account is credited for a sale.
+ *
+ * The Impact Partner ID is what the network pays
+ * against. Without it the products still serve and the publisher earns
+ * nothing from them.
+ *
+ * @param bool                 $earns   Whether the account earns.
+ * @param string               $id      Provider id.
+ * @param array<string,string> $account Saved provider fields.
+ * @return bool
+ */
+function adzworld_bestbuy_filter_account_earns( $earns, $id, $account ) {
+	if ( 'bestbuy' !== $id ) {
+		return $earns;
+	}
+
+	return ! empty( $account['ipid'] );
+}
+
+add_filter( 'adzworld_affiliate_account_earns', 'adzworld_bestbuy_filter_account_earns', 10, 3 );

@@ -106,7 +106,7 @@ if ( ! class_exists( 'EOF_Views' ) ) :
 						$base_url
 					);
 					?>
-						
+
 					<?php
 						submit_button( __( 'Save Changes', 'adz-world' ), 'primary', 'eof-save', false );
 					?>
@@ -122,4 +122,3 @@ if ( ! class_exists( 'EOF_Views' ) ) :
 	}
 
 endif;
-?>

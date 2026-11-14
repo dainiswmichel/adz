@@ -34,14 +34,14 @@ function adzworld_get_advertise( $ad_visibility, $ad_visibility_interval, $repea
 			var repeat_adz = 'yes';
 			var interval = setInterval(function () {
 				if(repeat_adz == 'yes'){
-					
-					browsing_advertise();	
-				}				
-					
+
+					browsing_advertise();
+				}
+
 			}, 60000);
 			function browsing_advertise(){
 
-							
+
 				jQuery.ajax({
 					url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
 					type : 'post',
@@ -60,7 +60,7 @@ function adzworld_get_advertise( $ad_visibility, $ad_visibility_interval, $repea
 						adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
 					},
 					success:function(data) {
-						
+
 						if(jQuery.trim(data) != 'continue'){
 							<?php if ( is_category() ) { ?>
 								jQuery('.page-header').after('<div class="adz-world-category-wapper"></div>');
@@ -77,7 +77,7 @@ function adzworld_get_advertise( $ad_visibility, $ad_visibility_interval, $repea
 										i--;
 									} else {
 										jQuery('.continue_reading').text('Continue >>');
-										jQuery('.continue_reading').addClass('close_adz');	
+										jQuery('.continue_reading').addClass('close_adz');
 										clearInterval(adz_interval);
 										repeat_adz = 'no';
 									}
@@ -91,7 +91,7 @@ function adzworld_get_advertise( $ad_visibility, $ad_visibility_interval, $repea
 										i--;
 									} else {
 										jQuery('.continue_reading').text('Continue >>');
-										jQuery('.continue_reading').addClass('close_adz');	
+										jQuery('.continue_reading').addClass('close_adz');
 										clearInterval(adz_interval);
 										repeat_adz = 'no';
 									}
@@ -100,7 +100,7 @@ function adzworld_get_advertise( $ad_visibility, $ad_visibility_interval, $repea
 
 
 						}else{
-						}					
+						}
 					},
 					error: function(errorThrown){
 						console.log(errorThrown);
@@ -129,13 +129,13 @@ function adzworld_get_advertise( $ad_visibility, $ad_visibility_interval, $repea
 						if(jQuery.trim(data) != 'continue'){
 							repeat_adz = 'yes';
 							location.reload();
-						}					
+						}
 					},
 					error: function(errorThrown){
 						console.log(errorThrown);
 					}
 				});
-				
+
 			});
 		});
 
@@ -165,23 +165,23 @@ function adzworld_get_advertise_popup( $ad_visibility, $ad_visibility_interval, 
 	?>
 	<div id="show_overlay" class="adz_overlay">
 		<div class="adz_popup">
-							
-			<div class="content"> </div>			
+
+			<div class="content"> </div>
 		</div>
 	</div>
 
 	<script type="text/javascript">
-	jQuery(document).ready(function(){	
+	jQuery(document).ready(function(){
 
 		var repeat_adz = 'yes';
 		var interval = setInterval(function () {
 			if(repeat_adz == 'yes'){
 				browsing_advertise();
 			}
-				
+
 		}, 60000);
 		function browsing_advertise(){
-			
+
 			jQuery.ajax({
 				url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
 				type : 'post',
@@ -202,11 +202,11 @@ function adzworld_get_advertise_popup( $ad_visibility, $ad_visibility_interval, 
 
 				},
 				success:function(data) {
-				
+
 					if(jQuery.trim(data) != 'continue'){
 						jQuery('#show_overlay').addClass('adzworld-is-visible');
 						jQuery('.adz_popup .content').html(window.adzworldDecodeAd(data));
-						
+
 
 						var i = <?php echo absint( $ad_visibility ); ?>;
 						var adz_interval = setInterval(function () {
@@ -215,20 +215,20 @@ function adzworld_get_advertise_popup( $ad_visibility, $ad_visibility_interval, 
 								i--;
 							} else {
 								jQuery('.continue_reading').text('Continue >>');
-								jQuery('.continue_reading').addClass('close_adz');	
+								jQuery('.continue_reading').addClass('close_adz');
 								clearInterval(adz_interval);
 								repeat_adz = 'no';
 							}
 						}, 1000);
-					}					
+					}
 				},
 				error: function(errorThrown){
 					console.log(errorThrown);
 				}
 			});
-			
-		}	
-		
+
+		}
+
 		jQuery(document).on('click','.close_adz',function(){
 			jQuery.ajax({
 				url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
@@ -247,17 +247,17 @@ function adzworld_get_advertise_popup( $ad_visibility, $ad_visibility_interval, 
 				},
 				success:function(data) {
 					jQuery('#show_overlay').removeClass('adzworld-is-visible');
-					repeat_adz = 'yes';            
+					repeat_adz = 'yes';
 				},
 				error: function(errorThrown){
 					console.log(errorThrown);
 				}
 			});
-			 
-			 
+
+
 		});
 	});
-	
+
 	</script>
 	<?php
 }
@@ -481,7 +481,7 @@ function adzworld_update_rotation_state( $rotation_id, $state ) {
  * Off unless the site owner turns it on. With it off ads come from this site's
  * own adz_ad posts. Separately consented earnings requests are independent.
  *
- * 1.0.8 called adz.world unconditionally, on page loads, sending visitor IP
+ * 1.0.8 called adz-world unconditionally, on page loads, sending visitor IP
  * addresses with no disclosure and no way to decline. Those requests require
  * review against external-service guidelines; the actual closure guideline
  * has not been established.
@@ -494,8 +494,9 @@ function adzworld_network_enabled() {
 	if ( empty( $options['connect_to_network'] ) ) {
 		return false;
 	}
-	$base_url = adzworld_network_base_url();
-	if ( 'adz-world.com' === wp_parse_url( $base_url, PHP_URL_HOST ) && empty( $options['adzworld_monetization_consent'] ) ) {
+	$base_url  = adzworld_network_base_url();
+	$home_host = adzworld_home_host();
+	if ( '' !== $home_host && wp_parse_url( $base_url, PHP_URL_HOST ) === $home_host && empty( $options['adzworld_monetization_consent'] ) ) {
 		return false;
 	}
 
@@ -510,7 +511,7 @@ function adzworld_network_enabled() {
  * @return string Trailing-slashed URL, or '' when none is configured.
  */
 function adzworld_network_base_url() {
-	$url = apply_filters( 'adzworld_ad_network_base_url', 'https://adz-world.com/' );
+	$url = apply_filters( 'adzworld_ad_network_base_url', adzworld_home_url() );
 
 	return $url ? trailingslashit( esc_url_raw( $url ) ) : '';
 }

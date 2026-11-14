@@ -75,4 +75,3 @@ if ( ! class_exists( 'EOF_field_heading' ) ) :
 	}
 
 endif;
-?>

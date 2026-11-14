@@ -45,7 +45,7 @@ if ( 'thru_page' === $display_type ) {
 					i--;
 				} else {
 					jQuery('.continue_reading').text('Continue >>');
-					jQuery('.continue_reading').addClass('close_adz');	
+					jQuery('.continue_reading').addClass('close_adz');
 					clearInterval(adz_interval);
 				}
 			}, 1000);
@@ -69,7 +69,7 @@ if ( 'thru_page' === $display_type ) {
 					success:function(data) {
 						if(data != 'continue'){
 							location.reload();
-						}					
+						}
 					},
 					error: function(errorThrown){
 						console.log(errorThrown);

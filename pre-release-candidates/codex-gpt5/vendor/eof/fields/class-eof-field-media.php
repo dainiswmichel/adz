@@ -99,7 +99,7 @@ if ( ! class_exists( 'EOF_field_media' ) ) :
 					break;
 			}
 			?>
-		<input type="text" class="<?php echo esc_attr( $class ); ?>" id="<?php echo esc_attr( $this->option_id ); ?>" name="<?php echo esc_attr( $this->option_name ); ?>" value="<?php echo esc_attr( $this->value ); ?>" /> 
+		<input type="text" class="<?php echo esc_attr( $class ); ?>" id="<?php echo esc_attr( $this->option_id ); ?>" name="<?php echo esc_attr( $this->option_name ); ?>" value="<?php echo esc_attr( $this->value ); ?>" />
 		<input class="button eof-media-button" type="button" data-input-id="<?php echo esc_attr( $this->option_id ); ?>" value="<?php esc_html_e( 'Upload', 'adz-world' ); ?>" />
 			<?php if ( isset( $this->value ) && ! empty( $this->value ) ) : ?>
 		<input class="button eof-media-delete-button" type="button" data-input-id="<?php echo esc_attr( $this->option_id ); ?>" value="<?php esc_html_e( 'Delete', 'adz-world' ); ?>" />
@@ -126,5 +126,3 @@ if ( ! class_exists( 'EOF_field_media' ) ) :
 	}
 
 endif;
-
-?>

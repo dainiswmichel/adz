@@ -129,7 +129,7 @@ if ( ! class_exists( 'EOF_field_repeat' ) ) :
 					?>
 						<td class="item-action">
 
-							<a class="duplicate_row" title="Duplicate" href="javascript:void()"><span class="dashicons dashicons-welcome-add-page"></span></a> <a class="remove_row" title="Delete" href="javascript:void()"><span class="dashicons dashicons-trash"></span></a> 
+							<a class="duplicate_row" title="Duplicate" href="javascript:void()"><span class="dashicons dashicons-welcome-add-page"></span></a> <a class="remove_row" title="Delete" href="javascript:void()"><span class="dashicons dashicons-trash"></span></a>
 													<input name="adz_ad_options[ad_settings][field_count][rotation_id]"  value="adz_rotation_field_count" type="hidden">
 						</td>
 					</tr>
@@ -159,14 +159,14 @@ if ( ! class_exists( 'EOF_field_repeat' ) ) :
 							echo '</td>';
 						}
 						?>
-						<td class="item-action"><a class="duplicate_row" title="Duplicate" href="javascript:void()"><span class="dashicons dashicons-welcome-add-page"></span></a> <a class="remove_row" title="Delete" href="javascript:void()"><span class="dashicons dashicons-trash"></span></a> 
+						<td class="item-action"><a class="duplicate_row" title="Duplicate" href="javascript:void()"><span class="dashicons dashicons-welcome-add-page"></span></a> <a class="remove_row" title="Delete" href="javascript:void()"><span class="dashicons dashicons-trash"></span></a>
 						<input name="adz_ad_options[ad_settings][<?php echo absint( $count ); ?>][rotation_id]"  value="adz_rotation_<?php echo absint( $count ); ?>" type="hidden"> </td>
-					</tr>	
+					</tr>
 						<?php
 						++$count;
 endforeach;
 					?>
-					
+
 				</tbody>
 			</table>
 			<p class="description"><?php echo wp_kses_post( $this->field['desc'] ); ?></p>
@@ -189,6 +189,3 @@ endforeach;
 	}
 
 endif;
-
-
-?>

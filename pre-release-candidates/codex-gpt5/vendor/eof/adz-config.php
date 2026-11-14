@@ -104,12 +104,23 @@ function adzworld_get_data_from_file( $file ) {
 	}
 
 	$contents = $wp_filesystem->get_contents( $file_path );
-	return false === $contents ? '' : $contents;
+	if ( false === $contents ) {
+		return '';
+	}
+	return str_replace(
+		array( '{{name}}', '{{home}}' ),
+		array( esc_html( ADZWORLD_NAME ), esc_url( untrailingslashit( ADZWORLD_HOME ) ) ),
+		$contents
+	);
 }
 /**
  * Configure the advertisement settings sections.
  */
 function adzworld_settings_setup() {
+	$adzworld_name    = ADZWORLD_NAME;
+	$adzworld_host    = adzworld_home_host();
+	$adzworld_terms   = esc_url( adzworld_home_url( 'terms/' ) );
+	$adzworld_privacy = esc_url( adzworld_home_url( 'privacy/' ) );
 
 	$sections       = array();
 	$configs        = array();
@@ -134,16 +145,16 @@ function adzworld_settings_setup() {
 				'default' => '0', // 1 = on | 0 = off
 			),
 			'connect_to_network'            => array(
-				'title'   => 'Connect to the adz-world.com network',
+				'title'   => sprintf( 'Connect to the %s network', $adzworld_host ),
 				'type'    => 'checkbox',
 				'default' => '0', // 1 = on | 0 = off
-				'desc'    => 'Off by default. Your site serves only the adz you create here, and contacts no outside server. Switching this on connects the site to the adz-world.com network: your site will send your site URL, admin email and visitor IP addresses to adz-world.com in order to fetch adz, and the adz you publish will be shared with the network. See <a href="https://adz-world.com/terms/">Terms of Service</a> and <a href="https://adz-world.com/privacy/">Privacy Policy</a>.',
+				'desc'    => sprintf( 'Off by default. Your site serves only the adz you create here, and contacts no outside server. Switching this on connects the site to the %1$s network: your site will send your site URL, admin email and visitor IP addresses to %1$s in order to fetch adz, and the adz you publish will be shared with the network. See <a href="%2$s">Terms of Service</a> and <a href="%3$s">Privacy Policy</a>.', esc_html( $adzworld_host ), $adzworld_terms, $adzworld_privacy ),
 			),
 			'adzworld_monetization_consent' => array(
-				'title'   => 'Optional adz-world monetization terms',
+				'title'   => sprintf( 'Optional %s monetization terms', $adzworld_name ),
 				'type'    => 'checkbox',
 				'default' => '0',
-				'desc'    => 'I authorize adz-world service ads to use adz-world affiliate/referral codes. adz-world retains 10% of settled affiliate commissions actually received; my publisher share is 90%. This is not 10% of product sales. Stripe/PayPal payout arrangements and fees remain TBD; this candidate does not enable live payments. Existing publisher links are not rewritten. This consent applies to adz-world.com, not to independently operated services. Terms: https://adz-world.com/terms/ and privacy: https://adz-world.com/privacy/ must be available before service launch.',
+				'desc'    => sprintf( 'I authorize %1$s service ads to use %1$s affiliate/referral codes. %1$s retains 10%% of settled affiliate commissions actually received; my publisher share is 90%%. This is not 10%% of product sales. Stripe/PayPal payout arrangements and fees remain TBD; this candidate does not enable live payments. Existing publisher links are not rewritten. This consent applies to %2$s, not to independently operated services. Terms: %3$s and privacy: %4$s must be available before service launch.', esc_html( $adzworld_name ), esc_html( $adzworld_host ), $adzworld_terms, $adzworld_privacy ),
 			),
 			'paypal_email'                  => array(
 				'type'    => 'email',
@@ -155,10 +166,10 @@ function adzworld_settings_setup() {
 
 			'adzdotworld_email'             => array(
 				'type'    => 'email',
-				'title'   => 'Adz.world Email',
+				'title'   => sprintf( '%s Email', $adzworld_name ),
 				'default' => '',
 				'sizes'   => 'regular',
-				'desc'    => 'Please enter the Adz.world email address.',
+				'desc'    => sprintf( 'Please enter the %s email address.', $adzworld_name ),
 
 			),
 
@@ -204,7 +215,7 @@ function adzworld_settings_setup() {
 	);
 
 	$sections['ad_management'] = array(
-		'title'    => 'Create Adz Rotation',
+		'title'    => 'Create adz rotation',
 		'id'       => 'ad_management',
 		'priority' => 2,
 		'fields'   => adzworld_rotation_setting_array(),
@@ -241,9 +252,9 @@ function adzworld_settings_setup() {
 		// Show the sections below the admin menu item or not.
 		'allow_sub_menu'     => false,
 		// Admin menu title.
-		'menu_title'         => 'Adz Settings',
+		'menu_title'         => 'adz settings',
 		// Page title of admin menu page.
-		'page_title'         => 'Adz Settings',
+		'page_title'         => 'adz settings',
 		// For a full list of options, visit the WordPress add_submenu_page documentation.
 		// Order where the menu appears in the admin area. If there is any conflict, something will not show. Warning.
 		'menu_priority'      => 10,
@@ -308,12 +319,12 @@ function adzworld_rotation_setting_array() {
 				'desc'  => adzworld_get_data_from_file( 'instructions.html' ),
 			),
 			'ad_settings'      => array(
-				'title'      => 'Ad Settings',
+				'title'      => 'adz settings',
 				'type'       => 'repeat',
 				'style'      => '',
 				'sub_fields' => array(
 					'rotation_name'       => array(
-						'title' => 'Adz Rotation Name',
+						'title' => 'adz rotation name',
 						'type'  => 'text',
 						'sizes' => 'large',
 
@@ -343,7 +354,7 @@ function adzworld_rotation_setting_array() {
 					),
 					'member_level'        => array(
 						'type'    => 'select',
-						'title'   => 'Show Adz to',
+						'title'   => 'Show adz to',
 						'desc'    => '',
 						'default' => '',
 						'options' => adzworld_get_membership_level(),
@@ -352,7 +363,7 @@ function adzworld_rotation_setting_array() {
 
 					'adz_rotation'        => array(
 						'type'    => 'radio',
-						'title'   => 'Show Adz Rotation',
+						'title'   => 'Show adz rotation',
 						'desc'    => '',
 						'options' => array(
 							'in_sequence' => 'In sequence',
@@ -364,7 +375,7 @@ function adzworld_rotation_setting_array() {
 
 					'ad_sequences'        => array(
 						'type'     => 'select',
-						'title'    => 'Adz to show',
+						'title'    => 'adz to show',
 						'options'  => adzworld_get_all_ads(),
 						'sizes'    => 'small',
 						'multiple' => 'yes',
@@ -372,7 +383,7 @@ function adzworld_rotation_setting_array() {
 
 					'ad_seconds'          => array(
 						'type'    => 'number',
-						'title'   => 'Seconds of Ads',
+						'title'   => 'Seconds of adz',
 						'desc'    => '',
 						'default' => '',
 						'sizes'   => 'small',
@@ -386,7 +397,7 @@ function adzworld_rotation_setting_array() {
 					),
 					'popup_or_page'       => array(
 						'type'    => 'radio',
-						'title'   => 'Show Adz in popup, within page/post, or thru page',
+						'title'   => 'Show adz in popup, within page/post, or thru page',
 						'desc'    => '',
 						'options' => array(
 							'popup'     => 'Popup',
@@ -416,7 +427,7 @@ function adzworld_rotation_setting_array() {
 
 					'adz_template'        => array(
 						'type'    => 'select',
-						'title'   => 'Adz template',
+						'title'   => 'adz template',
 						'desc'    => '',
 						'default' => '',
 						'sizes'   => 'small',
@@ -451,7 +462,7 @@ function adzworld_get_all_ads() {
 	return $adz_list;
 }
 
-// Function to check user register to the adz.world.
+// Function to check user register to the adz-world.
 /**
  * Return escaped registration status and its reset control.
  */

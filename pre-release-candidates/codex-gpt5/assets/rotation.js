@@ -27,6 +27,21 @@
 	}
 
 	/**
+	 * Mark a unit mounted and run its provider call.
+	 *
+	 * @param {HTMLElement} unit    Network element.
+	 * @param {Function}    ready   Returns true when the provider can be called.
+	 * @param {Function}    display Provider call.
+	 */
+	function mountWhenReady( unit, ready, display ) {
+		if ( ! ready() ) {
+			return;
+		}
+		unit.dataset.adzworldMounted = '1';
+		display();
+	}
+
+	/**
 	 * Mount an enabled publisher ad-network unit when its slide becomes active.
 	 *
 	 * @param {HTMLElement} slide Active carousel slide.
@@ -34,6 +49,7 @@
 	function mountNetworkUnit( slide ) {
 		var unit = slide.querySelector( '[data-adzworld-mount]' );
 		var kind;
+		var script;
 
 		if ( ! unit || '1' === unit.dataset.adzworldMounted ) {
 			return;
@@ -76,8 +92,6 @@
 
 		if ( 'taboola' === kind && 'https://cdn.taboola.com/libtrc/' === settings.taboolaBase &&
 			/^[a-z0-9][a-z0-9-]{1,48}$/.test( unit.dataset.publisher || '' ) ) {
-			var script;
-
 			unit.dataset.adzworldMounted = '1';
 			window._taboola = window._taboola || [];
 			window._taboola.push(
@@ -103,6 +117,121 @@
 			if ( window.OBR && window.OBR.extern && 'function' === typeof window.OBR.extern.researchWidget ) {
 				window.OBR.extern.researchWidget();
 			}
+			return;
+		}
+
+		if ( 'medianet' === kind && /^[0-9]{5,15}$/.test( unit.dataset.crid || '' ) && unit.id ) {
+			mountWhenReady(
+				unit,
+				function () {
+					return window._mNHandle && window._mNHandle.queue;
+				},
+				function () {
+					window._mNHandle.queue.push(
+						function () {
+							if ( window._mNDetails && 'function' === typeof window._mNDetails.loadTag ) {
+								window._mNDetails.loadTag( unit.dataset.crid, unit.dataset.width + 'x' + unit.dataset.height, unit.id );
+							}
+						}
+					);
+				}
+			);
+			return;
+		}
+
+		if ( 'amazonaps' === kind && unit.id && /^[A-Za-z0-9][A-Za-z0-9._~/-]{0,120}$/.test( unit.dataset.slotname || '' ) ) {
+			mountWhenReady(
+				unit,
+				function () {
+					return window.apstag && 'function' === typeof window.apstag.init && 'function' === typeof window.apstag.fetchBids;
+				},
+				function () {
+					if ( ! window.adzworldApsReady ) {
+						window.apstag.init(
+							{
+								pubID: unit.dataset.pub || '',
+								adServer: 'googletag'
+							}
+						);
+						window.adzworldApsReady = true;
+					}
+					window.apstag.fetchBids(
+						{
+							slots: [
+								{
+									slotID: unit.id,
+									slotName: unit.dataset.slotname,
+									sizes: [ [ Number( unit.dataset.width ), Number( unit.dataset.height ) ] ]
+								}
+							],
+							timeout: 2000
+						},
+						function () {
+							if ( 'function' === typeof window.apstag.setDisplayBids ) {
+								window.apstag.setDisplayBids();
+							}
+						}
+					);
+				}
+			);
+			return;
+		}
+
+		if ( 'ezoic' === kind && /^[0-9]{1,6}$/.test( unit.dataset.placeholder || '' ) ) {
+			window.ezstandalone = window.ezstandalone || {};
+			window.ezstandalone.cmd = window.ezstandalone.cmd || [];
+			unit.dataset.adzworldMounted = '1';
+			window.ezstandalone.cmd.push(
+				function () {
+					if ( 'function' === typeof window.ezstandalone.showAds ) {
+						window.ezstandalone.showAds( Number( unit.dataset.placeholder ) );
+					}
+				}
+			);
+			return;
+		}
+
+		if ( 'mgid' === kind ) {
+			unit.dataset.adzworldMounted = '1';
+			window._mgq = window._mgq || [];
+			window._mgq.push( [ '_mgc.load' ] );
+			return;
+		}
+
+		if ( 'carbon' === kind && /^[A-Z0-9]{8,10}$/.test( unit.dataset.serve || '' ) &&
+			/^[a-z0-9][a-z0-9-]{1,40}$/.test( unit.dataset.placement || '' ) ) {
+			script = document.createElement( 'script' );
+			script.async = true;
+			script.id = '_carbonads_js';
+			script.src = 'https://cdn.carbonads.com/carbon.js?serve=' + encodeURIComponent( unit.dataset.serve ) + '&placement=' + encodeURIComponent( unit.dataset.placement );
+			unit.dataset.adzworldMounted = '1';
+			unit.appendChild( script );
+			return;
+		}
+
+		if ( 'criteo' === kind && /^[0-9]{4,12}$/.test( unit.dataset.zone || '' ) && unit.id ) {
+			window.Criteo = window.Criteo || {};
+			window.Criteo.events = window.Criteo.events || [];
+			unit.dataset.adzworldMounted = '1';
+			window.Criteo.events.push(
+				function () {
+					if ( 'function' === typeof window.Criteo.DisplayAcceptableAdIfAdblocked ) {
+						window.Criteo.DisplayAcceptableAdIfAdblocked(
+							{
+								zoneid: Number( unit.dataset.zone ),
+								containerid: unit.id,
+								overrideZoneFloor: false
+							}
+						);
+					}
+				}
+			);
+			return;
+		}
+
+		if ( 'teads' === kind || 'mediavine' === kind || 'raptive' === kind || 'monumetric' === kind ||
+			'revcontent' === kind || 'dianomi' === kind || 'snigel' === kind || 'freestar' === kind ) {
+			unit.dataset.adzworldMounted = '1';
 		}
 	}
 
@@ -140,13 +269,20 @@
 	}
 
 	/**
-	 * Remember that the next render must visibly return to the user hub.
+	 * Remember the slide that is on screen, including across a reload.
+	 *
+	 * An empty category is the hub. A named category is that adz.
+	 *
+	 * @param {string} category Category name.
+	 * @param {number} slot     Zero-based category slot.
 	 */
-	function rememberHubReturn() {
+	function rememberSlide( category, slot ) {
 		try {
-			window.sessionStorage.setItem( 'adzworldReturnToHub', '1' );
+			window.sessionStorage.setItem( 'adzworldSlideCategory', category || '' );
+			window.sessionStorage.setItem( 'adzworldSlideSlot', String( slot || 0 ) );
+			window.sessionStorage.removeItem( 'adzworldReturnToHub' );
 		} catch ( error ) {
-			// Navigation still works when browser storage is unavailable.
+			// The hub remains available when browser storage is unavailable.
 		}
 	}
 
@@ -170,6 +306,100 @@
 	 *
 	 * @param {HTMLElement} rotation Rotation root.
 	 */
+	/**
+	 * Move between search-result networks inside one category slide.
+	 *
+	 * Buttons here use their own step attribute. The category carousel reads a
+	 * different attribute, and a click inside this carousel returns before that
+	 * listener runs.
+	 *
+	 * @param {HTMLElement} results Results carousel.
+	 */
+	function prepareResults( results ) {
+		var slides = Array.from( results.querySelectorAll( ':scope > .adzworld-results__slides > .adzworld-results__slide' ) );
+		var navigation = results.querySelector( ':scope > .adzworld-results__navigation' );
+		var evaluation = results.parentElement ? results.parentElement.querySelector( ':scope > .adzworld-evaluation' ) : null;
+		var current = 0;
+
+		if ( ! slides.length ) {
+			return;
+		}
+
+		function selectEvaluation( slide ) {
+			var outerSlide;
+			var status;
+			var request;
+
+			if ( ! evaluation || ! slide ) {
+				return;
+			}
+			outerSlide = results.closest( '.adzworld-slide' );
+			status = evaluation.querySelector( '.adzworld-evaluation__status' );
+			request = results.dataset.adzworldRequest || '';
+			evaluation.dataset.adzworldFeedbackTarget = slide.dataset.adzworldResultTarget || '';
+			evaluation.dataset.adzworldFeedbackProvider = slide.dataset.adzworldProvider || '';
+			evaluation.dataset.adzworldFeedbackItemId = slide.dataset.adzworldItemId || '';
+			evaluation.dataset.adzworldFeedbackCategory = outerSlide ? outerSlide.dataset.adzworldCategory || '' : '';
+			evaluation.dataset.adzworldFeedbackRotation = outerSlide ? outerSlide.dataset.adzworldRotation || '' : '';
+			evaluation.dataset.adzworldFeedbackSlot = outerSlide ? outerSlide.dataset.adzworldCategorySlot || '0' : '0';
+			evaluation.querySelectorAll( '[data-adzworld-response]' ).forEach(
+				function ( button ) {
+					button.classList.remove( 'is-selected' );
+					button.removeAttribute( 'aria-pressed' );
+				}
+			);
+			if ( status ) {
+				status.textContent = '';
+			}
+			if ( ! slide.dataset.adzworldImpressionRecorded ) {
+				slide.dataset.adzworldImpressionRecorded = '1';
+				post(
+					'adzworld_journey_impression',
+					settings.feedbackNonce,
+					{
+						provider: evaluation.dataset.adzworldFeedbackProvider,
+						item_id: evaluation.dataset.adzworldFeedbackItemId,
+						category: evaluation.dataset.adzworldFeedbackCategory,
+						rotation: evaluation.dataset.adzworldFeedbackRotation,
+						slot: evaluation.dataset.adzworldFeedbackSlot,
+						request: request
+					}
+				);
+			}
+		}
+
+		function show( position ) {
+			current = ( position + slides.length ) % slides.length;
+			slides.forEach(
+				function ( slide, index ) {
+					var active = index === current;
+
+					slide.hidden = ! active;
+					slide.setAttribute( 'aria-hidden', String( ! active ) );
+				}
+			);
+			selectEvaluation( slides[ current ] );
+		}
+
+		results.addEventListener(
+			'click',
+			function ( event ) {
+				var button = event.target.closest( '[data-adzworld-result-step]' );
+
+				if ( ! button || ! results.contains( button ) ) {
+					return;
+				}
+				event.stopPropagation();
+				show( current + Number( button.dataset.adzworldResultStep ) );
+			}
+		);
+
+		show( 0 );
+		if ( navigation && slides.length > 1 ) {
+			navigation.hidden = false;
+		}
+	}
+
 	function prepareRotation( rotation ) {
 		var slides = Array.from( rotation.querySelectorAll( ':scope > .adzworld-carousel > .adzworld-slides > .adzworld-slide' ) );
 		var current = 0;
@@ -179,6 +409,7 @@
 			return;
 		}
 
+		rotation.querySelectorAll( '.adzworld-results' ).forEach( prepareResults );
 		rotation.classList.add( 'adzworld-enhanced' );
 
 		/*
@@ -221,6 +452,7 @@
 			} else {
 				mountNetworkUnit( slides[ current ] );
 			}
+			rememberSlide( activeCategory, activeSlot );
 			rotation.querySelectorAll( '[data-adzworld-category-slot-category], [data-adz-category-slot-category]' ).forEach(
 				function ( button ) {
 					var category;
@@ -286,7 +518,7 @@
 				var categorySlot;
 				var status;
 
-				if ( ! button ) {
+				if ( ! button || button.closest( '.adzworld-results' ) ) {
 					return;
 				}
 				if ( button.hasAttribute( 'data-adzworld-category-first' ) ) {
@@ -404,25 +636,29 @@
 			navigation.hidden = slides.length < 2 || ! navigation.children.length;
 		}
 
-		show( 0 );
-		try {
-			if ( '1' === window.sessionStorage.getItem( 'adzworldReturnToHub' ) ) {
-				window.sessionStorage.removeItem( 'adzworldReturnToHub' );
-				window.requestAnimationFrame( showHub );
-			} else if ( window.sessionStorage.getItem( 'adzworldReturnCategory' ) ) {
-				window.requestAnimationFrame(
-					function () {
-						var category = window.sessionStorage.getItem( 'adzworldReturnCategory' ) || '';
-						var slot = Number( window.sessionStorage.getItem( 'adzworldReturnCategorySlot' ) || 0 );
+		var startCategory = '';
+		var startSlot = 0;
 
-						window.sessionStorage.removeItem( 'adzworldReturnCategory' );
-						window.sessionStorage.removeItem( 'adzworldReturnCategorySlot' );
-						showCategory( category, slot );
-					}
-				);
+		try {
+			window.sessionStorage.removeItem( 'adzworldReturnToHub' );
+			if ( window.sessionStorage.getItem( 'adzworldReturnCategory' ) ) {
+				startCategory = window.sessionStorage.getItem( 'adzworldReturnCategory' ) || '';
+				startSlot = Number( window.sessionStorage.getItem( 'adzworldReturnCategorySlot' ) || 0 );
+				window.sessionStorage.removeItem( 'adzworldReturnCategory' );
+				window.sessionStorage.removeItem( 'adzworldReturnCategorySlot' );
+			} else {
+				startCategory = window.sessionStorage.getItem( 'adzworldSlideCategory' ) || '';
+				startSlot = Number( window.sessionStorage.getItem( 'adzworldSlideSlot' ) || 0 );
 			}
 		} catch ( error ) {
-			// The hub remains the first slide when browser storage is unavailable.
+			startCategory = '';
+		}
+
+		if ( startCategory ) {
+			showCategory( startCategory, startSlot );
+		}
+		if ( ! rotation.querySelector( '.adzworld-slide.adzworld-active' ) ) {
+			show( 0 );
 		}
 	}
 
@@ -455,6 +691,7 @@
 			'submit',
 			function ( event ) {
 				var mode = improveTarget ? 'improve' : ( event.submitter && event.submitter.value ? event.submitter.value : 'refine' );
+				var evaluation = form.closest( '.adzworld-evaluation' );
 
 				event.preventDefault();
 				if ( ! input || ! input.value.trim() ) {
@@ -467,12 +704,16 @@
 					{
 						mode: mode,
 						refinement: input.value,
-						target: improveTarget
+						target: improveTarget,
+						provider: evaluation ? evaluation.dataset.adzworldFeedbackProvider || form.dataset.adzworldProvider || '' : form.dataset.adzworldProvider || '',
+						item_id: evaluation ? evaluation.dataset.adzworldFeedbackItemId || '' : '',
+						category: evaluation ? evaluation.dataset.adzworldFeedbackCategory || form.dataset.adzworldCategory || '' : form.dataset.adzworldCategory || '',
+						rotation: evaluation ? evaluation.dataset.adzworldFeedbackRotation || form.dataset.adzworldRotation || '' : form.dataset.adzworldRotation || '',
+						slot: evaluation ? evaluation.dataset.adzworldFeedbackSlot || form.dataset.adzworldSlot || '0' : form.dataset.adzworldSlot || '0'
 					}
 				).then(
 					function ( payload ) {
 						if ( payload && payload.success ) {
-							rememberHubReturn();
 							window.location.reload();
 						} else if ( status ) {
 							status.textContent = payload && payload.data ? payload.data.message : '';
@@ -486,7 +727,6 @@
 			'change',
 			function ( event ) {
 				var categoryName = event.target.closest( '.adz-panel__category-name' );
-				var refinementName = event.target.closest( '.adz-panel__refinement-name' );
 
 				if ( categoryName && categoryName.value.trim() === categoryName.dataset.adzCategoryOriginal ) {
 					closeEditor( categoryName );
@@ -505,7 +745,6 @@
 					).then(
 						function ( payload ) {
 							if ( payload && payload.success ) {
-								rememberHubReturn();
 								window.location.reload();
 							} else if ( status ) {
 								status.textContent = payload && payload.data ? payload.data.message : '';
@@ -517,33 +756,6 @@
 					return;
 				}
 
-				if ( refinementName && refinementName.value.trim() === refinementName.dataset.adzRefinementText ) {
-					closeEditor( refinementName );
-					return;
-				}
-
-				if ( refinementName ) {
-					post(
-						'adzworld_refine',
-						settings.preferenceNonce,
-						{
-							mode: 'rename_refinement',
-							refinement: refinementName.value,
-							value: refinementName.dataset.adzRefinementOriginal || ''
-						}
-					).then(
-						function ( payload ) {
-							if ( payload && payload.success ) {
-								rememberHubReturn();
-								window.location.reload();
-							} else if ( status ) {
-								status.textContent = payload && payload.data ? payload.data.message : '';
-								refinementName.value = refinementName.dataset.adzRefinementText || '';
-								closeEditor( refinementName );
-							}
-						}
-					);
-				}
 			}
 		);
 
@@ -553,8 +765,49 @@
 				var category = event.target.closest( '.adz-panel__category' );
 				var categorySlot = event.target.closest( '.adz-panel__category-slot' );
 				var edit = event.target.closest( '.adz-panel__chipedit' );
+				var refinementAction = event.target.closest( '[data-adz-refinement-action]' );
 				var control;
+				var refinementEditor;
+				var refinementName;
 				var rotation = form.closest( '.adzworld-rotation' );
+
+				if ( refinementAction ) {
+					event.preventDefault();
+					refinementEditor = refinementAction.closest( '.adz-panel__refinement-editor' );
+					refinementName = refinementEditor ? refinementEditor.querySelector( '.adz-panel__refinement-name' ) : null;
+					if ( ! refinementEditor || ! refinementName ) {
+						return;
+					}
+					if ( 'cancel' === refinementAction.dataset.adzRefinementAction ) {
+						refinementName.value = refinementName.dataset.adzRefinementText || '';
+						closeEditor( refinementEditor );
+						return;
+					}
+					post(
+						'adzworld_refine',
+						settings.preferenceNonce,
+						'delete' === refinementAction.dataset.adzRefinementAction
+							? {
+								mode: 'drop',
+								facet: 'category_refinements',
+								value: refinementName.dataset.adzRefinementOriginal || ''
+							}
+							: {
+								mode: 'rename_refinement',
+								refinement: refinementName.value,
+								value: refinementName.dataset.adzRefinementOriginal || ''
+							}
+					).then(
+						function ( payload ) {
+							if ( payload && payload.success ) {
+								window.location.reload();
+							} else if ( status ) {
+								status.textContent = payload && payload.data ? payload.data.message : '';
+							}
+						}
+					);
+					return;
+				}
 
 				if ( categorySlot ) {
 					event.preventDefault();
@@ -599,8 +852,9 @@
 						edit.parentElement.querySelector( '.adz-panel__category, .adz-panel__chiptext' ).hidden = true;
 						control.hidden = false;
 						edit.setAttribute( 'aria-expanded', 'true' );
-						control.focus();
-						control.select();
+						refinementName = control.querySelector ? control.querySelector( '.adz-panel__refinement-name' ) : null;
+						( refinementName || control ).focus();
+						( refinementName || control ).select();
 					}
 				}
 			}
@@ -610,45 +864,29 @@
 			'keydown',
 			function ( event ) {
 				var editor = event.target.closest( '.adz-panel__category-name, .adz-panel__refinement-name' );
+				var refinementEditor;
+				var action;
 
 				if ( ! editor ) {
 					return;
 				}
 				if ( 'Enter' === event.key ) {
 					event.preventDefault();
-					editor.blur();
+					refinementEditor = editor.closest( '.adz-panel__refinement-editor' );
+					if ( refinementEditor ) {
+						action = refinementEditor.querySelector( '[data-adz-refinement-action="save"]' );
+						action.click();
+					} else {
+						editor.blur();
+					}
 				}
 				if ( 'Escape' === event.key ) {
 					event.preventDefault();
 					editor.value = editor.dataset.adzCategoryOriginal || editor.dataset.adzRefinementText || '';
-					closeEditor( editor );
+					closeEditor( editor.closest( '.adz-panel__refinement-editor' ) || editor );
 				}
 			}
 		);
-	}
-
-	/**
-	 * Human-readable label for immediate slider feedback.
-	 *
-	 * @param {number} score Evaluation score.
-	 * @return {string} Evaluation label.
-	 */
-	function evaluationLabel( score ) {
-		var labels = settings.labels || {};
-
-		if ( score <= -75 ) {
-			return labels.strongDislike || 'Strongly dislike';
-		}
-		if ( score <= -25 ) {
-			return labels.dislike || 'Dislike';
-		}
-		if ( score < 25 ) {
-			return labels.neutral || 'Neutral';
-		}
-		if ( score < 75 ) {
-			return labels.like || 'Like';
-		}
-		return labels.strongLike || 'Strongly like';
 	}
 
 	/**
@@ -657,57 +895,53 @@
 	 * @param {HTMLElement} control Evaluation root.
 	 */
 	function prepareEvaluation( control ) {
-		var input = control.querySelector( 'input[type="range"]' );
-		var output = control.querySelector( 'output' );
 		var status = control.querySelector( '.adzworld-evaluation__status' );
 
-		if ( ! input ) {
-			return;
-		}
+		control.addEventListener(
+			'click',
+			function ( event ) {
+				var button = event.target.closest( '[data-adzworld-response]' );
+				var response;
 
-		function reflect() {
-			var score = Number( input.value );
-			var scoreClass = 'is-score-' + String( score ).replace( '-', 'minus-' );
-
-			input.classList.toggle( 'is-negative', score < 0 );
-			input.classList.toggle( 'is-positive', score > 0 );
-			Array.from( input.classList ).forEach(
-				function ( className ) {
-					if ( 0 === className.indexOf( 'is-score-' ) ) {
-						input.classList.remove( className );
-					}
+				if ( ! button || ! control.contains( button ) ) {
+					return;
 				}
-			);
-			input.classList.add( scoreClass );
-			if ( output ) {
-				output.textContent = evaluationLabel( score );
-			}
-		}
-
-		input.addEventListener( 'input', reflect );
-		input.addEventListener(
-			'change',
-			function () {
+				response = button.dataset.adzworldResponse || '';
+				button.disabled = true;
 				post(
 					'adzworld_evaluate',
 					settings.feedbackNonce,
 					{
-						score: input.value,
-						target: control.dataset.adzworldFeedbackTarget || ''
+						response: response,
+						provider: control.dataset.adzworldFeedbackProvider || '',
+						item_id: control.dataset.adzworldFeedbackItemId || '',
+						category: control.dataset.adzworldFeedbackCategory || '',
+						rotation: control.dataset.adzworldFeedbackRotation || '',
+						slot: control.dataset.adzworldFeedbackSlot || '0'
 					}
 				).then(
 					function ( payload ) {
-						if ( output && payload && payload.success ) {
-							output.textContent = payload.data.label;
+						button.disabled = false;
+						if ( payload && payload.success ) {
+							control.querySelectorAll( '[data-adzworld-response]' ).forEach(
+								function ( choice ) {
+									var selected = choice === button;
+
+									choice.classList.toggle( 'is-selected', selected );
+									choice.setAttribute( 'aria-pressed', String( selected ) );
+								}
+							);
 						}
 						if ( status ) {
 							status.textContent = payload && payload.data ? payload.data.message : '';
+						}
+						if ( payload && payload.success && 'dislike' === response ) {
+							window.location.reload();
 						}
 					}
 				);
 			}
 		);
-		reflect();
 	}
 
 	function init() {

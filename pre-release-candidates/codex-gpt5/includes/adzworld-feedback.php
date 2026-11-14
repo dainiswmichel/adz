@@ -7,120 +7,6 @@
 
 defined( 'ABSPATH' ) || exit;
 
-const ADZWORLD_FEEDBACK_COOKIE = 'adzworld_feedback';
-const ADZWORLD_FEEDBACK_META   = 'adzworld_feedback';
-
-/**
- * Validate a stored evaluation map.
- *
- * @param mixed $feedback Candidate evaluation map.
- * @return array<string,array{score:int,updated:int}> Valid evaluations.
- */
-function adzworld_sanitize_feedback( $feedback ) {
-	$clean = array();
-	if ( ! is_array( $feedback ) ) {
-		return $clean;
-	}
-
-	foreach ( array_slice( $feedback, -50, null, true ) as $target => $entry ) {
-		$key = sanitize_key( (string) $target );
-		if ( '' === $key || ! is_array( $entry ) || ! isset( $entry['score'] ) || ! is_numeric( $entry['score'] ) ) {
-			continue;
-		}
-		$score = (int) $entry['score'];
-		if ( $score < -100 || $score > 100 ) {
-			continue;
-		}
-		$clean[ $key ] = array(
-			'score'   => $score,
-			'updated' => isset( $entry['updated'] ) ? absint( $entry['updated'] ) : 0,
-		);
-	}
-
-	return $clean;
-}
-
-/**
- * Return the current visitor's explicit evaluations.
- *
- * @return array<string,array{score:int,updated:int}>
- */
-function adzworld_current_feedback() {
-	if ( is_user_logged_in() ) {
-		$stored = get_user_meta( get_current_user_id(), ADZWORLD_FEEDBACK_META, true );
-		return adzworld_sanitize_feedback( $stored );
-	}
-
-	if ( empty( $_COOKIE[ ADZWORLD_FEEDBACK_COOKIE ] ) || ! is_string( $_COOKIE[ ADZWORLD_FEEDBACK_COOKIE ] ) ) {
-		return array();
-	}
-
-	$json = sanitize_text_field( wp_unslash( $_COOKIE[ ADZWORLD_FEEDBACK_COOKIE ] ) );
-	if ( strlen( $json ) > 4096 ) {
-		return array();
-	}
-
-	return adzworld_sanitize_feedback( json_decode( $json, true ) );
-}
-
-/**
- * Store the current visitor's explicit evaluations.
- *
- * @param array $feedback Evaluation map.
- * @return void
- */
-function adzworld_store_feedback( $feedback ) {
-	$feedback = adzworld_sanitize_feedback( $feedback );
-
-	if ( is_user_logged_in() ) {
-		update_user_meta( get_current_user_id(), ADZWORLD_FEEDBACK_META, $feedback );
-		return;
-	}
-
-	$json = wp_json_encode( $feedback );
-	if ( ! is_string( $json ) || headers_sent() ) {
-		return;
-	}
-
-	$_COOKIE[ ADZWORLD_FEEDBACK_COOKIE ] = $json;
-
-	setcookie(
-		ADZWORLD_FEEDBACK_COOKIE,
-		$json,
-		array(
-			'expires'  => 0,
-			'path'     => COOKIEPATH ? COOKIEPATH : '/',
-			'domain'   => COOKIE_DOMAIN,
-			'secure'   => is_ssl(),
-			'httponly' => true,
-			'samesite' => 'Lax',
-		)
-	);
-}
-
-/**
- * Translate a numeric evaluation into clear language.
- *
- * @param int $score Score from -100 to 100.
- * @return string Human-readable evaluation.
- */
-function adzworld_feedback_label( $score ) {
-	if ( $score <= -75 ) {
-		return __( 'Strongly dislike', 'adz-world' );
-	}
-	if ( $score <= -25 ) {
-		return __( 'Dislike', 'adz-world' );
-	}
-	if ( $score < 25 ) {
-		return __( 'Neutral', 'adz-world' );
-	}
-	if ( $score < 75 ) {
-		return __( 'Like', 'adz-world' );
-	}
-
-	return __( 'Strongly like', 'adz-world' );
-}
-
 /**
  * Return refinement pills attached to one category.
  *
@@ -133,12 +19,13 @@ function adzworld_category_refinement_chips( $preference, $category ) {
 		return array();
 	}
 
-	$prefix = $category . '--';
 	return array_values(
 		array_filter(
 			adzworld_preference_chips( $preference ),
-			static function ( $chip ) use ( $prefix ) {
-				return 'category_refinements' === $chip['facet'] && 0 === strpos( $chip['value'], $prefix );
+			static function ( $chip ) use ( $category ) {
+				$parts = adzworld_pair_split( $chip['value'] );
+
+				return 'category_refinements' === $chip['facet'] && 2 === count( $parts ) && $category === $parts[0];
 			}
 		)
 	);
@@ -147,18 +34,20 @@ function adzworld_category_refinement_chips( $preference, $category ) {
 /**
  * Render the compact improvement control below one adz.
  *
- * @param string $target   Stable adz or provider identifier.
- * @param string $category Category represented by this adz.
+ * @param string $target       Stable adz or provider identifier.
+ * @param string $category     Category represented by this adz.
+ * @param bool   $can_evaluate Whether an actual advertisement is present to evaluate.
+ * @param bool   $show_category Whether to repeat the category inside the expanded control.
+ * @param string $provider      Provider used by this slot, when fixed.
+ * @param string $rotation      Rotation name.
+ * @param int    $slot          Category slot number.
  * @return string Evaluation markup.
  */
-function adzworld_feedback_control( $target, $category ) {
+function adzworld_feedback_control( $target, $category, $can_evaluate = true, $show_category = true, $provider = '', $rotation = '', $slot = 0 ) {
 	$target       = sanitize_key( $target );
-	$category     = mb_substr( sanitize_text_field( $category ), 0, 80 );
-	$feedback     = adzworld_current_feedback();
+	$category     = adzworld_journey_statement( $category );
 	$preference   = adzworld_current_preference();
 	$chips        = adzworld_category_refinement_chips( $preference, $category );
-	$score        = isset( $feedback[ $target ]['score'] ) ? (int) $feedback[ $target ]['score'] : 0;
-	$input_id     = wp_unique_id( 'adzworld-evaluation-' );
 	$refine_id    = wp_unique_id( 'adzworld-refine-' );
 	$known        = adzworld_preference_with_catalog( $preference );
 	$can_refine   = '' !== $category && in_array( $category, $known['categories'], true );
@@ -172,19 +61,32 @@ function adzworld_feedback_control( $target, $category ) {
 
 	ob_start();
 	?>
-	<details class="adzworld-evaluation" data-adzworld-feedback-target="<?php echo esc_attr( $target ); ?>">
-		<summary><?php esc_html_e( 'Improve', 'adz-world' ); ?></summary>
-		<div class="adzworld-evaluation__control">
-			<span aria-hidden="true"><?php esc_html_e( 'Dislike', 'adz-world' ); ?></span>
-			<label class="screen-reader-text" for="<?php echo esc_attr( $input_id ); ?>">
-				<?php esc_html_e( 'How useful is this adz?', 'adz-world' ); ?>
-			</label>
-			<input id="<?php echo esc_attr( $input_id ); ?>" type="range" min="-100" max="100" step="1" value="<?php echo esc_attr( (string) $score ); ?>">
-			<span aria-hidden="true"><?php esc_html_e( 'Like', 'adz-world' ); ?></span>
+	<details class="adzworld-evaluation"
+		<?php if ( $can_evaluate ) : ?>
+			data-adzworld-feedback-target="<?php echo esc_attr( $target ); ?>"
+			data-adzworld-feedback-provider="<?php echo esc_attr( $provider ); ?>"
+			data-adzworld-feedback-item-id="<?php echo esc_attr( $target ); ?>"
+			data-adzworld-feedback-category="<?php echo esc_attr( $category ); ?>"
+			data-adzworld-feedback-rotation="<?php echo esc_attr( $rotation ); ?>"
+			data-adzworld-feedback-slot="<?php echo esc_attr( (string) absint( $slot ) ); ?>"
+		<?php endif; ?>
+	>
+		<summary><?php esc_html_e( 'Refine', 'adz-world' ); ?></summary>
+		<?php if ( $can_evaluate ) : ?>
+		<div class="adzworld-evaluation__choices" role="group" aria-label="<?php esc_attr_e( 'Your response to this adz', 'adz-world' ); ?>">
+			<button type="button" class="adzworld-evaluation__choice" data-adzworld-response="dislike"><?php esc_html_e( 'Dislike', 'adz-world' ); ?></button>
+			<button type="button" class="adzworld-evaluation__choice" data-adzworld-response="like"><?php esc_html_e( 'Like', 'adz-world' ); ?></button>
 		</div>
-		<output class="adzworld-evaluation__value" for="<?php echo esc_attr( $input_id ); ?>"><?php echo esc_html( adzworld_feedback_label( $score ) ); ?></output>
 		<p class="adzworld-evaluation__status" role="status" aria-live="polite"></p>
+		<?php endif; ?>
 		<div class="adzworld-improve">
+			<?php if ( $show_category && '' !== $category ) : ?>
+				<p class="adzworld-improve__category">
+					<span class="adz-panel__chip adz-panel__chip--categories adz-panel__chip--tone-0 is-active">
+						<span class="adz-panel__chiptext"><?php echo esc_html( $category ); ?></span>
+					</span>
+				</p>
+			<?php endif; ?>
 			<div class="adzworld-improve__heading">
 				<label for="<?php echo esc_attr( $refine_id ); ?>"><?php echo esc_html( $refine_label ); ?></label>
 				<details class="adzworld-improve__information">
@@ -192,18 +94,89 @@ function adzworld_feedback_control( $target, $category ) {
 					<p><?php esc_html_e( 'Add any useful detail: size, date range, colour, price range, brand, location, material, or anything else that matters. Remember: specific is terrific.', 'adz-world' ); ?></p>
 				</details>
 			</div>
-			<form class="adzworld-improve__form" method="post" data-adz-panel data-adz-improve-target="<?php echo esc_attr( $target ); ?>">
+			<form class="adzworld-improve__form" method="post" data-adz-panel data-adz-improve-target="<?php echo esc_attr( $target ); ?>" data-adzworld-provider="<?php echo esc_attr( $provider ); ?>" data-adzworld-category="<?php echo esc_attr( $category ); ?>" data-adzworld-rotation="<?php echo esc_attr( $rotation ); ?>" data-adzworld-slot="<?php echo esc_attr( (string) absint( $slot ) ); ?>">
+				<div class="adz-panel__chips" data-adz-chips><?php adzworld_render_chips( $chips ); ?></div>
 				<div class="adzworld-improve__row">
-					<textarea id="<?php echo esc_attr( $refine_id ); ?>" class="adz-panel__input adzworld-improve__input" name="adzworld_refinement" maxlength="500" rows="2" placeholder="<?php esc_attr_e( 'Be specific: size, dates, colour, price range, brands, location, or other preferences.', 'adz-world' ); ?>" <?php disabled( ! $can_refine ); ?>></textarea>
+					<textarea id="<?php echo esc_attr( $refine_id ); ?>" class="adz-panel__input adzworld-improve__input" name="adzworld_refinement" rows="2" placeholder="<?php esc_attr_e( 'Be specific: size, dates, colour, price range, brands, location, or other preferences.', 'adz-world' ); ?>" <?php disabled( ! $can_refine ); ?>></textarea>
 					<button type="submit" class="adz-panel__submit" name="adzworld_mode" value="improve" <?php disabled( ! $can_refine ); ?>><?php esc_html_e( 'Refine', 'adz-world' ); ?></button>
 				</div>
-				<div class="adz-panel__chips" data-adz-chips><?php adzworld_render_chips( $chips ); ?></div>
 				<p class="adz-panel__status" data-adz-status role="status" aria-live="polite"></p>
 			</form>
 		</div>
+		<?php adzworld_render_request_panel( $category, $provider ); ?>
 	</details>
 	<?php
 	return (string) ob_get_clean();
+}
+
+/**
+ * Show the accumulated category and refinements sent to connected providers.
+ *
+ * @param string $category Category represented by this adz.
+ * @param string $provider Provider used by this slot, when fixed.
+ * @return void
+ */
+function adzworld_render_request_panel( $category, $provider = '' ) {
+	$category = trim( (string) $category );
+	$provider = sanitize_key( (string) $provider );
+	if ( '' === $category ) {
+		return;
+	}
+
+	$preference = adzworld_current_preference();
+	$request    = adzworld_affiliate_request_string( $preference, $category );
+	if ( '' === $request ) {
+		return;
+	}
+
+	$links  = '' === $provider && function_exists( 'adzworld_affiliate_links' ) ? adzworld_affiliate_links( $request ) : array();
+	$labels = function_exists( 'adzworld_products_provider_labels' ) ? adzworld_products_provider_labels() : array();
+	?>
+	<div class="adzworld-request">
+		<p class="adzworld-request__head"><?php esc_html_e( 'Request string', 'adz-world' ); ?></p>
+		<ol class="adzworld-request__parts">
+			<li class="adzworld-request__part">
+				<span class="adzworld-request__kind"><?php esc_html_e( 'category', 'adz-world' ); ?></span>
+				<span class="adzworld-request__text"><?php echo esc_html( $category ); ?></span>
+			</li>
+			<?php
+			foreach ( adzworld_category_refinement_chips( $preference, $category ) as $chip ) {
+				$split = adzworld_pair_split( (string) $chip['value'] );
+				$text  = isset( $split[1] ) ? trim( $split[1] ) : '';
+				if ( '' === $text ) {
+					continue;
+				}
+				?>
+				<li class="adzworld-request__part">
+					<span class="adzworld-request__kind"><?php esc_html_e( 'refine', 'adz-world' ); ?></span>
+					<span class="adzworld-request__text"><?php echo esc_html( $text ); ?></span>
+				</li>
+				<?php
+			}
+			?>
+		</ol>
+		<p class="adzworld-request__result"><?php echo esc_html( $request ); ?></p>
+		<?php if ( '' !== $provider && isset( $labels[ $provider ] ) ) : ?>
+			<p class="adzworld-request__sent">
+				<span class="adzworld-request__kind"><?php esc_html_e( 'sent to', 'adz-world' ); ?></span>
+				<?php echo esc_html( $labels[ $provider ] ); ?>
+			</p>
+		<?php elseif ( $links ) : ?>
+			<ul class="adzworld-request__sent">
+				<?php foreach ( $links as $link ) : ?>
+					<li>
+						<span class="adzworld-request__kind"><?php esc_html_e( 'sent to', 'adz-world' ); ?></span>
+						<a href="<?php echo esc_url( $link['url'] ); ?>" rel="sponsored nofollow" target="_blank"><?php echo esc_html( $link['label'] ); ?></a>
+					</li>
+				<?php endforeach; ?>
+			</ul>
+		<?php else : ?>
+			<p class="adzworld-request__sent adzworld-request__sent--none">
+				<?php esc_html_e( 'No provider is connected yet, so this string is not being sent anywhere.', 'adz-world' ); ?>
+			</p>
+		<?php endif; ?>
+	</div>
+	<?php
 }
 
 /**
@@ -241,37 +214,32 @@ add_action( 'wp_ajax_adzworld_evaluate', 'adzworld_ajax_evaluate' );
 add_action( 'wp_ajax_nopriv_adzworld_evaluate', 'adzworld_ajax_evaluate' );
 
 /**
- * Save one explicit evaluation.
- *
- * An untouched slider creates no record. Moving it to zero records an explicit
- * neutral response, which remains distinct from no response.
+ * Save one explicit response to an exact provider item.
  *
  * @return void
  */
 function adzworld_ajax_evaluate() {
 	check_ajax_referer( 'adzworld_feedback', 'nonce' );
 
-	$target = isset( $_POST['target'] ) && is_string( $_POST['target'] )
-		? sanitize_key( wp_unslash( $_POST['target'] ) )
-		: '';
-	$score  = isset( $_POST['score'] ) && is_scalar( $_POST['score'] )
-		? filter_var( wp_unslash( $_POST['score'] ), FILTER_VALIDATE_INT )
-		: false;
+	$responses = adzworld_journey_responses();
+	$response  = isset( $_POST['response'] ) ? sanitize_key( wp_unslash( $_POST['response'] ) ) : '';
+	$provider  = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '';
+	$item_id   = isset( $_POST['item_id'] ) ? sanitize_text_field( wp_unslash( $_POST['item_id'] ) ) : '';
+	$category  = isset( $_POST['category'] ) ? adzworld_journey_statement( sanitize_text_field( wp_unslash( $_POST['category'] ) ) ) : '';
+	$rotation  = isset( $_POST['rotation'] ) ? sanitize_key( wp_unslash( $_POST['rotation'] ) ) : '';
+	$slot      = isset( $_POST['slot'] ) ? absint( wp_unslash( $_POST['slot'] ) ) : 0;
 
-	if ( '' === $target || strlen( $target ) > 100 || false === $score || $score < -100 || $score > 100 ) {
+	if ( '' === $provider || '' === $item_id || '' === $category || ! isset( $responses[ $response ] ) ) {
 		wp_send_json_error( array( 'message' => __( 'That evaluation is invalid.', 'adz-world' ) ), 400 );
 	}
 
-	$feedback            = adzworld_current_feedback();
-	$feedback[ $target ] = array(
-		'score'   => (int) $score,
-		'updated' => time(),
-	);
-	adzworld_store_feedback( $feedback );
+	if ( ! adzworld_journey_record_response( $rotation, $slot, $category, $provider, $item_id, $response ) ) {
+		wp_send_json_error( array( 'message' => __( 'That response could not be saved.', 'adz-world' ) ), 400 );
+	}
 
 	wp_send_json_success(
 		array(
-			'label'   => adzworld_feedback_label( (int) $score ),
+			'label'   => $responses[ $response ],
 			'message' => __( 'Evaluation saved.', 'adz-world' ),
 		)
 	);

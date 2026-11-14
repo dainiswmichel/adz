@@ -90,7 +90,7 @@ if ( ! class_exists( 'EOF_field_select' ) ) :
 			}
 
 			?>
-		
+
 			<?php if ( 'yes' === $this->field['multiple'] ) : ?>
 				<input type="hidden" name="<?php echo esc_attr( $this->option_name ); ?>" value="">
 			<?php endif; ?>
@@ -122,7 +122,7 @@ if ( ! class_exists( 'EOF_field_select' ) ) :
 			}
 			?>
 		</select>
-		
+
 		<span class="description"><?php echo wp_kses_post( $this->field['desc'] ); ?></span>
 			<?php
 		}
@@ -141,5 +141,3 @@ if ( ! class_exists( 'EOF_field_select' ) ) :
 	}
 
 endif;
-
-?>

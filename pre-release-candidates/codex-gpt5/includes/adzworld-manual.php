@@ -110,26 +110,19 @@ function adzworld_manual_network_frame( $id, $row ) {
 }
 
 /**
- * Page shortcode for one saved rotation and frame.
+ * Page shortcode for one saved rotation.
  *
- * @param string $name    Rotation key.
- * @param string $display Display name.
- * @param string $size    Size token, or an empty string.
+ * Display, controls, and size stay on the rotation.
+ *
+ * @param string $name Rotation key.
  * @return string
  */
-function adzworld_manual_shortcode( $name, $display, $size ) {
+function adzworld_manual_shortcode( $name ) {
 	$name = sanitize_key( $name );
 	if ( '' === $name ) {
 		$name = 'main';
 	}
-	$display = adzworld_manual_has_display( $display ) ? $display : 'flat';
-	$allowed = function_exists( 'adzworld_rotation_size_presets' ) ? adzworld_rotation_size_presets() : array();
-	$size    = is_string( $size ) && isset( $allowed[ $size ] ) ? $size : '';
-	$text    = '[adz_rotation name="' . $name . '" display="' . $display . '" controls="both"';
-	if ( '' !== $size ) {
-		$text .= ' size="' . $size . '"';
-	}
-	return $text . ']';
+	return '[adz_rotation name="' . $name . '"]';
 }
 
 /**
@@ -276,8 +269,6 @@ function adzworld_manual_phase_label( $phase ) {
  */
 function adzworld_manual_unoffered_providers() {
 	return array(
-		'Carbon'       => __( 'The creative replaces the script element, so it is not a rotation slot.', 'adz-world' ),
-		'MGID'         => __( 'The site script is a path, not one checked identifier.', 'adz-world' ),
 		'Infolinks'    => __( 'Infolinks writes into article text. It is not a rotation slot.', 'adz-world' ),
 		'Publift'      => __( 'The contract places tags for the whole page. Those tags are not put inside a rotation.', 'adz-world' ),
 		'PropellerAds' => __( 'Pop and push formats are not a content slot.', 'adz-world' ),
@@ -304,6 +295,28 @@ function adzworld_manual_provider_rows() {
 				'note'   => __( 'Official unit. It becomes a rotation slot when the connection is enabled. Visitor words are not sent to the network.', 'adz-world' ),
 				'desk'   => 'networks',
 			);
+		}
+		if ( function_exists( 'adzworld_network_rows' ) ) {
+			foreach ( adzworld_network_rows() as $row ) {
+				if ( ! is_array( $row ) || 'custom' !== $row['preset'] ) {
+					continue;
+				}
+				$flat   = array(
+					'accepted' => isset( $row['accepted'] ) ? (string) $row['accepted'] : '0',
+					'enabled'  => isset( $row['enabled'] ) ? (string) $row['enabled'] : '0',
+				);
+				$params = isset( $row['params'] ) && is_array( $row['params'] ) ? $row['params'] : array();
+				foreach ( $params as $index => $param ) {
+					$flat[ 'param_' . $index ] = isset( $param['value'] ) ? (string) $param['value'] : '';
+				}
+				$rows[] = array(
+					'label'  => isset( $row['label'] ) && is_string( $row['label'] ) && '' !== $row['label'] ? $row['label'] : __( 'New network', 'adz-world' ),
+					'kind'   => __( 'Stored parameters', 'adz-world' ),
+					'status' => adzworld_manual_phase_label( adzworld_manual_account_phase( $flat ) ),
+					'note'   => __( 'Parameters saved on Connections. The public page does not receive them.', 'adz-world' ),
+					'desk'   => 'networks',
+				);
+			}
 		}
 	}
 	if ( function_exists( 'adzworld_affiliate_networks' ) && function_exists( 'adzworld_affiliate_accounts' ) ) {
@@ -357,7 +370,7 @@ function adzworld_manual_render_providers() {
 	foreach ( adzworld_manual_provider_rows() as $row ) {
 		echo '<tr><td>' . esc_html( $row['label'] ) . '</td><td>' . esc_html( $row['kind'] ) . '</td><td>' . esc_html( $row['status'] ) . '</td><td>' . esc_html( $row['note'] );
 		if ( 'networks' === $row['desk'] ) {
-			echo ' <a href="' . esc_url( adzworld_desk_url( 'networks' ) ) . '">' . esc_html__( 'Connections', 'adz-world' ) . '</a>';
+			echo ' <a href="' . esc_url( adzworld_desk_url( 'affiliates' ) ) . '">' . esc_html__( 'Get Paid', 'adz-world' ) . '</a>';
 		} elseif ( 'affiliates' === $row['desk'] ) {
 			echo ' <a href="' . esc_url( adzworld_desk_url( 'affiliates' ) ) . '">' . esc_html__( 'Affiliate programs', 'adz-world' ) . '</a>';
 		}
@@ -393,7 +406,7 @@ function adzworld_manual_render_setup() {
 	echo '<p>' . esc_html__( 'This manual reads the accounts saved on this site. A network section stays on the account step until those identifiers are saved. The rotation steps for that account appear after that.', 'adz-world' ) . '</p>';
 
 	adzworld_manual_open( $published > 0 ? 'is-done' : 'is-open', __( 'Publish a local ad', 'adz-world' ) );
-	echo '<p>' . esc_html__( 'One ad is one thing. The title is that thing in ordinary words. The product image goes in the post body. The featured image is not read. A draft is ignored.', 'adz-world' ) . '</p>';
+	echo '<p>' . esc_html__( 'One ad is one thing. The title names that thing, the editor content or featured image is the advertisement creative, and the excerpt supplies matching refinements. A draft is ignored.', 'adz-world' ) . '</p>';
 	if ( $published > 0 ) {
 		echo '<ul>';
 		foreach ( $ads as $ad ) {
@@ -427,15 +440,11 @@ function adzworld_manual_render_setup() {
 	$pages = adzworld_manual_shortcode_posts();
 	adzworld_manual_open( $pages ? 'is-done' : 'is-open', __( 'Place the shortcode', 'adz-world' ) );
 	$example_name = '' !== $key ? $key : 'main';
-	$display      = adzworld_manual_has_display( 'inline-card' ) ? 'inline-card' : 'flat';
-	$column_size  = function_exists( 'adzworld_rotation_size_presets' ) && isset( adzworld_rotation_size_presets()['300x250'] ) ? '300x250' : '';
-	echo '<p>' . esc_html__( 'For the article column:', 'adz-world' ) . ' <code>' . esc_html( adzworld_manual_shortcode( $example_name, $display, $column_size ) ) . '</code></p>';
+	echo '<p>' . esc_html__( 'Page shortcode:', 'adz-world' ) . ' <code>' . esc_html( adzworld_manual_shortcode( $example_name ) ) . '</code></p>';
 	if ( '' === $key ) {
 		echo '<p>' . esc_html__( 'The key main in that example is not saved yet. Save the rotation first, then use its key.', 'adz-world' ) . '</p>';
 	}
-	if ( adzworld_manual_has_display( 'flat' ) ) {
-		echo '<p>' . esc_html__( 'For the left-to-right cycle, use display flat. For one drawn slot, use display single. controls both draws the arrows and the dots. Neither attribute chooses which ad is eligible.', 'adz-world' ) . '</p>';
-	}
+	echo '<p>' . esc_html__( 'Display, controls, and size are fields on that rotation. A carousel repeats. Single advances one slot on each page view and then repeats. Repeating the same slot in the list serves that slot again.', 'adz-world' ) . '</p>';
 	if ( $pages ) {
 		echo '<ul>';
 		foreach ( $pages as $post ) {
@@ -454,7 +463,7 @@ function adzworld_manual_render_setup() {
 	echo '</section>';
 
 	adzworld_manual_open( 'is-open', __( 'What the visitor types', 'adz-world' ) );
-	echo '<p>' . esc_html__( 'The hub question is “What are you looking to buy?”. Three words, 48 characters. An ad whose title, body, or Ad Type contains those words moves ahead. The hub stays first. Ads that do not match stay later. An ad that is not in the slot list never appears.', 'adz-world' ) . '</p>';
+	echo '<p>' . esc_html__( 'The hub question is “What are you looking to buy?”. Visitors can enter as much useful detail as they need. A long entry gets a short category label while the remaining text stays attached as refinements. An ad whose title, creative, excerpt, or Ad Type matches that category and its refinements moves ahead. The hub stays first. An ad that is not in the slot list never appears.', 'adz-world' ) . '</p>';
 	echo '</section>';
 }
 
@@ -478,19 +487,26 @@ function adzworld_manual_render_networks() {
 		$labels = adzworld_manual_field_labels( isset( $network['fields'] ) && is_array( $network['fields'] ) ? $network['fields'] : array() );
 		$signup = isset( $network['signup'] ) ? (string) $network['signup'] : '';
 		adzworld_manual_open( $class, (string) $network['label'] );
-		echo '<p>' . esc_html(
-			sprintf(
-				/* translators: 1: network name, 2: comma-separated field labels. */
-				__( 'You need an account with %1$s. Input %2$s on Connections.', 'adz-world' ),
-				(string) $network['label'],
-				$labels
-			)
-		) . '</p>';
-		echo '<p>';
-		if ( '' !== $signup ) {
-			echo '<a class="button" href="' . esc_url( $signup ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Create or open the account', 'adz-world' ) . '</a> ';
+		if ( function_exists( 'adzworld_registration_has' ) && adzworld_registration_has( $id ) ) {
+			adzworld_registration_render_steps( $id );
+			echo '<p class="adzworld-pay-actions">';
+			adzworld_registration_render_signup( $id, false );
+			echo ' <a class="button" href="' . esc_url( adzworld_desk_url( 'affiliates' ) . '#adzworld-paid-affiliate-' . rawurlencode( $id ) ) . '">' . esc_html__( 'Open Get Paid', 'adz-world' ) . '</a></p>';
+		} else {
+			echo '<p>' . esc_html(
+				sprintf(
+					/* translators: 1: network name, 2: comma-separated field labels. */
+					__( 'You need an account with %1$s. Input %2$s on Connections.', 'adz-world' ),
+					(string) $network['label'],
+					$labels
+				)
+			) . '</p>';
+			echo '<p>';
+			if ( '' !== $signup ) {
+				echo '<a class="button" href="' . esc_url( $signup ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Create or open the account', 'adz-world' ) . '</a> ';
+			}
+			echo '<a class="button" href="' . esc_url( adzworld_desk_url( 'affiliates' ) ) . '">' . esc_html__( 'Open Get Paid', 'adz-world' ) . '</a></p>';
 		}
-		echo '<a class="button" href="' . esc_url( adzworld_desk_url( 'networks' ) ) . '">' . esc_html__( 'Open Connections', 'adz-world' ) . '</a></p>';
 		if ( 'apply' === $phase ) {
 			echo '</section>';
 			continue;
@@ -505,25 +521,59 @@ function adzworld_manual_render_networks() {
 			echo '<p>' . esc_html__( 'A saved rotation or a page shortcode already contains that slot.', 'adz-world' ) . '</p>';
 		}
 		$frame   = adzworld_manual_network_frame( $id, $row );
-		$example = adzworld_manual_shortcode( adzworld_manual_primary_rotation_key(), $frame['display'], $frame['size'] );
-		echo '<p>' . esc_html__( 'Page shortcode for this unit:', 'adz-world' ) . ' <code>' . esc_html( $example ) . '</code></p>';
+		$example = adzworld_manual_shortcode( adzworld_manual_primary_rotation_key() );
+		echo '<p>' . esc_html__( 'Page shortcode for the rotation that contains this unit:', 'adz-world' ) . ' <code>' . esc_html( $example ) . '</code></p>';
 		if ( 'gam' === $id && '' !== $frame['size'] ) {
 			echo '<p>' . esc_html(
 				sprintf(
 					/* translators: %s: size token such as 300x250. */
-					__( 'The saved Ad Manager unit matches the size %s.', 'adz-world' ),
+					__( 'Set the size %s on that rotation.', 'adz-world' ),
 					$frame['size']
 				)
 			) . '</p>';
 		} elseif ( 'gam' === $id ) {
-			echo '<p>' . esc_html__( 'Leave size empty unless the saved width and height are one of the standard sizes. The unit keeps the dimensions saved on Connections.', 'adz-world' ) . '</p>';
+			echo '<p>' . esc_html__( 'On the rotation, leave size empty unless the saved width and height are one of the standard sizes. The unit keeps the dimensions saved on Connections.', 'adz-world' ) . '</p>';
 		} else {
-			echo '<p>' . esc_html__( 'Leave size empty. This unit is responsive and takes the width of its frame.', 'adz-world' ) . '</p>';
+			echo '<p>' . esc_html__( 'On the rotation, leave size empty. This unit is responsive and takes the width of its frame.', 'adz-world' ) . '</p>';
 		}
 		if ( adzworld_manual_has_display( 'dock-bottom' ) ) {
-			echo '<p>' . esc_html__( 'For a phone, display dock-bottom is the dismissible bottom anchor. A sticky that covers about 30 percent of the screen is outside the Better Ads line.', 'adz-world' ) . '</p>';
+			echo '<p>' . esc_html__( 'For a phone, choose Bottom dock on the rotation. A sticky that covers about 30 percent of the screen is outside the Better Ads line.', 'adz-world' ) . '</p>';
 		}
 		echo '<p>' . esc_html__( 'The words a visitor types are not sent to this network.', 'adz-world' ) . '</p>';
+		echo '</section>';
+	}
+	if ( ! function_exists( 'adzworld_network_rows' ) ) {
+		return;
+	}
+	foreach ( adzworld_network_rows() as $row ) {
+		if ( ! is_array( $row ) || 'custom' !== $row['preset'] ) {
+			continue;
+		}
+		$flat   = array(
+			'accepted' => isset( $row['accepted'] ) ? (string) $row['accepted'] : '0',
+			'enabled'  => isset( $row['enabled'] ) ? (string) $row['enabled'] : '0',
+		);
+		$params = isset( $row['params'] ) && is_array( $row['params'] ) ? $row['params'] : array();
+		foreach ( $params as $index => $param ) {
+			$flat[ 'param_' . $index ] = isset( $param['value'] ) ? (string) $param['value'] : '';
+		}
+		$phase = adzworld_manual_account_phase( $flat );
+		$class = 'apply' === $phase ? 'is-waiting' : ( 'live' === $phase ? 'is-done' : 'is-open' );
+		$label = isset( $row['label'] ) && is_string( $row['label'] ) && '' !== $row['label'] ? $row['label'] : __( 'New network', 'adz-world' );
+		adzworld_manual_open( $class, $label );
+		echo '<p>' . esc_html(
+			sprintf(
+				/* translators: %s: network name. */
+				__( 'You need an account with %s. Add a parameter for each identifier it requires on Connections.', 'adz-world' ),
+				$label
+			)
+		) . '</p>';
+		echo '<p><a class="button" href="' . esc_url( adzworld_desk_url( 'affiliates' ) ) . '">' . esc_html__( 'Open Get Paid', 'adz-world' ) . '</a></p>';
+		if ( 'apply' === $phase ) {
+			echo '</section>';
+			continue;
+		}
+		echo '<p>' . esc_html__( 'The parameters stay in WordPress. This network does not load a script.', 'adz-world' ) . '</p>';
 		echo '</section>';
 	}
 }
@@ -546,19 +596,26 @@ function adzworld_manual_render_affiliates() {
 		$labels  = adzworld_manual_field_labels( isset( $network['fields'] ) && is_array( $network['fields'] ) ? $network['fields'] : array() );
 		$signup  = isset( $network['account'] ) ? (string) $network['account'] : '';
 		adzworld_manual_open( $class, (string) $network['label'] );
-		echo '<p>' . esc_html(
-			sprintf(
-				/* translators: 1: program name, 2: comma-separated field labels. */
-				__( 'You need an account with %1$s. Input %2$s on Affiliate programs.', 'adz-world' ),
-				(string) $network['label'],
-				$labels
-			)
-		) . '</p>';
-		echo '<p>';
-		if ( '' !== $signup ) {
-			echo '<a class="button" href="' . esc_url( $signup ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Create or open the account', 'adz-world' ) . '</a> ';
+		if ( function_exists( 'adzworld_registration_has' ) && adzworld_registration_has( $id ) ) {
+			adzworld_registration_render_steps( $id );
+			echo '<p class="adzworld-pay-actions">';
+			adzworld_registration_render_signup( $id, false );
+			echo ' <a class="button" href="' . esc_url( adzworld_desk_url( 'affiliates' ) . '#adzworld-paid-affiliate-' . rawurlencode( $id ) ) . '">' . esc_html__( 'Open the account fields', 'adz-world' ) . '</a></p>';
+		} else {
+			echo '<p>' . esc_html(
+				sprintf(
+					/* translators: 1: program name, 2: comma-separated field labels. */
+					__( 'You need an account with %1$s. Input %2$s on Affiliate programs.', 'adz-world' ),
+					(string) $network['label'],
+					$labels
+				)
+			) . '</p>';
+			echo '<p>';
+			if ( '' !== $signup ) {
+				echo '<a class="button" href="' . esc_url( $signup ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Create or open the account', 'adz-world' ) . '</a> ';
+			}
+			echo '<a class="button" href="' . esc_url( adzworld_desk_url( 'affiliates' ) ) . '">' . esc_html__( 'Open Affiliate programs', 'adz-world' ) . '</a></p>';
 		}
-		echo '<a class="button" href="' . esc_url( adzworld_desk_url( 'affiliates' ) ) . '">' . esc_html__( 'Open Affiliate programs', 'adz-world' ) . '</a></p>';
 		if ( 'apply' === $phase ) {
 			echo '</section>';
 			continue;
@@ -584,8 +641,8 @@ function adzworld_manual_render_managed() {
 	if ( ! function_exists( 'adzworld_managed_network_catalog' ) ) {
 		return;
 	}
-	echo '<h2>' . esc_html__( 'Managed networks', 'adz-world' ) . '</h2>';
-	echo '<p>' . esc_html__( 'These providers do not hand out a unit id this plugin can turn into a slot. Apply, then use the implementation that provider supplies.', 'adz-world' ) . '</p>';
+	echo '<h2>' . esc_html__( 'Other provider shortcodes', 'adz-world' ) . '</h2>';
+	echo '<p>' . esc_html__( 'A provider that is not in the connection list can still be a rotation slot when its plugin registers a shortcode and that shortcode is saved on Connections.', 'adz-world' ) . '</p>';
 	foreach ( adzworld_managed_network_catalog() as $network ) {
 		$signup = isset( $network['signup'] ) ? (string) $network['signup'] : '';
 		adzworld_manual_open( 'is-waiting', (string) $network['label'] );
@@ -710,7 +767,7 @@ function adzworld_manual_chapters() {
 			'slug'    => 'publish-a-local-ad',
 			'title'   => __( 'Publish a local ad', 'adz-world' ),
 			'excerpt' => __( 'One ad is one thing. The image goes in the post body.', 'adz-world' ),
-			'content' => '<p>' . esc_html__( 'The title is the thing in ordinary words. The product image goes in the post body. The featured image is not read. A draft is ignored.', 'adz-world' ) . '</p><p><a href="' . esc_url( admin_url( 'post-new.php?post_type=adz_ad' ) ) . '">' . esc_html__( 'Add a local ad', 'adz-world' ) . '</a></p>',
+			'content' => '<p>' . esc_html__( 'The title names the thing. The editor content or featured image is the advertisement creative, and the excerpt supplies matching refinements. A draft is ignored.', 'adz-world' ) . '</p><p><a href="' . esc_url( admin_url( 'post-new.php?post_type=adz_ad' ) ) . '">' . esc_html__( 'Add a local ad', 'adz-world' ) . '</a></p>',
 		),
 		array(
 			'slug'    => 'save-a-rotation',
@@ -904,7 +961,30 @@ function adzworld_manual_pattern_shortcode( $display, $source, $rotation, $repea
 		$parts[] = $source;
 		$parts[] = 'r:' . $rotation;
 	}
-	return '[adz_rotation slots="' . implode( ',', $parts ) . '" display="' . $display . '" controls="both"]';
+	$key = 'adzworld_manual_pattern';
+	if ( $key === $rotation || ! function_exists( 'adzworld_sanitize_named_rotations' ) ) {
+		return new WP_Error( 'adzworld_manual_rotation', __( 'Choose a saved rotation.', 'adz-world' ) );
+	}
+	$stored         = $named;
+	$stored[ $key ] = array_merge(
+		array(
+			'name'  => __( 'Manual pattern', 'adz-world' ),
+			'slots' => $parts,
+		),
+		function_exists( 'adzworld_rotation_presentation' ) ? adzworld_rotation_presentation(
+			array(
+				'display'  => $display,
+				'controls' => 'both',
+				'size'     => '',
+			)
+		) : array()
+	);
+	$clean          = adzworld_sanitize_named_rotations( $stored );
+	if ( ! isset( $clean[ $key ] ) ) {
+		return new WP_Error( 'adzworld_manual_pattern', __( 'The pattern could not be saved on a rotation.', 'adz-world' ) );
+	}
+	update_option( 'adzworld_named_rotations', $clean, false );
+	return '[adz_rotation name="' . $key . '"]';
 }
 
 /**
@@ -982,7 +1062,7 @@ function adzworld_manual_render_builder() {
 	}
 	echo '<section class="adzworld-manual-builder" id="adzworld-build">';
 	echo '<h2>' . esc_html__( 'Build a display', 'adz-world' ) . '</h2>';
-	echo '<p>' . esc_html__( 'Pick the display. Slot 1 is the provider unit. Slot 2 is a saved rotation of local offers. The pattern repeats 1, 2, 1, 2. The shortcode and the preview below are that pattern.', 'adz-world' ) . '</p>';
+	echo '<p>' . esc_html__( 'Pick the display. Slot 1 is the provider unit. Slot 2 is a saved rotation of local offers. The pattern repeats 1, 2, 1, 2 and is saved as its own rotation. The page shortcode names that rotation.', 'adz-world' ) . '</p>';
 	echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 	echo '<input type="hidden" name="action" value="adzworld_manual_build">';
 	wp_nonce_field( 'adzworld_manual_build' );
@@ -1001,10 +1081,39 @@ function adzworld_manual_render_builder() {
 			$phase = adzworld_manual_phase_label( adzworld_manual_account_phase( $row ) );
 			echo '<option value="' . esc_attr( $token ) . '"' . selected( $source, $token, false ) . '>' . esc_html( $network['label'] . ' — ' . $phase ) . '</option>';
 		}
+		if ( function_exists( 'adzworld_network_rows' ) ) {
+			foreach ( adzworld_network_rows() as $row ) {
+				if ( ! is_array( $row ) || empty( $row['id'] ) ) {
+					continue;
+				}
+				if ( 'custom' !== $row['preset'] && $row['id'] === $row['preset'] ) {
+					continue;
+				}
+				$token = 'source:network_' . $row['id'];
+				$flat  = array(
+					'accepted' => isset( $row['accepted'] ) ? (string) $row['accepted'] : '0',
+					'enabled'  => isset( $row['enabled'] ) ? (string) $row['enabled'] : '0',
+				);
+				if ( 'custom' === $row['preset'] ) {
+					$params = isset( $row['params'] ) && is_array( $row['params'] ) ? $row['params'] : array();
+					foreach ( $params as $index => $param ) {
+						$flat[ 'param_' . $index ] = isset( $param['value'] ) ? (string) $param['value'] : '';
+					}
+				} elseif ( isset( $row['fields'] ) && is_array( $row['fields'] ) ) {
+					$flat = array_merge( $flat, $row['fields'] );
+				}
+				$phase = adzworld_manual_phase_label( adzworld_manual_account_phase( $flat ) );
+				$name  = isset( $row['label'] ) && is_string( $row['label'] ) && '' !== $row['label'] ? $row['label'] : __( 'New network', 'adz-world' );
+				echo '<option value="' . esc_attr( $token ) . '"' . selected( $source, $token, false ) . '>' . esc_html( $name . ' — ' . $phase ) . '</option>';
+			}
+		}
 	}
 	echo '</select></td></tr>';
 	echo '<tr><th scope="row"><label for="adzworld-build-rotation">' . esc_html__( 'Slot 2, saved rotation', 'adz-world' ) . '</label></th><td><select id="adzworld-build-rotation" name="rotation">';
 	foreach ( $named as $key => $item ) {
+		if ( 'adzworld_manual_pattern' === $key ) {
+			continue;
+		}
 		$label = isset( $item['name'] ) && is_string( $item['name'] ) && '' !== $item['name'] ? $item['name'] : (string) $key;
 		echo '<option value="' . esc_attr( (string) $key ) . '"' . selected( $rotation, (string) $key, false ) . '>' . esc_html( $label ) . '</option>';
 	}
@@ -1020,7 +1129,7 @@ function adzworld_manual_render_builder() {
 	}
 	echo '<h3>' . esc_html__( 'Shortcode', 'adz-world' ) . '</h3>';
 	echo '<code class="adzworld-manual-shortcode">' . esc_html( $shortcode ) . '</code>';
-	echo '<p>' . esc_html__( 'A public page shows the provider unit after that account is connected. Until then, this preview names the unit and the saved rotation still plays.', 'adz-world' ) . '</p>';
+	echo '<p>' . esc_html__( 'A public page shows the provider unit after that account is connected. Until then, the public shortcode reports that the source is not registered. This preview names the unit.', 'adz-world' ) . '</p>';
 	echo '<h3>' . esc_html__( 'Preview', 'adz-world' ) . '</h3><div class="adzworld-manual-preview">';
 	$GLOBALS['adzworld_manual_placeholder'] = true;
 	echo do_shortcode( $shortcode );

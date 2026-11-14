@@ -166,13 +166,13 @@ function adzworld_in_page( $adz_interval_min, $adz_duration, $adz_sequence = '',
 								i--;
 							} else {
 								jQuery('.continue_reading').text('Continue reading >>');
-								jQuery('.continue_reading').addClass('close_adz');	
+								jQuery('.continue_reading').addClass('close_adz');
 								clearInterval(adz_interval);
 							}
 						}, 1000);
 
-						
-						
+
+
 				}
 				},
 				error: function(errorThrown){
@@ -199,15 +199,15 @@ function adzworld_in_page( $adz_interval_min, $adz_duration, $adz_sequence = '',
 				success:function(data) {
 					if(data != 'continue'){
 						location.reload();
-					}					
+					}
 				},
 				error: function(errorThrown){
 					console.log(errorThrown);
 				}
 			});
-			
+
 		});
-	});	
+	});
 	</script>
 	<?php
 }
@@ -226,12 +226,12 @@ function adzworld_in_popup( $adz_interval_min, $adz_duration, $adz_sequence, $ad
 	?>
 	<div id="show_overlay" class="adz_overlay">
 		<div class="adz_popup">
-							
-			
+
+
 			<div class="content">
-			
+
 			</div>
-			
+
 		</div>
 	</div>
 	<script type="text/javascript">
@@ -267,19 +267,19 @@ function adzworld_in_popup( $adz_interval_min, $adz_duration, $adz_sequence, $ad
 								i--;
 							} else {
 								jQuery('.continue_reading').text('Continue reading >>');
-								jQuery('.continue_reading').addClass('close_adz');	
+								jQuery('.continue_reading').addClass('close_adz');
 								clearInterval(adz_interval);
 							}
 						}, 1000);
 
-							
-					}					
+
+					}
 				},
 				error: function(errorThrown){
 					console.log(errorThrown);
 				}
 			});
-			
+
 		});
 
 		jQuery(document).on('click','.close_adz',function(){
@@ -308,7 +308,7 @@ function adzworld_in_popup( $adz_interval_min, $adz_duration, $adz_sequence, $ad
 			jQuery('#content_after_ad').html(content_after_ad);
 		});
 	});
-		
+
 	</script>
 	<?php
 }
@@ -340,4 +340,3 @@ function adzworld_check_shortcode_rotation_completed( $sequence ) {
 	}
 	return $return;
 }
-?>

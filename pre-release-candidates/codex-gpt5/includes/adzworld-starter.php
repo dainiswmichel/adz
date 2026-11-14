@@ -119,19 +119,15 @@ function adzworld_showcase_rotation() {
 /**
  * Build the showcase page's content.
  *
- * One section per format group and one shortcode per format, each introduced by
- * its label and its note so the page reads as a catalogue rather than a wall of
- * frames. The anchored formats are described rather than embedded: a bottom
- * dock and a corner card pin themselves to the viewport, so putting all three
- * on one page would stack them on top of each other.
+ * One shortcode names the showcase rotation. Each format is described. The
+ * frame itself is chosen on the Rotation tab.
  *
- * @param string $rotation_key Rotation the shortcodes refer to.
+ * @param string $rotation_key Rotation the shortcode names.
  * @return string Post content.
  */
 function adzworld_showcase_content( $rotation_key ) {
-	$formats  = adzworld_rotation_display_formats();
-	$anchored = array( 'dock-bottom', 'dock-top', 'corner' );
-	$grouped  = array();
+	$formats = adzworld_rotation_display_formats();
+	$grouped = array();
 
 	foreach ( $formats as $format => $meta ) {
 		$grouped[ $meta['group'] ][ $format ] = $meta;
@@ -140,30 +136,33 @@ function adzworld_showcase_content( $rotation_key ) {
 	$lines = array();
 
 	$lines[] = '<!-- wp:paragraph -->';
-	$lines[] = '<p>' . esc_html__( 'Every display format the adz-world rotation shortcode accepts, each shown with the shortcode that produces it. This page was created as a draft by the starter pack; edit or delete it freely.', 'adz-world' ) . '</p>';
+	$lines[] = '<p>' . esc_html__( 'The page names one saved rotation. Display, controls, size, and the slot list are set on the Rotation tab. This page was created as a draft by the starter pack; edit or delete it freely.', 'adz-world' ) . '</p>';
 	$lines[] = '<!-- /wp:paragraph -->';
+
+	$shortcode = '[adz_rotation name="' . $rotation_key . '"]';
+
+	/*
+	 * do_shortcode() runs over the whole post, including the inside of a code
+	 * block, so a shortcode shown as an example renders instead of displaying.
+	 * Doubling the brackets is WordPress' own escape: [[shortcode]] outputs
+	 * the literal [shortcode].
+	 */
+	$literal = '[' . $shortcode . ']';
+
+	$lines[] = '<!-- wp:shortcode -->';
+	$lines[] = $shortcode;
+	$lines[] = '<!-- /wp:shortcode -->';
+
+	$lines[] = '<!-- wp:code -->';
+	$lines[] = '<pre class="wp-block-code"><code>' . esc_html( $literal ) . '</code></pre>';
+	$lines[] = '<!-- /wp:code -->';
 
 	foreach ( $grouped as $group => $members ) {
 		$lines[] = '<!-- wp:heading {"level":2} -->';
 		$lines[] = '<h2>' . esc_html( $group ) . '</h2>';
 		$lines[] = '<!-- /wp:heading -->';
 
-		foreach ( $members as $format => $meta ) {
-			$shortcode = sprintf(
-				'[adz_rotation name="%1$s" display="%2$s" controls="both"]',
-				$rotation_key,
-				$format
-			);
-
-			/*
-			 * do_shortcode() runs over the whole post, including the inside of
-			 * a code block, so a shortcode shown as an example renders instead
-			 * of displaying. Doubling the brackets is WordPress' own escape for
-			 * that: [[shortcode]] outputs the literal [shortcode], which is
-			 * what a reader needs to copy.
-			 */
-			$literal = '[' . $shortcode . ']';
-
+		foreach ( $members as $meta ) {
 			$lines[] = '<!-- wp:heading {"level":3} -->';
 			$lines[] = '<h3>' . esc_html( $meta['label'] ) . '</h3>';
 			$lines[] = '<!-- /wp:heading -->';
@@ -171,25 +170,6 @@ function adzworld_showcase_content( $rotation_key ) {
 			$lines[] = '<!-- wp:paragraph -->';
 			$lines[] = '<p>' . esc_html( $meta['note'] ) . '</p>';
 			$lines[] = '<!-- /wp:paragraph -->';
-
-			if ( in_array( $format, $anchored, true ) ) {
-				$lines[] = '<!-- wp:paragraph -->';
-				$lines[] = '<p><em>' . esc_html__( 'This format pins itself to the edge of the viewport, so it is listed rather than placed here. Add the shortcode below to a page of its own to see it.', 'adz-world' ) . '</em></p>';
-				$lines[] = '<!-- /wp:paragraph -->';
-
-				$lines[] = '<!-- wp:code -->';
-				$lines[] = '<pre class="wp-block-code"><code>' . esc_html( $literal ) . '</code></pre>';
-				$lines[] = '<!-- /wp:code -->';
-				continue;
-			}
-
-			$lines[] = '<!-- wp:shortcode -->';
-			$lines[] = $shortcode;
-			$lines[] = '<!-- /wp:shortcode -->';
-
-			$lines[] = '<!-- wp:code -->';
-			$lines[] = '<pre class="wp-block-code"><code>' . esc_html( $literal ) . '</code></pre>';
-			$lines[] = '<!-- /wp:code -->';
 		}
 	}
 
@@ -198,19 +178,13 @@ function adzworld_showcase_content( $rotation_key ) {
 	$lines[] = '<!-- /wp:heading -->';
 
 	$lines[] = '<!-- wp:paragraph -->';
-	$lines[] = '<p>' . esc_html__( 'Add a size to hold the frame to a standard creative size. Each one caps its width at the space available, so a wide size in a narrow column shrinks instead of overflowing. Leave the size out for a fluid frame.', 'adz-world' ) . '</p>';
+	$lines[] = '<p>' . esc_html__( 'Choose a size on the rotation. Each one caps its width at the space available, so a wide size in a narrow column shrinks instead of overflowing. Leave the size empty for a fluid frame.', 'adz-world' ) . '</p>';
 	$lines[] = '<!-- /wp:paragraph -->';
 
 	foreach ( adzworld_rotation_size_presets() as $size => $meta ) {
-		$lines[] = '<!-- wp:code -->';
-		$lines[] = '<pre class="wp-block-code"><code>' . esc_html(
-			sprintf(
-				'[[adz_rotation name="%1$s" size="%2$s"]]  ',
-				$rotation_key,
-				$size
-			) . $meta['label']
-		) . '</code></pre>';
-		$lines[] = '<!-- /wp:code -->';
+		$lines[] = '<!-- wp:paragraph -->';
+		$lines[] = '<p><code>' . esc_html( $size ) . '</code> ' . esc_html( $meta['label'] ) . '</p>';
+		$lines[] = '<!-- /wp:paragraph -->';
 	}
 
 	return implode( "\n", $lines );
@@ -253,7 +227,7 @@ function adzworld_create_showcase() {
 
 	$page_id = wp_insert_post(
 		array(
-			'post_title'   => __( 'Adz display formats', 'adz-world' ),
+			'post_title'   => __( 'adz display formats', 'adz-world' ),
 			'post_name'    => 'adz-display-formats',
 			'post_content' => adzworld_showcase_content( $rotation_key ),
 			'post_status'  => 'draft',
@@ -623,12 +597,7 @@ function adzworld_create_pack() {
 	}
 
 	$rotations = adzworld_named_rotations();
-
-	if ( isset( $rotations[ $key ] ) ) {
-		set_transient( $notice, __( 'That rotation already exists; it was left as it is.', 'adz-world' ), MINUTE_IN_SECONDS );
-		wp_safe_redirect( adzworld_desk_url( 'starter' ) );
-		exit;
-	}
+	$before    = count( $rotations );
 
 	$slots = adzworld_starter_slots( $pack );
 
@@ -638,13 +607,47 @@ function adzworld_create_pack() {
 		exit;
 	}
 
-	$rotations[ $key ] = array(
-		'name'  => $pack['name'],
-		'slots' => $slots,
-	);
+	$placements = isset( $pack['placements'] ) && is_array( $pack['placements'] ) ? $pack['placements'] : array();
+	if ( empty( $placements ) ) {
+		$placements = array(
+			array(
+				'where'   => $pack['name'],
+				'display' => 'flat',
+				'size'    => '',
+			),
+		);
+	}
+	$index = 0;
+	foreach ( $placements as $placement ) {
+		$place_key = 0 === $index ? $key : $key . '_' . ( $index + 1 );
+		++$index;
+		if ( isset( $rotations[ $place_key ] ) || ! is_array( $placement ) ) {
+			continue;
+		}
+		$where                   = isset( $placement['where'] ) ? (string) $placement['where'] : $pack['name'];
+		$rotations[ $place_key ] = array_merge(
+			array(
+				'name'  => $pack['name'] . ' — ' . $where,
+				'slots' => $slots,
+			),
+			adzworld_rotation_presentation(
+				array(
+					'display'  => isset( $placement['display'] ) ? $placement['display'] : 'flat',
+					'controls' => 'both',
+					'size'     => isset( $placement['size'] ) ? $placement['size'] : '',
+				)
+			)
+		);
+	}
 
 	// Stored through the shared sanitiser, so the shape matches every other path.
 	$rotations = adzworld_sanitize_named_rotations( $rotations );
+
+	if ( count( $rotations ) === $before && isset( $rotations[ $key ] ) ) {
+		set_transient( $notice, __( 'That rotation already exists; it was left as it is.', 'adz-world' ), MINUTE_IN_SECONDS );
+		wp_safe_redirect( adzworld_desk_url( 'starter' ) );
+		exit;
+	}
 
 	if ( ! isset( $rotations[ $key ] ) ) {
 		set_transient( $notice, __( 'The rotation this pack built was not valid and was not saved.', 'adz-world' ), MINUTE_IN_SECONDS );
@@ -675,14 +678,11 @@ function adzworld_starter_rotation_pack( $pack, $meta ) {
 	if ( ! empty( $meta['placements'] ) ) {
 		echo '<ul class="adzworld-starter-placements">';
 
+		$index = 0;
 		foreach ( $meta['placements'] as $placement ) {
-			$shortcode = '[adz_rotation name="' . $key . '" display="' . $placement['display'] . '"';
-
-			if ( '' !== $placement['size'] ) {
-				$shortcode .= ' size="' . $placement['size'] . '"';
-			}
-
-			$shortcode .= ']';
+			$place_key = 0 === $index ? $key : $key . '_' . ( $index + 1 );
+			++$index;
+			$shortcode = '[adz_rotation name="' . $place_key . '"]';
 
 			echo '<li class="adzworld-starter-placement">';
 			echo '<span class="adzworld-starter-placement__where">' . esc_html( $placement['where'] ) . '</span>';
@@ -709,7 +709,7 @@ function adzworld_starter_rotation_pack( $pack, $meta ) {
 		);
 		echo '</p>';
 		echo '<p class="adzworld-starter-actions">';
-		echo '<a class="button" href="' . esc_url( adzworld_desk_url( 'networks' ) ) . '">' . esc_html__( 'Connections', 'adz-world' ) . '</a> ';
+		echo '<a class="button" href="' . esc_url( adzworld_desk_url( 'affiliates' ) ) . '">' . esc_html__( 'Get Paid', 'adz-world' ) . '</a> ';
 		echo '<a class="button" href="' . esc_url( adzworld_desk_url( 'affiliates' ) ) . '">' . esc_html__( 'Affiliate programs', 'adz-world' ) . '</a>';
 		echo '</p>';
 
