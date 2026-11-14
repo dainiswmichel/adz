@@ -42,6 +42,58 @@ function adzworld_normalize_category( $category ) {
 }
 
 /**
+ * Split what the reader typed into the thing and its description.
+ *
+ * @since 1.0.0
+ *
+ * @param string $text Everything the reader typed.
+ * @return array{category:string,refinement:string}
+ */
+function adzworld_split_category_input( $text ) {
+	$text  = adzworld_normalize_category( $text );
+	$words = preg_split( '/\s+/u', $text, -1, PREG_SPLIT_NO_EMPTY );
+
+	if ( ! $words ) {
+		return array(
+			'category'   => '',
+			'refinement' => '',
+		);
+	}
+
+	/*
+	 * The opening words name the thing. Everything after them describes it.
+	 * "couch brown leather no arms" is a couch, refined by brown leather no
+	 * arms. The reader is not asked to put the two in separate boxes and is
+	 * not told off for typing a sentence: they say what they want and the
+	 * split happens here.
+	 */
+	$taken = array();
+
+	foreach ( $words as $word ) {
+		$next = implode( ' ', array_merge( $taken, array( $word ) ) );
+
+		if ( count( $taken ) >= ADZWORLD_CATEGORY_MAX_WORDS || mb_strlen( $next ) > ADZWORLD_CATEGORY_MAX_LENGTH ) {
+			break;
+		}
+
+		$taken[] = $word;
+	}
+
+	/* A single word longer than the limit still has to name something. */
+	if ( ! $taken ) {
+		$taken[] = mb_substr( $words[0], 0, ADZWORLD_CATEGORY_MAX_LENGTH );
+		$rest    = array_slice( $words, 1 );
+	} else {
+		$rest = array_slice( $words, count( $taken ) );
+	}
+
+	return array(
+		'category'   => implode( ' ', $taken ),
+		'refinement' => implode( ' ', $rest ),
+	);
+}
+
+/**
  * Whether a category fits the short search-prefix contract.
  *
  * @param string $category Normalized category.

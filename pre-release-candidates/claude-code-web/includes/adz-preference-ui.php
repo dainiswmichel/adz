@@ -761,16 +761,35 @@ function adzworld_ajax_refine() {
 			);
 			$message      = __( 'adz refinement added.', 'adz-world' );
 		} elseif ( 'category' === $action ) {
-			$category = adzworld_normalize_category( $text );
+			/*
+			 * The reader answers one question: what are you looking for. The
+			 * opening words name the thing and become the category; the rest
+			 * describes it and becomes a refinement of that category. They
+			 * are not asked to fill in two boxes, and a sentence is no longer
+			 * refused for being longer than three words.
+			 */
+			$split    = adzworld_split_category_input( $text );
+			$category = $split['category'];
+
 			if ( ! adzworld_valid_category( $category ) ) {
-				wp_send_json_error( array( 'message' => __( 'Categories can use up to 3 words and 48 characters.', 'adz-world' ) ), 400 );
+				wp_send_json_error( array( 'message' => __( 'Enter what you are looking for.', 'adz-world' ) ), 400 );
 			}
+
 			if ( ! in_array( $category, $pref['categories'], true ) ) {
 				$pref['categories'][] = $category;
 			}
+
 			$pref['active_category'] = $category;
-			$pref                    = adzworld_parse_refinement( $text, $pref );
-			$message                 = __( 'Category added.', 'adz-world' );
+
+			if ( '' !== $split['refinement'] ) {
+				$pair = mb_substr( adzworld_pair_join( $category, $split['refinement'] ), 0, 240 );
+
+				if ( ! in_array( $pair, $pref['category_refinements'], true ) ) {
+					$pref['category_refinements'][] = $pair;
+				}
+			}
+
+			$message = __( 'Category added.', 'adz-world' );
 		} elseif ( empty( $pref['categories'] ) ) {
 			wp_send_json_error( array( 'message' => __( 'Add a category in the invitation hub before refining it.', 'adz-world' ) ), 400 );
 		} else {

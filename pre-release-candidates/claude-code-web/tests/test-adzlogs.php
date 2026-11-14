@@ -346,6 +346,31 @@ adzworld_logs_record_response( 'sidebar', '1', '', '0', 'ad-412', array( 'refine
 $inner = adzworld_logs_place( 'inner', 2, 'sidebar', 3 );
 adzworld_logs_remember_ad( $inner, 'ad-900', 'ad:900', 'bicycle', array(), null );
 
+echo "\n=== a provider listing never attaches to an adzad this site owns ===\n";
+adzworld_logs_save( array() );
+
+/* A provider rendered cards somewhere on the page, and the next slot is ours. */
+adzworld_products_remember_served( array( 'ebay:110588014268' ) );
+adzworld_logs_remember_ad( adzworld_logs_place( 'homepage', 1 ), 'ad-412', 'ad:412', 'couch', array(), null );
+
+$rows = adzworld_logs_rows();
+check( 'our adzad keeps its own name', adzworld_logs_ad_shown( $rows[0] ), 'ad-412' );
+check( 'and carries no listing', $rows[0]['items'], '' );
+
+/* Nor through the response path. */
+adzworld_logs_record_response( 'homepage', '1', '', '0', 'ad-412', array( 'rating' => -70 ), false, array( 'ebay:999' ) );
+$rows = adzworld_logs_rows();
+check( 'still its own name after a response', adzworld_logs_ad_shown( $rows[0] ), 'ad-412' );
+check( 'still no listing', $rows[0]['items'], '' );
+
+adzworld_logs_save( array() );
+$pack = adzworld_logs_place( 'sidebar', 1 );
+adzworld_logs_remember_ad( $pack, 'ad-412', 'ad:412', 'couch', array( 'brown -- no arms' ), null );
+adzworld_logs_record_response( 'sidebar', '1', '', '0', 'ad-412', array( 'rating' => -40 ), false );
+adzworld_logs_record_response( 'sidebar', '1', '', '0', 'ad-412', array( 'refinement' => 'no i want a brown couch' ), false );
+$inner = adzworld_logs_place( 'inner', 2, 'sidebar', 3 );
+adzworld_logs_remember_ad( $inner, 'ad-900', 'ad:900', 'bicycle', array(), null );
+
 echo "\n=== rows group by rotation for the accordion ===\n";
 $grouped = adzworld_logs_by_rotation( adzworld_logs_rows() );
 check( 'two rotations', count( $grouped ), 2 );
