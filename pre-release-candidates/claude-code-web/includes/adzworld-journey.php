@@ -16,13 +16,16 @@
  * Each round's refinement generates the next round's adzad. Nothing the
  * reader types is altered.
  *
+ * A journey has no round limit. It is the record of what a reader did and
+ * none of it is discarded here. A cookie cannot hold more than about 4096
+ * bytes, so the anonymous storage path has to decide what it can keep when
+ * it is written; that is a limit of that one store, not of this record, and
+ * it does not apply to a member whose journey is held in user meta.
+ *
  * @package adz-world
  */
 
 defined( 'ABSPATH' ) || exit;
-
-/** Rounds kept per slot. A cookie holding this is capped at 4096 bytes. */
-const ADZWORLD_JOURNEY_ROUNDS = 8;
 
 /**
  * A stable key for one slot's journey.
@@ -58,19 +61,11 @@ function adzworld_journey_start( $request ) {
  * @return array<string,mixed> The journey, with the round appended.
  */
 function adzworld_journey_add( $journey, $ad, $rating, $refinement ) {
-	$journey           = adzworld_sanitize_slot_journey( $journey );
-	$journey['rounds'] = array_slice(
-		array_merge(
-			$journey['rounds'],
-			array(
-				array(
-					'ad'         => mb_substr( sanitize_text_field( (string) $ad ), 0, 120 ),
-					'rating'     => is_numeric( $rating ) ? max( -100, min( 100, (int) $rating ) ) : null,
-					'refinement' => mb_substr( trim( sanitize_text_field( (string) $refinement ) ), 0, 200 ),
-				),
-			)
-		),
-		-ADZWORLD_JOURNEY_ROUNDS
+	$journey             = adzworld_sanitize_slot_journey( $journey );
+	$journey['rounds'][] = array(
+		'ad'         => mb_substr( sanitize_text_field( (string) $ad ), 0, 120 ),
+		'rating'     => is_numeric( $rating ) ? max( -100, min( 100, (int) $rating ) ) : null,
+		'refinement' => mb_substr( trim( sanitize_text_field( (string) $refinement ) ), 0, 200 ),
 	);
 
 	return $journey;
@@ -111,8 +106,6 @@ function adzworld_sanitize_slot_journey( $stored ) {
 			'refinement' => $refinement,
 		);
 	}
-
-	$journey['rounds'] = array_slice( $journey['rounds'], -ADZWORLD_JOURNEY_ROUNDS );
 
 	return $journey;
 }
