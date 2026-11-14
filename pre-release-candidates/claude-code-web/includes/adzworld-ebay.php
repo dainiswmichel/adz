@@ -252,7 +252,16 @@ function adzworld_ebay_search( $request, $limit = ADZWORLD_EBAY_LIMIT ) {
 			$price = $item['price']['currency'] . ' ' . $item['price']['value'];
 		}
 
+		/*
+		 * The provider's own identifier for this product. It is what a
+		 * rating attaches to: without it a reader can reject a listing and
+		 * the same listing comes back, because nothing recorded which one
+		 * they saw.
+		 */
+		$item_id = ! empty( $item['itemId'] ) && is_string( $item['itemId'] ) ? $item['itemId'] : '';
+
 		$results[] = array(
+			'id'    => $item_id,
 			'title' => $title,
 			'image' => $image,
 			'price' => $price,

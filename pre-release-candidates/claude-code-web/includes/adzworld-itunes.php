@@ -233,7 +233,16 @@ function adzworld_itunes_search( $request, $limit = ADZWORLD_ITUNES_LIMIT ) {
 			}
 		}
 
+		$apple_id = '';
+		foreach ( array( 'trackId', 'collectionId' ) as $field ) {
+			if ( ! empty( $item[ $field ] ) ) {
+				$apple_id = (string) $item[ $field ];
+				break;
+			}
+		}
+
 		$results[] = array(
+			'id'    => $apple_id,
 			'title' => $title,
 			'image' => $image,
 			'price' => $price,

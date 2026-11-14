@@ -301,6 +301,8 @@ function adzworld_etsy_product_results( $request ) {
 		if ( '' === $mapped['image'] ) {
 			continue;
 		}
+		/* The listing id is the identifier a rating attaches to; keep it. */
+		$mapped['id'] = $mapped['listing_id'];
 		unset( $mapped['listing_id'] );
 		$results[] = $mapped;
 		if ( 3 === count( $results ) ) {

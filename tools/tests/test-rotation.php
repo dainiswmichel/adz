@@ -55,17 +55,35 @@ function assert_that( $label, $ok ) {
 	printf( "  [FAIL] %s\n", $label );
 }
 
-function slot( $n ) { return array( 'type' => 'network', 'label' => 'n' . $n ); }
-function adz( $n ) { return array( 'type' => 'adz', 'label' => 'A' . $n ); }
+function slot( $n ) {
+	return array(
+		'type'  => 'network',
+		'label' => 'n' . $n,
+	); }
+function adz( $n ) {
+	return array(
+		'type'  => 'adz',
+		'label' => 'A' . $n,
+	); }
 
 $cases = array(
-	array( 1, 0 ), array( 1, 1 ), array( 9, 1 ), array( 9, 2 ), array( 9, 3 ),
-	array( 2, 3 ), array( 0, 2 ), array( 0, 0 ), array( 4, 1 ), array( 24, 4 ),
+	array( 1, 0 ),
+	array( 1, 1 ),
+	array( 9, 1 ),
+	array( 9, 2 ),
+	array( 9, 3 ),
+	array( 2, 3 ),
+	array( 0, 2 ),
+	array( 0, 0 ),
+	array( 4, 1 ),
+	array( 24, 4 ),
 );
 
 foreach ( $cases as list( $n, $a ) ) {
-	$net = array(); for ( $i = 1; $i <= $n; $i++ ) { $net[] = slot( $i ); }
-	$ads = array(); for ( $i = 1; $i <= $a; $i++ ) { $ads[] = adz( $i ); }
+	$net = array(); for ( $i = 1; $i <= $n; $i++ ) {
+		$net[] = slot( $i ); }
+	$ads = array(); for ( $i = 1; $i <= $a; $i++ ) {
+		$ads[] = adz( $i ); }
 
 	$out = adzworld_build_rotation( $net, $ads, 12 );
 	$seq = implode( ' ', array_column( $out, 'label' ) );
@@ -77,7 +95,16 @@ foreach ( $cases as list( $n, $a ) ) {
 
 	printf(
 		"net=%-2d adz=%-2d -> %-2d slides | kept %d/%d net, %d/%d adz | dupes=%d | first=%s | %s\n",
-		$n, $a, count( $out ), $net_out, min( $n, 12 ), $adz_out, min( $a, 12 ), $dupes, $first, $seq
+		$n,
+		$a,
+		count( $out ),
+		$net_out,
+		min( $n, 12 ),
+		$adz_out,
+		min( $a, 12 ),
+		$dupes,
+		$first,
+		$seq
 	);
 
 	// Invariants that must hold for every combination.
@@ -98,7 +125,14 @@ foreach ( $cases as list( $n, $a ) ) {
 	for ( $i = 1; $i < count( $types ); $i++ ) {
 		if ( 'adz' === $types[ $i ] && 'adz' === $types[ $i - 1 ] ) {
 			$remaining = count( array_slice( $types, $i ) );
-			$nets_left = count( array_filter( array_slice( $types, $i ), function ( $t ) { return 'network' === $t; } ) );
+			$nets_left = count(
+				array_filter(
+					array_slice( $types, $i ),
+					function ( $t ) {
+						return 'network' === $t;
+					}
+				)
+			);
 			assert_that( "net=$n adz=$a: adz only adjacent once slots are spent", 0 === $nets_left );
 		}
 	}

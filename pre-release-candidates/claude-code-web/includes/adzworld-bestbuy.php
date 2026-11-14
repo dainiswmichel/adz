@@ -233,6 +233,7 @@ function adzworld_bestbuy_map_product( $product ) {
 	}
 
 	return array(
+		'id'           => isset( $product['sku'] ) ? (string) $product['sku'] : '',
 		'image'        => $image,
 		'title'        => $title,
 		'price'        => adzworld_bestbuy_price_text( isset( $product['salePrice'] ) ? $product['salePrice'] : '' ),

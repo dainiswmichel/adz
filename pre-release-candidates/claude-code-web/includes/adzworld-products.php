@@ -89,7 +89,20 @@ function adzworld_products_normalise_row( $row, $provider_id = '' ) {
 	$provider = isset( $row['provider'] ) ? (string) $row['provider'] : (string) $provider_id;
 	$labels   = adzworld_products_provider_labels();
 
+	/*
+	 * Every provider's own identifier for the product, which is what a
+	 * rating attaches to. A provider that has none gets a slug of its title,
+	 * so a reader's verdict still has somewhere to land.
+	 */
+	$id = isset( $row['id'] ) ? trim( (string) $row['id'] ) : '';
+
+	if ( '' === $id ) {
+		$id = substr( preg_replace( '/[^a-z0-9]+/', '-', strtolower( $title ) ), 0, 60 );
+		$id = trim( $id, '-' );
+	}
+
 	return array(
+		'id'       => $provider . ':' . $id,
 		'title'    => $title,
 		'url'      => $url,
 		'image'    => $image,

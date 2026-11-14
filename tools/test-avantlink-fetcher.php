@@ -108,9 +108,9 @@ function adz_reset( $account, $responses = array() ) {
 $adz_body = implode(
 	"\n",
 	array(
-		"Product Name\tRetail Price\tSale Price\tMedium Image\tBuy URL\tMerchant Name",
-		"Mid-century walnut couch\t899.00\t749.00\thttps://img.example.com/a.jpg\thttps://www.avantlink.com/click.php?tt=cl&ti=1\tHome Shop",
-		"Grey linen sleeper couch\t1249.95\t\thttps://img.example.com/b.jpg\thttps://www.avantlink.com/click.php?tt=cl&ti=2\tSofa Co",
+		"Product SKU\tProduct Name\tRetail Price\tSale Price\tMedium Image\tBuy URL\tMerchant Name",
+		"SKU-7781\tMid-century walnut couch\t899.00\t749.00\thttps://img.example.com/a.jpg\thttps://www.avantlink.com/click.php?tt=cl&ti=1\tHome Shop",
+		"SKU-7782\tGrey linen sleeper couch\t1249.95\t\thttps://img.example.com/b.jpg\thttps://www.avantlink.com/click.php?tt=cl&ti=2\tSofa Co",
 	)
 );
 $adz_ok   = array(
@@ -150,7 +150,7 @@ adz_check( 'the website id is sent', false !== strpos( $url, 'website_id=789012'
 adz_check( 'the negated term is sent, url-encoded', false !== strpos( $url, 'search_term=couch%20-arms' ), $url );
 adz_check( 'tab output is asked for, so columns are positional', false !== strpos( $url, 'output=tab' ) );
 adz_check( 'advanced syntax is enabled, or the minus would be literal', false !== strpos( $url, 'search_advanced_syntax=1' ) );
-adz_check( 'the column list is named explicitly', false !== strpos( $url, 'Product%20Name' ) && false !== strpos( $url, 'Buy%20URL' ), $url );
+adz_check( 'the column list is named explicitly', false !== strpos( $url, 'Product%20SKU' ) && false !== strpos( $url, 'Buy%20URL' ), $url );
 adz_check( 'no reader identifier is attached', false === strpos( $url, 'session' ) && false === strpos( $url, 'cookie' ) );
 
 echo "\n4. Reading the body\n";
@@ -160,6 +160,7 @@ adz_check( 'the tracked Buy URL is the destination', false !== strpos( $rows[0][
 adz_check( 'the sale price is preferred over retail', '$749.00' === $rows[0]['price'], $rows[0]['price'] );
 adz_check( 'retail is used when there is no sale price', '$1249.95' === $rows[1]['price'], $rows[1]['price'] );
 adz_check( 'image read', 'https://img.example.com/a.jpg' === $rows[0]['image'] );
+adz_check( 'the product SKU is kept as the row identifier', 'SKU-7781' === $rows[0]['id'], $rows[0]['id'] );
 
 echo "\n5. Caching\n";
 $before = count( $GLOBALS['adz_calls'] );

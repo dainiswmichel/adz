@@ -124,7 +124,7 @@ foreach ( array(
 	'garbage without separators',
 	'',
 ) as $hostile ) {
-	$d = adzworld_decode_preference( sanitize_text_field( $hostile ) );
+	$d   = adzworld_decode_preference( sanitize_text_field( $hostile ) );
 	$enc = adzworld_encode_preference( $d );
 	printf(
 		"  %-34s -> terms=%d min=%d intent=%s re-encoded=%s\n",

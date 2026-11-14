@@ -37,6 +37,7 @@ const ADZWORLD_AVANTLINK_LIMIT = 3;
  */
 function adzworld_avantlink_fields() {
 	return array(
+		'Product SKU',
 		'Product Name',
 		'Retail Price',
 		'Sale Price',
@@ -293,6 +294,7 @@ function adzworld_avantlink_parse( $body ) {
 		$price = '' !== $row['Sale Price'] && 0 < (float) $row['Sale Price'] ? $row['Sale Price'] : $row['Retail Price'];
 
 		$results[] = array(
+			'id'    => $row['Product SKU'],
 			'title' => $row['Product Name'],
 			'image' => $row['Medium Image'],
 			'price' => '' === $price ? '' : '$' . $price,

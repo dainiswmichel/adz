@@ -293,7 +293,69 @@ adz_providers(
 );
 adz_check( 'the duplicate is dropped', 1 === count( adzworld_products_collect( 'couch' ) ) );
 
-echo "\n8. Each card says which marketplace it came from\n";
+echo "\n8. Every row carries an identifier a rating can attach to\n";
+adz_providers(
+	array(
+		'ebay' => array(
+			array(
+				'title' => 'A couch',
+				'url'   => 'https://example.com/a',
+				'id'    => '110588014268',
+			),
+		),
+	)
+);
+$out = adzworld_products_collect( 'couch' );
+adz_check( 'the provider id is kept and namespaced', 'ebay:110588014268' === $out[0]['id'], $out[0]['id'] );
+
+adz_providers(
+	array(
+		'travelpayouts' => array(
+			array(
+				'title' => 'RIX to LIS, 2026-03-11',
+				'url'   => 'https://example.com/f',
+			),
+		),
+	)
+);
+$out = adzworld_products_collect( 'lisbon' );
+adz_check( 'a row with no id falls back to a slug of its title', 'travelpayouts:rix-to-lis-2026-03-11' === $out[0]['id'], $out[0]['id'] );
+
+adz_providers(
+	array(
+		'etsy' => array(
+			array(
+				'title' => '  Ünïcödé — ✨ Couch!!  ',
+				'url'   => 'https://example.com/u',
+			),
+		),
+	)
+);
+$out = adzworld_products_collect( 'couch' );
+adz_check( 'a slug is url-safe whatever the title contains', 1 === preg_match( '/^etsy:[a-z0-9-]+$/', $out[0]['id'] ), $out[0]['id'] );
+
+adz_providers(
+	array(
+		'ebay' => array(
+			array(
+				'title' => 'Same couch',
+				'url'   => 'https://example.com/x',
+				'id'    => '99',
+			),
+		),
+		'etsy' => array(
+			array(
+				'title' => 'Same couch',
+				'url'   => 'https://example.com/y',
+				'id'    => '99',
+			),
+		),
+	)
+);
+$out = adzworld_products_collect( 'couch' );
+adz_check( 'the same id at two providers stays two distinct rows', 2 === count( $out ) && $out[0]['id'] !== $out[1]['id'], wp_json_encode_shim( array_column( $out, 'id' ) ) );
+
+echo "\n9. Each card says which marketplace it came from\n";
 adz_providers(
 	array(
 		'ebay'    => array( adz_row( 'e1', 'e1' ) ),
@@ -309,7 +371,7 @@ adz_check( 'every card is marked sponsored', 3 === substr_count( $html, 'rel="sp
 adz_check( 'no inline style attribute', false === strpos( $html, 'style=' ) );
 adz_check( 'cards never borrow the protected network-creative class', false === strpos( $html, 'adzworld-creative' ), $html );
 
-echo "\n9. A hostile provider cannot inject markup\n";
+echo "\n10. A hostile provider cannot inject markup\n";
 adz_providers(
 	array(
 		'ebay' => array(
@@ -328,7 +390,7 @@ adz_check( 'the title cannot close an attribute', false === strpos( $html, '"onm
 adz_check( 'the image url cannot close an attribute', false === strpos( $html, '" onerror="' ) );
 adz_check( 'no bold tag from the price', false === strpos( $html, '<b>' ) );
 
-echo "\n10. A hostile request is not reflected into the heading\n";
+echo "\n11. A hostile request is not reflected into the heading\n";
 adz_providers( array( 'ebay' => array( adz_row( 'e1', 'e1' ) ) ) );
 $html = adzworld_products_markup( adzworld_products_collect( '<img src=x onerror=alert(1)> couch' ), '<img src=x onerror=alert(1)> couch' );
 adz_check( 'the tag is stripped', false === strpos( $html, '<img src=x' ) );

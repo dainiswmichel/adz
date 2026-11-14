@@ -446,7 +446,13 @@ function adzworld_travelpayouts_search( $request, $limit = ADZWORLD_TRAVELPAYOUT
 				$title .= ', ' . __( 'non-stop', 'adz-world' );
 			}
 
+			/*
+			 * A fare is a route on a date, not a catalogue item, so there is
+			 * no provider id to keep. The route and date identify it as well
+			 * as anything can, which is what the slug is for.
+			 */
 			$results[] = array(
+				'id'        => strtolower( $origin . '-' . $destination . ( '' === $depart ? '' : '-' . $depart ) ),
 				'title'     => $title,
 				'image'     => '',
 				'price'     => strtoupper( $currency ) . ' ' . $fare['price'],
