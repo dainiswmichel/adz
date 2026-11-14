@@ -94,20 +94,20 @@ function check( $label, $got, $want ) {
 }
 
 echo "=== a served adzad is remembered against its place ===\n";
-$place = adzworld_logs_place( 'sidebar', 0 );
+$place = adzworld_logs_place( 'sidebar', 1 );
 adzworld_logs_remember_ad( $place, 'ad-412', 'ad:412', 'couch', array(), null );
 
 $rows = adzworld_logs_rows();
 check( 'one row stored', count( $rows ), 1 );
 check( 'the rotation it was served in', $rows[0]['rotation'], 'sidebar' );
-check( 'the slot it was served in', $rows[0]['slot'], 0 );
+check( 'the slot it was served in', $rows[0]['slot'], 1 );
 check( 'the served adzad', $rows[0]['ad'], 'ad-412' );
 check( 'what the slot was configured as', $rows[0]['configured'], 'ad:412' );
 check( 'the category in force', $rows[0]['category'], 'couch' );
 check( 'no response yet', $rows[0]['responded'], 0 );
 
 echo "\n=== a rating lands on the adzad it answered ===\n";
-adzworld_logs_record_response( 'sidebar', '0', '', '0', 'ad-412', array( 'rating' => -40 ), false );
+adzworld_logs_record_response( 'sidebar', '1', '', '0', 'ad-412', array( 'rating' => -40 ), false );
 
 $rows = adzworld_logs_rows();
 check( 'still one row, not a second round', count( $rows ), 1 );
@@ -117,15 +117,15 @@ check( 'an internal adzad is logged to the site', $rows[0]['logged'], 1 );
 check( 'and nothing is sent over the wire', $rows[0]['sent_string'], '' );
 
 echo "\n=== a refinement is stored exactly as typed ===\n";
-adzworld_logs_record_response( 'sidebar', '0', '', '0', 'ad-412', array( 'refinement' => 'no i want a brown couch' ), false );
+adzworld_logs_record_response( 'sidebar', '1', '', '0', 'ad-412', array( 'refinement' => 'no i want a brown couch' ), false );
 
 $rows = adzworld_logs_rows();
 check( 'verbatim, nothing parsed out', $rows[0]['refinement_change'], 'no i want a brown couch' );
 
 echo "\n=== an external adzad stores the string that went out ===\n";
-$next = adzworld_logs_place( 'sidebar', 1 );
+$next = adzworld_logs_place( 'sidebar', 2 );
 adzworld_logs_remember_ad( $next, 'source-ebay', 'source:ebay', 'couch', array( 'brown' ), null );
-adzworld_logs_record_response( 'sidebar', '1', '', '0', 'source-ebay', array( 'refinement' => 'show only 3 seater' ), true );
+adzworld_logs_record_response( 'sidebar', '2', '', '0', 'source-ebay', array( 'refinement' => 'show only 3 seater' ), true );
 
 $rows = adzworld_logs_rows();
 check( 'two rounds now', count( $rows ), 2 );
@@ -140,7 +140,7 @@ check(
 );
 
 echo "\n=== a nested rotation is logged at both levels ===\n";
-$inner = adzworld_logs_place( 'inner', 1, 'sidebar', 2 );
+$inner = adzworld_logs_place( 'inner', 2, 'sidebar', 3 );
 adzworld_logs_remember_ad( $inner, 'ad-900', 'ad:900', 'bicycle', array(), null );
 
 $rows = adzworld_logs_rows();
@@ -148,11 +148,18 @@ check( 'one adzad, two rows: the outer slot and the inner one', count( $rows ), 
 $outer_row = $rows[2];
 $inner_row = $rows[3];
 check( 'the outer row is in the outer rotation', $outer_row['rotation'], 'sidebar' );
-check( 'at the outer slot', $outer_row['slot'], 2 );
+check( 'at the outer slot', $outer_row['slot'], 3 );
 check( 'and says which rotation it holds', $outer_row['holds'], 'inner' );
 check( 'the outer slot is configured as a rotation', $outer_row['configured'], 'r:inner' );
 check( 'the inner row is in the inner rotation', $inner_row['rotation'], 'inner' );
-check( 'at the inner slot', $inner_row['slot'], 1 );
+check( 'at the inner slot', $inner_row['slot'], 2 );
+
+echo "\n=== there is no slot zero ===\n";
+$before = count( adzworld_logs_rows() );
+adzworld_logs_remember_ad( adzworld_logs_place( 'sidebar', 0 ), 'ad-77', 'ad:77', 'couch', array(), null );
+check( 'a slot zero is refused, not stored', count( adzworld_logs_rows() ), $before );
+adzworld_logs_remember_ad( adzworld_logs_place( 'inner', 0, 'sidebar', 1 ), 'ad-78', 'ad:78', 'couch', array(), null );
+check( 'an inner slot zero is refused too', count( adzworld_logs_rows() ), $before );
 
 echo "\n=== rows group by rotation for the accordion ===\n";
 $grouped = adzworld_logs_by_rotation( adzworld_logs_rows() );

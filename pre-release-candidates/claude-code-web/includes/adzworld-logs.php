@@ -238,7 +238,8 @@ function adzworld_logs_entries( $place, $ad, $configured, $category, $refinement
 	$inner       = isset( $place['inner_rotation'] ) ? adzworld_logs_key( $place['inner_rotation'] ) : '';
 	$inner_slot  = isset( $place['inner_slot'] ) ? (int) $place['inner_slot'] : 0;
 
-	if ( '' === $ad || '' === $rotation || $slot < 0 ) {
+	/* Slots count from 1. A zero or a negative is not a slot, it is a bug. */
+	if ( '' === $ad || '' === $rotation || $slot < 1 ) {
 		return array();
 	}
 
@@ -259,7 +260,7 @@ function adzworld_logs_entries( $place, $ad, $configured, $category, $refinement
 		return array( $row );
 	}
 
-	if ( $inner_slot < 0 ) {
+	if ( $inner_slot < 1 ) {
 		return array();
 	}
 
@@ -904,7 +905,7 @@ function adzworld_logs_record_response( $rotation, $slot, $outer_rotation, $oute
 		return;
 	}
 
-	if ( isset( $place['inner_slot'] ) && (int) $place['inner_slot'] < 0 ) {
+	if ( isset( $place['inner_slot'] ) && (int) $place['inner_slot'] < 1 ) {
 		return;
 	}
 
