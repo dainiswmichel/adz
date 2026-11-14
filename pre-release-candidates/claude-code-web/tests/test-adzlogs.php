@@ -246,6 +246,17 @@ $rows = adzworld_logs_rows();
 check( 'the round is recorded', count( $rows ), 1 );
 check( 'the provider is named', $rows[0]['ad'], 'source-ebay' );
 check( 'and so is the adz it happened on', $rows[0]['items'], 'ebay:110588014268' );
+check( 'and the log names the listing, not the provider', adzworld_logs_ad_shown( $rows[0] ), 'ebay:110588014268' );
+check(
+	'which is what the export prints as the adz',
+	false !== strpos( adzworld_logs_export_text( $rows ), 'ad ebay:110588014268' ),
+	true
+);
+check(
+	'with the provider named separately',
+	false !== strpos( adzworld_logs_export_text( $rows ), 'served by ebay' ),
+	true
+);
 check( 'with what they typed', $rows[0]['refinement_change'], 'brown -- no arms' );
 
 /* A row that already names its product is never overwritten by a later response. */
@@ -297,6 +308,41 @@ adzworld_logs_record_response( 'sidebar', '1', '', '0', 'ad-412', array( 'refine
 $next = adzworld_logs_place( 'sidebar', 2 );
 adzworld_logs_remember_ad( $next, 'source-ebay', 'source:ebay', 'couch', array( 'brown' ), null );
 adzworld_logs_record_response( 'sidebar', '2', '', '0', 'source-ebay', array( 'refinement' => 'show only 3 seater' ), true );
+$inner = adzworld_logs_place( 'inner', 2, 'sidebar', 3 );
+adzworld_logs_remember_ad( $inner, 'ad-900', 'ad:900', 'bicycle', array(), null );
+
+echo "\n=== an adzad this site owns is named by its own id ===\n";
+adzworld_logs_save( array() );
+adzworld_logs_remember_ad( adzworld_logs_place( 'homepage', 1 ), 'ad-412', 'ad:412', 'couch', array(), null );
+adzworld_logs_record_response(
+	'homepage',
+	'1',
+	'',
+	'0',
+	'ad-412',
+	array( 'refinement' => 'this is a great product, i cant wait to buy it later' ),
+	false
+);
+
+$rows = adzworld_logs_rows();
+check( 'the adzad is its own post', adzworld_logs_ad_shown( $rows[0] ), 'ad-412' );
+check(
+	'and what the reader wrote is kept word for word, wrong box or not',
+	$rows[0]['refinement_change'],
+	'this is a great product, i cant wait to buy it later'
+);
+check( 'nothing was sent anywhere for an adzad this site owns', $rows[0]['sent_string'], '' );
+check( 'it was logged here instead', $rows[0]['logged'], 1 );
+
+/*
+ * Rebuild the state the grouping and export checks below read: two
+ * rotations, a rating and a refinement kept word for word.
+ */
+adzworld_logs_save( array() );
+$pack = adzworld_logs_place( 'sidebar', 1 );
+adzworld_logs_remember_ad( $pack, 'ad-412', 'ad:412', 'couch', array( 'brown -- no arms' ), null );
+adzworld_logs_record_response( 'sidebar', '1', '', '0', 'ad-412', array( 'rating' => -40 ), false );
+adzworld_logs_record_response( 'sidebar', '1', '', '0', 'ad-412', array( 'refinement' => 'no i want a brown couch' ), false );
 $inner = adzworld_logs_place( 'inner', 2, 'sidebar', 3 );
 adzworld_logs_remember_ad( $inner, 'ad-900', 'ad:900', 'bicycle', array(), null );
 

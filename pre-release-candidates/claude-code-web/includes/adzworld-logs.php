@@ -102,6 +102,30 @@ function adzworld_logs_items( $value ) {
 }
 
 /**
+ * What was actually on the screen, as the log should name it.
+ *
+ * A provider slot is configured as source:ebay and its feedback is keyed on
+ * source-ebay, but neither of those is the adzad. The adzad is the listing
+ * the reader was looking at. When the provider's cards are known, they are
+ * the identity; otherwise the slot key stands, because something was shown
+ * and the log should not pretend nothing was.
+ *
+ * @since 1.0.0
+ *
+ * @param array<string,mixed> $row Log row.
+ * @return string
+ */
+function adzworld_logs_ad_shown( $row ) {
+	$items = isset( $row['items'] ) ? adzworld_logs_items( explode( ' ', (string) $row['items'] ) ) : '';
+
+	if ( '' !== $items ) {
+		return $items;
+	}
+
+	return isset( $row['ad'] ) ? adzworld_logs_ad_id( $row['ad'] ) : '';
+}
+
+/**
  * Slot configuration token.
  *
  * @param mixed $value Raw token.
@@ -209,7 +233,16 @@ function adzworld_logs_current_refinements( $displayed, $change ) {
  */
 function adzworld_logs_sent_string( $ad, $category, $rating, $refinements ) {
 	$parts = array();
-	$ad    = adzworld_logs_ad_id( $ad );
+
+	/*
+	 * Either shape is valid here: the slot key for an adzad this site owns,
+	 * or the provider's own listing identifier when the cards are known.
+	 * Validating only the first silently dropped the listing, which is the
+	 * more useful of the two.
+	 */
+	$ad = '' !== adzworld_logs_ad_id( $ad )
+		? adzworld_logs_ad_id( $ad )
+		: adzworld_logs_items( explode( ' ', (string) $ad ) );
 
 	if ( '' !== $ad ) {
 		$parts[] = $ad;
@@ -361,7 +394,7 @@ function adzworld_logs_apply_response( $row, $changes, $external ) {
 	if ( $external ) {
 		$row['logged']      = 0;
 		$row['sent_string'] = adzworld_logs_sent_string(
-			$row['ad'],
+			adzworld_logs_ad_shown( $row ),
 			adzworld_logs_current_category( $row['category'], $row['category_change'] ),
 			adzworld_logs_current_rating( $row['rating'], $row['rating_change'] ),
 			adzworld_logs_current_refinements( $row['refinements'], $row['refinement_change'] )
@@ -562,10 +595,10 @@ function adzworld_logs_export_text( $rows ) {
 			$lines[] = 'configured ' . $clean['configured'];
 		}
 
-		$lines[] = 'ad ' . $clean['ad'];
+		$lines[] = 'ad ' . adzworld_logs_ad_shown( $clean );
 
-		if ( '' !== $clean['items'] ) {
-			$lines[] = 'items ' . $clean['items'];
+		if ( '' !== $clean['items'] && 0 === strpos( $clean['ad'], 'source-' ) ) {
+			$lines[] = 'served by ' . substr( $clean['ad'], strlen( 'source-' ) );
 		}
 
 		if ( '' !== $clean['category'] ) {
@@ -1080,7 +1113,7 @@ function adzworld_logs_echo_turn( $row ) {
 
 	echo '<div class="adzworld-log-turn">';
 	echo '<div class="adzworld-log-served">';
-	echo '<p class="adzworld-log-ad">' . esc_html( (string) $row['ad'] ) . '</p>';
+	echo '<p class="adzworld-log-ad">' . esc_html( adzworld_logs_ad_shown( $row ) ) . '</p>';
 	if ( '' !== (string) $row['holds'] ) {
 		adzworld_logs_echo_pair(
 			sprintf(
@@ -1096,7 +1129,9 @@ function adzworld_logs_echo_turn( $row ) {
 
 	echo '<div class="adzworld-log-request">';
 	adzworld_logs_echo_pair( __( 'Configured', 'adz-world' ), (string) $row['configured'] );
-	adzworld_logs_echo_pair( __( 'Products served', 'adz-world' ), (string) $row['items'] );
+	if ( '' !== (string) $row['items'] && 0 === strpos( (string) $row['ad'], 'source-' ) ) {
+		adzworld_logs_echo_pair( __( 'Served by', 'adz-world' ), substr( (string) $row['ad'], strlen( 'source-' ) ) );
+	}
 	adzworld_logs_echo_pair( __( 'Category', 'adz-world' ), (string) $row['category'] );
 	adzworld_logs_echo_pair( __( 'Rating', 'adz-world' ), $rating );
 	adzworld_logs_echo_pair( __( 'Refinements', 'adz-world' ), (string) $row['refinements'] );
