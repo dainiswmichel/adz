@@ -2084,3 +2084,134 @@
 .adzworld-network-unit.adzworld-network-unit--open {
 	min-height: 0;
 }
+
+/*
+ * The showcase: real products answering the reader's own words, one per
+ * slide, each carrying its own rating. Taken from the running version so a
+ * site that upgrades sees the same thing it saw before.
+ */
+/*
+ * The title row is the ad's saved title. The creative under it is the
+ * tagged search for that request.
+ */
+.adzworld-results {
+	position: relative;
+	margin-top: 0;
+}
+
+.adzworld-results__title {
+	margin: 0;
+	padding: 8px 12px;
+	font-weight: 600;
+	background: var(--adz-surface);
+	border: 1px solid var(--adz-line);
+	border-radius: var(--adz-radius) var(--adz-radius) 0 0;
+}
+
+.adzworld-results__slides {
+	margin: 0;
+	padding: 0;
+}
+
+.adzworld-results__slide[hidden] {
+	display: none;
+}
+
+.adzworld-results__slide {
+	background: var(--adz-surface);
+	border-radius: 0 0 var(--adz-radius) var(--adz-radius);
+}
+
+.adzworld-results__offer {
+	display: grid;
+	grid-template-columns: minmax(96px, 180px) minmax(0, 1fr);
+	gap: 16px;
+	align-items: center;
+	padding: 16px;
+	color: var(--adz-ink);
+	background: var(--adz-surface);
+	border: 1px solid var(--adz-line);
+	border-top: 0;
+	border-radius: 0 0 var(--adz-radius) var(--adz-radius);
+	text-decoration: none;
+}
+
+.adzworld-results__offer--text {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.adzworld-results__media {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 0;
+	background: var(--adz-surface);
+}
+
+.adzworld-results__image {
+	display: block;
+	width: 100%;
+	height: auto;
+	max-height: 180px;
+	object-fit: contain;
+}
+
+.adzworld-results__body {
+	display: grid;
+	gap: 8px;
+	min-width: 0;
+}
+
+.adzworld-results__product-title {
+	color: var(--adz-ink);
+	font-weight: 600;
+	line-height: 1.35;
+}
+
+.adzworld-results__price {
+	color: var(--adz-accent);
+	font-weight: 700;
+}
+
+.adzworld-results__source {
+	display: block;
+	width: max-content;
+	max-width: 120px;
+	margin: 8px 16px 12px auto;
+}
+
+.adzworld-results__source-image {
+	display: block;
+	width: auto;
+	height: auto;
+	max-width: 120px;
+	max-height: 40px;
+}
+
+.adzworld-results__offer {
+		grid-template-columns: 96px minmax(0, 1fr);
+		gap: 12px;
+		padding: 12px;
+	}
+
+.adzworld-results__image {
+		max-height: 110px;
+	}
+
+.adzworld-results__navigation {
+	display: flex;
+	justify-content: space-between;
+	margin-top: 8px;
+}
+
+.adzworld-rotation .adzworld-results__previous,
+.adzworld-rotation .adzworld-results__next {
+	min-width: 36px;
+	min-height: 36px;
+	padding: 0 10px;
+	color: var(--adz-ink);
+	background: var(--adz-surface);
+	border: 1px solid var(--adz-line);
+	border-radius: 999px;
+	cursor: pointer;
+}

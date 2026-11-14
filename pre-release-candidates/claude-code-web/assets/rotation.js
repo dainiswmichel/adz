@@ -397,6 +397,83 @@
 	 *
 	 * @param {HTMLElement} rotation Rotation root.
 	 */
+	/**
+	 * Move between search-result networks inside one category slide.
+	 *
+	 * Buttons here use their own step attribute. The category carousel reads a
+	 * different attribute, and a click inside this carousel returns before that
+	 * listener runs.
+	 *
+	 * @param {HTMLElement} results Results carousel.
+	 */
+	function prepareResults( results ) {
+		var slides = Array.from( results.querySelectorAll( ':scope > .adzworld-results__slides > .adzworld-results__slide' ) );
+		var navigation = results.querySelector( ':scope > .adzworld-results__navigation' );
+		var evaluation = results.parentElement ? results.parentElement.querySelector( ':scope > .adzworld-evaluation' ) : null;
+		var current = 0;
+
+		if ( ! slides.length ) {
+			return;
+		}
+
+		function selectEvaluation( slide ) {
+			var input;
+			var output;
+			var status;
+			var score;
+
+			if ( ! evaluation || ! slide ) {
+				return;
+			}
+			input = evaluation.querySelector( 'input[type="range"]' );
+			output = evaluation.querySelector( 'output' );
+			status = evaluation.querySelector( '.adzworld-evaluation__status' );
+			score = Number( slide.dataset.adzworldResultScore || 0 );
+			evaluation.dataset.adzworldFeedbackTarget = slide.dataset.adzworldResultTarget || '';
+			if ( input ) {
+				input.value = String( score );
+				input.dispatchEvent( new window.Event( 'input', { bubbles: true } ) );
+			}
+			if ( output ) {
+				output.textContent = evaluationLabel( score );
+			}
+			if ( status ) {
+				status.textContent = '';
+			}
+		}
+
+		function show( position ) {
+			current = ( position + slides.length ) % slides.length;
+			slides.forEach(
+				function ( slide, index ) {
+					var active = index === current;
+
+					slide.hidden = ! active;
+					slide.setAttribute( 'aria-hidden', String( ! active ) );
+				}
+			);
+			selectEvaluation( slides[ current ] );
+		}
+
+		results.addEventListener(
+			'click',
+			function ( event ) {
+				var button = event.target.closest( '[data-adzworld-result-step]' );
+
+				if ( ! button || ! results.contains( button ) ) {
+					return;
+				}
+				event.stopPropagation();
+				show( current + Number( button.dataset.adzworldResultStep ) );
+			}
+		);
+
+		show( 0 );
+		if ( navigation && slides.length > 1 ) {
+			navigation.hidden = false;
+		}
+	}
+
 	function prepareRotation( rotation ) {
 		var slides = Array.from( rotation.querySelectorAll( ':scope > .adzworld-carousel > .adzworld-slides > .adzworld-slide' ) );
 		var current = 0;
@@ -406,6 +483,7 @@
 			return;
 		}
 
+		rotation.querySelectorAll( '.adzworld-results' ).forEach( prepareResults );
 		rotation.classList.add( 'adzworld-enhanced' );
 
 		/*
@@ -513,7 +591,13 @@
 				var categorySlot;
 				var status;
 
-				if ( ! button ) {
+				/*
+				 * The showcase has its own previous and next buttons inside
+				 * this rotation. They are handled where the showcase is
+				 * prepared, so a click on one must not also move the
+				 * rotation underneath it.
+				 */
+				if ( ! button || button.closest( '.adzworld-results' ) ) {
 					return;
 				}
 				if ( button.hasAttribute( 'data-adzworld-category-first' ) ) {

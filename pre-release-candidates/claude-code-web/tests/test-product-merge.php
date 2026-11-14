@@ -113,6 +113,17 @@ function esc_url( $value ) {
  * @return string Escaped value.
  */
 /**
+ * Key sanitising, as a row now carries its provider's own item id and a
+ * collect call can be narrowed to one provider.
+ *
+ * @param string $key Raw key.
+ * @return string
+ */
+function sanitize_key( $key ) {
+	return preg_replace( '/[^a-z0-9_\-]/', '', strtolower( (string) $key ) );
+}
+
+/**
  * Attribute escaping, as the product cards now carry the item identifier.
  *
  * @param string $value Raw value.
@@ -420,6 +431,39 @@ adz_check( 'nothing executable remains', false === strpos( $html, 'onerror=alert
 function wp_json_encode_shim( $value ) {
 	return json_encode( $value );
 }
+
+echo "\n12. Every product carries its own identity and its own rating\n";
+
+$adz_row = adzworld_products_normalise_row(
+	array(
+		'id'    => 'B0blGdIeA',
+		'title' => 'Brown three seater couch',
+		'url'   => 'https://www.amazon.com/dp/B0blGdIeA',
+		'image' => 'https://m.media-amazon.com/images/I/x.jpg',
+		'price' => '$499.00',
+	),
+	'amazon'
+);
+
+adz_check( 'the row is accepted', is_array( $adz_row ), 'row' );
+adz_check( 'AdzLogs records provider and listing', 'amazon:B0blGdIeA' === $adz_row['id'], $adz_row['id'] );
+adz_check( 'a rating attaches to the listing alone', 'b0blgdiea' === $adz_row['item_id'], $adz_row['item_id'] );
+adz_check( 'the provider is named', 'amazon' === $adz_row['provider'], $adz_row['provider'] );
+
+$adz_second = adzworld_products_normalise_row(
+	array(
+		'id'    => 'B0gnNoiZn',
+		'title' => 'Grey two seater couch',
+		'url'   => 'https://www.amazon.com/dp/B0gnNoiZn',
+	),
+	'amazon'
+);
+
+adz_check(
+	'two listings from one provider get two targets',
+	$adz_row['item_id'] !== $adz_second['item_id'],
+	$adz_row['item_id'] . ' vs ' . $adz_second['item_id']
+);
 
 echo "\n----\n$adz_pass passed, $adz_fail failed\n";
 exit( $adz_fail > 0 ? 1 : 0 );

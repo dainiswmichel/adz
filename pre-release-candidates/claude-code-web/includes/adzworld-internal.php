@@ -27,6 +27,12 @@ defined( 'ABSPATH' ) || exit;
 /** Meta key holding the creative size. */
 const ADZWORLD_INTERNAL_SIZE_KEY = 'adzworld_size';
 
+/** Meta key holding the title row printed above an adzad. */
+const ADZWORLD_INTERNAL_TITLE_KEY = 'adzworld_title_row';
+
+/** Meta key holding the search provider an adzad's showcase draws from. */
+const ADZWORLD_INTERNAL_PROVIDER_KEY = 'adzworld_provider';
+
 /** Meta key holding the click destination. */
 const ADZWORLD_INTERNAL_URL_KEY = 'adzworld_destination';
 
@@ -542,4 +548,40 @@ function adzworld_internal_link_markup( $creative, $destination ) {
 
 	return '<a class="adzworld-creative__destination" href="' . esc_url( $destination )
 		. '" rel="sponsored nofollow">' . $creative . '</a>';
+}
+
+/**
+ * Validate the title row printed above an adz.
+ *
+ * @param mixed $title Candidate title.
+ * @return string Title of at most 120 characters.
+ */
+function adzworld_internal_sanitize_title_row( $title ) {
+	$title = is_scalar( $title ) ? sanitize_text_field( (string) $title ) : '';
+
+	return mb_substr( $title, 0, 120 );
+}
+
+/**
+ * Validate a dynamic search provider.
+ *
+ * @param mixed $provider Candidate provider id.
+ * @return string Supported provider id, or an empty string for every provider.
+ */
+function adzworld_internal_sanitize_provider( $provider ) {
+	$provider = is_scalar( $provider ) ? sanitize_key( (string) $provider ) : '';
+
+	return in_array( $provider, array( 'etsy', 'itunes' ), true ) ? $provider : '';
+}
+
+/**
+ * The title row saved on one adz.
+ *
+ * @param WP_Post|int $ad Adz post or its id.
+ * @return string Saved title, empty when the ad has none.
+ */
+function adzworld_internal_title_row( $ad ) {
+	$ad_id = $ad instanceof WP_Post ? $ad->ID : (int) $ad;
+
+	return adzworld_internal_sanitize_title_row( get_post_meta( $ad_id, ADZWORLD_INTERNAL_TITLE_KEY, true ) );
 }
