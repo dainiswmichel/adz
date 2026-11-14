@@ -87,6 +87,7 @@ function map_deep( $value, $callback ) {
 require $adz_plugin . '/includes/adz-preferences.php';
 require $adz_plugin . '/includes/adz-preference-ui.php';
 require $adz_plugin . '/includes/adzworld-journey.php';
+require $adz_plugin . '/includes/adzworld-products.php';
 require $adz_plugin . '/includes/adzworld-logs.php';
 
 $pass = 0;
@@ -208,6 +209,44 @@ adzworld_logs_remember_ad( adzworld_logs_place( 'sidebar', 0 ), 'ad-77', 'ad:77'
 check( 'a slot zero is refused, not stored', count( adzworld_logs_rows() ), $before );
 adzworld_logs_remember_ad( adzworld_logs_place( 'inner', 0, 'sidebar', 1 ), 'ad-78', 'ad:78', 'couch', array(), null );
 check( 'an inner slot zero is refused too', count( adzworld_logs_rows() ), $before );
+
+echo "\n=== a provider round names the products it served ===\n";
+adzworld_logs_save( array() );
+
+/* What the products module leaves behind after rendering its cards. */
+adzworld_products_remember_served( array( 'ebay:110588014268', 'ebay:285471993012' ) );
+adzworld_logs_remember_ad( adzworld_logs_place( 'sidebar', 1 ), 'source-ebay', 'source:ebay', 'couch', array(), null );
+
+$rows = adzworld_logs_rows();
+check( 'the provider is still named', $rows[0]['ad'], 'source-ebay' );
+check(
+	'and so is each product it served',
+	$rows[0]['items'],
+	'ebay:110588014268 ebay:285471993012'
+);
+check( 'the export carries them', false !== strpos( adzworld_logs_export_text( $rows ), 'ebay:110588014268' ), true );
+
+/* A second round must not inherit the first round's products. */
+adzworld_logs_remember_ad( adzworld_logs_place( 'sidebar', 2 ), 'source-ebay', 'source:ebay', 'couch', array(), null );
+$rows = adzworld_logs_rows();
+check( 'the next round starts empty', $rows[1]['items'], '' );
+
+/* Anything that is not provider:id is refused rather than stored. */
+check( 'a bare word is not an identifier', adzworld_logs_items( array( 'couch' ) ), '' );
+check( 'nor is a script tag', adzworld_logs_items( array( '<script>x</script>' ) ), '' );
+check( 'a real one survives', adzworld_logs_items( array( 'etsy:1566104376' ) ), 'etsy:1566104376' );
+check( 'duplicates collapse', adzworld_logs_items( array( 'ebay:1', 'ebay:1' ) ), 'ebay:1' );
+
+adzworld_logs_save( array() );
+$pack = adzworld_logs_place( 'sidebar', 1 );
+adzworld_logs_remember_ad( $pack, 'ad-412', 'ad:412', 'couch', array( 'brown -- no arms' ), null );
+adzworld_logs_record_response( 'sidebar', '1', '', '0', 'ad-412', array( 'rating' => -40 ), false );
+adzworld_logs_record_response( 'sidebar', '1', '', '0', 'ad-412', array( 'refinement' => 'no i want a brown couch' ), false );
+$next = adzworld_logs_place( 'sidebar', 2 );
+adzworld_logs_remember_ad( $next, 'source-ebay', 'source:ebay', 'couch', array( 'brown' ), null );
+adzworld_logs_record_response( 'sidebar', '2', '', '0', 'source-ebay', array( 'refinement' => 'show only 3 seater' ), true );
+$inner = adzworld_logs_place( 'inner', 2, 'sidebar', 3 );
+adzworld_logs_remember_ad( $inner, 'ad-900', 'ad:900', 'bicycle', array(), null );
 
 echo "\n=== rows group by rotation for the accordion ===\n";
 $grouped = adzworld_logs_by_rotation( adzworld_logs_rows() );

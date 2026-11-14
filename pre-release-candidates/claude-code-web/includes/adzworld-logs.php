@@ -76,6 +76,32 @@ function adzworld_logs_ad_id( $value ) {
 }
 
 /**
+ * The product identifiers a provider actually served in this round.
+ *
+ * Each is the provider's own identifier namespaced by the provider, such as
+ * ebay:110588014268. Without these, every round a provider answered logs as
+ * the same row: the provider is named, the product is not.
+ *
+ * @since 1.0.0
+ *
+ * @param mixed $value Raw identifiers.
+ * @return string Space separated identifiers, or empty.
+ */
+function adzworld_logs_items( $value ) {
+	$clean = array();
+
+	foreach ( (array) $value as $id ) {
+		$id = adzworld_slot_journey_text( $id );
+
+		if ( preg_match( '/^[a-z0-9_-]{1,50}:[A-Za-z0-9._-]{1,100}$/D', $id ) && ! in_array( $id, $clean, true ) ) {
+			$clean[] = $id;
+		}
+	}
+
+	return implode( ' ', $clean );
+}
+
+/**
  * Slot configuration token.
  *
  * @param mixed $value Raw token.
@@ -222,9 +248,10 @@ function adzworld_logs_sent_string( $ad, $category, $rating, $refinements ) {
  * @param mixed               $refinements  Refinements displayed with the ad.
  * @param string              $mts          Michel Time Stamp.
  * @param int|null            $rating       Rating displayed with the ad, or null.
+ * @param string[]            $items        Product identifiers the provider served.
  * @return array<int,array<string,mixed>>
  */
-function adzworld_logs_entries( $place, $ad, $configured, $category, $refinements, $mts, $rating = null ) {
+function adzworld_logs_entries( $place, $ad, $configured, $category, $refinements, $mts, $rating = null, $items = array() ) {
 	if ( ! is_array( $place ) ) {
 		return array();
 	}
@@ -245,6 +272,7 @@ function adzworld_logs_entries( $place, $ad, $configured, $category, $refinement
 
 	$row = array(
 		'mts'         => adzworld_slot_journey_text( $mts ),
+		'items'       => adzworld_logs_items( $items ),
 		'rotation'    => $rotation,
 		'slot'        => $slot,
 		'holds'       => '',
@@ -536,6 +564,10 @@ function adzworld_logs_export_text( $rows ) {
 
 		$lines[] = 'ad ' . $clean['ad'];
 
+		if ( '' !== $clean['items'] ) {
+			$lines[] = 'items ' . $clean['items'];
+		}
+
 		if ( '' !== $clean['category'] ) {
 			$lines[] = 'category ' . $clean['category'];
 		}
@@ -602,6 +634,7 @@ function adzworld_logs_sanitize_row( $row ) {
 		'mts'               => '',
 		'n'                 => 0,
 		'visit'             => '',
+		'items'             => '',
 		'rotation'          => '',
 		'slot'              => 0,
 		'holds'             => '',
@@ -626,6 +659,7 @@ function adzworld_logs_sanitize_row( $row ) {
 	$clean['mts']         = isset( $row['mts'] ) ? adzworld_slot_journey_text( $row['mts'] ) : '';
 	$clean['n']           = isset( $row['n'] ) ? (int) $row['n'] : 0;
 	$clean['visit']       = isset( $row['visit'] ) ? adzworld_logs_key( $row['visit'] ) : '';
+	$clean['items']       = isset( $row['items'] ) ? adzworld_logs_items( explode( ' ', (string) $row['items'] ) ) : '';
 	$clean['rotation']    = isset( $row['rotation'] ) ? adzworld_logs_key( $row['rotation'] ) : '';
 	$clean['slot']        = isset( $row['slot'] ) ? (int) $row['slot'] : 0;
 	$clean['holds']       = isset( $row['holds'] ) ? adzworld_logs_key( $row['holds'] ) : '';
@@ -876,6 +910,11 @@ function adzworld_logs_phrases( $pref, $category ) {
  * @return void
  */
 function adzworld_logs_remember_ad( $place, $ad, $configured, $category, $refinements, $rating = null ) {
+	/*
+	 * Taken whether or not this round is recorded, so identifiers from an
+	 * unrecorded round cannot leak into the next one.
+	 */
+	$items = function_exists( 'adzworld_products_remember_served' ) ? adzworld_products_remember_served() : array();
 	$visit = adzworld_logs_visit();
 
 	/* Nothing was consented, so there is nothing to record. */
@@ -884,7 +923,7 @@ function adzworld_logs_remember_ad( $place, $ad, $configured, $category, $refine
 	}
 
 	$rows    = adzworld_logs_rows();
-	$entries = adzworld_logs_entries( $place, $ad, $configured, $category, $refinements, adzworld_michel_timestamp(), $rating );
+	$entries = adzworld_logs_entries( $place, $ad, $configured, $category, $refinements, adzworld_michel_timestamp(), $rating, $items );
 
 	foreach ( $entries as $entry ) {
 		$entry['visit']             = $visit;
@@ -1045,6 +1084,7 @@ function adzworld_logs_echo_turn( $row ) {
 
 	echo '<div class="adzworld-log-request">';
 	adzworld_logs_echo_pair( __( 'Configured', 'adz-world' ), (string) $row['configured'] );
+	adzworld_logs_echo_pair( __( 'Products served', 'adz-world' ), (string) $row['items'] );
 	adzworld_logs_echo_pair( __( 'Category', 'adz-world' ), (string) $row['category'] );
 	adzworld_logs_echo_pair( __( 'Rating', 'adz-world' ), $rating );
 	adzworld_logs_echo_pair( __( 'Refinements', 'adz-world' ), (string) $row['refinements'] );
