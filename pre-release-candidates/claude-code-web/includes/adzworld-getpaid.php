@@ -160,8 +160,9 @@ function adzworld_getpaid_registration( $provider ) {
 /**
  * The header every provider card carries.
  *
- * @param array<string,mixed> $provider Provider.
+ * @param array<string,mixed> $provider  Provider.
  * @param bool                $connected Whether it is connected.
+ * @param bool                $earning   Whether it is already earning.
  * @return void
  */
 function adzworld_getpaid_card_header( $provider, $connected, $earning = false ) {

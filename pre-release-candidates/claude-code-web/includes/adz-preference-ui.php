@@ -459,17 +459,17 @@ function adzworld_render_chips( $chips ) {
 		<details class="adz-panel__categories" open>
 			<summary><?php esc_html_e( 'Categories', 'adz-world' ); ?></summary>
 			<ul class="adz-panel__chiplist">
-				<?php foreach ( $categories as $tone => $chip ) : ?>
+				<?php foreach ( $categories as $chip ) : ?>
 					<?php
 					$category_id = wp_unique_id( 'adz-category-' );
-					$tone_class  = 'adz-panel__chip--tone-' . ( (int) $tone % 4 );
+					$tone_style  = '--adz-tone: ' . adzworld_category_tone( $chip['value'] ) . ';';
 					$slots_label = sprintf(
 						/* translators: %s: category name. */
 						__( '%s adz slots', 'adz-world' ),
 						$chip['label']
 					);
 					?>
-					<li class="adz-panel__chip adz-panel__chip--categories <?php echo esc_attr( $tone_class ); ?><?php echo ! empty( $chip['active'] ) ? ' is-active' : ''; ?>">
+					<li class="adz-panel__chip adz-panel__chip--categories<?php echo ! empty( $chip['active'] ) ? ' is-active' : ''; ?>" style="<?php echo esc_attr( $tone_style ); ?>">
 						<div class="adz-panel__category-row">
 							<button type="button" class="adz-panel__category" data-adz-category="<?php echo esc_attr( $chip['value'] ); ?>">
 								<?php echo esc_html( $chip['label'] ); ?>
@@ -595,6 +595,18 @@ function adzworld_ajax_refine() {
 
 	$pref = adzworld_current_preference();
 
+	/*
+	 * A response that AdzLogs should file against the adzad that prompted it.
+	 * Filled in by the branch that accepted the response, and recorded once
+	 * below, after the preference has been stored.
+	 *
+	 * The place is read from $_POST inline in each branch rather than by a
+	 * shared helper: the nonce is verified at the top of this handler, and a
+	 * helper reading $_POST elsewhere would need its nonce sniff silenced.
+	 * This candidate carries no sniff suppressions, so the four lines repeat.
+	 */
+	$log_response = array();
+
 	if ( 'select' === $action ) {
 		$category = isset( $_POST['value'] ) ? sanitize_text_field( wp_unslash( $_POST['value'] ) ) : '';
 		$known    = adzworld_preference_with_catalog( $pref );
@@ -603,6 +615,27 @@ function adzworld_ajax_refine() {
 		}
 		$pref['active_category'] = $category;
 		adzworld_store_preference( $pref );
+
+		if ( function_exists( 'adzworld_logs_record_response' ) && isset( $_POST['ad'] ) && is_string( $_POST['ad'] ) ) {
+			$log_rotation   = isset( $_POST['rotation'] ) && is_string( $_POST['rotation'] ) ? sanitize_key( wp_unslash( $_POST['rotation'] ) ) : '';
+			$log_slot       = isset( $_POST['slot'] ) && is_string( $_POST['slot'] ) ? sanitize_text_field( wp_unslash( $_POST['slot'] ) ) : '-1';
+			$log_outer      = isset( $_POST['outer_rotation'] ) && is_string( $_POST['outer_rotation'] ) ? sanitize_key( wp_unslash( $_POST['outer_rotation'] ) ) : '';
+			$log_outer_slot = isset( $_POST['outer_slot'] ) && is_string( $_POST['outer_slot'] ) ? sanitize_text_field( wp_unslash( $_POST['outer_slot'] ) ) : '0';
+			$log_ad         = sanitize_key( wp_unslash( $_POST['ad'] ) );
+
+			adzworld_logs_record_response(
+				$log_rotation,
+				$log_slot,
+				$log_outer,
+				$log_outer_slot,
+				$log_ad,
+				array(
+					'category' => $category,
+				),
+				0 === strpos( $log_ad, 'source-' )
+			);
+		}
+
 		wp_send_json_success( array( 'message' => __( 'Category selected.', 'adz-world' ) ) );
 	}
 
@@ -715,7 +748,16 @@ function adzworld_ajax_refine() {
 			if ( ! in_array( $pair, $pref['category_refinements'], true ) ) {
 				$pref['category_refinements'][] = $pair;
 			}
-			$message = __( 'adz refinement added.', 'adz-world' );
+
+			/* Verbatim: what the reader typed is what AdzLogs shows. */
+			$log_response = array(
+				'ad'       => $target,
+				'changes'  => array(
+					'refinement' => $text,
+				),
+				'external' => 0 === strpos( $target, 'source-' ),
+			);
+			$message      = __( 'adz refinement added.', 'adz-world' );
 		} elseif ( 'category' === $action ) {
 			$category = adzworld_normalize_category( $text );
 			if ( ! adzworld_valid_category( $category ) ) {
@@ -744,6 +786,23 @@ function adzworld_ajax_refine() {
 	}
 
 	adzworld_store_preference( $pref );
+
+	if ( ! empty( $log_response['ad'] ) && function_exists( 'adzworld_logs_record_response' ) ) {
+			$log_rotation   = isset( $_POST['rotation'] ) && is_string( $_POST['rotation'] ) ? sanitize_key( wp_unslash( $_POST['rotation'] ) ) : '';
+			$log_slot       = isset( $_POST['slot'] ) && is_string( $_POST['slot'] ) ? sanitize_text_field( wp_unslash( $_POST['slot'] ) ) : '-1';
+			$log_outer      = isset( $_POST['outer_rotation'] ) && is_string( $_POST['outer_rotation'] ) ? sanitize_key( wp_unslash( $_POST['outer_rotation'] ) ) : '';
+			$log_outer_slot = isset( $_POST['outer_slot'] ) && is_string( $_POST['outer_slot'] ) ? sanitize_text_field( wp_unslash( $_POST['outer_slot'] ) ) : '0';
+
+		adzworld_logs_record_response(
+			$log_rotation,
+			$log_slot,
+			$log_outer,
+			$log_outer_slot,
+			$log_response['ad'],
+			$log_response['changes'],
+			$log_response['external']
+		);
+	}
 
 	$pref  = adzworld_sanitize_preference( $pref );
 	$chips = adzworld_preference_chips( $pref );

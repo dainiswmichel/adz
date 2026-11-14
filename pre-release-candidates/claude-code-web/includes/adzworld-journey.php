@@ -311,3 +311,87 @@ function adzworld_journey_keywords( $journey ) {
 
 	return trim( implode( ' ', $parts ) );
 }
+
+/**
+ * Keep a stated string whole.
+ *
+ * @param string $text Reader's text, or an ad id.
+ * @return string
+ */
+function adzworld_slot_journey_text( $text ) {
+	$text = wp_strip_all_tags( (string) $text );
+	$text = str_replace( "\0", '', $text );
+	$text = trim( $text );
+
+	if ( defined( 'ADZWORLD_REFINEMENT_MAX_LENGTH' ) && function_exists( 'mb_substr' ) ) {
+		$text = mb_substr( $text, 0, ADZWORLD_REFINEMENT_MAX_LENGTH );
+	}
+
+	return $text;
+}
+
+/**
+ * Refinements as the reader set them.
+ *
+ * A list of phrases stays in that order, one space between phrases.
+ *
+ * @param mixed $refinements One phrase, or a list of phrases.
+ * @return string
+ */
+function adzworld_slot_journey_refinements( $refinements ) {
+	if ( is_array( $refinements ) ) {
+		$parts = array();
+
+		foreach ( $refinements as $phrase ) {
+			$phrase = adzworld_slot_journey_text( $phrase );
+			if ( '' !== $phrase ) {
+				$parts[] = $phrase;
+			}
+		}
+
+		return implode( ' ', $parts );
+	}
+
+	return adzworld_slot_journey_text( $refinements );
+}
+
+/**
+ * The rating number, when the reader set one.
+ *
+ * Empty, a word, and a number outside -100 to 100 stay off the rating.
+ * Zero stays zero.
+ *
+ * @param mixed $rating Rating number, or empty when the reader did not set one.
+ * @return int|null
+ */
+function adzworld_slot_journey_rating( $rating ) {
+	if ( null === $rating || false === $rating ) {
+		return null;
+	}
+
+	if ( is_string( $rating ) ) {
+		$rating = trim( $rating );
+
+		if ( '' === $rating ) {
+			return null;
+		}
+	}
+
+	if ( is_int( $rating ) ) {
+		$number = $rating;
+	} elseif ( is_float( $rating ) || ( is_string( $rating ) && is_numeric( $rating ) ) ) {
+		$number = (int) $rating;
+
+		if ( (string) $number !== (string) $rating && (float) $number !== (float) $rating ) {
+			return null;
+		}
+	} else {
+		return null;
+	}
+
+	if ( $number < -100 || $number > 100 ) {
+		return null;
+	}
+
+	return $number;
+}

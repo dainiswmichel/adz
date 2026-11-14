@@ -145,10 +145,17 @@ echo "\n=== count=0 means none, which is the shortcode's job not the matcher's =
 check( 'matcher never returns zero on request', count( adzworld_match_adz( $empty, 1 ) ), 1 );
 
 echo "\n=== a preference reorders rather than gates ===\n";
-$p   = adzworld_parse_refinement( 'a light couch for 2 ppl', null );
-$ids = adzworld_match_adz( $p, 6 );
+/*
+ * The reader states a category and refines it in their own words. The
+ * refinement is matched as written; it is not parsed into facets first.
+ */
+$p                         = adzworld_empty_preference();
+$p['categories']           = array( 'couch' );
+$p['category_refinements'] = array( adzworld_pair_join( 'couch', 'light grey' ) );
+$ids                       = adzworld_match_adz( $p, 6 );
 echo '  ' . implode( "\n  ", titles( $ids ) ) . "\n";
 check( 'best match first', $ids[0], 13 );
+check( 'nothing is gated out', count( $ids ), 6 );
 check( 'unmatched adz still present', count( $ids ), 6 );
 
 echo "\n=== an exclusion is absolute, not a demotion ===\n";

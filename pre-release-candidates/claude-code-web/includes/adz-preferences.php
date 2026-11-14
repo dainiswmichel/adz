@@ -970,25 +970,26 @@ function adzworld_rank_ad( $ad_id, $pref ) {
 	$category = adzworld_ad_category( $post, $pref );
 	$scoped   = adzworld_category_refinement_preference( $pref, $category );
 
+	/* A term the reader ruled out is absolute: the adzad is never shown. */
 	foreach ( array_merge( $pref['exclude'], $scoped['exclude'] ) as $term ) {
 		if ( adzworld_term_appears( $haystack, $term ) ) {
 			return null;
 		}
 	}
 
+	/*
+	 * The reader's refinements, exactly as they wrote them. Nothing is parsed
+	 * into price bands, ages, capacities or stop words first. A phrase either
+	 * appears in this adzad or it does not.
+	 */
 	$matched = 0;
 
-	foreach ( array_merge( $pref['include'], $scoped['include'], $pref['attributes'], $scoped['attributes'] ) as $term ) {
-		if ( adzworld_term_appears( $haystack, $term ) ) {
+	foreach ( adzworld_category_refinement_phrases( $pref, $category ) as $phrase ) {
+		if ( adzworld_term_appears( $haystack, $phrase ) ) {
 			++$matched;
 		}
 	}
 
-	/*
-	 * The reader's rating of this adzad, on the scale they set it on. It is
-	 * not divided, scaled or weighted against anything, because it is not
-	 * being added to anything.
-	 */
 	$feedback = function_exists( 'adzworld_current_feedback' ) ? adzworld_current_feedback() : array();
 	$key      = sanitize_key( 'ad-' . $post->ID );
 	$rated    = isset( $feedback[ $key ]['score'] );
@@ -1000,15 +1001,41 @@ function adzworld_rank_ad( $ad_id, $pref ) {
 	 *
 	 * It sits below the rating, not above it. Above it, an adzad rated -4
 	 * outranked one never rated, purely for having been touched, which is the
-	 * opposite of what the reader said. Below it, the two only ever meet at a
-	 * tie, which is exactly the case it exists to separate.
+	 * opposite of what the reader said.
 	 */
 	return array(
 		'in_category' => in_array( $category, $pref['categories'], true ) ? 1 : 0,
 		'matched'     => $matched,
-		'engaged'     => $rated ? 1 : 0,
 		'rating'      => $rated ? (int) $feedback[ $key ]['score'] : 0,
+		'engaged'     => $rated ? 1 : 0,
 	);
+}
+
+/**
+ * One category's refinement phrases, as the reader typed them.
+ *
+ * @param array  $pref     Preference.
+ * @param string $category Category.
+ * @return array<int,string> Phrases, in the order they were added.
+ */
+function adzworld_category_refinement_phrases( $pref, $category ) {
+	$pref     = wp_parse_args( (array) $pref, adzworld_empty_preference() );
+	$category = trim( (string) $category );
+	$phrases  = array();
+
+	if ( '' === $category ) {
+		return $phrases;
+	}
+
+	foreach ( $pref['category_refinements'] as $stored ) {
+		$split = adzworld_pair_split( (string) $stored );
+
+		if ( $category === $split[0] && '' !== trim( $split[1] ) ) {
+			$phrases[] = trim( $split[1] );
+		}
+	}
+
+	return $phrases;
 }
 
 /**
@@ -1131,4 +1158,37 @@ function adzworld_match_adz( $pref, $limit = 5 ) {
 	);
 
 	return array_slice( wp_list_pluck( $ranked, 'id' ), 0, max( 1, (int) $limit ) );
+}
+
+/**
+ * The hue a category's chip is tinted with.
+ *
+ * Derived from the category's own name, so "couch" is the same tone in every
+ * rotation and stays that tone when the reader adds or removes a different
+ * category. The earlier version used the category's position in the list,
+ * which repainted every chip whenever the list changed, and handed position
+ * two a green chip for no reason at all.
+ *
+ * The band is 200 to 305 degrees: blues, indigos and violets. It stops short
+ * of green, yellow and red on purpose. Those are the scoring colours, and a
+ * category tinted with one of them states a rating it does not have.
+ *
+ * @since 1.0.0
+ *
+ * @param string $category Category name as the reader wrote it.
+ * @return int Hue angle in degrees.
+ */
+function adzworld_category_tone( $category ) {
+	$category = trim( strtolower( (string) $category ) );
+
+	if ( '' === $category ) {
+		return 237;
+	}
+
+	/*
+	 * crc32() returns a signed int on a 32-bit build, where a negative
+	 * remainder would walk the hue down out of the band and into yellow.
+	 * abs() keeps every install inside 200 to 305.
+	 */
+	return 200 + ( ( abs( crc32( $category ) ) % 8 ) * 15 );
 }

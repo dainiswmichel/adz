@@ -555,85 +555,40 @@
 }
 
 /*
- * The four category tones.
+ * Category tone.
  *
- * A tone exists to tell one category from another at a glance, so what has to
- * survive is the difference in hue -- not a fixed pair of pale blues that
- * vanish on a dark theme. Each tone therefore carries only a hue angle, and
- * both states are built from it: the resting chip as a wash of that hue over
- * the derived surface, the active chip as the hue itself.
+ * A tone exists to tell one category from another at a glance. It is derived
+ * from the category's own name, not from its position in the list, so a
+ * category keeps its tone when the reader adds, renames or removes another
+ * one. Position-based tones moved every chip whenever the list changed.
  *
- * The literal pairs below are the fallback for a browser without oklch(). The
- * active lightness is held at or under 0.50 so that --adz-on-accent clears
- * 4.5:1 across the whole gradient, not only at its dark end.
+ * The hues live in a cool band that deliberately excludes green, yellow and
+ * red. Those three are the scoring colours (--adzworld-good, --adzworld-neutral,
+ * --adzworld-bad): a green category chip reads as "liked" when it means
+ * nothing of the kind.
+ *
+ * A browser without oklch() gets the plain --adz-panel__chip--categories chip
+ * above and the accent for the active state: one tone instead of several,
+ * which is a loss of distinction and not a loss of function.
  */
-.adzworld-rotation .adz-panel__chip--tone-0 {
-	background: linear-gradient(135deg, #f4f8fb 0%, #d5e5ef 100%);
-	border-color: #8aafc2;
-	color: #1a3c50;
-}
-
-.adzworld-rotation .adz-panel__chip--tone-1 {
-	background: linear-gradient(135deg, #f3f8f6 0%, #d5ebe4 100%);
-	border-color: #7eb3a6;
-	color: #1a403b;
-}
-
-.adzworld-rotation .adz-panel__chip--tone-2 {
-	background: linear-gradient(135deg, #f4f6fa 0%, #dce3ee 100%);
-	border-color: #8ea0bb;
-	color: #2a3a52;
-}
-
-.adzworld-rotation .adz-panel__chip--tone-3 {
-	background: linear-gradient(135deg, #f3f7f8 0%, #d7e6ea 100%);
-	border-color: #86aeb8;
-	color: #1d3d46;
-}
-
-.adzworld-rotation .adz-panel__chip--tone-0.is-active {
+.adzworld-rotation .adz-panel__chip--categories.is-active {
 	background: linear-gradient(135deg, #30586d 0%, #3e6d86 100%);
 	border-color: #30586d;
 	color: var(--adz-on-accent);
 }
 
-.adzworld-rotation .adz-panel__chip--tone-1.is-active {
-	background: linear-gradient(135deg, #25544f 0%, #2f6b64 100%);
-	border-color: #25544f;
-	color: var(--adz-on-accent);
-}
-
-.adzworld-rotation .adz-panel__chip--tone-2.is-active {
-	background: linear-gradient(135deg, #313e53 0%, #3d4d68 100%);
-	border-color: #313e53;
-	color: var(--adz-on-accent);
-}
-
-.adzworld-rotation .adz-panel__chip--tone-3.is-active {
-	background: linear-gradient(135deg, #2e4e59 0%, #3a6270 100%);
-	border-color: #2e4e59;
-	color: var(--adz-on-accent);
-}
-
 @supports (color: oklch(0.5 0.09 200)) {
-	.adzworld-rotation .adz-panel__chip--tone-0 { --adz-tone: 237; }
-	.adzworld-rotation .adz-panel__chip--tone-1 { --adz-tone: 172; }
-	.adzworld-rotation .adz-panel__chip--tone-2 { --adz-tone: 281; }
-	.adzworld-rotation .adz-panel__chip--tone-3 { --adz-tone: 205; }
-
-	.adzworld-rotation .adz-panel__chip--tone-0,
-	.adzworld-rotation .adz-panel__chip--tone-1,
-	.adzworld-rotation .adz-panel__chip--tone-2,
-	.adzworld-rotation .adz-panel__chip--tone-3 {
+	.adzworld-rotation .adz-panel__chip--categories[style*="--adz-tone"] {
 		background: color-mix(in oklab, oklch(0.5 0.09 var(--adz-tone)) 14%, var(--adz-surface));
 		border-color: color-mix(in oklab, oklch(0.5 0.09 var(--adz-tone)) 48%, transparent);
 		color: inherit;
 	}
 
-	.adzworld-rotation .adz-panel__chip--tone-0.is-active,
-	.adzworld-rotation .adz-panel__chip--tone-1.is-active,
-	.adzworld-rotation .adz-panel__chip--tone-2.is-active,
-	.adzworld-rotation .adz-panel__chip--tone-3.is-active {
+	/*
+	 * Lightness is held at or under 0.50 so that --adz-on-accent clears
+	 * 4.5:1 across the whole gradient, not only at its dark end.
+	 */
+	.adzworld-rotation .adz-panel__chip--categories[style*="--adz-tone"].is-active {
 		background: linear-gradient(
 			135deg,
 			oklch(0.42 0.09 var(--adz-tone)) 0%,
