@@ -102,8 +102,8 @@ function adzworld_get_advertise( $ad_visibility, $ad_visibility_interval, $repea
 						}else{
 						}
 					},
-					error: function(errorThrown){
-						console.log(errorThrown);
+					error: function(){
+						/* The request failed. The page keeps what it has. */
 					}
 				});
 			}
@@ -131,8 +131,8 @@ function adzworld_get_advertise( $ad_visibility, $ad_visibility_interval, $repea
 							location.reload();
 						}
 					},
-					error: function(errorThrown){
-						console.log(errorThrown);
+					error: function(){
+						/* The request failed. The page keeps what it has. */
 					}
 				});
 
@@ -222,8 +222,8 @@ function adzworld_get_advertise_popup( $ad_visibility, $ad_visibility_interval, 
 						}, 1000);
 					}
 				},
-				error: function(errorThrown){
-					console.log(errorThrown);
+				error: function(){
+					/* The request failed. The page keeps what it has. */
 				}
 			});
 
@@ -249,8 +249,8 @@ function adzworld_get_advertise_popup( $ad_visibility, $ad_visibility_interval, 
 					jQuery('#show_overlay').removeClass('adzworld-is-visible');
 					repeat_adz = 'yes';
 				},
-				error: function(errorThrown){
-					console.log(errorThrown);
+				error: function(){
+					/* The request failed. The page keeps what it has. */
 				}
 			});
 

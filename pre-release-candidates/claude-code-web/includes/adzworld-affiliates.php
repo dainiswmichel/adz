@@ -560,3 +560,38 @@ function adzworld_affiliate_page( $embedded = false ) {
 	submit_button( __( 'Save affiliate accounts', 'adz-world' ) );
 	echo '</form>';
 }
+
+/**
+ * Whether a Rakuten account can be credited for a sale.
+ *
+ * Rakuten pays against the deep link built by adzworld_affiliate_url(): the
+ * publisher site id, the advertiser id, and a destination holding {query}.
+ * All three have to be present, because a link missing any of them is not
+ * attributed and the publisher is shown as earning when they are not.
+ *
+ * Nothing is requested from Rakuten to decide this. The saved fields say it.
+ *
+ * @since 1.0.0
+ *
+ * @param bool                 $earns   Whether the account earns.
+ * @param string               $id      Provider id.
+ * @param array<string,string> $account Saved provider fields.
+ * @return bool Whether Rakuten can attribute a qualifying transaction.
+ */
+function adzworld_rakuten_filter_account_earns( $earns, $id, $account ) {
+	if ( 'rakuten' !== $id ) {
+		return $earns;
+	}
+
+	$account = (array) $account;
+
+	foreach ( array( 'id', 'mid', 'destination' ) as $field ) {
+		if ( empty( $account[ $field ] ) ) {
+			return false;
+		}
+	}
+
+	return '' !== adzworld_affiliate_destination_template( $account['destination'] );
+}
+
+add_filter( 'adzworld_affiliate_account_earns', 'adzworld_rakuten_filter_account_earns', 10, 3 );

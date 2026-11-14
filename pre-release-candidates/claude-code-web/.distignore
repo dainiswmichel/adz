@@ -1,25 +1,9 @@
-# Excluded from the WordPress.org release payload.
+# Not part of the plugin people install.
 #
-# tests/ and review/ exist to verify the plugin, not to run on a publisher's
-# site. tests/ calls wp_set_current_user() sixteen times to exercise
-# capability checks, which a reviewer reasonably reads as a plugin creating
-# and logging in users when it ships inside the plugin. They stay in Git and
-# out of the ZIP.
-
-/.git
-/.github
-/.gitignore
-/.distignore
-/tests
-/review
-/node_modules
-composer.json
-composer.lock
-package.json
-package-lock.json
-phpcs.xml
-phpcs.xml.dist
-phpunit.xml
-phpunit.xml.dist
-*.map
-.DS_Store
+# The test harnesses are developer tools: they stub WordPress and run from the
+# command line. They are tracked in git so a repair can be re-verified, and
+# they are kept out of the release so nothing in them is scanned or shipped.
+.distignore
+.git
+.gitignore
+tests
