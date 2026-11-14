@@ -1037,3 +1037,373 @@
 	min-height: 120px;
 	padding: 16px;
 }
+
+/* ==========================================================================
+   Get Paid
+   ==========================================================================
+   One card per provider. The card is the connection: registration, the
+   identifiers, and the switch that turns it on, in one place. Built from
+   core's own postbox and form-table so the screen reads as part of
+   WordPress rather than as something bolted onto it. */
+
+.adzworld-paid-summary {
+	max-width: 70ch;
+	margin: 0 0 1.5em;
+	font-size: 14px;
+}
+
+.adzworld-paid-group {
+	margin: 2.2em 0 0.2em;
+	padding-top: 1.2em;
+	border-top: 1px solid #dcdcde;
+	font-size: 1.15em;
+}
+
+.adzworld-paid-group + .description {
+	max-width: 70ch;
+	margin-bottom: 1.2em;
+}
+
+.adzworld-paid-grid {
+	display: grid;
+	gap: 16px;
+	grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+	align-items: start;
+}
+
+.adzworld-paid-card {
+	margin: 0;
+}
+
+/*
+ * The provider name and what it does sit on one line, with the name taking
+ * the space it needs and the capability pushed to the end, so a column of
+ * cards can be scanned down either edge.
+ */
+.adzworld-paid-card .postbox-header .hndle {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 12px;
+	align-items: baseline;
+	justify-content: space-between;
+	width: 100%;
+}
+
+.adzworld-paid-name {
+	font-size: 14px;
+}
+
+.adzworld-paid-serves {
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	white-space: nowrap;
+}
+
+/*
+ * The one place on this screen where colour carries meaning: whether the
+ * reader's own words reach the provider. Both tones clear 4.5:1 on the card.
+ */
+.adzworld-paid-serves--adz { color: #0a6848; }
+.adzworld-paid-serves--sads { color: #8a6116; }
+
+.adzworld-paid-state {
+	margin: 0 0 10px;
+}
+
+.adzworld-paid-state .notice {
+	margin: 0;
+	padding: 2px 10px;
+}
+
+.adzworld-paid-pays {
+	font-style: italic;
+}
+
+.adzworld-paid-steps {
+	margin: 10px 0;
+	padding: 8px 12px;
+	background: #f6f7f7;
+	border-radius: 3px;
+}
+
+.adzworld-paid-steps summary {
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.adzworld-paid-steps ol {
+	margin: 10px 0 2px 1.4em;
+	font-size: 13px;
+}
+
+.adzworld-paid-steps li {
+	margin-bottom: 6px;
+}
+
+/*
+ * Stacked fields, not form-table. A card is too narrow for a reserved label
+ * column, and core's regular-text is 25em with no max-width, so the two
+ * together overflowed the card.
+ */
+.adzworld-paid-field {
+	margin: 0 0 12px;
+}
+
+.adzworld-paid-field label {
+	display: block;
+	margin-bottom: 4px;
+	color: #1d2327;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.adzworld-paid-connect {
+	margin: 14px 0 0;
+	padding-top: 12px;
+	border-top: 1px solid #f0f0f1;
+}
+
+/*
+ * Nothing inside a card may set its own pixel width. adzworld_network_render_row()
+ * is shared with other screens and uses regular-text, so it is constrained
+ * here rather than changed there.
+ */
+.adzworld-paid-card input[type="text"],
+.adzworld-paid-card input[type="url"],
+.adzworld-paid-card input[type="number"],
+.adzworld-paid-card select,
+.adzworld-paid-card textarea,
+.adzworld-paid-card .regular-text {
+	box-sizing: border-box;
+	width: 100%;
+	max-width: 100%;
+}
+
+.adzworld-paid-card fieldset {
+	min-width: 0;
+}
+
+@media (max-width: 782px) {
+	.adzworld-paid-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* ==========================================================================
+   Internal Adz
+   ==========================================================================
+   One horizontal row per category. A row scrolls sideways rather than
+   wrapping, so a category stays one readable line however many adz it holds
+   and the rows stay comparable down the page.
+
+   A preview is the adz itself, not a thumbnail: its own markup, in a box of
+   its declared dimensions, scaled to the card width. What is on screen is the
+   adz at its true proportions. */
+
+.adz-int-intro,
+.adz-int-summary {
+	max-width: 72ch;
+}
+
+.adz-int-summary {
+	margin: 0 0 1.5em;
+	font-size: 14px;
+}
+
+.adz-int-row {
+	margin: 0 0 2em;
+}
+
+.adz-int-row__head {
+	display: flex;
+	gap: 10px;
+	align-items: baseline;
+	margin: 0 0 10px;
+	padding-bottom: 8px;
+	border-bottom: 1px solid #dcdcde;
+	font-size: 14px;
+}
+
+.adz-int-row__count {
+	padding: 1px 8px;
+	color: #50575e;
+	font-size: 11px;
+	font-weight: 600;
+	background: #f0f0f1;
+	border-radius: 999px;
+}
+
+/*
+ * A strip, not a grid. Scroll snapping makes a sideways row land on a card
+ * instead of between two, which is the difference between a strip that reads
+ * and one that feels broken.
+ */
+.adz-int-strip {
+	display: flex;
+	gap: 16px;
+
+	/*
+	 * Cards size to their own content. Without this a 728x90 card stretches
+	 * to match a 300x250 beside it and carries the difference as dead space.
+	 */
+	align-items: flex-start;
+	margin: 0;
+	padding: 2px 2px 14px;
+	overflow-x: auto;
+	scroll-snap-type: x proximity;
+	list-style: none;
+	overscroll-behavior-x: contain;
+}
+
+.adz-int-card {
+	--adz-int-card-w: 260;
+	--adz-int-w: 260;
+	--adz-int-h: 160;
+
+	flex: 0 0 calc(var(--adz-int-card-w) * 1px);
+	scroll-snap-align: start;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.adz-int-card--300x250 { --adz-int-w: 300; --adz-int-h: 250; }
+.adz-int-card--336x280 { --adz-int-w: 336; --adz-int-h: 280; }
+.adz-int-card--250x250 { --adz-int-w: 250; --adz-int-h: 250; }
+.adz-int-card--200x200 { --adz-int-w: 200; --adz-int-h: 200; }
+.adz-int-card--180x150 { --adz-int-w: 180; --adz-int-h: 150; }
+.adz-int-card--728x90 { --adz-int-w: 728; --adz-int-h: 90; }
+.adz-int-card--970x90 { --adz-int-w: 970; --adz-int-h: 90; }
+.adz-int-card--970x250 { --adz-int-w: 970; --adz-int-h: 250; }
+.adz-int-card--468x60 { --adz-int-w: 468; --adz-int-h: 60; }
+.adz-int-card--234x60 { --adz-int-w: 234; --adz-int-h: 60; }
+.adz-int-card--300x600 { --adz-int-w: 300; --adz-int-h: 600; }
+.adz-int-card--160x600 { --adz-int-w: 160; --adz-int-h: 600; }
+.adz-int-card--120x600 { --adz-int-w: 120; --adz-int-h: 600; }
+.adz-int-card--320x50 { --adz-int-w: 320; --adz-int-h: 50; }
+.adz-int-card--320x100 { --adz-int-w: 320; --adz-int-h: 100; }
+
+/*
+ * The preview box takes the adz's aspect ratio, and the adz is drawn inside
+ * it at its real pixel size then scaled down to the card width. Scaling the
+ * element rather than resizing it keeps type, spacing and image crops in the
+ * proportions the adz will actually serve at.
+ */
+.adz-int-preview {
+	position: relative;
+	aspect-ratio: var(--adz-int-w) / var(--adz-int-h);
+	overflow: hidden;
+	background:
+		repeating-conic-gradient(#f6f7f7 0% 25%, #fff 0% 50%) 0 0 / 16px 16px;
+	border-bottom: 1px solid #dcdcde;
+	border-radius: 3px 3px 0 0;
+}
+
+.adz-int-preview__inner {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: calc(var(--adz-int-w) * 1px);
+	height: calc(var(--adz-int-h) * 1px);
+	transform: scale(calc(var(--adz-int-card-w) / var(--adz-int-w)));
+	transform-origin: top left;
+}
+
+/* A preview is a picture of the adz, not a working copy of it. */
+.adz-int-preview__inner a {
+	pointer-events: none;
+}
+
+.adz-int-preview__inner img,
+.adz-int-preview__inner video {
+	max-width: 100%;
+	height: auto;
+}
+
+.adz-int-preview__empty {
+	display: flex;
+	align-items: center;
+	height: 100%;
+	margin: 0;
+	padding: 0 14px;
+	color: #646970;
+	font-size: 12px;
+	font-style: italic;
+	text-align: center;
+}
+
+.adz-int-meta {
+	padding: 10px 12px 12px;
+}
+
+.adz-int-title {
+	margin: 0 0 6px;
+	overflow: hidden;
+	font-weight: 600;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.adz-int-facts {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 5px;
+	margin: 0 0 10px;
+}
+
+.adz-int-size {
+	padding: 1px 7px;
+	color: #3c434a;
+	font-family: Menlo, Consolas, monospace;
+	font-size: 11px;
+	background: #f0f0f1;
+	border-radius: 3px;
+}
+
+.adz-int-flag {
+	padding: 1px 7px;
+	font-size: 11px;
+	font-weight: 600;
+	border-radius: 3px;
+}
+
+.adz-int-flag--ready { color: #00543a; background: #e4f5ee; }
+.adz-int-flag--draft { color: #674a00; background: #fcf3dc; }
+.adz-int-flag--nolink { color: #8a2424; background: #fbeaea; }
+.adz-int-flag--stripped { color: #8a2424; background: #fbeaea; cursor: help; }
+
+.adz-int-actions {
+	margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.adz-int-strip { scroll-behavior: auto; }
+}
+
+/* The per-provider connect forms carry only hidden fields. */
+.adzworld-paid-connect-form {
+	display: contents;
+}
+
+/* A short note under a field, where a paragraph would be too loud. */
+.adzworld-paid-hint {
+	display: block;
+	margin-top: 4px;
+	color: #646970;
+	font-size: 12px;
+	line-height: 1.4;
+}
+
+/*
+ * Save sits in the card. The page-level button is below every card, which is
+ * a long scroll from whichever one was just edited.
+ */
+.adzworld-paid-save {
+	margin: 12px 0 0;
+	padding-top: 12px;
+	border-top: 1px solid #dcdcde;
+	text-align: right;
+}

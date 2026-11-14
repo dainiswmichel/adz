@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @return array<string,array<string,mixed>>
  */
 function adzworld_affiliate_networks() {
-	return array(
+	$networks = array(
 		'amazon'    => array(
 			'label'   => 'Amazon Associates',
 			'account' => 'https://associates.amazon.com/signup',
@@ -169,21 +169,48 @@ function adzworld_affiliate_networks() {
 			'account' => 'https://partnernetwork.ebay.com/',
 			'note'    => __( 'campid is the EPN campaign id. The US rotation id 711-53200-19255-0 and site id 0 are the values in eBay’s link-parameter article for ebay.com. For another marketplace, paste the rotation id and site id from that article. toolid 10001 is eBay’s custom-link tool.', 'adz-world' ),
 			'fields'  => array(
-				'campid' => array(
-					'label'   => __( 'Campaign id', 'adz-world' ),
+				'campid'       => array(
+					'label'   => __( 'Campaign id (optional until EPN approves)', 'adz-world' ),
 					'pattern' => '/^[0-9]{6,12}$/D',
 				),
-				'mkrid'  => array(
+				'mkrid'        => array(
 					'label'   => __( 'Rotation id', 'adz-world' ),
 					'pattern' => '/^[0-9]{3}-[0-9]{5}-[0-9]{5}-[0-9]$/D',
 				),
-				'siteid' => array(
+				'siteid'       => array(
 					'label'   => __( 'Site id', 'adz-world' ),
 					'pattern' => '/^[0-9]{1,4}$/D',
+				),
+
+				/*
+				 * The two below are the eBay developer App ID and Cert ID, not
+				 * the Partner Network identifiers above. They are optional: a
+				 * campaign id alone still builds a tagged search link. With
+				 * them, the Browse API returns products the reader asked for,
+				 * which is the difference between a link and an adzad.
+				 */
+				'environment'  => array(
+					'label'   => __( 'Environment (sandbox needs no production approval)', 'adz-world' ),
+					'choices' => array( 'production', 'sandbox' ),
+				),
+				'clientid'     => array(
+					'label'   => __( 'Developer App ID', 'adz-world' ),
+					'pattern' => '/^[A-Za-z0-9\-]{10,80}$/D',
+				),
+				'clientsecret' => array(
+					'label'   => __( 'Developer Cert ID', 'adz-world' ),
+					'pattern' => '/^[A-Za-z0-9\-]{10,80}$/D',
 				),
 			),
 		),
 	);
+
+	/*
+	 * A provider file adds its own credential fields here rather than this
+	 * array being edited for each one. Three fetchers were written against
+	 * three different shapes of that edit; this is the one shape.
+	 */
+	return apply_filters( 'adzworld_affiliate_networks', $networks );
 }
 
 /**
@@ -399,11 +426,31 @@ function adzworld_affiliate_connected_count() {
  */
 function adzworld_affiliate_markup( $pref, $category ) {
 	$request = adzworld_affiliate_request_string( $pref, $category );
-	$links   = adzworld_affiliate_links( $request );
-	if ( ! $links ) {
+
+	if ( '' === $request ) {
 		return '';
 	}
-	$html = '<ul class="adzworld-affiliate-offers">';
+
+	$links = adzworld_affiliate_links( $request );
+
+	/*
+	 * Any provider that can answer the reader's own words with products rather
+	 * than a search page contributes cards here. The link list below them is
+	 * the way to see more.
+	 *
+	 * Products are collected before the links are tested, because a provider
+	 * can return products without appearing in that list at all: Etsy and Best
+	 * Buy build their tracked URL per product rather than one search link for
+	 * the category. Returning early on an empty list would have shown a reader
+	 * nothing on a site connected only to those two.
+	 */
+	$html = adzworld_products_markup( adzworld_products_collect( $request ), $request );
+
+	if ( ! $links ) {
+		return $html;
+	}
+
+	$html .= '<ul class="adzworld-affiliate-offers">';
 	foreach ( $links as $link ) {
 		$html .= '<li><a class="adzworld-affiliate-offer" href="' . esc_url( $link['url'] ) . '" rel="sponsored nofollow" target="_blank">'
 			. esc_html( $link['label'] . ': ' . $request ) . '</a></li>';
@@ -485,7 +532,7 @@ function adzworld_affiliate_page( $embedded = false ) {
 			$procedure_tab = ( ! $embedded && function_exists( 'adzworld_desk_tab' ) && 'affiliates' === adzworld_desk_tab() ) ? 'affiliates' : 'networks';
 			echo '<p class="adzworld-pay-actions">';
 			adzworld_registration_render_signup( $id, false );
-			echo ' <a href="' . esc_url( adzworld_desk_url( $procedure_tab ) . '#adzworld-pay-' . rawurlencode( $id ) ) . '">' . esc_html__( 'Registration procedure', 'adz-world' ) . '</a></p>';
+			echo ' <a href="' . esc_url( adzworld_desk_url( $procedure_tab ) . '#adzworld-paid-affiliate-' . rawurlencode( $id ) ) . '">' . esc_html__( 'Registration procedure', 'adz-world' ) . '</a></p>';
 			adzworld_registration_render_steps( $id );
 		} else {
 			echo '<p><a class="button" href="' . esc_url( $network['account'] ) . '" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Create or open account', 'adz-world' ) . '</a></p>';

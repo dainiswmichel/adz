@@ -709,7 +709,7 @@ function adzworld_starter_rotation_pack( $pack, $meta ) {
 		);
 		echo '</p>';
 		echo '<p class="adzworld-starter-actions">';
-		echo '<a class="button" href="' . esc_url( adzworld_desk_url( 'networks' ) ) . '">' . esc_html__( 'Connections', 'adz-world' ) . '</a> ';
+		echo '<a class="button" href="' . esc_url( adzworld_desk_url( 'affiliates' ) ) . '">' . esc_html__( 'Get Paid', 'adz-world' ) . '</a> ';
 		echo '<a class="button" href="' . esc_url( adzworld_desk_url( 'affiliates' ) ) . '">' . esc_html__( 'Affiliate programs', 'adz-world' ) . '</a>';
 		echo '</p>';
 

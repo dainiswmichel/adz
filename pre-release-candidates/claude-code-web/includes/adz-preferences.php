@@ -783,31 +783,40 @@ function adzworld_ad_category( $post, $pref ) {
 		}
 	}
 
-	$thing = adzworld_ad_thing( $post );
-
-	if ( '' !== $thing ) {
-		return $thing;
-	}
-
+	/*
+	 * A category the visitor stated outranks one this plugin guessed.
+	 *
+	 * A guess used to be checked first and win, so an adzad could be filed
+	 * under "ages" while the visitor's refinements were filed under "bicycle".
+	 * adzworld_category_refinement_preference() then looked for an "ages--"
+	 * prefix, found none, and every refinement scored nothing: the slot
+	 * ignored what the visitor had asked for. Below the visitor sits the
+	 * category the adzadmin assigned, which is stated data, not a guess.
+	 */
 	foreach ( $pref['categories'] as $category ) {
 		if ( adzworld_category_matches_text( $category, $text ) ) {
 			return $category;
 		}
 	}
 
-	return '';
+	return adzworld_ad_assigned_category( $post );
 }
 
 /**
- * The one thing an advertisement is: its category, which starts with this ad.
+ * The category an adzadmin assigned to one adzad.
  *
- * A published ad is a category that holds a single ad. The label is the thing
- * itself, such as couch, car, or bicycle, not the sentence around it.
+ * This reads the adzad's ad_taxonomy term and nothing else. It used to be
+ * called adzworld_ad_thing(), and when no term was assigned it guessed: it
+ * parsed the post title as though it were a refinement and took end() of the
+ * surviving words, on the assumption that a title's last noun is its subject.
+ * On "Kids bicycle, 20 inch, suits ages 8 to 11" that produced "ages". The
+ * guess is gone. An adzad with no term assigned has no category, which is the
+ * truth, and the adzadmin can assign one.
  *
- * @param WP_Post $post Advertisement post.
- * @return string Category label, or an empty string.
+ * @param WP_Post $post Adzad post.
+ * @return string Assigned category, or an empty string.
  */
-function adzworld_ad_thing( $post ) {
+function adzworld_ad_assigned_category( $post ) {
 	if ( ! $post instanceof WP_Post ) {
 		return '';
 	}
@@ -815,33 +824,13 @@ function adzworld_ad_thing( $post ) {
 	$terms = wp_get_post_terms( $post->ID, 'ad_taxonomy', array( 'fields' => 'names' ) );
 	$terms = is_wp_error( $terms ) ? array() : $terms;
 
-	if ( ! empty( $terms ) ) {
-		$term = adzworld_normalize_category( (string) reset( $terms ) );
-
-		if ( adzworld_valid_category( $term ) ) {
-			return $term;
-		}
-	}
-
-	$parsed  = adzworld_parse_refinement( $post->post_title );
-	$residue = array( 'year', 'years', 'old', 'yo', 'aged', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve' );
-	$words   = array();
-
-	foreach ( $parsed['include'] as $word ) {
-		if ( is_numeric( $word ) || in_array( $word, $residue, true ) ) {
-			continue;
-		}
-
-		$words[] = $word;
-	}
-
-	if ( empty( $words ) ) {
+	if ( empty( $terms ) ) {
 		return '';
 	}
 
-	$thing = adzworld_normalize_category( (string) end( $words ) );
+	$term = adzworld_normalize_category( (string) reset( $terms ) );
 
-	return adzworld_valid_category( $thing ) ? $thing : '';
+	return adzworld_valid_category( $term ) ? $term : '';
 }
 
 /**
@@ -874,7 +863,7 @@ function adzworld_catalog_categories() {
 	);
 
 	foreach ( $posts as $post ) {
-		$thing = adzworld_ad_thing( $post );
+		$thing = adzworld_ad_assigned_category( $post );
 
 		if ( '' !== $thing && ! in_array( $thing, $names, true ) ) {
 			$names[] = $thing;
@@ -933,21 +922,52 @@ function adzworld_category_refinement_preference( $pref, $category ) {
 }
 
 /**
- * Score an adz post against a preference.
+ * Whether a term the reader stated appears in an adzad's text.
  *
- * Exclusions are absolute: one excluded term present and the adz is never
- * shown, whatever else matches. Everything else accumulates.
+ * Matched on word boundaries. A plain substring test made "pedals" match
+ * inside "no pedals", so a reader who ruled pedals out had the one adzad
+ * advertising "no pedals" ruled out with them.
  *
- * @param int   $ad_id adz post ID.
- * @param array $pref  Preference.
- * @return int Score, or -1 when the adz is excluded outright.
+ * @param string $haystack The adzad's text, lowercased.
+ * @param string $term     The term the reader stated.
+ * @return bool Whether the term appears.
  */
-function adzworld_score_ad( $ad_id, $pref ) {
+function adzworld_term_appears( $haystack, $term ) {
+	$term = trim( strtolower( (string) $term ) );
+
+	if ( '' === $term ) {
+		return false;
+	}
+
+	return 1 === preg_match( '/\b' . preg_quote( $term, '/' ) . '\b/u', (string) $haystack );
+}
+
+/**
+ * How one adzad ranks against what the reader has said.
+ *
+ * No weights and no invented constants. Each key is a quantity someone
+ * actually produced, and they are compared in order of what matters:
+ *
+ *   1  the adzad is in a category the reader stated
+ *   2  how many of the reader's terms appear in it
+ *   3  the reader's own rating of it, on their -100 to 100 scale, as given
+ *
+ * There is no sum, so nothing has to be made commensurate with anything else
+ * and the reader's scale is never compressed to fit a constant. Ordering is
+ * by the first key that differs.
+ *
+ * Returns null when the reader has ruled the adzad out, which is absolute.
+ *
+ * @param int   $ad_id Adzad post id.
+ * @param array $pref  Preference.
+ * @return array<string,int>|null Ranking keys, or null when excluded.
+ */
+function adzworld_rank_ad( $ad_id, $pref ) {
 	$pref = wp_parse_args( (array) $pref, adzworld_empty_preference() );
 	$post = get_post( (int) $ad_id );
 
 	if ( ! $post instanceof WP_Post ) {
-		return -1;
+		return null;
 	}
 
 	$terms    = wp_get_post_terms( $post->ID, 'ad_taxonomy', array( 'fields' => 'names' ) );
@@ -957,43 +977,50 @@ function adzworld_score_ad( $ad_id, $pref ) {
 	$scoped   = adzworld_category_refinement_preference( $pref, $category );
 
 	foreach ( array_merge( $pref['exclude'], $scoped['exclude'] ) as $term ) {
-		if ( false !== strpos( $haystack, strtolower( $term ) ) ) {
-			return -1;
+		if ( adzworld_term_appears( $haystack, $term ) ) {
+			return null;
+		}
+	}
+
+	$matched = 0;
+
+	foreach ( array_merge( $pref['include'], $scoped['include'], $pref['attributes'], $scoped['attributes'] ) as $term ) {
+		if ( adzworld_term_appears( $haystack, $term ) ) {
+			++$matched;
 		}
 	}
 
 	/*
-	 * A baseline keeps an explicit dislike as a demotion rather than turning it
-	 * into the absolute exclusion reserved for words the visitor ruled out.
+	 * The reader's rating of this adzad, on the scale they set it on. It is
+	 * not divided, scaled or weighted against anything, because it is not
+	 * being added to anything.
 	 */
-	$score = 10;
-	if ( in_array( $category, $pref['categories'], true ) ) {
-		$score += 12;
-	}
-
-	foreach ( array_merge( $pref['include'], $scoped['include'] ) as $term ) {
-		if ( false !== strpos( $haystack, strtolower( $term ) ) ) {
-			$score += 10;
-		}
-	}
-
-	foreach ( array_merge( $pref['attributes'], $scoped['attributes'] ) as $term ) {
-		if ( false !== strpos( $haystack, strtolower( $term ) ) ) {
-			$score += 4;
-		}
-	}
-
-	if ( '' !== $pref['intent'] && false !== strpos( $haystack, $pref['intent'] ) ) {
-		$score += 3;
-	}
-
 	$feedback = function_exists( 'adzworld_current_feedback' ) ? adzworld_current_feedback() : array();
 	$key      = sanitize_key( 'ad-' . $post->ID );
-	if ( isset( $feedback[ $key ]['score'] ) ) {
-		$score += (int) round( $feedback[ $key ]['score'] / 10 );
+	$rating   = isset( $feedback[ $key ]['score'] ) ? (int) $feedback[ $key ]['score'] : 0;
+
+	return array(
+		'in_category' => in_array( $category, $pref['categories'], true ) ? 1 : 0,
+		'matched'     => $matched,
+		'rating'      => $rating,
+	);
+}
+
+/**
+ * Compare two ranked adz, by the first key that differs.
+ *
+ * @param array<string,int> $first  Ranking keys.
+ * @param array<string,int> $second Ranking keys.
+ * @return int Comparison result.
+ */
+function adzworld_compare_rank( $first, $second ) {
+	foreach ( array( 'in_category', 'matched', 'rating' ) as $key ) {
+		if ( $first[ $key ] !== $second[ $key ] ) {
+			return $second[ $key ] <=> $first[ $key ];
+		}
 	}
 
-	return max( 0, $score );
+	return 0;
 }
 
 /**
@@ -1005,7 +1032,7 @@ function adzworld_score_ad( $ad_id, $pref ) {
  * the plugin did not have.
  *
  * get_posts() is asked for post objects rather than ids on purpose: that primes
- * the post cache, so the get_post() call adzworld_score_ad() makes for each
+ * the post cache, so the get_post() call adzworld_rank_ad() makes for each
  * candidate is served from memory instead of becoming one query per adz. The
  * pool is capped and filterable, because scoring every adz on a site with tens
  * of thousands of them is not work to do during a page render.
@@ -1070,45 +1097,33 @@ function adzworld_flush_ad_pool() {
  * @return int[] adz post IDs.
  */
 function adzworld_match_adz( $pref, $limit = 5 ) {
-	$scored  = array();
+	$ranked  = array();
 	$ordinal = 0;
 
 	foreach ( adzworld_get_all_ad_ids() as $ad_id ) {
-		$score = adzworld_score_ad( $ad_id, $pref );
+		$rank = adzworld_rank_ad( $ad_id, $pref );
 
-		/*
-		 * A negative score is an exclusion the visitor stated, and that is
-		 * absolute. A zero score only means nothing matched, which is the
-		 * normal case for a visitor who has not filled in the panel. Dropping
-		 * those would leave the rotation empty whenever nobody has typed
-		 * anything, so what a preference changes is which adz come first, not
-		 * whether any adz appear at all.
-		 */
-		if ( $score < 0 ) {
+		/* A reader's exclusion is absolute; everything else is an ordering. */
+		if ( null === $rank ) {
 			continue;
 		}
 
-		$scored[] = array(
-			'id'      => $ad_id,
-			'score'   => $score,
-			'ordinal' => $ordinal,
-		);
+		$rank['id']      = $ad_id;
+		$rank['ordinal'] = $ordinal;
+		$ranked[]        = $rank;
 
 		++$ordinal;
 	}
 
-	// Highest score first, original order preserved within a tie. usort is only
-	// stable from PHP 8.0, so the ordinal does the tie-breaking explicitly.
+	// usort is only stable from PHP 8.0, so the ordinal breaks ties explicitly.
 	usort(
-		$scored,
-		static function ( $a, $b ) {
-			if ( $a['score'] === $b['score'] ) {
-				return $a['ordinal'] <=> $b['ordinal'];
-			}
+		$ranked,
+		static function ( $first, $second ) {
+			$compared = adzworld_compare_rank( $first, $second );
 
-			return $b['score'] <=> $a['score'];
+			return 0 === $compared ? $first['ordinal'] <=> $second['ordinal'] : $compared;
 		}
 	);
 
-	return array_slice( wp_list_pluck( $scored, 'id' ), 0, max( 1, (int) $limit ) );
+	return array_slice( wp_list_pluck( $ranked, 'id' ), 0, max( 1, (int) $limit ) );
 }
