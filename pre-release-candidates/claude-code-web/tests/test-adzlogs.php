@@ -210,6 +210,58 @@ check( 'a slot zero is refused, not stored', count( adzworld_logs_rows() ), $bef
 adzworld_logs_remember_ad( adzworld_logs_place( 'inner', 0, 'sidebar', 1 ), 'ad-78', 'ad:78', 'couch', array(), null );
 check( 'an inner slot zero is refused too', count( adzworld_logs_rows() ), $before );
 
+echo "\n=== the first input names the adz it happened on ===\n";
+adzworld_logs_save( array() );
+$_SESSION = array();
+$_COOKIE  = array();
+adzworld_store_preference( adzworld_empty_preference() );
+
+check( 'the reader has said nothing yet', adzworld_logs_consented(), false );
+
+/* A provider slot is served. Nothing is recorded: no input yet. */
+adzworld_products_remember_served( array( 'ebay:110588014268' ) );
+adzworld_logs_remember_ad( adzworld_logs_place( 'homepage', 2 ), 'source-ebay', 'source:ebay', 'couch', array(), null );
+check( 'the serve alone records nothing', count( adzworld_logs_rows() ), 0 );
+
+/*
+ * The reader types a refinement on that slot. The browser reports what the
+ * slide was showing, because the server's own list belongs to the page
+ * request and this is a different one.
+ */
+$pref               = adzworld_empty_preference();
+$pref['categories'] = array( 'couch' );
+adzworld_store_preference( $pref );
+adzworld_logs_record_response(
+	'homepage',
+	'2',
+	'',
+	'0',
+	'source-ebay',
+	array( 'refinement' => 'brown -- no arms' ),
+	true,
+	array( 'ebay:110588014268' )
+);
+
+$rows = adzworld_logs_rows();
+check( 'the round is recorded', count( $rows ), 1 );
+check( 'the provider is named', $rows[0]['ad'], 'source-ebay' );
+check( 'and so is the adz it happened on', $rows[0]['items'], 'ebay:110588014268' );
+check( 'with what they typed', $rows[0]['refinement_change'], 'brown -- no arms' );
+
+/* A row that already names its product is never overwritten by a later response. */
+adzworld_logs_record_response(
+	'homepage',
+	'2',
+	'',
+	'0',
+	'source-ebay',
+	array( 'rating' => 60 ),
+	true,
+	array( 'ebay:999999999999' )
+);
+$rows = adzworld_logs_rows();
+check( 'the identifier already on the row stands', $rows[0]['items'], 'ebay:110588014268' );
+
 echo "\n=== a provider round names the products it served ===\n";
 adzworld_logs_save( array() );
 

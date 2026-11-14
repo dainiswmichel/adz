@@ -264,6 +264,31 @@
 			fields.outer_slot = rotation.dataset.adzworldOuterSlot || '0';
 		}
 
+		/*
+		 * Which products this slide is showing. The response arrives in its
+		 * own request, by which time the server no longer holds the list it
+		 * built while rendering, so the page reports what it has on screen.
+		 * Without this the round a reader's first input answers records the
+		 * provider and not the product.
+		 */
+		if ( slide ) {
+			var items = [];
+
+			slide.querySelectorAll( '[data-adzworld-item]' ).forEach(
+				function ( card ) {
+					var id = card.dataset.adzworldItem || '';
+
+					if ( id && -1 === items.indexOf( id ) ) {
+						items.push( id );
+					}
+				}
+			);
+
+			if ( items.length ) {
+				fields.items = items.join( ' ' );
+			}
+		}
+
 		return fields;
 	}
 

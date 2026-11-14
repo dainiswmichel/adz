@@ -949,17 +949,19 @@ function adzworld_logs_remember_ad( $place, $ad, $configured, $category, $refine
  * @param string              $ad       Ad id.
  * @param array<string,mixed> $changes  Category, rating, or refinement keys that arrived.
  * @param bool                $external True when a string is sent to an API.
+ * @param string[]            $items    Product identifiers the slide was showing.
  * @return void
  */
-function adzworld_logs_remember_response( $place, $ad, $changes, $external ) {
+function adzworld_logs_remember_response( $place, $ad, $changes, $external, $items = array() ) {
 	/*
 	 * Giving input is the act that consents, so this call establishes the
 	 * session rather than requiring one to exist already.
 	 */
 	$visit   = adzworld_logs_visit( true );
 	$rows    = adzworld_logs_rows();
-	$entries = adzworld_logs_entries( $place, $ad, '', '', '', adzworld_michel_timestamp() );
+	$entries = adzworld_logs_entries( $place, $ad, '', '', '', adzworld_michel_timestamp(), null, $items );
 	$ad_id   = adzworld_logs_ad_id( $ad );
+	$items   = adzworld_logs_items( $items );
 
 	if ( '' === $visit ) {
 		return;
@@ -1000,6 +1002,15 @@ function adzworld_logs_remember_response( $place, $ad, $changes, $external ) {
 			continue;
 		}
 
+		/*
+		 * A round recorded before the provider's cards were identified, or
+		 * recorded by an older version, is completed rather than left
+		 * nameless. An identifier already on the row is never overwritten.
+		 */
+		if ( '' === $rows[ $found ]['items'] && '' !== $items ) {
+			$rows[ $found ]['items'] = $items;
+		}
+
 		$rows[ $found ] = adzworld_logs_apply_response( $rows[ $found ], $changes, $external );
 		$found_one      = true;
 	}
@@ -1019,9 +1030,10 @@ function adzworld_logs_remember_response( $place, $ad, $changes, $external ) {
  * @param string              $ad             Ad id.
  * @param array<string,mixed> $changes        Received changes.
  * @param bool                $external       True when a string is sent to an API.
+ * @param string[]            $items          Product identifiers the slide was showing.
  * @return void
  */
-function adzworld_logs_record_response( $rotation, $slot, $outer_rotation, $outer_slot, $ad, $changes, $external ) {
+function adzworld_logs_record_response( $rotation, $slot, $outer_rotation, $outer_slot, $ad, $changes, $external, $items = array() ) {
 	$ad = adzworld_logs_ad_id( $ad );
 
 	if ( '' === $ad || ! is_array( $changes ) ) {
@@ -1030,7 +1042,7 @@ function adzworld_logs_record_response( $rotation, $slot, $outer_rotation, $oute
 
 	$place = adzworld_logs_place( $rotation, $slot, $outer_rotation, $outer_slot );
 
-	if ( '' === $place['rotation'] || (int) $place['slot'] < 0 ) {
+	if ( '' === $place['rotation'] || (int) $place['slot'] < 1 ) {
 		return;
 	}
 
@@ -1038,7 +1050,7 @@ function adzworld_logs_record_response( $rotation, $slot, $outer_rotation, $oute
 		return;
 	}
 
-	adzworld_logs_remember_response( $place, $ad, $changes, (bool) $external );
+	adzworld_logs_remember_response( $place, $ad, $changes, (bool) $external, $items );
 }
 
 /**

@@ -354,6 +354,7 @@ function adzworld_ajax_evaluate() {
 		$log_slot       = isset( $_POST['slot'] ) && is_string( $_POST['slot'] ) ? sanitize_text_field( wp_unslash( $_POST['slot'] ) ) : '-1';
 		$log_outer      = isset( $_POST['outer_rotation'] ) && is_string( $_POST['outer_rotation'] ) ? sanitize_key( wp_unslash( $_POST['outer_rotation'] ) ) : '';
 		$log_outer_slot = isset( $_POST['outer_slot'] ) && is_string( $_POST['outer_slot'] ) ? sanitize_text_field( wp_unslash( $_POST['outer_slot'] ) ) : '0';
+		$log_items      = isset( $_POST['items'] ) && is_string( $_POST['items'] ) ? explode( ' ', sanitize_text_field( wp_unslash( $_POST['items'] ) ) ) : array();
 
 		adzworld_logs_record_response(
 			$log_rotation,
@@ -364,7 +365,8 @@ function adzworld_ajax_evaluate() {
 			array(
 				'rating' => (int) $score,
 			),
-			0 === strpos( $target, 'source-' )
+			0 === strpos( $target, 'source-' ),
+			$log_items
 		);
 	}
 
