@@ -1,33 +1,23 @@
 <?php
 /**
- * The slot journey: what was shown, what the reader thought, what they said.
+ * The slot journey.
  *
- * Nothing the reader types is ever altered. Their words reach the provider as
- * they wrote them. The plugin decides which statements to carry; it does not
- * edit, trim, stem or reword any of them.
+ * One row per round, four fields:
  *
- * One entry per round:
+ *   ad          the adzad that was shown, as provider:id
+ *   category    the category string for that round
+ *   rating      the reader's rating of that adzad, -100 to 100
+ *   refinement  the refinement string the reader typed
  *
- *   shown   the provider ids displayed that round, as provider:id
- *   rating  the reader's verdict on that round, -100 to 100, or null
- *   said    what they typed next, in their own words
- *
- * The record is sequential because the order is what separates a reader
- * adding a detail from a reader correcting a mistake. The point of keeping it
- * is the request handed to a provider: each round the reader tells us more,
- * and each round the provider is given a more specific request and can return
- * better adz for it.
+ * Rows are appended. Nothing the reader types is altered.
  *
  * @package adz-world
  */
 
 defined( 'ABSPATH' ) || exit;
 
-/** Rounds kept per slot. The cookie that may hold this is capped at 4096 bytes. */
+/** Rounds kept per slot. A cookie holding this is capped at 4096 bytes. */
 const ADZWORLD_JOURNEY_ROUNDS = 8;
-
-/** Longest request string a provider is given, matching the existing cap. */
-const ADZWORLD_JOURNEY_MAX_LENGTH = 240;
 
 /**
  * A stable key for one slot's journey.
@@ -41,11 +31,28 @@ function adzworld_journey_key( $rotation, $slot ) {
 }
 
 /**
- * Reduce a stored journey to the shape this file guarantees.
+ * One round, with its four fields.
  *
- * This may have come from a cookie, so the shape, the lengths and the rating
- * range are enforced rather than assumed. What a reader wrote is not edited
- * here beyond the tag stripping every stored string gets.
+ * @param string $ad         The adzad shown, as provider:id.
+ * @param string $category   The category string for that round.
+ * @param mixed  $rating     The reader's rating, -100 to 100, or null.
+ * @param string $refinement The refinement string the reader typed.
+ * @return array<string,mixed> The round.
+ */
+function adzworld_journey_round( $ad, $category, $rating, $refinement ) {
+	return array(
+		'ad'         => mb_substr( sanitize_text_field( (string) $ad ), 0, 120 ),
+		'category'   => mb_substr( sanitize_text_field( (string) $category ), 0, 120 ),
+		'rating'     => is_numeric( $rating ) ? max( -100, min( 100, (int) $rating ) ) : null,
+		'refinement' => mb_substr( trim( sanitize_text_field( (string) $refinement ) ), 0, 200 ),
+	);
+}
+
+/**
+ * Reduce a stored journey to the shape above.
+ *
+ * It may have come from a cookie, so the shape and the bounds are enforced
+ * rather than assumed.
  *
  * @param mixed $stored Raw stored value.
  * @return array<string,array<int,array<string,mixed>>> Journeys by slot key.
@@ -71,36 +78,18 @@ function adzworld_sanitize_journey( $stored ) {
 				continue;
 			}
 
-			$shown = array();
+			$row = adzworld_journey_round(
+				isset( $round['ad'] ) ? $round['ad'] : '',
+				isset( $round['category'] ) ? $round['category'] : '',
+				isset( $round['rating'] ) ? $round['rating'] : null,
+				isset( $round['refinement'] ) ? $round['refinement'] : ''
+			);
 
-			if ( isset( $round['shown'] ) && is_array( $round['shown'] ) ) {
-				foreach ( array_slice( $round['shown'], 0, 10 ) as $id ) {
-					$id = sanitize_text_field( (string) $id );
-
-					if ( '' !== $id ) {
-						$shown[] = mb_substr( $id, 0, 120 );
-					}
-				}
-			}
-
-			$rating = null;
-
-			if ( isset( $round['rating'] ) && is_numeric( $round['rating'] ) ) {
-				$rating = max( -100, min( 100, (int) $round['rating'] ) );
-			}
-
-			$said = isset( $round['said'] ) ? sanitize_text_field( (string) $round['said'] ) : '';
-			$said = mb_substr( trim( $said ), 0, 200 );
-
-			if ( ! $shown && null === $rating && '' === $said ) {
+			if ( '' === $row['ad'] && '' === $row['category'] && null === $row['rating'] && '' === $row['refinement'] ) {
 				continue;
 			}
 
-			$kept[] = array(
-				'shown'  => $shown,
-				'rating' => $rating,
-				'said'   => $said,
-			);
+			$kept[] = $row;
 		}
 
 		if ( $kept ) {
@@ -112,22 +101,17 @@ function adzworld_sanitize_journey( $stored ) {
 }
 
 /**
- * Every id this reader has already been shown in one slot.
- *
- * What a reader has seen and rejected should not come back, and that needs
- * the ids the fetchers carry on each row.
+ * The adzad ids already shown in one slot.
  *
  * @param array<int,array<string,mixed>> $rounds One slot's rounds.
- * @return array<int,string> Provider ids, oldest first.
+ * @return array<int,string> Ids, oldest first.
  */
 function adzworld_journey_seen( $rounds ) {
 	$seen = array();
 
 	foreach ( (array) $rounds as $round ) {
-		if ( isset( $round['shown'] ) && is_array( $round['shown'] ) ) {
-			foreach ( $round['shown'] as $id ) {
-				$seen[] = (string) $id;
-			}
+		if ( ! empty( $round['ad'] ) ) {
+			$seen[] = (string) $round['ad'];
 		}
 	}
 
@@ -135,51 +119,29 @@ function adzworld_journey_seen( $rounds ) {
 }
 
 /**
- * The request handed to a provider, built from what the reader actually said.
+ * The request string: the category, then every refinement, each one whole.
  *
- * Each statement is carried whole and quoted, so the words that reach the
- * provider are the words that were written, and a provider that treats a
- * quoted phrase as a phrase is given the sentence rather than a bag of loose
- * words.
+ * Each refinement is quoted so it reaches the provider as the reader wrote
+ * it. Nothing is edited.
  *
- * The only judgement is which rounds are carried. A round the reader rated at
- * or below the reset is them saying the direction was wrong, so what they say
- * next replaces what they were narrowing towards instead of piling on top of
- * it. Whole statements are kept or dropped; none is edited.
- *
- * @param array<int,array<string,mixed>> $rounds   One slot's rounds, oldest first.
- * @param string                         $category The slot's subject.
- * @param int                            $reset    Rating at or below which a round starts over.
+ * @param array<int,array<string,mixed>> $rounds One slot's rounds, oldest first.
  * @return string Request string.
  */
-function adzworld_journey_request_string( $rounds, $category, $reset = -50 ) {
-	$category = trim( wp_strip_all_tags( (string) $category ) );
-	$said     = array();
+function adzworld_journey_request_string( $rounds ) {
+	$rounds = (array) $rounds;
+	$parts  = array();
 
-	foreach ( (array) $rounds as $round ) {
-		$rating = isset( $round['rating'] ) && is_numeric( $round['rating'] ) ? (int) $round['rating'] : null;
-		$text   = isset( $round['said'] ) ? trim( wp_strip_all_tags( (string) $round['said'] ) ) : '';
-
-		if ( null !== $rating && $rating <= $reset ) {
-			$said = array();
-		}
-
-		if ( '' !== $text ) {
-			/* A double quote inside the text would close the phrase early. */
-			$said[] = '"' . str_replace( '"', "'", $text ) . '"';
+	foreach ( $rounds as $round ) {
+		if ( ! empty( $round['category'] ) ) {
+			$parts[0] = (string) $round['category'];
 		}
 	}
 
-	$request = trim( $category . ' ' . implode( ' ', $said ) );
-
-	/*
-	 * Over the cap the oldest statement goes first, so the newest thing the
-	 * reader said always survives whole. Nothing is cut mid-sentence.
-	 */
-	while ( $said && strlen( $request ) > ADZWORLD_JOURNEY_MAX_LENGTH ) {
-		array_shift( $said );
-		$request = trim( $category . ' ' . implode( ' ', $said ) );
+	foreach ( $rounds as $round ) {
+		if ( ! empty( $round['refinement'] ) ) {
+			$parts[] = '"' . str_replace( '"', "'", (string) $round['refinement'] ) . '"';
+		}
 	}
 
-	return $request;
+	return trim( implode( ' ', $parts ) );
 }
