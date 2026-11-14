@@ -1432,13 +1432,50 @@ function adzworld_render_rotation_level( $attributes ) {
 			if ( '' === $category ) {
 				$category = adzworld_ad_category( $ad, $pref );
 			}
-			$html       = adzworld_local_ad_slide( $ad )
-				. adzworld_feedback_control( 'ad-' . $ad->ID, $category );
+
+			/*
+			 * A title row the adzadmin saved, and a provider their showcase
+			 * draws from. Both are optional: with neither, the adzad is
+			 * rendered as it always was.
+			 */
+			$title_row = adzworld_internal_title_row( $ad );
+			$provider  = adzworld_internal_sanitize_provider(
+				get_post_meta( $ad->ID, ADZWORLD_INTERNAL_PROVIDER_KEY, true )
+			);
+
+			$html = adzworld_local_ad_slide( $ad );
+
+			/*
+			 * The showcase is a carousel of real products answering the
+			 * reader's own words, each one its own slide carrying its own
+			 * rating. It is what makes an adzad a storefront rather than a
+			 * picture, so it sits directly beneath the creative.
+			 */
+			$showcase = '';
+
+			if ( in_array( $category, $pref['categories'], true ) ) {
+				$showcase = adzworld_affiliate_showcase( $pref, $category, $title_row, $provider );
+			}
+
+			if ( '' !== $showcase ) {
+				$html .= $showcase;
+			} elseif ( '' !== $title_row ) {
+				$html = '<div class="adzworld-results__title">' . esc_html( $title_row ) . '</div>' . $html;
+			}
+
+			$html      .= adzworld_feedback_control( 'ad-' . $ad->ID, $category );
 			$served     = 'ad-' . $ad->ID;
 			$configured = 'ad:' . $ad->ID;
+
 			if ( in_array( $category, $pref['categories'], true ) ) {
 				$html .= adzworld_category_slot_control( $category, $slot_count, $category_slot );
-				if ( 0 === $category_slot ) {
+
+				if ( 0 === $category_slot && '' === $showcase ) {
+					/*
+					 * Only when the showcase found nothing: otherwise the
+					 * reader would see the same products twice, once as a
+					 * carousel and once as a flat list.
+					 */
 					$html .= adzworld_affiliate_markup( $pref, $category );
 				}
 			}

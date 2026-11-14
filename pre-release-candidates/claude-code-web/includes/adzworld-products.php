@@ -102,6 +102,7 @@ function adzworld_products_normalise_row( $row, $provider_id = '' ) {
 	}
 
 	return array(
+		/* provider:id, which is what AdzLogs records as the adzad served. */
 		'id'       => $provider . ':' . $id,
 		'title'    => $title,
 		'url'      => $url,
@@ -109,6 +110,13 @@ function adzworld_products_normalise_row( $row, $provider_id = '' ) {
 		'price'    => isset( $row['price'] ) ? trim( wp_strip_all_tags( (string) $row['price'] ) ) : '',
 		'provider' => $provider,
 		'source'   => isset( $labels[ $provider ] ) ? $labels[ $provider ] : '',
+
+		/*
+		 * The bare identifier, without the provider in front of it. A rating
+		 * given to one result is keyed on provider-<provider>-<item_id>, so
+		 * each listing carries its own verdict rather than the slot's.
+		 */
+		'item_id'  => sanitize_key( $id ),
 	);
 }
 
@@ -157,8 +165,9 @@ function adzworld_products_interleave( $rows, $limit = ADZWORLD_PRODUCTS_LIMIT )
  *
  * @param string $request Reader's request: the category and its refinements.
  * @return array<int,array<string,string>> Normalised, interleaved rows.
+ * @param string $provider Show only this provider's rows, or empty for all.
  */
-function adzworld_products_collect( $request ) {
+function adzworld_products_collect( $request, $provider = '' ) {
 	$request = trim( wp_strip_all_tags( (string) $request ) );
 
 	if ( '' === $request ) {
@@ -181,11 +190,18 @@ function adzworld_products_collect( $request ) {
 		return array();
 	}
 
-	$clean = array();
-	$seen  = array();
+	$provider = sanitize_key( (string) $provider );
+	$clean    = array();
+	$seen     = array();
+
 	foreach ( $rows as $row ) {
 		$normal = adzworld_products_normalise_row( $row );
 		if ( null === $normal ) {
+			continue;
+		}
+
+		/* A slot configured for one provider shows that provider only. */
+		if ( '' !== $provider && $provider !== $normal['provider'] ) {
 			continue;
 		}
 
