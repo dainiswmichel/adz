@@ -2,14 +2,19 @@
 /**
  * The slot journey.
  *
- * One row per round, four fields:
+ * A slot starts with a request. That request generates the initial adzad.
+ * From there the rounds are numbered from 1, and each round holds the adzad
+ * that was shown, what the reader thought of it, and what they said next:
  *
- *   ad          the adzad that was shown, as provider:id
- *   category    the category string for that round
- *   rating      the reader's rating of that adzad, -100 to 100
- *   refinement  the refinement string the reader typed
+ *   request     the category string, which generated the initial adzad
+ *   1  ad       the adzad shown
+ *      rating   the reader's rating of it, -100 to 100
+ *      refinement  what the reader typed next
+ *   2  ad, rating, refinement
+ *   ...
  *
- * Rows are appended. Nothing the reader types is altered.
+ * Each round's refinement generates the next round's adzad. Nothing the
+ * reader types is altered.
  *
  * @package adz-world
  */
@@ -31,31 +36,92 @@ function adzworld_journey_key( $rotation, $slot ) {
 }
 
 /**
- * One round, with its four fields.
+ * An empty journey for one slot.
  *
- * @param string $ad         The adzad shown, as provider:id.
- * @param string $category   The category string for that round.
- * @param mixed  $rating     The reader's rating, -100 to 100, or null.
- * @param string $refinement The refinement string the reader typed.
- * @return array<string,mixed> The round.
+ * @param string $request The category string that starts it.
+ * @return array<string,mixed> Journey.
  */
-function adzworld_journey_round( $ad, $category, $rating, $refinement ) {
+function adzworld_journey_start( $request ) {
 	return array(
-		'ad'         => mb_substr( sanitize_text_field( (string) $ad ), 0, 120 ),
-		'category'   => mb_substr( sanitize_text_field( (string) $category ), 0, 120 ),
-		'rating'     => is_numeric( $rating ) ? max( -100, min( 100, (int) $rating ) ) : null,
-		'refinement' => mb_substr( trim( sanitize_text_field( (string) $refinement ) ), 0, 200 ),
+		'request' => mb_substr( trim( sanitize_text_field( (string) $request ) ), 0, 200 ),
+		'rounds'  => array(),
 	);
 }
 
 /**
- * Reduce a stored journey to the shape above.
+ * Add a round to a journey, numbered from 1.
+ *
+ * @param array<string,mixed> $journey    The journey.
+ * @param string              $ad         The adzad shown, as provider:id.
+ * @param mixed               $rating     The reader's rating of it, or null.
+ * @param string              $refinement What the reader typed next.
+ * @return array<string,mixed> The journey, with the round appended.
+ */
+function adzworld_journey_add( $journey, $ad, $rating, $refinement ) {
+	$journey           = adzworld_sanitize_slot_journey( $journey );
+	$journey['rounds'] = array_slice(
+		array_merge(
+			$journey['rounds'],
+			array(
+				array(
+					'ad'         => mb_substr( sanitize_text_field( (string) $ad ), 0, 120 ),
+					'rating'     => is_numeric( $rating ) ? max( -100, min( 100, (int) $rating ) ) : null,
+					'refinement' => mb_substr( trim( sanitize_text_field( (string) $refinement ) ), 0, 200 ),
+				),
+			)
+		),
+		-ADZWORLD_JOURNEY_ROUNDS
+	);
+
+	return $journey;
+}
+
+/**
+ * Reduce one slot's journey to the shape above.
  *
  * It may have come from a cookie, so the shape and the bounds are enforced
  * rather than assumed.
  *
  * @param mixed $stored Raw stored value.
- * @return array<string,array<int,array<string,mixed>>> Journeys by slot key.
+ * @return array<string,mixed> Journey.
+ */
+function adzworld_sanitize_slot_journey( $stored ) {
+	$journey = adzworld_journey_start( is_array( $stored ) && isset( $stored['request'] ) ? $stored['request'] : '' );
+
+	if ( ! is_array( $stored ) || ! isset( $stored['rounds'] ) || ! is_array( $stored['rounds'] ) ) {
+		return $journey;
+	}
+
+	foreach ( $stored['rounds'] as $round ) {
+		if ( ! is_array( $round ) ) {
+			continue;
+		}
+
+		$ad         = isset( $round['ad'] ) ? mb_substr( sanitize_text_field( (string) $round['ad'] ), 0, 120 ) : '';
+		$rating     = isset( $round['rating'] ) && is_numeric( $round['rating'] ) ? max( -100, min( 100, (int) $round['rating'] ) ) : null;
+		$refinement = isset( $round['refinement'] ) ? mb_substr( trim( sanitize_text_field( (string) $round['refinement'] ) ), 0, 200 ) : '';
+
+		if ( '' === $ad && null === $rating && '' === $refinement ) {
+			continue;
+		}
+
+		$journey['rounds'][] = array(
+			'ad'         => $ad,
+			'rating'     => $rating,
+			'refinement' => $refinement,
+		);
+	}
+
+	$journey['rounds'] = array_slice( $journey['rounds'], -ADZWORLD_JOURNEY_ROUNDS );
+
+	return $journey;
+}
+
+/**
+ * Every journey held for a reader, by slot key.
+ *
+ * @param mixed $stored Raw stored value.
+ * @return array<string,array<string,mixed>> Journeys by slot key.
  */
 function adzworld_sanitize_journey( $stored ) {
 	if ( ! is_array( $stored ) ) {
@@ -64,36 +130,17 @@ function adzworld_sanitize_journey( $stored ) {
 
 	$clean = array();
 
-	foreach ( $stored as $key => $rounds ) {
+	foreach ( $stored as $key => $journey ) {
 		$key = sanitize_text_field( (string) $key );
 
-		if ( '' === $key || ! is_array( $rounds ) ) {
+		if ( '' === $key ) {
 			continue;
 		}
 
-		$kept = array();
+		$slot = adzworld_sanitize_slot_journey( $journey );
 
-		foreach ( $rounds as $round ) {
-			if ( ! is_array( $round ) ) {
-				continue;
-			}
-
-			$row = adzworld_journey_round(
-				isset( $round['ad'] ) ? $round['ad'] : '',
-				isset( $round['category'] ) ? $round['category'] : '',
-				isset( $round['rating'] ) ? $round['rating'] : null,
-				isset( $round['refinement'] ) ? $round['refinement'] : ''
-			);
-
-			if ( '' === $row['ad'] && '' === $row['category'] && null === $row['rating'] && '' === $row['refinement'] ) {
-				continue;
-			}
-
-			$kept[] = $row;
-		}
-
-		if ( $kept ) {
-			$clean[ $key ] = array_slice( $kept, -ADZWORLD_JOURNEY_ROUNDS );
+		if ( '' !== $slot['request'] || $slot['rounds'] ) {
+			$clean[ $key ] = $slot;
 		}
 	}
 
@@ -103,15 +150,16 @@ function adzworld_sanitize_journey( $stored ) {
 /**
  * The adzad ids already shown in one slot.
  *
- * @param array<int,array<string,mixed>> $rounds One slot's rounds.
+ * @param array<string,mixed> $journey The journey.
  * @return array<int,string> Ids, oldest first.
  */
-function adzworld_journey_seen( $rounds ) {
-	$seen = array();
+function adzworld_journey_seen( $journey ) {
+	$journey = adzworld_sanitize_slot_journey( $journey );
+	$seen    = array();
 
-	foreach ( (array) $rounds as $round ) {
-		if ( ! empty( $round['ad'] ) ) {
-			$seen[] = (string) $round['ad'];
+	foreach ( $journey['rounds'] as $round ) {
+		if ( '' !== $round['ad'] ) {
+			$seen[] = $round['ad'];
 		}
 	}
 
@@ -119,27 +167,21 @@ function adzworld_journey_seen( $rounds ) {
 }
 
 /**
- * The request string: the category, then every refinement, each one whole.
+ * The request string: the opening request, then every refinement in order.
  *
  * Each refinement is quoted so it reaches the provider as the reader wrote
  * it. Nothing is edited.
  *
- * @param array<int,array<string,mixed>> $rounds One slot's rounds, oldest first.
+ * @param array<string,mixed> $journey The journey.
  * @return string Request string.
  */
-function adzworld_journey_request_string( $rounds ) {
-	$rounds = (array) $rounds;
-	$parts  = array();
+function adzworld_journey_request_string( $journey ) {
+	$journey = adzworld_sanitize_slot_journey( $journey );
+	$parts   = '' === $journey['request'] ? array() : array( $journey['request'] );
 
-	foreach ( $rounds as $round ) {
-		if ( ! empty( $round['category'] ) ) {
-			$parts[0] = (string) $round['category'];
-		}
-	}
-
-	foreach ( $rounds as $round ) {
-		if ( ! empty( $round['refinement'] ) ) {
-			$parts[] = '"' . str_replace( '"', "'", (string) $round['refinement'] ) . '"';
+	foreach ( $journey['rounds'] as $round ) {
+		if ( '' !== $round['refinement'] ) {
+			$parts[] = '"' . str_replace( '"', "'", $round['refinement'] ) . '"';
 		}
 	}
 
