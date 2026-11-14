@@ -611,8 +611,9 @@ function adzworld_ajax_refine() {
 		$category = isset( $_POST['value'] ) ? sanitize_text_field( wp_unslash( $_POST['value'] ) ) : '';
 		$known    = adzworld_preference_with_catalog( $pref );
 		if ( ! in_array( $category, $known['categories'], true ) ) {
-			wp_send_json_error( array( 'message' => __( 'That category is not available.', 'adz-world' ) ), 400 );
+			adzworld_send_preference( $pref, __( 'Updated.', 'adz-world' ) );
 		}
+
 		$pref['active_category'] = $category;
 		adzworld_store_preference( $pref );
 
@@ -691,8 +692,20 @@ function adzworld_ajax_refine() {
 		$refinement = trim( mb_substr( $refinement, 0, 120 ) );
 		$parts      = adzworld_pair_split( $old );
 
-		if ( ! in_array( $old, $pref['category_refinements'], true ) || '' === $parts[0] || '' === $refinement ) {
-			wp_send_json_error( array( 'message' => __( 'Enter a refinement to keep improving these adz.', 'adz-world' ) ), 400 );
+		/* The one being edited is already gone, so the page is behind. */
+		if ( ! in_array( $old, $pref['category_refinements'], true ) || '' === $parts[0] ) {
+			adzworld_send_preference( $pref, __( 'Updated.', 'adz-world' ) );
+		}
+
+		/*
+		 * Emptying the box means the reader no longer wants that refinement.
+		 * Taking it away is what they asked for; telling them to type
+		 * something is not.
+		 */
+		if ( '' === $refinement ) {
+			$pref = adzworld_remove_facet( $pref, 'category_refinements', $old );
+			adzworld_store_preference( $pref );
+			adzworld_send_preference( $pref, __( 'Refinement removed.', 'adz-world' ) );
 		}
 
 		$replacement = mb_substr( adzworld_pair_join( $parts[0], $refinement ), 0, 240 );
@@ -712,13 +725,19 @@ function adzworld_ajax_refine() {
 			: '';
 
 		$known = adzworld_preference_with_catalog( $pref );
+
 		if ( ! in_array( $category, $known['categories'], true ) ) {
-			wp_send_json_error( array( 'message' => __( 'That category is not available.', 'adz-world' ) ), 400 );
+			adzworld_send_preference( $pref, __( 'Updated.', 'adz-world' ) );
 		}
 
 		$count = adzworld_category_slot_count( $pref, $category );
+
+		/*
+		 * A real limit, so the reader is told, but being at a limit is not a
+		 * failure and nothing about the page is wrong afterwards.
+		 */
 		if ( $count >= ADZWORLD_CATEGORY_MAX_SLOTS ) {
-			wp_send_json_error( array( 'message' => __( 'This category already has the maximum number of adz slots.', 'adz-world' ) ), 400 );
+			adzworld_send_preference( $pref, __( 'This category already has the most adz slots it can have.', 'adz-world' ) );
 		}
 
 		++$count;
@@ -736,8 +755,13 @@ function adzworld_ajax_refine() {
 		$facet = isset( $_POST['facet'] ) ? sanitize_key( wp_unslash( $_POST['facet'] ) ) : '';
 		$value = isset( $_POST['value'] ) ? sanitize_text_field( wp_unslash( $_POST['value'] ) ) : '';
 
+		/*
+		 * The request did not say what kind of thing to remove. A chip always
+		 * says, so this is a malformed request rather than anything a reader
+		 * did; the page is redrawn and nothing changes.
+		 */
 		if ( '' === $facet ) {
-			wp_send_json_error( array( 'message' => __( 'Nothing to remove.', 'adz-world' ) ), 400 );
+			adzworld_send_preference( $pref, __( 'Updated.', 'adz-world' ) );
 		}
 
 		$pref    = adzworld_remove_facet( $pref, $facet, $value );
@@ -746,8 +770,9 @@ function adzworld_ajax_refine() {
 		$text = isset( $_POST['refinement'] ) ? sanitize_textarea_field( wp_unslash( $_POST['refinement'] ) ) : '';
 		$text = trim( mb_substr( $text, 0, 500 ) );
 
+		/* An empty box is not a mistake. There is simply nothing to add. */
 		if ( '' === $text ) {
-			wp_send_json_error( array( 'message' => __( 'Nothing was entered.', 'adz-world' ) ), 400 );
+			adzworld_send_preference( $pref, __( 'Nothing to add.', 'adz-world' ) );
 		}
 
 		if ( 'improve' === $action ) {
@@ -883,6 +908,26 @@ function adzworld_ajax_refine() {
 		);
 	}
 
+	adzworld_send_preference( $pref, $message );
+}
+
+/**
+ * Answer with the reader's preference as it actually stands.
+ *
+ * Used for every outcome, including the ones that used to be errors. A page
+ * can fall behind what is stored: a second tab, the back button, or a
+ * session that expired while the tab sat open. The chips on screen are then
+ * real but the thing they name is gone. That is not the reader doing
+ * something wrong and it is not worth a message in red; the page simply
+ * redraws itself from the truth and the stale chip disappears.
+ *
+ * @since 1.0.0
+ *
+ * @param array<string,mixed> $pref    Preference to render.
+ * @param string              $message Short note for the status line.
+ * @return void
+ */
+function adzworld_send_preference( $pref, $message ) {
 	$pref  = adzworld_sanitize_preference( $pref );
 	$chips = adzworld_preference_chips( $pref );
 
