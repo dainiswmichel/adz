@@ -1345,23 +1345,30 @@ function adzworld_render_rotation_level( $attributes ) {
 	$size     = $attributes['size'];
 	$pref     = adzworld_preference_with_catalog( adzworld_current_preference() );
 	if ( adzworld_has_preference( $pref ) ) {
+		$unranked = array(
+			'in_category' => 0,
+			'matched'     => 0,
+			'rating'      => 0,
+		);
+
 		foreach ( $slots as $index => $candidate ) {
 			$slots[ $index ]['order'] = $index;
-			$slots[ $index ]['score'] = 'ad' === $candidate['type']
-				? adzworld_score_ad( (int) $candidate['value'], $pref )
-				: 0;
+			$rank                     = 'ad' === $candidate['type']
+				? adzworld_rank_ad( (int) $candidate['value'], $pref )
+				: null;
+			$slots[ $index ]['rank']  = null === $rank ? $unranked : $rank;
 		}
+
 		usort(
 			$slots,
 			static function ( $first, $second ) {
 				if ( 'intro' === $first['type'] || 'intro' === $second['type'] ) {
 					return 'intro' === $first['type'] ? -1 : 1;
 				}
-				if ( $first['score'] === $second['score'] ) {
-					return $first['order'] <=> $second['order'];
-				}
 
-				return $second['score'] <=> $first['score'];
+				$compared = adzworld_compare_rank( $first['rank'], $second['rank'] );
+
+				return 0 === $compared ? $first['order'] <=> $second['order'] : $compared;
 			}
 		);
 	}

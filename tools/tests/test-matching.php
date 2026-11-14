@@ -106,8 +106,19 @@ $base = $adz_plugin . '/includes/';
 require $base . 'adz-preferences.php';
 require $base . 'adz-preference-ui.php';
 
-$pass = 0;
-$fail = 0;
+$pass                    = 0;
+$fail                    = 0;
+$GLOBALS['adz_feedback'] = array();
+
+/**
+ * The reader's ratings, as the plugin reads them.
+ *
+ * @return array<string,array<string,int>> Ratings by target key.
+ */
+function adzworld_current_feedback() {
+	return $GLOBALS['adz_feedback'];
+}
+
 function check( $label, $got, $want ) {
 	global $pass, $fail;
 	$ok = ( $got === $want );
@@ -228,7 +239,7 @@ $couch['categories'] = array( 'couch' );
 $couch_refined       = $couch;
 
 $couch_refined['category_refinements'] = array( adzworld_pair_join( 'bicycle', 'pink' ) );
-check( 'a bicycle refinement does not score a couch', adzworld_score_ad( 23, $couch_refined ), adzworld_score_ad( 23, $couch ) );
+check( 'a bicycle refinement does not rank a couch differently', adzworld_rank_ad( 23, $couch_refined ), adzworld_rank_ad( 23, $couch ) );
 
 /* "no pedals" is read as a negation, so it excludes rather than demotes. */
 $GLOBALS['adz_catalogue'][24] = 'Junior bicycle with pedals and training wheels';
@@ -237,6 +248,69 @@ $negated                         = $base;
 $negated['category_refinements'] = array( adzworld_pair_join( 'bicycle', 'no pedals' ) );
 check( 'an adzad the visitor ruled out is removed', in_array( 24, adzworld_match_adz( $negated, 4 ), true ), false );
 check( 'and the others are kept', in_array( 22, adzworld_match_adz( $negated, 4 ), true ), true );
+
+echo "\n=== the reader's rating is used on the scale they set it on ===\n";
+/*
+ * It used to be divided by ten before being added to a sum of invented
+ * constants, so 201 notches collapsed to 21 and a full -100 moved the result
+ * by the same amount that one matching word added.
+ */
+$GLOBALS['adz_catalogue'] = array(
+	31 => 'Kids bicycle, 20 inch, blue',
+	32 => 'Kids bicycle, 20 inch, red',
+);
+adzworld_flush_ad_pool();
+
+$rated               = adzworld_empty_preference();
+$rated['categories'] = array( 'bicycle' );
+
+$GLOBALS['adz_feedback'] = array();
+check( 'unrated, the first one leads', adzworld_match_adz( $rated, 2 )[0], 31 );
+
+$GLOBALS['adz_feedback'] = array( 'ad-31' => array( 'score' => -4 ) );
+check( 'a rating of -4 reorders, where it used to round to zero', adzworld_match_adz( $rated, 2 )[0], 32 );
+
+$GLOBALS['adz_feedback'] = array(
+	'ad-31' => array( 'score' => 95 ),
+	'ad-32' => array( 'score' => 100 ),
+);
+check( '95 is distinguishable from 100', adzworld_match_adz( $rated, 2 )[0], 32 );
+
+$GLOBALS['adz_feedback'] = array(
+	'ad-31' => array( 'score' => 100 ),
+	'ad-32' => array( 'score' => 95 ),
+);
+check( 'and the order follows the reader, not the catalogue', adzworld_match_adz( $rated, 2 )[0], 31 );
+
+echo "\n=== a term matches on word boundaries, not as a substring ===\n";
+$GLOBALS['adz_catalogue'] = array(
+	41 => 'Bicycle catalogue, 2026 edition',
+	42 => 'Bicycle with a cat basket on the handlebars',
+	43 => 'Plain bicycle, no basket',
+);
+adzworld_flush_ad_pool();
+$GLOBALS['adz_feedback'] = array();
+
+$ruled               = adzworld_empty_preference();
+$ruled['categories'] = array( 'bicycle' );
+$ruled['exclude']    = array( 'cat' );
+$survivors           = adzworld_match_adz( $ruled, 3 );
+check( 'the adzad with a cat basket is ruled out', in_array( 42, $survivors, true ), false );
+check( 'the catalogue is not, because "cat" is not a word in it', in_array( 41, $survivors, true ), true );
+check( 'and an unrelated adzad is untouched', in_array( 43, $survivors, true ), true );
+
+/*
+ * Not fixed, and stated so it is not mistaken for fixed: an adzad whose own
+ * copy reads "no pedals" is still ruled out by a reader excluding "pedals",
+ * because the word is genuinely there. Reading the negation in an adzad's
+ * own copy means interpreting it, which is not done here.
+ */
+$GLOBALS['adz_catalogue'] = array( 44 => 'Toddler balance bicycle, no pedals, pink' );
+adzworld_flush_ad_pool();
+$known               = adzworld_empty_preference();
+$known['categories'] = array( 'bicycle' );
+$known['exclude']    = array( 'pedals' );
+check( 'known limitation: "no pedals" copy is still excluded by "pedals"', in_array( 44, adzworld_match_adz( $known, 2 ), true ), false );
 
 printf( "\n%d passed, %d failed\n", $pass, $fail );
 exit( $fail > 0 ? 1 : 0 );
