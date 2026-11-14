@@ -85,6 +85,7 @@ require_once __DIR__ . '/includes/adzworld-earnings.php';
 require_once __DIR__ . '/includes/adz-preferences.php';
 require_once __DIR__ . '/includes/adz-preference-ui.php';
 require_once __DIR__ . '/includes/adzworld-feedback.php';
+require_once __DIR__ . '/includes/adzworld-journey.php';
 require_once __DIR__ . '/includes/adzworld-affiliates.php';
 require_once __DIR__ . '/includes/adzworld-etsy.php';
 require_once __DIR__ . '/includes/adzworld-getpaid.php';
