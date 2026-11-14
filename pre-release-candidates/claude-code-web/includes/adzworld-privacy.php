@@ -30,6 +30,10 @@ function adzworld_privacy_policy_content() {
 
 	$sections = array(
 		array(
+			__( 'When this plugin starts recording anything', 'adz-world' ),
+			__( 'Only once a visitor types a category or a refinement, rates an advertisement, or makes a profile. A visitor who is simply shown advertising and does not use these controls is not recorded at all: no session is opened for them, no cookie is set, and no log entry is written. Using a control is how a visitor chooses to be remembered.', 'adz-world' ),
+		),
+		array(
 			__( 'What this plugin stores about a visitor', 'adz-world' ),
 			__( 'A visitor who is not signed in is known only by a random identifier held in their browser session. It expires when they close the browser, it is not derived from anything about them, and it is never joined to a name, an email address or an account. Signed-in readers have the same information stored against their user account instead, where they can see it.', 'adz-world' ),
 		),
@@ -43,7 +47,7 @@ function adzworld_privacy_policy_content() {
 		),
 		array(
 			__( 'How long it is kept', 'adz-world' ),
-			__( 'Advertising logs are kept on the site until an administrator clears or exports them. The browser session identifier is gone as soon as the browser closes, so a log from one visit cannot be joined to a log from the next.', 'adz-world' ),
+			__( 'Advertising logs are kept on the site until an administrator clears or exports them. The browser session identifier is gone as soon as the browser closes, so a log from one visit cannot be joined to a log from the next. A visitor who never uses a control leaves nothing to keep.', 'adz-world' ),
 		),
 		array(
 			__( 'Who can read it', 'adz-world' ),
