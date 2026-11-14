@@ -1433,7 +1433,7 @@ function adzworld_render_rotation_level( $attributes ) {
 				array(
 					'name'           => $slot['value'],
 					'outer_rotation' => $name,
-					'outer_slot'     => $index,
+					'outer_slot'     => $index + 1,
 				)
 			);
 			$html  = '<div class="adzworld-nested-rotation">' . $inner . '</div>'
@@ -1465,7 +1465,7 @@ function adzworld_render_rotation_level( $attributes ) {
 			}
 
 			adzworld_logs_remember_ad(
-				adzworld_logs_place( $name, $index, $attributes['outer_rotation'], (int) $attributes['outer_slot'] ),
+				adzworld_logs_place( $name, $index + 1, $attributes['outer_rotation'], (int) $attributes['outer_slot'] ),
 				$served,
 				$configured,
 				$category,
@@ -1476,7 +1476,14 @@ function adzworld_render_rotation_level( $attributes ) {
 
 		$category_attribute = '' !== $category ? ' data-adzworld-category="' . esc_attr( $category ) . '"' : '';
 		$slot_attribute     = '' !== $category ? ' data-adzworld-category-slot="' . esc_attr( (string) $category_slot ) . '"' : '';
-		$log_attribute      = ' data-adzworld-slot="' . esc_attr( (string) $index ) . '"';
+
+		/*
+		 * Slots are numbered from 1 wherever a person reads them, which is
+		 * everywhere: the log row, the export, the tab and this attribute.
+		 * The number is made 1-based here, at the one point it is produced,
+		 * so nothing downstream has to add or subtract to display it.
+		 */
+		$log_attribute = ' data-adzworld-slot="' . esc_attr( (string) ( $index + 1 ) ) . '"';
 
 		if ( '' !== $served ) {
 			/*
