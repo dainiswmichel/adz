@@ -167,11 +167,12 @@ function adzworld_getpaid_registration( $provider ) {
  * The header every provider card carries.
  *
  * @param array<string,mixed> $provider Provider.
- * @param bool                $connected Whether it is connected.
- * @param bool                $earning   Whether it can pay the publisher.
+ * @param bool                $enabled Whether the account is active.
+ * @param bool                $serving Whether it has everything needed to serve adz.
+ * @param bool                $earning Whether it can pay the publisher.
  * @return void
  */
-function adzworld_getpaid_card_header( $provider, $connected, $earning = false ) {
+function adzworld_getpaid_card_header( $provider, $enabled, $serving = false, $earning = false ) {
 	$serves = 'adz' === $provider['serves']
 		? __( 'Sends the reader’s request', 'adz-world' )
 		: __( 'Placement only', 'adz-world' );
@@ -182,9 +183,12 @@ function adzworld_getpaid_card_header( $provider, $connected, $earning = false )
 	echo '</h2></div>';
 	echo '<div class="inside">';
 
-	if ( ! $connected ) {
+	if ( ! $enabled ) {
 		$tone  = 'info';
 		$state = __( 'Not connected yet', 'adz-world' );
+	} elseif ( ! $serving ) {
+		$tone  = 'warning';
+		$state = __( 'Configuration incomplete', 'adz-world' );
 	} elseif ( ! $earning ) {
 		$tone  = 'warning';
 		$state = __( 'Serving — not earning yet', 'adz-world' );
@@ -216,7 +220,12 @@ function adzworld_getpaid_affiliate_card( $provider, $account ) {
 	$enabled = isset( $account['enabled'] ) ? (string) $account['enabled'] : '0';
 
 	echo '<div class="postbox adzworld-paid-card" id="adzworld-paid-affiliate-' . esc_attr( $id ) . '">';
-	adzworld_getpaid_card_header( $provider, '1' === $enabled, adzworld_getpaid_account_earns( $id, $account ) );
+	adzworld_getpaid_card_header(
+		$provider,
+		'1' === $enabled,
+		adzworld_affiliate_account_ready( $id, $account ),
+		adzworld_getpaid_account_earns( $id, $account )
+	);
 	adzworld_getpaid_registration( $provider );
 
 	echo '<table class="form-table" role="presentation"><tbody>';

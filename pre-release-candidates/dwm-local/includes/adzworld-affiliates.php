@@ -532,6 +532,27 @@ function adzworld_affiliate_account_ready( $id, $account ) {
 }
 
 /**
+ * Whether a Rakuten account has an attributed advertiser destination.
+ *
+ * @param bool                 $earns   Whether the account earns.
+ * @param string               $id      Provider id.
+ * @param array<string,string> $account Saved provider fields.
+ * @return bool Whether Rakuten can attribute a qualifying transaction.
+ */
+function adzworld_rakuten_account_earns( $earns, $id, $account ) {
+	if ( 'rakuten' !== $id ) {
+		return $earns;
+	}
+
+	return ! empty( $account['id'] )
+		&& ! empty( $account['mid'] )
+		&& ! empty( $account['destination'] )
+		&& '' !== adzworld_affiliate_destination_template( $account['destination'] );
+}
+
+add_filter( 'adzworld_affiliate_account_earns', 'adzworld_rakuten_account_earns', 10, 3 );
+
+/**
  * Sponsored links for the category currently on screen.
  *
  * @param array  $pref     Preference hierarchy.
