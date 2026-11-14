@@ -143,5 +143,33 @@ $empty = adzworld_empty_preference();
 check( 'has_preference false when empty', adzworld_has_preference( $empty ), false );
 check( 'has_preference true with a term', adzworld_has_preference( adzworld_parse_refinement( 'a couch', null ) ), true );
 
+echo "\n=== category tone comes from the name, not the position ===\n";
+$names = array( 'couch', 'bicycle', 'dinner in atlanta', 'shoes', 'laptop', 'coffee', 'a', 'zzzz' );
+
+foreach ( $names as $name ) {
+	$hue = adzworld_category_tone( $name );
+	printf( "  %-20s hue %d\n", $name, $hue );
+	check( 'hue at or above 200', $hue >= 200, true );
+	check( 'hue at or below 305', $hue <= 305, true );
+}
+
+/* The same name must give the same tone wherever it appears in a list. */
+check( 'tone is stable', adzworld_category_tone( 'couch' ), adzworld_category_tone( 'couch' ) );
+check( 'case does not change it', adzworld_category_tone( 'Couch' ), adzworld_category_tone( 'couch' ) );
+check( 'surrounding space ignored', adzworld_category_tone( '  couch ' ), adzworld_category_tone( 'couch' ) );
+
+/*
+ * The band exists to keep category chips away from the three scoring
+ * colours. Green sits near 145, yellow near 100, red near 25: none of
+ * those may be reachable from any name.
+ */
+$lowest = 400;
+
+foreach ( array_merge( $names, array( 'x', 'bike', 'rug', 'tv', 'hat', 'pan', 'book', 'desk', 'lamp' ) ) as $name ) {
+	$lowest = min( $lowest, adzworld_category_tone( $name ) );
+}
+
+check( 'never reaches green, yellow or red', $lowest > 180, true );
+
 printf( "\n%d passed, %d failed\n", $pass, $fail );
 exit( $fail > 0 ? 1 : 0 );

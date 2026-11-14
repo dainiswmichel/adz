@@ -236,6 +236,79 @@
 	}
 
 	/**
+	 * Rotation, slot, and outer slot for the slide that holds this node.
+	 *
+	 * A response is only useful in AdzLogs if it says where it was given, so
+	 * every request that records one carries the place it came from.
+	 *
+	 * @param {HTMLElement} node Control inside a rotation.
+	 * @return {Object} Place fields.
+	 */
+	function placeFields( node ) {
+		var rotation = node ? node.closest( '.adzworld-rotation' ) : null;
+		var slide = node ? node.closest( '.adzworld-slide' ) : null;
+		var fields = {};
+
+		if ( ! rotation ) {
+			return fields;
+		}
+
+		fields.rotation = rotation.dataset.adzworldRotation || '';
+
+		if ( slide && slide.dataset.adzworldSlot ) {
+			fields.slot = slide.dataset.adzworldSlot;
+		}
+
+		if ( rotation.dataset.adzworldOuterRotation ) {
+			fields.outer_rotation = rotation.dataset.adzworldOuterRotation;
+			fields.outer_slot = rotation.dataset.adzworldOuterSlot || '0';
+		}
+
+		return fields;
+	}
+
+	/**
+	 * Copy place fields onto a request.
+	 *
+	 * @param {Object}      values Request values.
+	 * @param {HTMLElement} node   Control inside a rotation.
+	 * @return {Object} Request values.
+	 */
+	function assignPlace( values, node ) {
+		var place = placeFields( node );
+
+		Object.keys( place ).forEach(
+			function ( key ) {
+				values[ key ] = place[ key ];
+			}
+		);
+
+		return values;
+	}
+
+	/**
+	 * Active slide that is serving an adzad.
+	 *
+	 * A category or refinement change is a response to the adzad the reader
+	 * was looking at when they made it, not to the rotation as a whole.
+	 *
+	 * @param {HTMLElement} rotation Rotation root.
+	 * @return {HTMLElement|null} Slide, or null when none is serving one.
+	 */
+	function showingAd( rotation ) {
+		var slides = rotation ? rotation.querySelectorAll( '.adzworld-slide.adzworld-active' ) : [];
+		var index;
+
+		for ( index = slides.length - 1; index >= 0; index-- ) {
+			if ( slides[ index ].dataset.adzworldAd ) {
+				return slides[ index ];
+			}
+		}
+
+		return null;
+	}
+
+	/**
 	 * Post a small, nonce-protected request to WordPress.
 	 *
 	 * @param {string} action AJAX action.
@@ -593,11 +666,14 @@
 				post(
 					'adzworld_refine',
 					settings.preferenceNonce,
-					{
-						mode: mode,
-						refinement: input.value,
-						target: improveTarget
-					}
+					assignPlace(
+						{
+							mode: mode,
+							refinement: input.value,
+							target: improveTarget
+						},
+						form
+					)
 				).then(
 					function ( payload ) {
 						if ( payload && payload.success ) {
@@ -702,20 +778,34 @@
 				}
 
 				if ( category ) {
+					var selected = category.dataset.adzCategory || '';
+					var showing = showingAd( rotation );
+					var selectValues = {
+						mode: 'select',
+						value: selected
+					};
+
 					event.preventDefault();
+
+					/*
+					 * Only a change counts as a response. Clicking the
+					 * category an adzad is already in says nothing.
+					 */
+					if ( showing && ( showing.dataset.adzworldCategory || '' ) !== selected ) {
+						assignPlace( selectValues, showing );
+						selectValues.ad = showing.dataset.adzworldAd || '';
+					}
+
 					rotation.dispatchEvent(
 						new window.CustomEvent(
 							'adzworld:show-category',
-							{ detail: { category: category.dataset.adzCategory || '', slot: 0 } }
+							{ detail: { category: selected, slot: 0 } }
 						)
 					);
 					post(
 						'adzworld_refine',
 						settings.preferenceNonce,
-						{
-							mode: 'select',
-							value: category.dataset.adzCategory || ''
-						}
+						selectValues
 					);
 					return;
 				}
@@ -820,10 +910,13 @@
 				post(
 					'adzworld_evaluate',
 					settings.feedbackNonce,
-					{
-						score: input.value,
-						target: control.dataset.adzworldFeedbackTarget || ''
-					}
+					assignPlace(
+						{
+							score: input.value,
+							target: control.dataset.adzworldFeedbackTarget || ''
+						},
+						control
+					)
 				).then(
 					function ( payload ) {
 						if ( output && payload && payload.success ) {

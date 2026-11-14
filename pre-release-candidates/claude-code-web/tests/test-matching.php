@@ -145,10 +145,17 @@ echo "\n=== count=0 means none, which is the shortcode's job not the matcher's =
 check( 'matcher never returns zero on request', count( adzworld_match_adz( $empty, 1 ) ), 1 );
 
 echo "\n=== a preference reorders rather than gates ===\n";
-$p   = adzworld_parse_refinement( 'a light couch for 2 ppl', null );
-$ids = adzworld_match_adz( $p, 6 );
+/*
+ * The reader states a category and refines it in their own words. The
+ * refinement is matched as written; it is not parsed into facets first.
+ */
+$p                         = adzworld_empty_preference();
+$p['categories']           = array( 'couch' );
+$p['category_refinements'] = array( adzworld_pair_join( 'couch', 'light grey' ) );
+$ids                       = adzworld_match_adz( $p, 6 );
 echo '  ' . implode( "\n  ", titles( $ids ) ) . "\n";
 check( 'best match first', $ids[0], 13 );
+check( 'nothing is gated out', count( $ids ), 6 );
 check( 'unmatched adz still present', count( $ids ), 6 );
 
 echo "\n=== an exclusion is absolute, not a demotion ===\n";
@@ -281,6 +288,20 @@ $GLOBALS['adz_feedback'] = array(
 	'ad-32' => array( 'score' => 95 ),
 );
 check( 'and the order follows the reader, not the catalogue', adzworld_match_adz( $rated, 2 )[0], 31 );
+
+/*
+ * A reader who moved the control to the middle engaged. One who never touched
+ * it did not. Both used to rank as 0 and the difference was lost. Engagement
+ * sits below the rating, so it only ever decides a tie: an adzad rated below
+ * zero must not outrank an unrated one just for having been touched.
+ */
+$GLOBALS['adz_feedback'] = array( 'ad-32' => array( 'score' => 0 ) );
+check( 'a chosen zero outranks an adzad never rated', adzworld_match_adz( $rated, 2 )[0], 32 );
+check( 'the chosen zero is marked as engaged', adzworld_rank_ad( 32, $rated )['engaged'], 1 );
+check( 'the untouched one is not', adzworld_rank_ad( 31, $rated )['engaged'], 0 );
+
+$GLOBALS['adz_feedback'] = array( 'ad-31' => array( 'score' => -4 ) );
+check( 'and engagement never outranks a rating', adzworld_match_adz( $rated, 2 )[0], 32 );
 
 echo "\n=== a term matches on word boundaries, not as a substring ===\n";
 $GLOBALS['adz_catalogue'] = array(

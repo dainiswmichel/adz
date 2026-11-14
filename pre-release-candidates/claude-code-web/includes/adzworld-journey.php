@@ -55,20 +55,55 @@ function adzworld_journey_start( $request ) {
  * Add a round to a journey, numbered from 1.
  *
  * @param array<string,mixed> $journey    The journey.
- * @param string              $ad         The adzad shown, as provider:id.
+ * @param string              $ad         The adzad shown, as source:id.
+ * @param string              $category   The category in force at this round.
  * @param mixed               $rating     The reader's rating of it, or null.
  * @param string              $refinement What the reader typed next.
  * @return array<string,mixed> The journey, with the round appended.
  */
-function adzworld_journey_add( $journey, $ad, $rating, $refinement ) {
+function adzworld_journey_add( $journey, $ad, $category, $rating, $refinement ) {
 	$journey             = adzworld_sanitize_slot_journey( $journey );
-	$journey['rounds'][] = array(
+	$journey['rounds'][] = adzworld_journey_round( $ad, $category, $rating, $refinement );
+
+	return $journey;
+}
+
+/**
+ * One round of a slot journey.
+ *
+ * The category travels with the round rather than sitting once at the top,
+ * because a reader can change what a slot is about part way through. Round
+ * one may be couches and round four a bicycle, and the record has to say
+ * which adzad belonged to which.
+ *
+ * @param string $ad         The adzad shown, as source:id.
+ * @param string $category   The category in force at this round.
+ * @param mixed  $rating     The reader's rating of it, -100 to 100, or null.
+ * @param string $refinement What the reader typed next.
+ * @return array<string,mixed> The round.
+ */
+function adzworld_journey_round( $ad, $category, $rating, $refinement ) {
+	return array(
 		'ad'         => mb_substr( sanitize_text_field( (string) $ad ), 0, 120 ),
+		'category'   => mb_substr( trim( sanitize_text_field( (string) $category ) ), 0, 120 ),
 		'rating'     => is_numeric( $rating ) ? max( -100, min( 100, (int) $rating ) ) : null,
 		'refinement' => mb_substr( trim( sanitize_text_field( (string) $refinement ) ), 0, 200 ),
 	);
+}
 
-	return $journey;
+/**
+ * Whether an adzad is the publisher's own or a provider's.
+ *
+ * An internal adzad is one this site published, so a reader's verdict on it
+ * belongs to the site: it ranks that adzad for them next time. An external
+ * adzad belongs to a provider, so the verdict has nowhere to go except into
+ * the request string the provider is sent.
+ *
+ * @param string $ad The adzad id, as source:id.
+ * @return bool Whether it is internal.
+ */
+function adzworld_journey_is_internal( $ad ) {
+	return 0 === strpos( (string) $ad, 'internal:' );
 }
 
 /**
@@ -92,19 +127,18 @@ function adzworld_sanitize_slot_journey( $stored ) {
 			continue;
 		}
 
-		$ad         = isset( $round['ad'] ) ? mb_substr( sanitize_text_field( (string) $round['ad'] ), 0, 120 ) : '';
-		$rating     = isset( $round['rating'] ) && is_numeric( $round['rating'] ) ? max( -100, min( 100, (int) $round['rating'] ) ) : null;
-		$refinement = isset( $round['refinement'] ) ? mb_substr( trim( sanitize_text_field( (string) $round['refinement'] ) ), 0, 200 ) : '';
+		$row = adzworld_journey_round(
+			isset( $round['ad'] ) ? $round['ad'] : '',
+			isset( $round['category'] ) ? $round['category'] : '',
+			isset( $round['rating'] ) ? $round['rating'] : null,
+			isset( $round['refinement'] ) ? $round['refinement'] : ''
+		);
 
-		if ( '' === $ad && null === $rating && '' === $refinement ) {
+		if ( '' === $row['ad'] && '' === $row['category'] && null === $row['rating'] && '' === $row['refinement'] ) {
 			continue;
 		}
 
-		$journey['rounds'][] = array(
-			'ad'         => $ad,
-			'rating'     => $rating,
-			'refinement' => $refinement,
-		);
+		$journey['rounds'][] = $row;
 	}
 
 	return $journey;
@@ -219,8 +253,16 @@ function adzworld_journey_request_string( $journey ) {
 	$journey = adzworld_sanitize_slot_journey( $journey );
 	$parts   = '' === $journey['request'] ? array() : array( $journey['request'] );
 
+	$category = $journey['request'];
+
 	foreach ( $journey['rounds'] as $round ) {
 		$said = array();
+
+		/* A reader who changed what the slot is about says so here. */
+		if ( '' !== $round['category'] && $round['category'] !== $category ) {
+			$category = $round['category'];
+			$said[]   = $category;
+		}
 
 		if ( '' !== $round['ad'] ) {
 			$said[] = adzworld_journey_response( $round['rating'] ) . ' ' . $round['ad'];
@@ -254,11 +296,102 @@ function adzworld_journey_keywords( $journey ) {
 	$journey = adzworld_sanitize_slot_journey( $journey );
 	$parts   = '' === $journey['request'] ? array() : array( $journey['request'] );
 
+	$category = $journey['request'];
+
 	foreach ( $journey['rounds'] as $round ) {
+		if ( '' !== $round['category'] && $round['category'] !== $category ) {
+			$category = $round['category'];
+			$parts[]  = $category;
+		}
+
 		if ( '' !== $round['refinement'] ) {
 			$parts[] = '"' . str_replace( '"', "'", $round['refinement'] ) . '"';
 		}
 	}
 
 	return trim( implode( ' ', $parts ) );
+}
+
+/**
+ * Keep a stated string whole.
+ *
+ * @param string $text Reader's text, or an ad id.
+ * @return string
+ */
+function adzworld_slot_journey_text( $text ) {
+	$text = wp_strip_all_tags( (string) $text );
+	$text = str_replace( "\0", '', $text );
+	$text = trim( $text );
+
+	if ( defined( 'ADZWORLD_REFINEMENT_MAX_LENGTH' ) && function_exists( 'mb_substr' ) ) {
+		$text = mb_substr( $text, 0, ADZWORLD_REFINEMENT_MAX_LENGTH );
+	}
+
+	return $text;
+}
+
+/**
+ * Refinements as the reader set them.
+ *
+ * A list of phrases stays in that order, one space between phrases.
+ *
+ * @param mixed $refinements One phrase, or a list of phrases.
+ * @return string
+ */
+function adzworld_slot_journey_refinements( $refinements ) {
+	if ( is_array( $refinements ) ) {
+		$parts = array();
+
+		foreach ( $refinements as $phrase ) {
+			$phrase = adzworld_slot_journey_text( $phrase );
+			if ( '' !== $phrase ) {
+				$parts[] = $phrase;
+			}
+		}
+
+		return implode( ' ', $parts );
+	}
+
+	return adzworld_slot_journey_text( $refinements );
+}
+
+/**
+ * The rating number, when the reader set one.
+ *
+ * Empty, a word, and a number outside -100 to 100 stay off the rating.
+ * Zero stays zero.
+ *
+ * @param mixed $rating Rating number, or empty when the reader did not set one.
+ * @return int|null
+ */
+function adzworld_slot_journey_rating( $rating ) {
+	if ( null === $rating || false === $rating ) {
+		return null;
+	}
+
+	if ( is_string( $rating ) ) {
+		$rating = trim( $rating );
+
+		if ( '' === $rating ) {
+			return null;
+		}
+	}
+
+	if ( is_int( $rating ) ) {
+		$number = $rating;
+	} elseif ( is_float( $rating ) || ( is_string( $rating ) && is_numeric( $rating ) ) ) {
+		$number = (int) $rating;
+
+		if ( (string) $number !== (string) $rating && (float) $number !== (float) $rating ) {
+			return null;
+		}
+	} else {
+		return null;
+	}
+
+	if ( $number < -100 || $number > 100 ) {
+		return null;
+	}
+
+	return $number;
 }

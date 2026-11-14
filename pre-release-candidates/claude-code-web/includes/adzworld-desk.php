@@ -22,6 +22,7 @@ function adzworld_desk_tabs() {
 		'internal'   => __( 'Internal Adz', 'adz-world' ),
 		'rotation'   => __( 'Rotation', 'adz-world' ),
 		'earnings'   => __( 'Earnings', 'adz-world' ),
+		'logs'       => __( 'AdzLogs', 'adz-world' ),
 		'templates'  => __( 'Templates', 'adz-world' ),
 		'starter'    => __( 'Starter packs', 'adz-world' ),
 	);
@@ -57,6 +58,7 @@ function adzworld_desk_submenu_slugs() {
 		'internal'   => 'adzworld-internal',
 		'rotation'   => 'adzworld-rotation',
 		'earnings'   => 'adzworld-earnings',
+		'logs'       => 'adzworld-logs',
 		'templates'  => 'adzworld-templates',
 		'starter'    => 'adzworld-starter',
 	);
@@ -253,6 +255,12 @@ function adzworld_desk_page() {
 		echo '<a class="' . esc_attr( $class ) . '" href="' . esc_url( $url ) . '">' . esc_html( $label ) . '</a>';
 	}
 	echo '</nav></div>';
+	if ( 'logs' === $current ) {
+		adzworld_logs_page();
+
+		return;
+	}
+
 	if ( 'dashboard' === $current ) {
 		echo '<div class="wrap adzworld-desk">';
 		adzworld_desk_dashboard();
