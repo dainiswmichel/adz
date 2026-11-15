@@ -44,8 +44,8 @@ function adzworld_ad_post_type_pub() {
 		'set_featured_image'    => __( 'Set featured image', 'adz-world' ),
 		'remove_featured_image' => __( 'Remove featured image', 'adz-world' ),
 		'use_featured_image'    => __( 'Use as featured image', 'adz-world' ),
-		'insert_into_item'      => __( 'Insert into item', 'adz-world' ),
-		'uploaded_to_this_item' => __( 'Uploaded to this adz', 'adz-world' ),
+		'insert_into_item'      => __( 'Insert into adz', 'adz-world' ),
+		'uploaded_to_this_item' => __( 'Uploaded to these adz', 'adz-world' ),
 		'items_list'            => sprintf(
 			/* translators: %s: product name. */
 			__( '%s list', 'adz-world' ),
