@@ -331,7 +331,7 @@ function adzworld_has_preference( $pref ) {
  * The introduction panel: what this is, before anything is asked of the visitor.
  *
  * Shown above the input throughout the invitation-to-hub journey. It names
- * what the rotation is doing, because a visitor who does not know what an adz
+ * what the rotation is doing, because a visitor who does not know what an adzad
  * is cannot meaningfully opt in to one.
  *
  * @param string $depth full | short.
