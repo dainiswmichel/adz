@@ -93,7 +93,7 @@ function adzworld_privacy_note() {
 		),
 		array(
 			__( 'When you tell us what you want', 'adz-world' ),
-			__( 'Typing what you are looking for, or rating an adz, starts a session. The session is a timestamped identifier and the words you chose: use these to pick adz. It is not your name, your email or your address, it is not joined to anything else, and it ends when you close your browser.', 'adz-world' ),
+			__( 'Typing what you are looking for, or rating an adzad, starts a session. The session is a timestamped identifier and the words you chose: use these to pick adz. It is not your name, your email or your address, it is not joined to anything else, and it ends when you close your browser.', 'adz-world' ),
 		),
 		array(
 			__( 'If you make a profile', 'adz-world' ),

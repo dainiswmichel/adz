@@ -1116,7 +1116,7 @@ function adzworld_compare_rank( $first, $second ) {
  * Published adz, newest first, as post IDs.
  *
  * Nothing defined this while adzworld_match_adz() called it, so matching
- * fatalled the moment a rotation tried to pick an adz. It was missed because the
+ * fatalled the moment a rotation tried to pick an adzad. It was missed because the
  * test harness stubbed the name, which meant the tests passed against a function
  * the plugin did not have.
  *
@@ -1169,7 +1169,7 @@ add_action( 'untrashed_post', 'adzworld_flush_ad_pool' );
 /**
  * Drop the cached pool when the set of published adz can have changed.
  *
- * Bound to the trash transitions and deletion as well as save, because an adz
+ * Bound to the trash transitions and deletion as well as save, because an adzad
  * leaving the pool matters as much as one joining it.
  *
  * @return void

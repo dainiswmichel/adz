@@ -292,13 +292,13 @@ function adzworld_internal_preview( $ad ) {
 			return '<p class="adz-int-preview__empty">' . esc_html(
 				sprintf(
 					/* translators: %s: comma-separated list of HTML tag names. */
-					__( 'Nothing will render: %s is removed when an adz is served. Code that needs a script belongs on Get Paid.', 'adz-world' ),
+					__( 'Nothing will render: %s is removed when an adzad is served. Code that needs a script belongs on Get Paid.', 'adz-world' ),
 					implode( ', ', $stripped )
 				)
 			) . '</p>';
 		}
 
-		return '<p class="adz-int-preview__empty">' . esc_html__( 'This adz has no content yet.', 'adz-world' ) . '</p>';
+		return '<p class="adz-int-preview__empty">' . esc_html__( 'This adzad has no content yet.', 'adz-world' ) . '</p>';
 	}
 
 	return $content;
@@ -412,7 +412,7 @@ function adzworld_internal_card( $ad ) {
 		echo '<span class="adz-int-flag adz-int-flag--stripped" title="' . esc_attr(
 			sprintf(
 				/* translators: %s: comma-separated list of HTML tag names. */
-				__( 'These tags are removed when the adz is served: %s. A unit that needs a script belongs on Get Paid.', 'adz-world' ),
+				__( 'These tags are removed when the adzad is served: %s. A unit that needs a script belongs on Get Paid.', 'adz-world' ),
 				implode( ', ', $stripped )
 			)
 		) . '">';
@@ -463,7 +463,7 @@ function adzworld_internal_page() {
 
 	echo '<h1 class="wp-heading-inline">' . esc_html__( 'Internal Adz', 'adz-world' ) . '</h1>';
 	echo ' <a href="' . esc_url( admin_url( 'post-new.php?post_type=adz_ad' ) ) . '" class="page-title-action">'
-		. esc_html__( 'Add an adz', 'adz-world' ) . '</a>';
+		. esc_html__( 'Add an adzad', 'adz-world' ) . '</a>';
 	echo '<hr class="wp-header-end">';
 
 	echo '<p class="description adz-int-intro">' . esc_html__( 'Adz you design and serve to your own audience. No network, no revenue share. An image and a link is a complete adz; the body is ordinary post content.', 'adz-world' ) . '</p>';
@@ -478,7 +478,7 @@ function adzworld_internal_page() {
 	echo '<p class="adz-int-summary">';
 	printf(
 		/* translators: 1: adz ready to serve, 2: total adz. */
-		esc_html__( '%1$d of %2$d ready to serve. An adz is ready when it is published and has a destination.', 'adz-world' ),
+		esc_html__( '%1$d of %2$d ready to serve. An adzad is ready when it is published and has a destination.', 'adz-world' ),
 		absint( $ready ),
 		absint( $total )
 	);
