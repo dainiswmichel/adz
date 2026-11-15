@@ -66,3 +66,80 @@ function adzworld_privacy_policy_content() {
 }
 
 add_action( 'admin_init', 'adzworld_privacy_policy_content' );
+
+/**
+ * The standing explanation of what this plugin does and does not know.
+ *
+ * Opened from a small (i) in the corner of an adz panel. It is a details
+ * element rather than a hover tooltip: hover alone cannot be reached by a
+ * keyboard and does not exist on a phone, and this is the one thing on the
+ * page a reader is most entitled to read.
+ *
+ * Three stages, in the order a reader actually meets them.
+ *
+ * @since 1.0.0
+ *
+ * @return string Markup for the control and its explanation.
+ */
+function adzworld_privacy_note() {
+	$stages = array(
+		array(
+			__( 'Before you say anything', 'adz-world' ),
+			__( 'We do not know who you are and we collect nothing. No session is started, no cookie is set, and nothing about you is written down. You are shown adz, and that is all that happens.', 'adz-world' ),
+		),
+		array(
+			__( 'What we cannot speak for', 'adz-world' ),
+			__( 'A slot on this page may be filled by an advertising network that watches people across the web, such as Google AdSense, Google Ad Manager, Taboola, Outbrain, Criteo or Amazon Advertising. Those networks answer to the site owner and to their own terms, not to us, and we cannot stop what they do. We can tell you they are there.', 'adz-world' ),
+		),
+		array(
+			__( 'When you tell us what you want', 'adz-world' ),
+			__( 'Typing what you are looking for, or rating an adz, starts a session. The session is a timestamped identifier and the words you chose: use these to pick adz. It is not your name, your email or your address, it is not joined to anything else, and it ends when you close your browser.', 'adz-world' ),
+		),
+		array(
+			__( 'If you make a profile', 'adz-world' ),
+			__( 'Your advertising preferences are kept with your account on this site, so this plugin can act for you the way a lawyer acts for a client: speaking on your behalf to advertisers, so that what reaches you is what you said you were interested in buying. You can see it, change it, and delete it.', 'adz-world' ),
+		),
+	);
+
+	$html = '<details class="adzworld-note">'
+		. '<summary class="adzworld-note__open" aria-label="'
+		. esc_attr__( 'What this plugin knows about you', 'adz-world' ) . '">i</summary>'
+		. '<div class="adzworld-note__body">';
+
+	foreach ( $stages as $stage ) {
+		$html .= '<p class="adzworld-note__stage"><span class="adzworld-note__heading">'
+			. esc_html( $stage[0] ) . '</span> ' . esc_html( $stage[1] ) . '</p>';
+	}
+
+	$html .= '<p class="adzworld-note__close">'
+		. esc_html__( 'Adz are shown because you asked for them. That is the whole idea.', 'adz-world' )
+		. '</p></div></details>';
+
+	return $html;
+}
+
+/**
+ * Print the standing explanation.
+ *
+ * A printing wrapper so no caller has to echo unescaped markup. Every part
+ * of it is escaped where it is assembled.
+ *
+ * @since 1.0.0
+ *
+ * @return void
+ */
+function adzworld_privacy_note_echo() {
+	echo wp_kses(
+		adzworld_privacy_note(),
+		array(
+			'details' => array( 'class' => true ),
+			'summary' => array(
+				'class'      => true,
+				'aria-label' => true,
+			),
+			'div'     => array( 'class' => true ),
+			'p'       => array( 'class' => true ),
+			'span'    => array( 'class' => true ),
+		)
+	);
+}
