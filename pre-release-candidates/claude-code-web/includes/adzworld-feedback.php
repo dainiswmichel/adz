@@ -177,7 +177,7 @@ function adzworld_feedback_control( $target, $category ) {
 		<div class="adzworld-evaluation__control">
 			<span aria-hidden="true"><?php esc_html_e( 'Dislike', 'adz-world' ); ?></span>
 			<label class="screen-reader-text" for="<?php echo esc_attr( $input_id ); ?>">
-				<?php esc_html_e( 'How useful is this adzad?', 'adz-world' ); ?>
+				<?php esc_html_e( 'How useful is this ad?', 'adz-world' ); ?>
 			</label>
 			<input id="<?php echo esc_attr( $input_id ); ?>" type="range" min="-100" max="100" step="1" value="<?php echo esc_attr( (string) $score ); ?>">
 			<span aria-hidden="true"><?php esc_html_e( 'Like', 'adz-world' ); ?></span>
