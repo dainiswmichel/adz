@@ -2215,3 +2215,37 @@
 	border-radius: 999px;
 	cursor: pointer;
 }
+
+.adzworld-category-search {
+	margin: 12px 0 0;
+	padding-top: 10px;
+	border-top: 1px solid var(--adz-line);
+	font-size: 13px;
+}
+
+.adzworld-category-search__line {
+	margin: 0 0 8px;
+}
+
+.adzworld-category-search__label {
+	display: block;
+	margin-bottom: 2px;
+	color: var(--adz-muted);
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+.adzworld-category-search__value {
+	display: block;
+	overflow-wrap: anywhere;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 13px;
+}
+
+.adzworld-category-search a {
+	color: var(--adz-accent);
+	text-decoration-thickness: 1px;
+	text-underline-offset: 3px;
+}

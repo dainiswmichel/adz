@@ -898,3 +898,55 @@ function adzworld_affiliate_showcase( $pref, $category, $title = '', $provider =
 		. '<div class="adzworld-results__slides">' . $slides . '</div>'
 		. '<div class="adzworld-results__navigation" hidden>' . $buttons . '</div></div>';
 }
+
+/**
+ * Amazon search URL for one category and the refinements attached to it.
+ *
+ * @param array  $pref     Preference hierarchy.
+ * @param string $category Category.
+ * @return string Tagged search URL, empty when Amazon is not connected.
+ */
+function adzworld_affiliate_category_url( $pref, $category ) {
+	$accounts = adzworld_affiliate_accounts();
+	if ( ! isset( $accounts['amazon']['enabled'] ) || '1' !== $accounts['amazon']['enabled'] ) {
+		return '';
+	}
+
+	return adzworld_affiliate_url( 'amazon', $accounts['amazon'], adzworld_affiliate_request_string( $pref, $category ) );
+}
+
+/**
+ * Showcase readout for one category: the request string, the saved Amazon
+ * tracking id, and the tagged search URL, each written as text.
+ *
+ * @param array  $pref     Preference hierarchy.
+ * @param string $category Category.
+ * @return string Readout markup, or an empty string when unavailable.
+ */
+function adzworld_affiliate_category_search_link( $pref, $category ) {
+	$request  = adzworld_affiliate_request_string( $pref, $category );
+	$url      = adzworld_affiliate_category_url( $pref, $category );
+	$accounts = adzworld_affiliate_accounts();
+	$tag      = isset( $accounts['amazon']['tag'] ) ? (string) $accounts['amazon']['tag'] : '';
+
+	if ( '' === $request || '' === $url || '' === $tag ) {
+		return '';
+	}
+
+	return '<div class="adzworld-category-search">'
+		. '<p class="adzworld-category-search__line"><span class="adzworld-category-search__label">'
+		. esc_html__( 'Request string', 'adz-world' )
+		. '</span> <code class="adzworld-category-search__value">'
+		. esc_html( $request )
+		. '</code></p>'
+		. '<p class="adzworld-category-search__line"><span class="adzworld-category-search__label">'
+		. esc_html__( 'Amazon tracking id', 'adz-world' )
+		. '</span> <code class="adzworld-category-search__value">'
+		. esc_html( $tag )
+		. '</code></p>'
+		. '<p class="adzworld-category-search__line"><a href="'
+		. esc_url( $url )
+		. '" rel="sponsored nofollow" target="_blank"><code class="adzworld-category-search__value">'
+		. esc_html( $url )
+		. '</code></a></p></div>';
+}
