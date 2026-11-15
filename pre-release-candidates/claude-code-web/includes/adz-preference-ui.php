@@ -425,6 +425,12 @@ function adzworld_render_preference_panel( $pref, $has_pref, $intro = 'full' ) {
 		<p class="adz-panel__status" data-adz-status role="status" aria-live="polite"></p>
 	</form>
 	<?php
+	/*
+	 * The standing explanation, in the corner of the panel where a reader
+	 * states what they want. It sits outside the form so opening it cannot
+	 * submit anything.
+	 */
+	adzworld_privacy_note_echo();
 }
 
 /**

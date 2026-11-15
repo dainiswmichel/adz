@@ -2249,3 +2249,89 @@
 	text-decoration-thickness: 1px;
 	text-underline-offset: 3px;
 }
+
+/*
+ * The standing explanation. A small (i) in the corner of a slide, opening a
+ * readable block rather than a tooltip: a tooltip cannot be reached by a
+ * keyboard and does not exist on a phone, and this is the one thing on the
+ * page a reader is most entitled to read.
+ */
+/*
+ * The wrapper spans the slide so that the panel inside it can be measured
+ * against the slide. Sized to the (i) alone, a percentage width on the panel
+ * resolved against the circle and every line broke after one word.
+ */
+.adzworld-note {
+	position: absolute;
+	right: 8px;
+	bottom: 8px;
+	left: 8px;
+	display: flex;
+	justify-content: flex-end;
+	z-index: 2;
+}
+
+.adzworld-note__open {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.5rem;
+	height: 1.5rem;
+	color: var(--adz-accent-solid);
+	font-family: Georgia, serif;
+	font-size: 0.95rem;
+	font-weight: 700;
+	background: color-mix(in oklab, var(--adz-accent-solid) 10%, var(--adz-surface));
+	border: 1px solid color-mix(in oklab, var(--adz-accent-solid) 45%, transparent);
+	border-radius: 50%;
+	cursor: pointer;
+	list-style: none;
+}
+
+.adzworld-note__open::-webkit-details-marker {
+	display: none;
+}
+
+.adzworld-note[open] .adzworld-note__body {
+	position: absolute;
+	right: 0;
+	bottom: 2rem;
+	/*
+	 * Never wider than the slide it belongs to. A rotation can be a 300px
+	 * sidebar, and a fixed width would hang off the side of it.
+	 */
+	width: min(26rem, 100%);
+	max-height: 60vh;
+	padding: 0.9rem 1rem;
+	overflow-y: auto;
+	color: var(--adz-ink);
+	font-size: 13px;
+	line-height: 1.55;
+	text-align: start;
+	background: var(--adz-surface);
+	border: 1px solid var(--adz-line);
+	border-radius: 10px;
+	box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
+}
+
+.adzworld-note__stage {
+	margin: 0 0 0.7rem;
+}
+
+.adzworld-note__heading {
+	display: block;
+	font-weight: 600;
+}
+
+.adzworld-note__close {
+	margin: 0;
+	padding-top: 0.5rem;
+	border-top: 1px solid var(--adz-line);
+	font-style: italic;
+}
+
+/* The panel is the positioning context for its own note. */
+.adzworld-rotation .adz-panel,
+.adzworld-rotation .adzworld-slide {
+	position: relative;
+}
