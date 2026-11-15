@@ -1064,66 +1064,29 @@
 	margin-bottom: 1.2em;
 }
 
-/*
- * Two columns is the layout. One column when the form is narrower than two
- * cards. There is no third column. The query is on the form because the
- * admin menu already uses part of the window.
- */
-form:has(> .adzworld-paid-grid) {
-	container-name: adzworld-paid;
-	container-type: inline-size;
-}
-
-.adzworld-paid-actions .submit {
-	margin: 0 0 16px;
-	padding: 0;
-}
-
 .adzworld-paid-grid {
 	display: grid;
 	gap: 16px;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
+	grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
 	align-items: start;
-	width: 100%;
-	min-width: 0;
-}
-
-@container adzworld-paid (max-width: 759px) {
-	.adzworld-paid-grid {
-		grid-template-columns: minmax(0, 1fr);
-	}
-}
-
-@media screen and (max-width: 782px) {
-	.adzworld-paid-grid {
-		grid-template-columns: minmax(0, 1fr);
-	}
 }
 
 .adzworld-paid-card {
 	margin: 0;
-	min-width: 0;
-	max-width: 100%;
-	box-sizing: border-box;
-	overflow: hidden;
 }
 
-.adzworld-paid-card > .postbox-header .hndle {
+/*
+ * The provider name and what it does sit on one line, with the name taking
+ * the space it needs and the capability pushed to the end, so a column of
+ * cards can be scanned down either edge.
+ */
+.adzworld-paid-card .postbox-header .hndle {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 6px 12px;
 	align-items: baseline;
 	justify-content: space-between;
-	box-sizing: border-box;
 	width: 100%;
-	padding: 12px 16px;
-}
-
-.adzworld-paid-card > .inside {
-	box-sizing: border-box;
-	min-width: 0;
-	max-width: 100%;
-	padding: 4px 16px 16px;
 }
 
 .adzworld-paid-name {
@@ -1180,68 +1143,52 @@ form:has(> .adzworld-paid-grid) {
 }
 
 /*
- * Core keeps a form-table as label beside field, and .regular-text is 25em.
- * Inside a card that pair is wider than the card, so the controls paint
- * outside the border. Stack the label over the field and lock the control
- * to the card's content box. body.wp-admin raises the selector above forms.css.
+ * Stacked fields, not form-table. A card is too narrow for a reserved label
+ * column, and core's regular-text is 25em with no max-width, so the two
+ * together overflowed the card.
  */
-body.wp-admin .adzworld-paid-card table.form-table,
-body.wp-admin .adzworld-paid-card table.form-table > tbody,
-body.wp-admin .adzworld-paid-card table.form-table tr,
-body.wp-admin .adzworld-paid-card table.form-table > tbody > tr > th,
-body.wp-admin .adzworld-paid-card table.form-table > tbody > tr > td {
-	display: block;
-	width: 100%;
-	max-width: 100%;
-	min-width: 0;
-	box-sizing: border-box;
-	float: none;
+.adzworld-paid-field {
+	margin: 0 0 12px;
 }
 
-body.wp-admin .adzworld-paid-card table.form-table > tbody > tr > th {
-	padding: 12px 0 0;
-	font-size: 13px;
+.adzworld-paid-field label {
+	display: block;
+	margin-bottom: 4px;
+	color: #1d2327;
+	font-size: 12px;
 	font-weight: 600;
 }
 
-body.wp-admin .adzworld-paid-card table.form-table > tbody > tr > td {
-	padding: 4px 0 12px;
+.adzworld-paid-connect {
+	margin: 14px 0 0;
+	padding-top: 12px;
+	border-top: 1px solid #f0f0f1;
 }
 
-body.wp-admin .adzworld-paid-card table.form-table input.regular-text,
-body.wp-admin .adzworld-paid-card table.form-table input.code,
-body.wp-admin .adzworld-paid-card table.form-table input[type="text"],
-body.wp-admin .adzworld-paid-card table.form-table select,
-body.wp-admin .adzworld-paid-card .adzworld-connection-card input[type="text"],
-body.wp-admin .adzworld-paid-card .adzworld-connection-card select {
-	display: block;
+/*
+ * Nothing inside a card may set its own pixel width. adzworld_network_render_row()
+ * is shared with other screens and uses regular-text, so it is constrained
+ * here rather than changed there.
+ */
+.adzworld-paid-card input[type="text"],
+.adzworld-paid-card input[type="url"],
+.adzworld-paid-card input[type="number"],
+.adzworld-paid-card select,
+.adzworld-paid-card textarea,
+.adzworld-paid-card .regular-text {
+	box-sizing: border-box;
 	width: 100%;
 	max-width: 100%;
+}
+
+.adzworld-paid-card fieldset {
 	min-width: 0;
-	margin: 0;
-	box-sizing: border-box;
 }
 
-.adzworld-paid-card .description,
-.adzworld-paid-card code,
-.adzworld-paid-card label {
-	overflow-wrap: break-word;
-}
-
-.adzworld-paid-card .adzworld-connection-card {
-	min-width: 0;
-	max-width: 100%;
-	margin: 12px 0 0;
-	background: transparent;
-	border: 0;
-	border-top: 1px solid #dcdcde;
-	border-radius: 0;
-	padding: 12px 0 0;
-}
-
-.adzworld-paid-card .adzworld-connection-card legend {
-	padding: 0;
-	font-size: 13px;
+@media (max-width: 782px) {
+	.adzworld-paid-grid {
+		grid-template-columns: 1fr;
+	}
 }
 
 /* ==========================================================================
@@ -1436,93 +1383,27 @@ body.wp-admin .adzworld-paid-card .adzworld-connection-card select {
 	.adz-int-strip { scroll-behavior: auto; }
 }
 
-/* AdzLogs. Served adz on the left. Slot configuration, the request, and refinements on the right. */
-
-.adzworld-log-rotation,
-.adzworld-log-slot {
-	margin: 0 0 8px 0;
+/* The per-provider connect forms carry only hidden fields. */
+.adzworld-paid-connect-form {
+	display: contents;
 }
 
-.adzworld-log-rotation > summary,
-.adzworld-log-slot > summary {
-	cursor: pointer;
-	font-weight: 600;
-}
-
-.adzworld-log-chat {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-	max-width: 880px;
-	margin: 10px 0 16px;
-}
-
-.adzworld-log-turn {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-	gap: 12px;
-	align-items: start;
-}
-
-.adzworld-log-served,
-.adzworld-log-request {
-	box-sizing: border-box;
-	min-width: 0;
-	margin: 0;
-	padding: 10px 12px;
-	border: 1px solid #c3c4c7;
-	border-radius: 8px;
-}
-
-.adzworld-log-served {
-	justify-self: start;
-	background: #f0f6fc;
-}
-
-.adzworld-log-request {
-	justify-self: end;
-	background: #f6f7f7;
-}
-
-.adzworld-log-ad {
-	margin: 0 0 4px;
-	font-weight: 600;
-}
-
-.adzworld-log-mts {
-	margin: 0;
+/* A short note under a field, where a paragraph would be too loud. */
+.adzworld-paid-hint {
+	display: block;
+	margin-top: 4px;
 	color: #646970;
 	font-size: 12px;
+	line-height: 1.4;
 }
 
-.adzworld-log-k {
-	margin: 0;
-	color: #646970;
-	font-size: 11px;
-	font-weight: 600;
-	letter-spacing: 0.04em;
-	text-transform: uppercase;
-}
-
-.adzworld-log-v {
-	margin: 0 0 8px;
-	overflow-wrap: anywhere;
-}
-
-.adzworld-log-response {
-	margin-top: 4px;
-	padding-top: 8px;
+/*
+ * Save sits in the card. The page-level button is below every card, which is
+ * a long scroll from whichever one was just edited.
+ */
+.adzworld-paid-save {
+	margin: 12px 0 0;
+	padding-top: 12px;
 	border-top: 1px solid #dcdcde;
-}
-
-.adzworld-log-rotation summary:focus-visible,
-.adzworld-log-slot summary:focus-visible {
-	outline: 2px solid #3e6d86;
-	outline-offset: 1px;
-}
-
-@media (max-width: 782px) {
-	.adzworld-log-turn {
-		grid-template-columns: minmax(0, 1fr);
-	}
+	text-align: right;
 }

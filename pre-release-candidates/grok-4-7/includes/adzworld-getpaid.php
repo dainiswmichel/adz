@@ -37,23 +37,17 @@ defined( 'ABSPATH' ) || exit;
  * @return array<string,bool> Affiliate id => whether the request is sent.
  */
 function adzworld_getpaid_affiliate_serves_adz() {
-	$providers = array(
+	$serves = array(
 		'amazon'    => true,
 		'walmart'   => true,
 		'awin'      => true,
 		'cj'        => true,
 		'rakuten'   => true,
 		'ebay'      => true,
-		'etsy'      => true,
 		'clickbank' => false,
 	);
 
-	/**
-	 * Filters whether affiliate providers receive the reader's request.
-	 *
-	 * @param array<string,bool> $providers Provider id and request behavior.
-	 */
-	return apply_filters( 'adzworld_getpaid_affiliate_serves_adz', $providers );
+	return apply_filters( 'adzworld_getpaid_affiliate_serves_adz', $serves );
 }
 
 /**
@@ -120,7 +114,7 @@ function adzworld_getpaid_providers() {
 function adzworld_getpaid_is_connected( $provider ) {
 	if ( 'affiliate' === $provider['source'] ) {
 		$accounts = adzworld_affiliate_accounts();
-		return isset( $accounts[ $provider['id'] ] ) && adzworld_affiliate_account_ready( $provider['id'], $accounts[ $provider['id'] ] );
+		return isset( $accounts[ $provider['id'] ]['enabled'] ) && '1' === $accounts[ $provider['id'] ]['enabled'];
 	}
 
 	foreach ( adzworld_network_rows() as $row ) {
@@ -166,11 +160,12 @@ function adzworld_getpaid_registration( $provider ) {
 /**
  * The header every provider card carries.
  *
- * @param array<string,mixed> $provider Provider.
+ * @param array<string,mixed> $provider  Provider.
  * @param bool                $connected Whether it is connected.
+ * @param bool                $earning   Whether it is already earning.
  * @return void
  */
-function adzworld_getpaid_card_header( $provider, $connected ) {
+function adzworld_getpaid_card_header( $provider, $connected, $earning = false ) {
 	$serves = 'adz' === $provider['serves']
 		? __( 'Sends the reader’s request', 'adz-world' )
 		: __( 'Placement only', 'adz-world' );
@@ -180,10 +175,29 @@ function adzworld_getpaid_card_header( $provider, $connected ) {
 	echo '<span class="adzworld-paid-serves adzworld-paid-serves--' . esc_attr( $provider['serves'] ) . '">' . esc_html( $serves ) . '</span>';
 	echo '</h2></div>';
 	echo '<div class="inside">';
+
+	/*
+	 * One badge with three states, rather than a badge plus a paragraph
+	 * repeating it. Connected and "serving but not earning" were two separate
+	 * notices saying overlapping things, and a card could show a green
+	 * Connected above a warning that it earns nothing, which reads as a
+	 * contradiction.
+	 */
+	if ( ! $connected ) {
+		$tone  = 'info';
+		$state = __( 'Not connected yet', 'adz-world' );
+	} elseif ( ! $earning ) {
+		$tone  = 'warning';
+		$state = __( 'Serving — not earning yet', 'adz-world' );
+	} else {
+		$tone  = 'success';
+		$state = __( 'Connected and earning', 'adz-world' );
+	}
+
 	printf(
 		'<p class="adzworld-paid-state"><span class="notice notice-%1$s inline"><span>%2$s</span></span></p>',
-		$connected ? 'success' : 'info',
-		esc_html( $connected ? __( 'Connected', 'adz-world' ) : __( 'Not connected yet', 'adz-world' ) )
+		esc_attr( $tone ),
+		esc_html( $state )
 	);
 
 	if ( '' !== $provider['note'] ) {
@@ -203,39 +217,105 @@ function adzworld_getpaid_affiliate_card( $provider, $account ) {
 	$enabled = isset( $account['enabled'] ) ? (string) $account['enabled'] : '0';
 
 	echo '<div class="postbox adzworld-paid-card" id="adzworld-paid-affiliate-' . esc_attr( $id ) . '">';
-	adzworld_getpaid_card_header( $provider, '1' === $enabled );
+	adzworld_getpaid_card_header( $provider, '1' === $enabled, adzworld_getpaid_account_earns( $id, $account ) );
 	adzworld_getpaid_registration( $provider );
 
-	echo '<table class="form-table" role="presentation"><tbody>';
+	/*
+	 * Stacked label and full-width input, which is what core uses inside a
+	 * metabox. form-table was used here first and does not fit: it reserves a
+	 * label column, and regular-text is 25em with no max-width, so in a card
+	 * this narrow the two together need about 490px of a 336px content box and
+	 * every input ran past the card border.
+	 */
 	foreach ( $provider['fields'] as $field => $rule ) {
 		$value = isset( $account[ $field ] ) ? $account[ $field ] : '';
 		$input = 'adzworld_affiliate_' . $id . '_' . $field;
 
-		echo '<tr><th scope="row"><label for="' . esc_attr( $input ) . '">' . esc_html( $rule['label'] ) . '</label></th><td>';
+		echo '<p class="adzworld-paid-field">';
+		echo '<label for="' . esc_attr( $input ) . '">' . esc_html( $rule['label'] ) . '</label>';
 		if ( isset( $rule['choices'] ) ) {
-			echo '<select id="' . esc_attr( $input ) . '" name="' . esc_attr( $input ) . '">';
+			echo '<select class="widefat" id="' . esc_attr( $input ) . '" name="' . esc_attr( $input ) . '">';
 			echo '<option value="">' . esc_html__( 'Not connected', 'adz-world' ) . '</option>';
 			foreach ( $rule['choices'] as $choice ) {
 				echo '<option value="' . esc_attr( $choice ) . '"' . selected( $value, $choice, false ) . '>' . esc_html( $choice ) . '</option>';
 			}
 			echo '</select>';
 		} elseif ( ! empty( $rule['secret'] ) ) {
-			echo '<input type="password" class="regular-text code" id="' . esc_attr( $input ) . '" name="' . esc_attr( $input ) . '" value="" autocomplete="new-password">';
-			if ( '' !== $value ) {
-				echo '<p class="description">' . esc_html__( 'A secret is saved. Leave this blank to keep it.', 'adz-world' ) . '</p>';
+			/*
+			 * A saved secret is never echoed back, but an empty box reads as
+			 * nothing saved. The placeholder shows the field is filled while
+			 * the value stays on the server; submitting it empty keeps it.
+			 */
+			$saved = '' !== $value;
+			echo '<input type="password" class="widefat code" id="' . esc_attr( $input ) . '" name="' . esc_attr( $input ) . '" value=""'
+				. ( $saved ? ' placeholder="' . esc_attr( str_repeat( '•', 24 ) ) . '"' : '' )
+				. ' autocomplete="off">';
+			if ( $saved ) {
+				echo '<span class="adzworld-paid-hint">' . esc_html__( 'Saved. Leave blank to keep it, or paste a new one to replace it.', 'adz-world' ) . '</span>';
 			}
 		} else {
-			echo '<input type="text" class="regular-text code" id="' . esc_attr( $input ) . '" name="' . esc_attr( $input ) . '" value="' . esc_attr( $value ) . '">';
+			echo '<input type="text" class="widefat code" id="' . esc_attr( $input ) . '" name="' . esc_attr( $input ) . '" value="' . esc_attr( $value ) . '">';
 		}
-		echo '</td></tr>';
+		echo '</p>';
 	}
 
-	echo '<tr><th scope="row">' . esc_html__( 'Connection', 'adz-world' ) . '</th><td><label>';
+	/*
+	 * This was labelled "Use this account on this site", which asks a question
+	 * nobody entering credentials would answer no to. It exists so an account
+	 * can be paused without its identifiers being deleted, so it is labelled
+	 * as that state instead.
+	 */
+	echo '<p class="adzworld-paid-connect"><label>';
 	echo '<input type="checkbox" name="' . esc_attr( 'adzworld_affiliate_' . $id . '_enabled' ) . '" value="1"' . checked( $enabled, '1', false ) . '> ';
-	echo esc_html__( 'Use this account on this site', 'adz-world' ) . '</label></td></tr>';
-	echo '</tbody></table>';
+	echo esc_html__( 'Active', 'adz-world' ) . '</label>';
+	echo '<span class="adzworld-paid-hint">' . esc_html__( 'Clear this to pause the account without losing what you pasted.', 'adz-world' ) . '</span></p>';
+
+	/*
+	 * Rakuten's own steps. Saving the fields is not the same as being
+	 * approved by an advertiser, so the steps the plugin cannot see are
+	 * stated rather than reported as done.
+	 */
+	adzworld_getpaid_rakuten_checklist( $id, $account );
+
+	/*
+	 * A save control in the card itself. The page-level button sits below
+	 * every card, which on this screen is a long scroll from whichever card
+	 * was just edited.
+	 */
+	echo '<p class="adzworld-paid-save">';
+	submit_button( __( 'Save', 'adz-world' ), 'primary', 'submit', false );
+	echo '</p>';
 
 	echo '</div></div>';
+}
+
+/**
+ * Whether a saved account can actually pay the publisher.
+ *
+ * Serving a product and earning from it are two different credentials. Every
+ * fetcher here deliberately serves on the developer credential alone, so that
+ * an application pending at a network does not leave a slot empty. That is a
+ * stopgap, not the goal: a slot that serves without earning hands a reader to
+ * a merchant for nothing, which is worse for a publisher than showing no
+ * adzad at all. A provider answers here for its own saved fields.
+ *
+ * @param string               $id      Provider id.
+ * @param array<string,string> $account Saved provider fields.
+ * @return bool Whether a click on this provider's adz is credited.
+ */
+function adzworld_getpaid_account_earns( $id, $account ) {
+	/**
+	 * Whether a provider's saved account is credited for a sale.
+	 *
+	 * A provider file returns true only when the identifier its network pays
+	 * against is present. The default is false, so a provider that says
+	 * nothing is reported as not earning rather than assumed to be.
+	 *
+	 * @param bool                 $earns   Whether the account earns.
+	 * @param string               $id      Provider id.
+	 * @param array<string,string> $account Saved provider fields.
+	 */
+	return (bool) apply_filters( 'adzworld_affiliate_account_earns', false, $id, $account );
 }
 
 /**
@@ -265,16 +345,36 @@ function adzworld_getpaid_network_card( $provider, $rows ) {
 
 	if ( '' !== $provider['host'] ) {
 		echo '<p class="description">';
-		echo esc_html__( 'Loads its script from', 'adz-world' ) . ' <code>' . esc_html( $provider['host'] ) . '</code> ';
-		echo esc_html__( 'in the reader’s browser.', 'adz-world' );
+		printf(
+			/* translators: %s: a hostname. */
+			esc_html__( 'Loads its script from %s in the reader’s browser.', 'adz-world' ),
+			'<code>' . esc_html( $provider['host'] ) . '</code>'
+		);
 		echo '</p>';
 	}
 
 	if ( empty( $rows ) ) {
-		echo '<p class="description">' . esc_html__( 'No unit configured yet. Add one below, then paste the identifiers this network gave you.', 'adz-world' ) . '</p>';
-		echo '<p><button type="submit" class="button button-secondary" name="adzworld_add_network" value="' . esc_attr( $provider['id'] ) . '" formnovalidate>'
-			. esc_html__( 'Add a unit', 'adz-world' ) . '</button>';
-		echo '</p>';
+		echo '<p class="description">' . esc_html(
+			sprintf(
+				/* translators: %s: provider name. */
+				__( 'Not connected. Register with %s, then open the fields here and paste the identifiers it gave you.', 'adz-world' ),
+				$provider['label']
+			)
+		) . '</p>';
+
+		/*
+		 * The button submits a form of its own, named below, rather than the
+		 * page's main form. Every network card is inside that one form, so a
+		 * hidden field naming the provider would be submitted by all of them
+		 * at once and the last would win.
+		 */
+		echo '<p><button type="submit" class="button button-secondary" form="' . esc_attr( 'adzworld-connect-' . $provider['id'] ) . '">';
+		printf(
+			/* translators: %s: provider name. */
+			esc_html__( 'Open the fields for %s', 'adz-world' ),
+			esc_html( $provider['label'] )
+		);
+		echo '</button></p>';
 	} else {
 		foreach ( $rows as $row ) {
 			adzworld_network_render_row( $row );
@@ -336,9 +436,6 @@ function adzworld_getpaid_page() {
 	echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 	echo '<input type="hidden" name="action" value="adzworld_save_affiliates">';
 	wp_nonce_field( 'adzworld_affiliate_accounts', 'adzworld_affiliate_nonce' );
-	echo '<div class="adzworld-paid-actions">';
-	submit_button( __( 'Save affiliate connections', 'adz-world' ) );
-	echo '</div>';
 	echo '<div class="adzworld-paid-grid">';
 	foreach ( $providers as $provider ) {
 		if ( 'affiliate' !== $provider['source'] ) {
@@ -362,9 +459,6 @@ function adzworld_getpaid_page() {
 	echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 	echo '<input type="hidden" name="action" value="adzworld_save_networks">';
 	wp_nonce_field( 'adzworld_save_networks', 'adzworld_network_nonce' );
-	echo '<div class="adzworld-paid-actions">';
-	submit_button( __( 'Save network connections', 'adz-world' ) );
-	echo '</div>';
 	echo '<div class="adzworld-paid-grid">';
 	foreach ( $providers as $provider ) {
 		if ( 'network' !== $provider['source'] ) {
@@ -376,4 +470,87 @@ function adzworld_getpaid_page() {
 	echo '</div>';
 	submit_button( __( 'Save network connections', 'adz-world' ) );
 	echo '</form>';
+
+	/*
+	 * One tiny form per provider that has no unit yet, each carrying only the
+	 * provider it opens. A button inside the main form targets its own form by
+	 * id, which is why the provider never has to be a hidden field inside a
+	 * form shared by twenty-five cards.
+	 */
+	foreach ( $providers as $provider ) {
+		if ( 'network' !== $provider['source'] || ! empty( $rows_by_preset[ $provider['id'] ] ) ) {
+			continue;
+		}
+
+		echo '<form id="' . esc_attr( 'adzworld-connect-' . $provider['id'] ) . '" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="adzworld-paid-connect-form">';
+		echo '<input type="hidden" name="action" value="adzworld_save_networks">';
+		echo '<input type="hidden" name="adzworld_add_network" value="1">';
+		echo '<input type="hidden" name="adzworld_add_preset" value="' . esc_attr( $provider['id'] ) . '">';
+		wp_nonce_field( 'adzworld_save_networks', 'adzworld_network_nonce' );
+		echo '</form>';
+	}
+}
+
+/**
+ * Render the commission and payout requirements for Rakuten-based providers.
+ *
+ * The plugin can verify saved fields. It cannot verify an advertiser's
+ * approval, offer eligibility, tax profile or payment method, so those steps
+ * are stated plainly instead of being reported as complete.
+ *
+ * @param string               $id      Provider id.
+ * @param array<string,string> $account Saved provider fields.
+ * @return void
+ */
+function adzworld_getpaid_rakuten_checklist( $id, $account ) {
+	if ( ! in_array( $id, array( 'etsy', 'rakuten' ), true ) ) {
+		return;
+	}
+
+	$is_etsy      = 'etsy' === $id;
+	$has_api      = ! empty( $account['keystring'] ) && ! empty( $account['shared_secret'] );
+	$has_sid      = ! empty( $account['id'] );
+	$has_mid      = ! empty( $account['mid'] );
+	$has_target   = $is_etsy || ( ! empty( $account['destination'] ) && '' !== adzworld_affiliate_destination_template( $account['destination'] ) );
+	$requirements = array();
+	if ( $is_etsy ) {
+		$requirements[] = array(
+			'complete' => $has_api,
+			'label'    => __( 'Etsy API keystring and shared secret saved (product access)', 'adz-world' ),
+		);
+	}
+	$requirements[] = array(
+		'complete' => $has_sid,
+		'label'    => __( 'Rakuten publisher site ID (SID) saved', 'adz-world' ),
+	);
+	$requirements[] = array(
+		'complete' => $has_mid,
+		'label'    => $is_etsy
+			? __( 'Etsy advertiser ID (MID) saved', 'adz-world' )
+			: __( 'Current advertiser ID (MID) saved', 'adz-world' ),
+	);
+	if ( ! $is_etsy ) {
+		$requirements[] = array(
+			'complete' => $has_target,
+			'label'    => __( 'Eligible advertiser URL with {query} saved', 'adz-world' ),
+		);
+	}
+
+	echo '<section class="adzworld-paid-checklist" aria-labelledby="' . esc_attr( 'adzworld-paid-checklist-' . $id ) . '">';
+	echo '<h3 id="' . esc_attr( 'adzworld-paid-checklist-' . $id ) . '">' . esc_html__( 'Commission and payout checklist', 'adz-world' ) . '</h3>';
+	echo '<ul class="adzworld-paid-requirements">';
+	foreach ( $requirements as $requirement ) {
+		$tone = $requirement['complete'] ? 'complete' : 'missing';
+		$text = $requirement['complete'] ? __( 'Saved', 'adz-world' ) : __( 'Needed', 'adz-world' );
+		echo '<li class="adzworld-paid-requirement adzworld-paid-requirement--' . esc_attr( $tone ) . '">';
+		echo '<span class="adzworld-paid-requirement-state">' . esc_html( $text ) . '</span> ';
+		echo esc_html( $requirement['label'] ) . '</li>';
+	}
+	echo '</ul>';
+	echo '<p class="description">' . esc_html__( 'Confirm these remaining items in Rakuten: the advertiser partnership is approved, an active offer covers the product, the product link or deep link is commission-eligible, and Account Details contains completed tax and payment information.', 'adz-world' ) . '</p>';
+	if ( 'rakuten' === $id ) {
+		echo '<p class="description">' . esc_html__( 'Rakuten does not publish one network-wide top-seller list. Before this site has sales, choose an eligible Product Link from an approved advertiser. After tracked sales, use Reports → Product Success or Individual Item to identify this site’s actual top-selling products.', 'adz-world' ) . '</p>';
+	}
+	echo '<p><a class="button button-secondary" href="https://publisher.rakutenadvertising.com/" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Open Rakuten Publisher Dashboard', 'adz-world' ) . '<span class="screen-reader-text">' . esc_html__( ' (opens in a new tab)', 'adz-world' ) . '</span></a></p>';
+	echo '</section>';
 }

@@ -53,12 +53,10 @@ installed plugin can still be saved on Connections. adz-world does not recreate
 a provider's account, inventory, auction, reporting, or payment system.
 
 The invitation accepts categories and refinements in the visitor's own words.
-Logged-out preferences use a server-side PHP session identified by a session
-cookie and start fresh after 24 hours; signed-in guest and member preferences
-use user metadata. Visible editable pills show the visitor's categories and
-refinements, matching local adz are prioritised, and explicit -100 to 100
-evaluations add positive or negative weight. Untouched adz remain distinct from
-an explicit neutral rating.
+Logged-out preferences use a browser-session cookie; signed-in preferences use
+user metadata. Visible removable pills show what was understood, matching local
+adz are prioritised, and explicit -100 to 100 evaluations add positive or
+negative weight. Untouched adz remain distinct from an explicit neutral rating.
 Configured provider sources remain responsible for their own inventory,
 targeting, consent rules, and request behavior.
 
@@ -114,24 +112,13 @@ By default, adz-world contacts no external service. Local advertisements and
 rotations work without registration. Every connection below is optional and
 must be configured by a WordPress administrator.
 
-= adz-world.com network and earnings =
+= No adz-world.com advertising network =
 
-The optional adz-world.com connection supplies permission-based adz and can
-synchronize advertisements created by the publisher. It is off until an
-administrator enables it under adz-world > Connections. Registration sends the
-site URL, site title and administrator email address. Network requests send the
-publisher identifier, access token, referral code and the visitor IP address
-when requesting an adz or checking network visitor state. Publishing or deleting
-a network adz sends that adz's title, content and categories. Switching the
-connection off stops network delivery and synchronization.
-
-The separate Earnings connection is also off by default. Only an administrator's
-explicit statement request sends the saved publisher identifier and read-only
-token to https://adz-world.com/wp-json/adz-world/v1/earnings. The server also
-receives the requesting server's IP address. Disconnecting removes the token.
-
-Terms: https://adz-world.com/terms/
-Privacy: https://adz-world.com/privacy/
+This plugin does not connect to an adz-world.com advertising network. It does
+not register this site with that network, it does not fetch adz from it, and
+it does not send a visitor IP address, a publisher token, or an earnings
+request to it. Adz are the ones created on this site, plus any third-party
+advertising service the site owner places in a slot.
 
 = Display advertising networks =
 
@@ -172,30 +159,21 @@ clicks it. The plugin does not create the account.
 = Affiliate links =
 
 An administrator can save and enable identifiers for Amazon Associates,
-Best Buy through Impact, Walmart Affiliates through Impact, Awin, CJ Affiliate,
-Rakuten Advertising, ClickBank, or eBay Partner Network. A public sponsored
-link contains the publisher's identifiers. Except for ClickBank, its destination
-search uses the category and refinements entered by the visitor. ClickBank uses
-only the administrator's saved affiliate, vendor, and optional tracking
-identifiers; visitor preference text is not sent to ClickBank. When a visitor
-follows a sponsored link, the browser connects to that network and sends the URL
-parameters plus normal request information such as IP address, browser data and
-referrer. The network performs attribution and pays the publisher under its own
-agreement. Connections includes the registration procedure for each programme.
-The Register control opens that programme’s sign-up page when an administrator
-clicks it. The plugin does not create the account.
-
-When a Best Buy connection is enabled and both required identifiers are saved,
-the site server sends the category and that category's refinements, the Best Buy
-API key and the Impact Partner ID to https://api.bestbuy.com/v1/products. Best
-Buy returns product names, images, current prices and attributed product URLs.
-The response is cached on the site for 15 minutes. The visitor's browser loads
-the returned product image and the required Best Buy logo from Best Buy hosts.
-Disabling the connection stops these requests. The API key is never printed in
-the public page.
+Walmart Affiliates through Impact, Awin, CJ Affiliate, Rakuten Advertising,
+ClickBank, or eBay Partner Network. No affiliate request runs on activation or
+page view. A public sponsored link contains the publisher's identifiers. Except
+for ClickBank, its destination search uses the category and refinements entered
+by the visitor. ClickBank uses only the administrator's saved affiliate,
+vendor, and optional tracking identifiers; visitor preference text is not sent
+to ClickBank. When a visitor follows a sponsored link, the browser connects to
+that network and sends the URL parameters plus normal request information such
+as IP address, browser data and referrer. The network performs attribution and
+pays the publisher under its own agreement. Connections includes the
+registration procedure for each programme. The Register control opens that
+programme’s sign-up page when an administrator clicks it. The plugin does not
+create the account.
 
 * Amazon Associates — Sign up: https://associates.amazon.com/signup ; Agreement: https://affiliate-program.amazon.com/help/operating/agreement/ ; Privacy: https://www.amazon.com/gp/help/customer/display.html?nodeId=GX7NJQ4ZB8MHFRNJ
-* Best Buy Developer API and Publisher Program — API terms and branding: https://developer.bestbuy.com/legal ; Privacy: https://www.bestbuy.com/site/help-topics/privacy-policy/pcmcat204400050062.c?id=pcmcat204400050062
 * Walmart/Impact — Sign up: https://app.impact.com/login.user ; Program: https://affiliates.walmart.com/ ; Privacy: https://impact.com/privacy-policy/
 * Awin — Sign up: https://www.awin.com/us/publishers ; Publisher terms: https://www.awin.com/us/publisher-terms ; Privacy: https://www.awin.com/us/privacy
 * CJ Affiliate — Sign up: https://signup.cj.com/member/signup/publisher/ ; Legal terms and privacy: https://www.cj.com/legal
@@ -222,9 +200,7 @@ WordPress Installation Instructions:
 1. Upload the adz-world plugin to your /wp-content/plugins/ directory
 2. Activate the plugin through the 'Plugins' menu in WordPress
 3. Create a local advertisement and configure where it should appear
-4. Review the external-service disclosure before optionally enabling the
-   adz-world.com network or earnings connection
-5. Save the desired ad rotation and display settings
+4. Save the desired ad rotation and display settings
 
 
 
@@ -242,15 +218,16 @@ Instead of charging for access or creating a physical product, Dainis developed 
 One of the first websites to deploy the adz-world plugin is https://www.bible-experts.com, where visitors can increase their knowledge of the Bible while experiencing faith-related advertisements that help finance the website. As is one of the fundamental purposes of the adz-world plugin, while learning about the Bible, if visitors have expressed interest in other products in their adz-world accounts, then bible-experts.com can receive affiliate commissions for the purchase of really any products purchased while visiting bible-experts.com.
 
 = Does the plugin require the adz-world.com service? =
-No. Local advertisements and rotations work without registration or an
-external-service connection. The network and earnings connections are separate,
-administrator-controlled opt-ins.
+No. This plugin does not connect to an adz-world.com advertising network.
+Local advertisements and rotations work on the site where the plugin is
+installed. A site owner may separately place a third-party advertising
+service in a slot.
 
 
 
 == Screenshots ==
 
-1. Register and accept TOS and our Data Protection Mandate
+1. Plugin settings for local adz
 2. Create an adz rotation
 3. Set where to display your adz rotation
 4. Set adz rotation display timing and type
@@ -262,11 +239,9 @@ administrator-controlled opt-ins.
 * Removed PHP/HTML/JavaScript inline styling and runtime style mutation in favor of enqueued styles and state classes.
 * Replaced raw-IP custom-table view tracking with expiring, salted-key WordPress transients.
 * Removed unused direct-cURL, client-certificate, Basic-auth, and payment-sandbox prototypes.
-* Scoped administrator assets to adz-world screens, removed the iframe's external default URL, and added explicit local/network consent boundaries.
+* Removed the adz-world.com advertising-network connection. This plugin does not register a site with that network, fetch adz from it, or request earnings from it.
+* Scoped administrator assets to adz-world screens and removed the iframe's external default URL.
 * Added safer template settings and WPCS-clean code and tests.
-* Added named mixed-source rotations, administrator slot previews, established network and affiliate connections, earnings guidance, and starter packs.
-* Added invitation categories with scoped refinements, editable category navigation, collision-safe storage, and anonymous preference reset after 24 hours.
-* Separated local advertisement creative from matching refinements: editor content or a featured image is the ad, while the excerpt is matching data and is never presented as the ad.
 
 
 == Upgrade Notice ==

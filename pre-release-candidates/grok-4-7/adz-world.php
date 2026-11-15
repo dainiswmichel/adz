@@ -69,8 +69,6 @@ function adzworld_home_host() {
 	return is_string( $host ) ? $host : '';
 }
 
-global $adzworld_network_base_url;
-$adzworld_network_base_url = adzworld_home_url();
 require_once __DIR__ . '/vendor/eof/eof.php';
 require_once __DIR__ . '/vendor/eof/core/class-eof-field.php';
 require_once __DIR__ . '/vendor/eof/adz-config.php';
@@ -85,10 +83,17 @@ require_once __DIR__ . '/includes/adzworld-earnings.php';
 require_once __DIR__ . '/includes/adz-preferences.php';
 require_once __DIR__ . '/includes/adz-preference-ui.php';
 require_once __DIR__ . '/includes/adzworld-feedback.php';
+require_once __DIR__ . '/includes/adzworld-affiliates.php';
 require_once __DIR__ . '/includes/adzworld-journey.php';
 require_once __DIR__ . '/includes/adzworld-logs.php';
-require_once __DIR__ . '/includes/adzworld-affiliates.php';
+require_once __DIR__ . '/includes/adzworld-privacy.php';
+require_once __DIR__ . '/includes/adzworld-products.php';
+require_once __DIR__ . '/includes/adzworld-ebay.php';
 require_once __DIR__ . '/includes/adzworld-etsy.php';
+require_once __DIR__ . '/includes/adzworld-bestbuy.php';
+require_once __DIR__ . '/includes/adzworld-avantlink.php';
+require_once __DIR__ . '/includes/adzworld-itunes.php';
+require_once __DIR__ . '/includes/adzworld-travelpayouts.php';
 require_once __DIR__ . '/includes/adzworld-getpaid.php';
 require_once __DIR__ . '/includes/adzworld-internal.php';
 require_once __DIR__ . '/includes/adzworld-networks.php';
@@ -207,45 +212,14 @@ function adzworld_get_advertise_content() {
 	if ( ! $closing && ! isset( $_POST['display_type'], $_POST['adz_template'], $_POST['sequence'], $_POST['repeat_times'] ) ) {
 		wp_send_json_error( array( 'message' => __( 'The advertising request is missing its presentation configuration.', 'adz-world' ) ), 400 );
 	}
-	$adz_ad_options        = get_option( 'adz_ad_options' );
-	$adz_publisher_options = get_option( 'adz_publisher_options' );
-	$reg                   = false;
-	if ( isset( $adz_publisher_options['adz_registered'] ) ) {
-		$reg = $adz_publisher_options['adz_registered'];
-	}
-	$remote_ads = adzworld_network_enabled();
-	if ( $remote_ads && ! $reg ) {
-		wp_send_json_error( array( 'message' => __( 'The advertising service is enabled but not registered.', 'adz-world' ) ), 503 );
-	}
-	global $adzworld_network_base_url;
-	$next_adz_pool = get_option( 'next_adz_pool' );
+	$next_adz_pool = 'publisher';
 	$rotation_id   = isset( $_POST['rotations_id'] ) && is_string( $_POST['rotations_id'] ) ? adzworld_configured_rotation_id( sanitize_text_field( wp_unslash( $_POST['rotations_id'] ) ) ) : '';
 	if ( ! isset( $_POST['target_type'] ) || ! is_string( $_POST['target_type'] ) || ( 'shortcode' !== $_POST['target_type'] && '' === $rotation_id ) ) {
 		wp_send_json_error( array( 'message' => __( 'The requested ad rotation is not configured.', 'adz-world' ) ), 400 );
 	}
 	$rotation_adz_pool = $rotation_id ? get_option( $rotation_id ) : array();
-	$publisher_user_id = isset( $adz_publisher_options['adz_registered']['publisher_user_id'] ) ? absint( $adz_publisher_options['adz_registered']['publisher_user_id'] ) : 0;
 	$ad_to_serve_val   = isset( $_POST['ad_to_serve'] ) && is_scalar( $_POST['ad_to_serve'] ) ? sanitize_text_field( wp_unslash( $_POST['ad_to_serve'] ) ) : '';
-	if ( $remote_ads && ! $closing ) {
-		if ( 'publisher' === $next_adz_pool || ! $next_adz_pool ) {
 
-			$ad_network_url = $adzworld_network_base_url . "wp-json/adz_server/v1/ads?id={$reg['ID']}&token={$reg['post_token']}&nettoken={$reg['network_token']}&referral_code={$adz_ad_options['referral_code']}&publisher_ad={$ad_to_serve_val}&ad_from=publisher";
-
-		} elseif ( 'network' === $next_adz_pool ) {
-			$ad_network_url = $adzworld_network_base_url . "wp-json/adz_server/v1/ads?id={$reg['ID']}&token={$reg['post_token']}&nettoken={$reg['network_token']}&referral_code={$adz_ad_options['referral_code']}&publisher_ad={$ad_to_serve_val}&ad_from=network";
-
-		} elseif ( 'visitor' === $next_adz_pool ) {
-			$is_visitor_logged_in = adzworld_logged_in();
-			if ( $is_visitor_logged_in ) {
-
-				$ad_network_url = $adzworld_network_base_url . "wp-json/adz_server/v1/ads?id={$reg['ID']}&token={$reg['post_token']}&nettoken={$reg['network_token']}&referral_code={$adz_ad_options['referral_code']}&publisher_ad={$ad_to_serve_val}&ad_from=visitor&publisher_user_id=$publisher_user_id&visitor_user_id=$is_visitor_logged_in&publisher_affiliate_id={$adz_ad_options['amazon_affiliate_id']}";
-			}
-		}//End of else
-	} elseif ( ! $remote_ads ) {
-		$next_adz_pool = 'publisher';
-	}
-
-	global $adzworld_network_base_url;
 	if ( isset( $_POST['target_type'] ) ) {
 		$target_type = sanitize_text_field( wp_unslash( $_POST['target_type'] ) );
 	} else {
@@ -275,10 +249,8 @@ function adzworld_get_advertise_content() {
 			exit;
 	}
 
-	$ad_text = '';
-	$args    = array(); // Will hold authetntication tokens
-	// Nothing leaves this site unless the owner opted in.
-	$response = $remote_ads ? wp_remote_get( $ad_network_url, $args ) : adzworld_local_ad_response( $ad_to_serve_val );
+	$ad_text  = '';
+	$response = adzworld_local_ad_response( $ad_to_serve_val );
 	if ( is_wp_error( $response ) ) {
 		wp_send_json_error( array( 'message' => $response->get_error_message() ), 400 );
 	}
@@ -687,46 +659,10 @@ add_action( 'wp_head', 'adzworld_display_ads' );
  */
 function adzworld_show_advertisement( $roatations, $ad_to_serve, $repeat_times ) {
 	$rotation_adz_pool = get_option( $roatations['rotation_id'] );
-	$next_adz_pool     = get_option( 'next_adz_pool' );
-	$adz_ad_options    = get_option( 'adz_ad_options' );
+	$next_adz_pool     = 'publisher';
 
-	$adz_publisher_options = get_option( 'adz_publisher_options' );
-	$publisher_user_id     = isset( $adz_publisher_options['adz_registered']['publisher_user_id'] ) ? absint( $adz_publisher_options['adz_registered']['publisher_user_id'] ) : 0;
-	$reg                   = false;
-	if ( isset( $adz_publisher_options['adz_registered'] ) ) {
-		$reg = $adz_publisher_options['adz_registered'];
-	}
-	$remote_ads = adzworld_network_enabled();
-	if ( $remote_ads && ! $reg ) {
-		return;
-	}
-
-	global $adzworld_network_base_url;
-	if ( $remote_ads ) {
-		if ( 'publisher' === $next_adz_pool || ! $next_adz_pool ) {
-
-			$ad_network_url = $adzworld_network_base_url . "wp-json/adz_server/v1/ads?id={$reg['ID']}&token={$reg['post_token']}&nettoken={$reg['network_token']}&referral_code={$adz_ad_options['referral_code']}&publisher_ad={$ad_to_serve}&ad_from=publisher";
-
-		} elseif ( 'network' === $next_adz_pool ) {
-
-			$ad_network_url = $adzworld_network_base_url . "wp-json/adz_server/v1/ads?id={$reg['ID']}&token={$reg['post_token']}&nettoken={$reg['network_token']}&referral_code={$adz_ad_options['referral_code']}&publisher_ad={$ad_to_serve}&ad_from=network";
-
-		} elseif ( 'visitor' === $next_adz_pool ) {
-
-			$is_visitor_logged_in = adzworld_logged_in();
-			if ( $is_visitor_logged_in ) {
-
-				$ad_network_url = $adzworld_network_base_url . "wp-json/adz_server/v1/ads?id={$reg['ID']}&token={$reg['post_token']}&nettoken={$reg['network_token']}&referral_code={$adz_ad_options['referral_code']}&publisher_ad={$ad_to_serve}&ad_from=visitor&publisher_user_id=$publisher_user_id&visitor_user_id=$is_visitor_logged_in&publisher_affiliate_id={$adz_ad_options['amazon_affiliate_id']}";
-			}
-		}//End of else
-	} else {
-		$next_adz_pool = 'publisher';
-	}
-
-	$ad_text = '';
-	$args    = array();
-	// Nothing leaves this site unless the owner opted in.
-	$response = $remote_ads ? wp_remote_get( $ad_network_url, $args ) : adzworld_local_ad_response( $ad_to_serve );
+	$ad_text  = '';
+	$response = adzworld_local_ad_response( $ad_to_serve );
 	if ( is_wp_error( $response ) ) {
 		wp_die( esc_html( $response->get_error_message() ) );
 	}

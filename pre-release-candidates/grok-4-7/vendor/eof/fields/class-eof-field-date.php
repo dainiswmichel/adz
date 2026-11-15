@@ -103,3 +103,5 @@ if ( ! class_exists( 'EOF_field_date' ) ) :
 	}
 
 endif;
+
+?>

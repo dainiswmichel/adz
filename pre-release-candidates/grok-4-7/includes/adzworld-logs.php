@@ -76,6 +76,56 @@ function adzworld_logs_ad_id( $value ) {
 }
 
 /**
+ * The product identifiers a provider actually served in this round.
+ *
+ * Each is the provider's own identifier namespaced by the provider, such as
+ * ebay:110588014268. Without these, every round a provider answered logs as
+ * the same row: the provider is named, the product is not.
+ *
+ * @since 1.0.0
+ *
+ * @param mixed $value Raw identifiers.
+ * @return string Space separated identifiers, or empty.
+ */
+function adzworld_logs_items( $value ) {
+	$clean = array();
+
+	foreach ( (array) $value as $id ) {
+		$id = adzworld_slot_journey_text( $id );
+
+		if ( preg_match( '/^[a-z0-9_-]{1,50}:[A-Za-z0-9._-]{1,100}$/D', $id ) && ! in_array( $id, $clean, true ) ) {
+			$clean[] = $id;
+		}
+	}
+
+	return implode( ' ', $clean );
+}
+
+/**
+ * What was actually on the screen, as the log should name it.
+ *
+ * A provider slot is configured as source:ebay and its feedback is keyed on
+ * source-ebay, but neither of those is the adzad. The adzad is the listing
+ * the reader was looking at. When the provider's cards are known, they are
+ * the identity; otherwise the slot key stands, because something was shown
+ * and the log should not pretend nothing was.
+ *
+ * @since 1.0.0
+ *
+ * @param array<string,mixed> $row Log row.
+ * @return string
+ */
+function adzworld_logs_ad_shown( $row ) {
+	$items = isset( $row['items'] ) ? adzworld_logs_items( explode( ' ', (string) $row['items'] ) ) : '';
+
+	if ( '' !== $items ) {
+		return $items;
+	}
+
+	return isset( $row['ad'] ) ? adzworld_logs_ad_id( $row['ad'] ) : '';
+}
+
+/**
  * Slot configuration token.
  *
  * @param mixed $value Raw token.
@@ -183,7 +233,16 @@ function adzworld_logs_current_refinements( $displayed, $change ) {
  */
 function adzworld_logs_sent_string( $ad, $category, $rating, $refinements ) {
 	$parts = array();
-	$ad    = adzworld_logs_ad_id( $ad );
+
+	/*
+	 * Either shape is valid here: the slot key for an adzad this site owns,
+	 * or the provider's own listing identifier when the cards are known.
+	 * Validating only the first silently dropped the listing, which is the
+	 * more useful of the two.
+	 */
+	$ad = '' !== adzworld_logs_ad_id( $ad )
+		? adzworld_logs_ad_id( $ad )
+		: adzworld_logs_items( explode( ' ', (string) $ad ) );
 
 	if ( '' !== $ad ) {
 		$parts[] = $ad;
@@ -222,9 +281,10 @@ function adzworld_logs_sent_string( $ad, $category, $rating, $refinements ) {
  * @param mixed               $refinements  Refinements displayed with the ad.
  * @param string              $mts          Michel Time Stamp.
  * @param int|null            $rating       Rating displayed with the ad, or null.
+ * @param string[]            $items        Product identifiers the provider served.
  * @return array<int,array<string,mixed>>
  */
-function adzworld_logs_entries( $place, $ad, $configured, $category, $refinements, $mts, $rating = null ) {
+function adzworld_logs_entries( $place, $ad, $configured, $category, $refinements, $mts, $rating = null, $items = array() ) {
 	if ( ! is_array( $place ) ) {
 		return array();
 	}
@@ -238,12 +298,14 @@ function adzworld_logs_entries( $place, $ad, $configured, $category, $refinement
 	$inner       = isset( $place['inner_rotation'] ) ? adzworld_logs_key( $place['inner_rotation'] ) : '';
 	$inner_slot  = isset( $place['inner_slot'] ) ? (int) $place['inner_slot'] : 0;
 
-	if ( '' === $ad || '' === $rotation || $slot < 0 ) {
+	/* Slots count from 1. A zero or a negative is not a slot, it is a bug. */
+	if ( '' === $ad || '' === $rotation || $slot < 1 ) {
 		return array();
 	}
 
 	$row = array(
 		'mts'         => adzworld_slot_journey_text( $mts ),
+		'items'       => adzworld_logs_items( $items ),
 		'rotation'    => $rotation,
 		'slot'        => $slot,
 		'holds'       => '',
@@ -259,7 +321,7 @@ function adzworld_logs_entries( $place, $ad, $configured, $category, $refinement
 		return array( $row );
 	}
 
-	if ( $inner_slot < 0 ) {
+	if ( $inner_slot < 1 ) {
 		return array();
 	}
 
@@ -332,7 +394,7 @@ function adzworld_logs_apply_response( $row, $changes, $external ) {
 	if ( $external ) {
 		$row['logged']      = 0;
 		$row['sent_string'] = adzworld_logs_sent_string(
-			$row['ad'],
+			adzworld_logs_ad_shown( $row ),
 			adzworld_logs_current_category( $row['category'], $row['category_change'] ),
 			adzworld_logs_current_rating( $row['rating'], $row['rating_change'] ),
 			adzworld_logs_current_refinements( $row['refinements'], $row['refinement_change'] )
@@ -533,7 +595,11 @@ function adzworld_logs_export_text( $rows ) {
 			$lines[] = 'configured ' . $clean['configured'];
 		}
 
-		$lines[] = 'ad ' . $clean['ad'];
+		$lines[] = 'ad ' . adzworld_logs_ad_shown( $clean );
+
+		if ( '' !== $clean['items'] && 0 === strpos( $clean['ad'], 'source-' ) ) {
+			$lines[] = 'served by ' . substr( $clean['ad'], strlen( 'source-' ) );
+		}
 
 		if ( '' !== $clean['category'] ) {
 			$lines[] = 'category ' . $clean['category'];
@@ -601,6 +667,7 @@ function adzworld_logs_sanitize_row( $row ) {
 		'mts'               => '',
 		'n'                 => 0,
 		'visit'             => '',
+		'items'             => '',
 		'rotation'          => '',
 		'slot'              => 0,
 		'holds'             => '',
@@ -625,6 +692,7 @@ function adzworld_logs_sanitize_row( $row ) {
 	$clean['mts']         = isset( $row['mts'] ) ? adzworld_slot_journey_text( $row['mts'] ) : '';
 	$clean['n']           = isset( $row['n'] ) ? (int) $row['n'] : 0;
 	$clean['visit']       = isset( $row['visit'] ) ? adzworld_logs_key( $row['visit'] ) : '';
+	$clean['items']       = isset( $row['items'] ) ? adzworld_logs_items( explode( ' ', (string) $row['items'] ) ) : '';
 	$clean['rotation']    = isset( $row['rotation'] ) ? adzworld_logs_key( $row['rotation'] ) : '';
 	$clean['slot']        = isset( $row['slot'] ) ? (int) $row['slot'] : 0;
 	$clean['holds']       = isset( $row['holds'] ) ? adzworld_logs_key( $row['holds'] ) : '';
@@ -672,15 +740,71 @@ function adzworld_logs_save( $rows ) {
 }
 
 /**
+ * Whether the reader has told this plugin anything.
+ *
+ * Nothing about a reader is recorded, and no session is opened for them,
+ * until they give input of their own accord: a category, a refinement, a
+ * rating, or a profile. Being shown an advertisement is not input, and is
+ * not a reason to start recording someone.
+ *
+ * @since 1.0.0
+ *
+ * @return bool True once the reader has given input.
+ */
+function adzworld_logs_consented() {
+	/* A reader who made a profile told us on purpose. */
+	if ( function_exists( 'adzworld_preference_uses_profile' ) && adzworld_preference_uses_profile() ) {
+		return true;
+	}
+
+	/*
+	 * A reader who typed a category or a refinement told us what they want.
+	 * That act is the consent: nothing is recorded, and no session is opened,
+	 * until they make it.
+	 */
+	if ( function_exists( 'adzworld_current_preference' ) && function_exists( 'adzworld_has_preference' )
+		&& adzworld_has_preference( adzworld_current_preference() ) ) {
+		return true;
+	}
+
+	/* A rating is the same act by a different control. */
+	if ( function_exists( 'adzworld_current_feedback' ) ) {
+		$feedback = adzworld_current_feedback();
+
+		if ( is_array( $feedback ) && ! empty( $feedback ) ) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
  * Visit key for this browser.
  *
  * The preference session holds the key when that session is open. A cookie
  * of the same key covers an account that does not use that session, so a
- * display and the later response stay on the same rows.
+ * display and the later response stay on the same rows. Both expire with
+ * the browser.
  *
- * @return string
+ * @since 1.0.0
+ *
+ * @param bool $establish True when the reader has just given input, which
+ *                        both consents to the session and creates it. False
+ *                        while merely serving, when an identifier is used
+ *                        only if one already exists.
+ * @return string Visit identifier, or empty when there is nothing to file.
  */
-function adzworld_logs_visit() {
+function adzworld_logs_visit( $establish = false ) {
+	/*
+	 * A visitor who has told us nothing gets no session, no cookie and no
+	 * identifier. Serving an adzad to someone is not a reason to start
+	 * recording them.
+	 */
+	if ( ! $establish && ! adzworld_logs_consented() ) {
+		return '';
+	}
+
 	$profile = function_exists( 'adzworld_preference_uses_profile' ) && adzworld_preference_uses_profile();
 
 	if ( ! $profile && PHP_SESSION_ACTIVE !== session_status() && ! headers_sent() && function_exists( 'adzworld_preference_open_session' ) ) {
@@ -716,12 +840,20 @@ function adzworld_logs_visit() {
 		$_SESSION['adzworld_log_visit'] = $visit;
 	}
 
-	if ( $cookie !== $visit && ! headers_sent() && defined( 'COOKIEPATH' ) && defined( 'DAY_IN_SECONDS' ) ) {
+	if ( $cookie !== $visit && ! headers_sent() && defined( 'COOKIEPATH' ) ) {
 		setcookie(
 			'adzworld_log_visit',
 			$visit,
 			array(
-				'expires'  => time() + ( 30 * DAY_IN_SECONDS ),
+
+				/*
+				 * Expires with the browser, like every other cookie this
+				 * plugin sets. It was 30 days, which is not a session: it
+				 * joined one visit to the next for a month, and the readme
+				 * said "browser-session cookie" while the code did otherwise.
+				 * A visit is a visit.
+				 */
+				'expires'  => 0,
 				'path'     => COOKIEPATH ? COOKIEPATH : '/',
 				'domain'   => defined( 'COOKIE_DOMAIN' ) ? COOKIE_DOMAIN : '',
 				'secure'   => function_exists( 'is_ssl' ) && is_ssl(),
@@ -811,9 +943,30 @@ function adzworld_logs_phrases( $pref, $category ) {
  * @return void
  */
 function adzworld_logs_remember_ad( $place, $ad, $configured, $category, $refinements, $rating = null ) {
-	$visit   = adzworld_logs_visit();
+	/*
+	 * Taken whether or not this round is recorded, so identifiers left by an
+	 * unrecorded round cannot leak into the next one.
+	 */
+	$items = function_exists( 'adzworld_products_remember_served' ) ? adzworld_products_remember_served() : array();
+
+	/*
+	 * They belong to a provider slot and to nothing else. An adzad this site
+	 * owns is named by its own post and must never be labelled with a
+	 * listing a provider rendered elsewhere on the page.
+	 */
+	if ( 0 !== strpos( adzworld_logs_ad_id( $ad ), 'source-' ) ) {
+		$items = array();
+	}
+
+	$visit = adzworld_logs_visit();
+
+	/* Nothing was consented, so there is nothing to record. */
+	if ( '' === $visit ) {
+		return;
+	}
+
 	$rows    = adzworld_logs_rows();
-	$entries = adzworld_logs_entries( $place, $ad, $configured, $category, $refinements, adzworld_michel_timestamp(), $rating );
+	$entries = adzworld_logs_entries( $place, $ad, $configured, $category, $refinements, adzworld_michel_timestamp(), $rating, $items );
 
 	foreach ( $entries as $entry ) {
 		$entry['visit']             = $visit;
@@ -839,13 +992,29 @@ function adzworld_logs_remember_ad( $place, $ad, $configured, $category, $refine
  * @param string              $ad       Ad id.
  * @param array<string,mixed> $changes  Category, rating, or refinement keys that arrived.
  * @param bool                $external True when a string is sent to an API.
+ * @param string[]            $items    Product identifiers the slide was showing.
  * @return void
  */
-function adzworld_logs_remember_response( $place, $ad, $changes, $external ) {
-	$visit   = adzworld_logs_visit();
-	$rows    = adzworld_logs_rows();
-	$entries = adzworld_logs_entries( $place, $ad, '', '', '', '' );
-	$ad_id   = adzworld_logs_ad_id( $ad );
+function adzworld_logs_remember_response( $place, $ad, $changes, $external, $items = array() ) {
+	/*
+	 * Giving input is the act that consents, so this call establishes the
+	 * session rather than requiring one to exist already.
+	 */
+	$visit = adzworld_logs_visit( true );
+	$rows  = adzworld_logs_rows();
+	$ad_id = adzworld_logs_ad_id( $ad );
+
+	/* Same rule on the response path: a provider's listings, nowhere else. */
+	if ( 0 !== strpos( $ad_id, 'source-' ) ) {
+		$items = array();
+	}
+
+	$entries = adzworld_logs_entries( $place, $ad, '', '', '', adzworld_michel_timestamp(), null, $items );
+	$items   = adzworld_logs_items( $items );
+
+	if ( '' === $visit ) {
+		return;
+	}
 
 	if ( empty( $entries ) || '' === $ad_id || ! is_array( $changes ) ) {
 		return;
@@ -867,7 +1036,28 @@ function adzworld_logs_remember_response( $place, $ad, $changes, $external ) {
 		}
 
 		if ( $found < 0 ) {
+			/*
+			 * The adzad that prompted this was served before the reader had
+			 * said anything, so it was not recorded. Their input is the
+			 * consent, so the round it answers is created now rather than
+			 * dropped: the first thing a reader says is the most telling.
+			 */
+			$entry['visit']     = $visit;
+			$entry['n']         = count( $rows );
+			$entry['responded'] = 0;
+			$rows[]             = adzworld_logs_apply_response( $entry, $changes, $external );
+			$found_one          = true;
+
 			continue;
+		}
+
+		/*
+		 * A round recorded before the provider's cards were identified, or
+		 * recorded by an older version, is completed rather than left
+		 * nameless. An identifier already on the row is never overwritten.
+		 */
+		if ( '' === $rows[ $found ]['items'] && '' !== $items ) {
+			$rows[ $found ]['items'] = $items;
 		}
 
 		$rows[ $found ] = adzworld_logs_apply_response( $rows[ $found ], $changes, $external );
@@ -889,9 +1079,10 @@ function adzworld_logs_remember_response( $place, $ad, $changes, $external ) {
  * @param string              $ad             Ad id.
  * @param array<string,mixed> $changes        Received changes.
  * @param bool                $external       True when a string is sent to an API.
+ * @param string[]            $items          Product identifiers the slide was showing.
  * @return void
  */
-function adzworld_logs_record_response( $rotation, $slot, $outer_rotation, $outer_slot, $ad, $changes, $external ) {
+function adzworld_logs_record_response( $rotation, $slot, $outer_rotation, $outer_slot, $ad, $changes, $external, $items = array() ) {
 	$ad = adzworld_logs_ad_id( $ad );
 
 	if ( '' === $ad || ! is_array( $changes ) ) {
@@ -900,15 +1091,15 @@ function adzworld_logs_record_response( $rotation, $slot, $outer_rotation, $oute
 
 	$place = adzworld_logs_place( $rotation, $slot, $outer_rotation, $outer_slot );
 
-	if ( '' === $place['rotation'] || (int) $place['slot'] < 0 ) {
+	if ( '' === $place['rotation'] || (int) $place['slot'] < 1 ) {
 		return;
 	}
 
-	if ( isset( $place['inner_slot'] ) && (int) $place['inner_slot'] < 0 ) {
+	if ( isset( $place['inner_slot'] ) && (int) $place['inner_slot'] < 1 ) {
 		return;
 	}
 
-	adzworld_logs_remember_response( $place, $ad, $changes, (bool) $external );
+	adzworld_logs_remember_response( $place, $ad, $changes, (bool) $external, $items );
 }
 
 /**
@@ -938,7 +1129,7 @@ function adzworld_logs_echo_turn( $row ) {
 
 	echo '<div class="adzworld-log-turn">';
 	echo '<div class="adzworld-log-served">';
-	echo '<p class="adzworld-log-ad">' . esc_html( (string) $row['ad'] ) . '</p>';
+	echo '<p class="adzworld-log-ad">' . esc_html( adzworld_logs_ad_shown( $row ) ) . '</p>';
 	if ( '' !== (string) $row['holds'] ) {
 		adzworld_logs_echo_pair(
 			sprintf(
@@ -954,6 +1145,9 @@ function adzworld_logs_echo_turn( $row ) {
 
 	echo '<div class="adzworld-log-request">';
 	adzworld_logs_echo_pair( __( 'Configured', 'adz-world' ), (string) $row['configured'] );
+	if ( '' !== (string) $row['items'] && 0 === strpos( (string) $row['ad'], 'source-' ) ) {
+		adzworld_logs_echo_pair( __( 'Served by', 'adz-world' ), substr( (string) $row['ad'], strlen( 'source-' ) ) );
+	}
 	adzworld_logs_echo_pair( __( 'Category', 'adz-world' ), (string) $row['category'] );
 	adzworld_logs_echo_pair( __( 'Rating', 'adz-world' ), $rating );
 	adzworld_logs_echo_pair( __( 'Refinements', 'adz-world' ), (string) $row['refinements'] );

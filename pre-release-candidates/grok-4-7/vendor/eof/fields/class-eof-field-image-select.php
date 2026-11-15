@@ -99,3 +99,5 @@ if ( ! class_exists( 'EOF_field_image_select' ) ) :
 	}
 
 endif;
+
+?>

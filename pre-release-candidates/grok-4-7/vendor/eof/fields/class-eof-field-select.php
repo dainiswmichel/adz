@@ -141,3 +141,5 @@ if ( ! class_exists( 'EOF_field_select' ) ) :
 	}
 
 endif;
+
+?>

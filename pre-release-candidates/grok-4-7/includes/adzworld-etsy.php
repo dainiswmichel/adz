@@ -46,7 +46,16 @@ function adzworld_etsy_account() {
  * @return bool
  */
 function adzworld_etsy_account_ready( $account ) {
-	foreach ( array( 'keystring', 'shared_secret', 'id', 'mid' ) as $field ) {
+	/*
+	 * Only the two Etsy credentials are required. The other two are a Rakuten
+	 * publisher site id and the Etsy advertiser id, which come from a separate
+	 * company and a separate approval; Etsy's own API key is what returns
+	 * listings. Requiring all four meant no listing appeared until Rakuten had
+	 * approved a publisher application, so a site with Etsy credentials alone
+	 * shows real listings now, with plain untracked links, and starts earning
+	 * on them the day the Rakuten ids are pasted in.
+	 */
+	foreach ( array( 'keystring', 'shared_secret' ) as $field ) {
 		if ( empty( $account[ $field ] ) ) {
 			return false;
 		}
@@ -184,7 +193,13 @@ function adzworld_etsy_map_listing( $listing, $account ) {
 	if ( '' === $page ) {
 		$page = adzworld_etsy_page_url( 'https://www.etsy.com/listing/' . $listing_id );
 	}
-	$url   = adzworld_etsy_tracked_url( $page, $account );
+	$url = adzworld_etsy_tracked_url( $page, $account );
+
+	/* No Rakuten ids yet means no deep link: link the listing plainly. */
+	if ( '' === $url ) {
+		$url = $page;
+	}
+
 	$title = isset( $listing['title'] ) ? sanitize_text_field( (string) $listing['title'] ) : '';
 	if ( '' === $url || '' === $title ) {
 		return null;
@@ -210,7 +225,7 @@ function adzworld_etsy_api_get( $url, $account ) {
 	$response = wp_safe_remote_get(
 		$url,
 		array(
-			'timeout' => 15,
+			'timeout' => 8,
 			'headers' => array(
 				'x-api-key' => $account['keystring'] . ':' . $account['shared_secret'],
 			),
@@ -286,6 +301,8 @@ function adzworld_etsy_product_results( $request ) {
 		if ( '' === $mapped['image'] ) {
 			continue;
 		}
+		/* The listing id is the identifier a rating attaches to; keep it. */
+		$mapped['id'] = $mapped['listing_id'];
 		unset( $mapped['listing_id'] );
 		$results[] = $mapped;
 		if ( 3 === count( $results ) ) {
@@ -296,3 +313,143 @@ function adzworld_etsy_product_results( $request ) {
 	set_transient( $result_key, $results, 15 * MINUTE_IN_SECONDS );
 	return $results;
 }
+
+/**
+ * Add the Etsy credential fields to the shared affiliate account screen.
+ *
+ * These were written directly into the core networks array in the candidate
+ * this fetcher came from. They are registered through the filter here so the
+ * core array stays the same for every provider.
+ *
+ * @param array<string,array<string,mixed>> $networks Affiliate providers.
+ * @return array<string,array<string,mixed>> Affiliate providers.
+ */
+function adzworld_etsy_register_network( $networks ) {
+	$networks['etsy'] = array(
+		'label'   => 'Etsy',
+		'account' => 'https://www.etsy.com/developers/your-apps',
+		'note'    => __( 'The keystring and shared secret come from an Etsy app. Since 9 February 2026 the x-api-key header is keystring:shared_secret. The fetcher sends the request string as the listing keywords. Etsy’s affiliate programme is moving from Awin to Rakuten, so id is the Rakuten publisher site id and mid is the Etsy advertiser id from the programme you joined. Neither id is supplied by this plugin.', 'adz-world' ),
+		'fields'  => array(
+			'keystring'     => array(
+				'label'   => __( 'Etsy keystring', 'adz-world' ),
+				'pattern' => '/^[A-Za-z0-9]{8,80}$/D',
+			),
+			'shared_secret' => array(
+				'label'   => __( 'Etsy shared secret', 'adz-world' ),
+				'pattern' => '/^[^\x00-\x20\x7F:]{8,128}$/D',
+				'secret'  => true,
+			),
+			'id'            => array(
+				'label'   => __( 'Rakuten publisher site id (optional)', 'adz-world' ),
+				'pattern' => '/^[A-Za-z0-9]{1,20}$/D',
+			),
+			'mid'           => array(
+				'label'   => __( 'Etsy advertiser id (optional)', 'adz-world' ),
+				'pattern' => '/^[A-Za-z0-9]{1,20}$/D',
+			),
+		),
+	);
+
+	return $networks;
+}
+
+/**
+ * Add the Etsy account procedure to the registration desk.
+ *
+ * @param array<string,array<string,mixed>> $catalog Registration procedures.
+ * @return array<string,array<string,mixed>> Registration procedures.
+ */
+function adzworld_etsy_register_catalog( $catalog ) {
+	$catalog['etsy'] = array(
+		'label'        => 'Etsy',
+		'group'        => 'affiliate',
+		'signup'       => 'https://www.etsy.com/developers/your-apps',
+		'signup_label' => __( 'Open your Etsy apps', 'adz-world' ),
+		'pays'         => __( 'The Rakuten publisher site id pays this site.', 'adz-world' ),
+		'steps'        => array(
+			__( 'Create an Etsy app and copy its keystring and shared secret. The shared secret is stored as a secret.', 'adz-world' ),
+			__( 'Join the Etsy programme on Rakuten Advertising. Etsy is moving the affiliate programme from Awin to Rakuten.', 'adz-world' ),
+			__( 'Copy your Rakuten publisher site id and the Etsy advertiser id from that programme.', 'adz-world' ),
+			__( 'Paste the four values in this section, enable the account, and save. The fetcher sends the category and its refinements as the listing keywords.', 'adz-world' ),
+		),
+	);
+
+	return $catalog;
+}
+
+/**
+ * Mark Etsy as a provider that receives the reader's request.
+ *
+ * @param array<string,bool> $providers Provider request behavior.
+ * @return array<string,bool> Provider request behavior.
+ */
+function adzworld_etsy_register_request_behavior( $providers ) {
+	$providers['etsy'] = true;
+
+	return $providers;
+}
+
+/**
+ * Append Etsy's listings to the shared result set.
+ *
+ * @param array<int,array<string,string>> $results Rows from earlier providers.
+ * @param string                          $request Reader's request.
+ * @return array<int,array<string,string>> Rows with Etsy's appended.
+ */
+function adzworld_etsy_append_product_results( $results, $request ) {
+	$listings = adzworld_etsy_product_results( $request );
+
+	if ( is_wp_error( $listings ) || ! is_array( $listings ) ) {
+		return $results;
+	}
+
+	foreach ( $listings as $row ) {
+		$row['provider'] = 'etsy';
+		$results[]       = $row;
+	}
+
+	return $results;
+}
+
+/**
+ * Supply Etsy readiness to the shared connection check.
+ *
+ * @param bool                 $ready   Existing readiness.
+ * @param string               $id      Provider id.
+ * @param array<string,string> $account Saved provider fields.
+ * @return bool
+ */
+function adzworld_etsy_filter_account_ready( $ready, $id, $account ) {
+	if ( 'etsy' !== $id ) {
+		return $ready;
+	}
+
+	return adzworld_etsy_account_ready( $account );
+}
+
+add_filter( 'adzworld_affiliate_account_ready', 'adzworld_etsy_filter_account_ready', 10, 3 );
+add_filter( 'adzworld_affiliate_networks', 'adzworld_etsy_register_network' );
+add_filter( 'adzworld_registration_catalog', 'adzworld_etsy_register_catalog' );
+add_filter( 'adzworld_getpaid_affiliate_serves_adz', 'adzworld_etsy_register_request_behavior' );
+add_filter( 'adzworld_affiliate_product_results', 'adzworld_etsy_append_product_results', 10, 2 );
+
+/**
+ * Whether this account is credited for a sale.
+ *
+ * Etsy's programme runs through Rakuten, so both the Rakuten publisher site
+ * id and the Etsy advertiser id are needed before a click is credited.
+ *
+ * @param bool                 $earns   Whether the account earns.
+ * @param string               $id      Provider id.
+ * @param array<string,string> $account Saved provider fields.
+ * @return bool
+ */
+function adzworld_etsy_filter_account_earns( $earns, $id, $account ) {
+	if ( 'etsy' !== $id ) {
+		return $earns;
+	}
+
+	return ! empty( $account['id'] ) && ! empty( $account['mid'] );
+}
+
+add_filter( 'adzworld_affiliate_account_earns', 'adzworld_etsy_filter_account_earns', 10, 3 );

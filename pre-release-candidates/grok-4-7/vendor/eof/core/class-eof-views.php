@@ -122,3 +122,4 @@ if ( ! class_exists( 'EOF_Views' ) ) :
 	}
 
 endif;
+?>

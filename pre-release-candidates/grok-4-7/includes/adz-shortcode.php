@@ -175,8 +175,8 @@ function adzworld_in_page( $adz_interval_min, $adz_duration, $adz_sequence = '',
 
 				}
 				},
-				error: function(errorThrown){
-					console.log(errorThrown);
+				error: function(){
+					/* The request failed. The page keeps what it has. */
 				}
 			});
 		});
@@ -201,8 +201,8 @@ function adzworld_in_page( $adz_interval_min, $adz_duration, $adz_sequence = '',
 						location.reload();
 					}
 				},
-				error: function(errorThrown){
-					console.log(errorThrown);
+				error: function(){
+					/* The request failed. The page keeps what it has. */
 				}
 			});
 
@@ -275,8 +275,8 @@ function adzworld_in_popup( $adz_interval_min, $adz_duration, $adz_sequence, $ad
 
 					}
 				},
-				error: function(errorThrown){
-					console.log(errorThrown);
+				error: function(){
+					/* The request failed. The page keeps what it has. */
 				}
 			});
 
@@ -301,8 +301,8 @@ function adzworld_in_popup( $adz_interval_min, $adz_duration, $adz_sequence, $ad
 				success:function(data) {
 					jQuery('#show_overlay').removeClass('adzworld-is-visible');
 				},
-				error: function(errorThrown){
-					console.log(errorThrown);
+				error: function(){
+					/* The request failed. The page keeps what it has. */
 				}
 			});
 			jQuery('#content_after_ad').html(content_after_ad);
@@ -340,3 +340,4 @@ function adzworld_check_shortcode_rotation_completed( $sequence ) {
 	}
 	return $return;
 }
+?>

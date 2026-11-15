@@ -126,3 +126,5 @@ if ( ! class_exists( 'EOF_field_media' ) ) :
 	}
 
 endif;
+
+?>
