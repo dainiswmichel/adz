@@ -271,6 +271,13 @@ function adzworld_getpaid_affiliate_card( $provider, $account ) {
 	echo '<span class="adzworld-paid-hint">' . esc_html__( 'Clear this to pause the account without losing what you pasted.', 'adz-world' ) . '</span></p>';
 
 	/*
+	 * Rakuten's own steps. Saving the fields is not the same as being
+	 * approved by an advertiser, so the steps the plugin cannot see are
+	 * stated rather than reported as done.
+	 */
+	adzworld_getpaid_rakuten_checklist( $id, $account );
+
+	/*
 	 * A save control in the card itself. The page-level button sits below
 	 * every card, which on this screen is a long scroll from whichever card
 	 * was just edited.
@@ -482,4 +489,68 @@ function adzworld_getpaid_page() {
 		wp_nonce_field( 'adzworld_save_networks', 'adzworld_network_nonce' );
 		echo '</form>';
 	}
+}
+
+/**
+ * Render the commission and payout requirements for Rakuten-based providers.
+ *
+ * The plugin can verify saved fields. It cannot verify an advertiser's
+ * approval, offer eligibility, tax profile or payment method, so those steps
+ * are stated plainly instead of being reported as complete.
+ *
+ * @param string               $id      Provider id.
+ * @param array<string,string> $account Saved provider fields.
+ * @return void
+ */
+function adzworld_getpaid_rakuten_checklist( $id, $account ) {
+	if ( ! in_array( $id, array( 'etsy', 'rakuten' ), true ) ) {
+		return;
+	}
+
+	$is_etsy      = 'etsy' === $id;
+	$has_api      = ! empty( $account['keystring'] ) && ! empty( $account['shared_secret'] );
+	$has_sid      = ! empty( $account['id'] );
+	$has_mid      = ! empty( $account['mid'] );
+	$has_target   = $is_etsy || ( ! empty( $account['destination'] ) && '' !== adzworld_affiliate_destination_template( $account['destination'] ) );
+	$requirements = array();
+	if ( $is_etsy ) {
+		$requirements[] = array(
+			'complete' => $has_api,
+			'label'    => __( 'Etsy API keystring and shared secret saved (product access)', 'adz-world' ),
+		);
+	}
+	$requirements[] = array(
+		'complete' => $has_sid,
+		'label'    => __( 'Rakuten publisher site ID (SID) saved', 'adz-world' ),
+	);
+	$requirements[] = array(
+		'complete' => $has_mid,
+		'label'    => $is_etsy
+			? __( 'Etsy advertiser ID (MID) saved', 'adz-world' )
+			: __( 'Current advertiser ID (MID) saved', 'adz-world' ),
+	);
+	if ( ! $is_etsy ) {
+		$requirements[] = array(
+			'complete' => $has_target,
+			'label'    => __( 'Eligible advertiser URL with {query} saved', 'adz-world' ),
+		);
+	}
+
+	echo '<section class="adzworld-paid-checklist" aria-labelledby="' . esc_attr( 'adzworld-paid-checklist-' . $id ) . '">';
+	echo '<h3 id="' . esc_attr( 'adzworld-paid-checklist-' . $id ) . '">' . esc_html__( 'Commission and payout checklist', 'adz-world' ) . '</h3>';
+	echo '<ul class="adzworld-paid-requirements">';
+	foreach ( $requirements as $requirement ) {
+		$tone = $requirement['complete'] ? 'complete' : 'missing';
+		$text = $requirement['complete'] ? __( 'Saved', 'adz-world' ) : __( 'Needed', 'adz-world' );
+		echo '<li class="adzworld-paid-requirement adzworld-paid-requirement--' . esc_attr( $tone ) . '">';
+		echo '<span class="adzworld-paid-requirement-state">' . esc_html( $text ) . '</span> ';
+		echo esc_html( $requirement['label'] ) . '</li>';
+	}
+	echo '</ul>';
+	echo '<p class="description">' . esc_html__( 'Confirm these remaining items in Rakuten: the advertiser partnership is approved, an active offer covers the product, the product link or deep link is commission-eligible, and Account Details contains completed tax and payment information.', 'adz-world' ) . '</p>';
+	if ( 'rakuten' === $id ) {
+		echo '<p class="description">' . esc_html__( 'Rakuten does not publish one network-wide top-seller list. Before this site has sales, choose an eligible Product Link from an approved advertiser. After tracked sales, use Reports → Product Success or Individual Item to identify this site’s actual top-selling products.', 'adz-world' ) . '</p>';
+	}
+	echo '<p><a class="button button-secondary" href="https://publisher.rakutenadvertising.com/" target="_blank" rel="noopener noreferrer">' . esc_html__( 'Open Rakuten Publisher Dashboard', 'adz-world' ) . '<span class="screen-reader-text">' . esc_html__( ' (opens in a new tab)', 'adz-world' ) . '</span></a></p>';
+	echo '</section>';
 }

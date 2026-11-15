@@ -928,6 +928,19 @@ function adzworld_rotation_weighted_slot( $slots, $draw ) {
 }
 
 /**
+ * Whether one local adz contains an advertisement creative.
+ *
+ * @param WP_Post|null $ad Advertisement post.
+ * @return bool
+ */
+function adzworld_local_ad_has_creative( $ad ) {
+	return $ad instanceof WP_Post
+		&& ( '' !== trim( wp_strip_all_tags( $ad->post_content ) )
+			|| has_post_thumbnail( $ad )
+			|| (bool) preg_match( '/<(?:img|picture|video|audio|iframe|svg)\b/i', $ad->post_content ) );
+}
+
+/**
  * Render one local adz as creative followed by one caption.
  *
  * Text-only adz are the caption. Media adz retain their creative and use the
@@ -1466,6 +1479,17 @@ function adzworld_render_rotation_level( $attributes ) {
 			$html      .= adzworld_feedback_control( 'ad-' . $ad->ID, $category );
 			$served     = 'ad-' . $ad->ID;
 			$configured = 'ad:' . $ad->ID;
+
+			/*
+			 * The readout: the exact words that went to the provider, the
+			 * tracking id they were sent under, and the link they built. It
+			 * is how an adzadmin can see what their adz actually asked for.
+			 * A slot tied to one provider has its own search and does not
+			 * show the category-wide one.
+			 */
+			if ( '' === $provider ) {
+				$html .= adzworld_affiliate_category_search_link( $pref, $category );
+			}
 
 			if ( in_array( $category, $pref['categories'], true ) ) {
 				$html .= adzworld_category_slot_control( $category, $slot_count, $category_slot );
