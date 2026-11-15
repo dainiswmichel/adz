@@ -424,6 +424,7 @@ function adzworld_render_preference_panel( $pref, $has_pref, $intro = 'full' ) {
 
 		<p class="adz-panel__status" data-adz-status role="status" aria-live="polite"></p>
 	</form>
+	<p class="adzworld-band__line"><?php esc_html_e( 'Driving social change, one adz.ad at a time.', 'adz-world' ); ?></p>
 	<?php
 	if ( function_exists( 'adzworld_privacy_note_echo' ) ) {
 		adzworld_privacy_note_echo();
