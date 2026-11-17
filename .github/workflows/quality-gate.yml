@@ -7,6 +7,8 @@ on:
       - 'pre-release-candidates/dwm-local/**'
       - 'pre-release-candidates/site-theme/adz-world-2026/**'
       - 'tools/**'
+      - 'composer.json'
+      - 'composer.lock'
       - 'phpcs.xml.dist'
       - '.github/scripts/check-version.sh'
       - '.github/workflows/quality-gate.yml'
@@ -15,6 +17,8 @@ on:
       - 'pre-release-candidates/dwm-local/**'
       - 'pre-release-candidates/site-theme/adz-world-2026/**'
       - 'tools/**'
+      - 'composer.json'
+      - 'composer.lock'
       - 'phpcs.xml.dist'
       - '.github/scripts/check-version.sh'
       - '.github/workflows/quality-gate.yml'
@@ -42,10 +46,8 @@ jobs:
           coverage: none
           tools: composer
 
-      - name: Install WordPress Coding Standards
-        run: |
-          composer global config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
-          composer global require --no-interaction wp-coding-standards/wpcs dealerdirect/phpcodesniffer-composer-installer
+      - name: Install pinned development tools
+        run: composer install --no-interaction --no-progress --prefer-dist
 
       - name: Verify release metadata
         run: ./.github/scripts/check-version.sh "${{ inputs.release_tag }}"
@@ -70,10 +72,7 @@ jobs:
             | xargs -0 -n1 php -r 'json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR);'
 
       - name: Run full WPCS
-        run: |
-          ~/.composer/vendor/bin/phpcs --standard=phpcs.xml.dist \
-            pre-release-candidates/dwm-local \
-            pre-release-candidates/site-theme/adz-world-2026
+        run: composer wpcs
 
       - name: Enforce WordPress.org release invariants
         shell: bash
@@ -117,12 +116,53 @@ jobs:
             exit 1
           fi
 
+          if grep -RInE --include='*.php' ",[[:space:]]*'(text_domain|eof)'[[:space:]]*\\)" "$BUILD"; then
+            echo 'A gettext call uses a text domain other than adz-world.' >&2
+            exit 1
+          fi
+
           while IFS= read -r -d '' file; do
             if ! grep -qE "defined\([[:space:]]*'ABSPATH'[[:space:]]*\)" "$file"; then
               echo "Missing ABSPATH direct-access guard: $file" >&2
               exit 1
             fi
           done < <(find "$BUILD" -type f -name '*.php' -print0)
+
+          README="$BUILD/readme.txt"
+          TAG_COUNT="$(grep -m1 '^Tags:' "$README" | cut -d: -f2- | tr ',' '\n' | sed '/^[[:space:]]*$/d' | wc -l)"
+          if [ "$TAG_COUNT" -gt 5 ]; then
+            echo "readme.txt declares $TAG_COUNT tags; WordPress.org accepts five." >&2
+            exit 1
+          fi
+
+          for FIELD in 'Requires at least' 'Tested up to'; do
+            VALUE="$(grep -m1 "^$FIELD:" "$README" | cut -d: -f2- | tr -d '[:space:]')"
+            if ! printf '%s' "$VALUE" | grep -Eq '^[0-9]+\\.[0-9]+$'; then
+              echo "readme.txt $FIELD must use a major.minor version." >&2
+              exit 1
+            fi
+          done
+
+          if ! grep -q '^== External services ==$' "$README"; then
+            echo 'readme.txt must contain an External services section.' >&2
+            exit 1
+          fi
+
+          for PROVIDER in \
+            'pagead2.googlesyndication.com:Google AdSense' \
+            'securepubads.g.doubleclick.net:Google Ad Manager' \
+            'cdn.taboola.com:Taboola' \
+            'widgets.outbrain.com:Outbrain' \
+            'hop.clickbank.net:ClickBank'; do
+            HOST="${PROVIDER%%:*}"
+            NAME="${PROVIDER#*:}"
+            if grep -Rq "$HOST" "$BUILD" --include='*.php' --include='*.js'; then
+              if ! grep -qi "$NAME" "$README" || ! grep -i -A 8 "$NAME" "$README" | grep -qiE 'privacy|terms'; then
+                echo "$HOST is contacted but $NAME lacks terms and privacy disclosure." >&2
+                exit 1
+              fi
+            fi
+          done
 
           if grep -RInE --include='*.php' --include='*.js' --include='*.css' \
             --include='*.txt' --include='*.md' --include='*.html' --include='*.pot' \

@@ -64,13 +64,18 @@ else
 	report "eslint" 3 "eslint not on PATH"
 fi
 
-if command -v phpcs > /dev/null 2>&1; then
-	OUT=$(phpcs --standard="$ROOT/phpcs.xml.dist" \
+PHPCS="$ROOT/vendor/bin/phpcs"
+if [ ! -x "$PHPCS" ]; then
+	PHPCS=$(command -v phpcs 2>/dev/null || true)
+fi
+
+if [ -n "$PHPCS" ] && [ -x "$PHPCS" ]; then
+	OUT=$("$PHPCS" --standard="$ROOT/phpcs.xml.dist" \
 		--sniffs=WordPress.Security.EscapeOutput,WordPress.Security.ValidatedSanitizedInput,WordPress.Security.NonceVerification,WordPress.DB.PreparedSQL,WordPress.DB.PreparedSQLPlaceholders \
 		--report=summary "$PLUGIN" 2>&1)
 	report "phpcs security" "$?" "$(echo "$OUT" | grep -E 'A TOTAL|^$' | head -1)"
 else
-	report "phpcs security" 3 "phpcs not on PATH"
+	report "phpcs security" 3 "run composer install"
 fi
 
 echo

@@ -61,6 +61,11 @@ work. It is forbidden.
   affected code and correct violations introduced by the repair before
   delivery. Report any remaining pre-existing violations explicitly; never
   label failing code WPCS-compliant.
+- The repository-pinned toolchain is mandatory: `composer install` installs
+  the exact PHPCS/WPCS versions in `composer.lock`, and `composer wpcs` checks
+  the production plugin and theme. Do not substitute an unversioned global
+  executable. The repository pre-commit hook runs the same command; a failed
+  gate blocks the commit rather than becoming cleanup work for a later turn.
 - Follow WordPress coding and security practices: capability checks and
   nonces where required, validated input, escaped output, and prepared SQL.
   A nonce is not authorization; sanitizing an arbitrary option name does not
@@ -146,6 +151,14 @@ forbidden.
   underlying guideline violation; that question remains separate.
 
 ## Mandatory production gate
+
+One command runs every local check on `pre-release-candidates/dwm-local/`:
+
+    bash /Users/dainismichel/2026/adz-project-folder/verify-clean-code/verify-adz-world.sh
+
+No agent may report work as complete, WPCS-compliant or ready for SVN without
+running it on the final tree and quoting `00-summary.txt` from the report
+directory it prints. Plugin Check is not in that command; Dainis runs it.
 
 These requirements are release blockers, not suggestions. No agent may call a
 production change finished, commit it as a release, create a GitHub release,

@@ -72,8 +72,22 @@ path by pointing it at a deliberately broken copy.
 At the repository root, so every agent runs the same check:
 
 ```
-phpcs --standard=phpcs.xml.dist pre-release-candidates/<agent>
-phpcs --standard=phpcs.xml.dist tools
+composer install
+composer wpcs
+composer wpcs:plugin
+```
+
+The Composer lockfile pins PHPCS, WPCS, and their supporting sniffs. Use the
+project-local executable (`vendor/bin/phpcs`) rather than an unversioned global
+installation. The production quality gate installs this exact lockfile and
+runs the same `composer wpcs` command. The repository's pre-commit hook runs
+that command as well; it is enabled through `core.hooksPath=.githooks`.
+
+For an independent candidate or the command-line tools:
+
+```
+vendor/bin/phpcs --standard=phpcs.xml.dist pre-release-candidates/<agent>
+vendor/bin/phpcs --standard=phpcs.xml.dist tools
 ```
 
 Plugin code is held to WordPress Coding Standards. `ancestor/` is excluded

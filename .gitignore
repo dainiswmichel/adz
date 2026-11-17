@@ -8,6 +8,7 @@ wp-config.php
 /tools/vendor/
 /tools/node_modules/
 /tools/wp-env/node_modules/
+/vendor/
 
 # Installed check tooling and personal overrides: not source.
 .phpcs/
