@@ -29,8 +29,11 @@ const ADZWORLD_PREFERENCE_SESSION = 'adzworld_preference';
 /** Session key recording when an anonymous preference window began. */
 const ADZWORLD_PREFERENCE_SESSION_STARTED = 'adzworld_preference_started';
 
+/** Browser-session marker written only after an anonymous reader engages. */
+const ADZWORLD_PREFERENCE_SESSION_COOKIE = 'adzworld_session';
+
 /** Anonymous preference windows start fresh after 24 hours. */
-const ADZWORLD_PREFERENCE_SESSION_TTL = DAY_IN_SECONDS;
+const ADZWORLD_PREFERENCE_SESSION_TTL = 24 * 60 * 60;
 
 /**
  * Map of preference facets to their short cookie keys.
@@ -177,32 +180,87 @@ function adzworld_decode_preference( $encoded ) {
 /**
  * Whether this account keeps preferences on the WordPress profile.
  *
- * Guest and member do. A visitor, including a signed-in account that is
- * neither role, keeps refinements in the session.
+ * Every signed-in account keeps preferences on its local WordPress profile.
+ * An anonymous reader keeps them in the short-lived browser session created
+ * by the first preference or rating.
  *
  * @return bool
  */
 function adzworld_preference_uses_profile() {
-	if ( ! is_user_logged_in() ) {
-		return false;
-	}
-
-	$user = wp_get_current_user();
-
-	return in_array( 'guest', (array) $user->roles, true ) || in_array( 'member', (array) $user->roles, true );
+	return is_user_logged_in();
 }
 
 /**
- * Open the visitor session before any output.
+ * Full Michel Time Stamp, UTC, through seconds.
+ *
+ * @param int|null $unix Unix time. Null uses the current time.
+ * @return string
+ */
+function adzworld_michel_timestamp( $unix = null ) {
+	if ( null === $unix ) {
+		$unix = time();
+	}
+	$unix = (int) $unix;
+
+	return gmdate( 'Y', $unix ) . 'y-' . gmdate( 'm', $unix ) . 'm-' . gmdate( 'd', $unix ) . 'd-UTC' . gmdate( 'H', $unix ) . 'h-' . gmdate( 'i', $unix ) . 'm-' . gmdate( 's', $unix ) . 's';
+}
+
+/**
+ * Whether a value is an adz-world anonymous session identifier.
+ *
+ * @param mixed $value Candidate value.
+ * @return bool
+ */
+function adzworld_preference_valid_session_id( $value ) {
+	return is_string( $value ) && 1 === preg_match( '/^\d{4}y-\d{2}m-\d{2}d-UTC\d{2}h-\d{2}m-\d{2}s$/', $value );
+}
+
+/**
+ * Whether this request already carries the preference session cookie.
+ *
+ * A page view with no cookie does not start a session.
+ *
+ * @return bool
+ */
+function adzworld_preference_session_cookie_present() {
+	$raw = isset( $_COOKIE[ ADZWORLD_PREFERENCE_SESSION_COOKIE ] )
+		? sanitize_text_field( wp_unslash( $_COOKIE[ ADZWORLD_PREFERENCE_SESSION_COOKIE ] ) )
+		: '';
+
+	if ( adzworld_preference_valid_session_id( $raw ) ) {
+		return true;
+	}
+
+	if ( PHP_SESSION_ACTIVE !== session_status() ) {
+		return false;
+	}
+
+	$current = isset( $_SESSION['adzworld_session_id'] )
+		? sanitize_text_field( wp_unslash( $_SESSION['adzworld_session_id'] ) )
+		: '';
+
+	return adzworld_preference_valid_session_id( $current );
+}
+
+/**
+ * Open the visitor session.
+ *
+ * Called when a preference is stored, or when a session cookie is already present.
  *
  * @return void
  */
 function adzworld_preference_open_session() {
-	if ( adzworld_preference_uses_profile() || headers_sent() || PHP_SESSION_ACTIVE === session_status() ) {
+	if ( adzworld_preference_uses_profile() || headers_sent() ) {
 		return;
 	}
 
-	session_start();
+	if ( PHP_SESSION_ACTIVE !== session_status() ) {
+		session_start();
+	}
+
+	if ( PHP_SESSION_ACTIVE !== session_status() ) {
+		return;
+	}
 
 	$now     = time();
 	$started = isset( $_SESSION[ ADZWORLD_PREFERENCE_SESSION_STARTED ] )
@@ -211,10 +269,102 @@ function adzworld_preference_open_session() {
 
 	if ( 0 === $started || $now - $started >= ADZWORLD_PREFERENCE_SESSION_TTL ) {
 		unset( $_SESSION[ ADZWORLD_PREFERENCE_SESSION ] );
+		unset( $_SESSION['adzworld_session_id'] );
 		$_SESSION[ ADZWORLD_PREFERENCE_SESSION_STARTED ] = $now;
 	}
 }
-add_action( 'init', 'adzworld_preference_open_session', 1 );
+
+/**
+ * Mark the browser as having started an anonymous adz-world session.
+ *
+ * The marker is a session cookie, so it expires when the browser session ends.
+ * It is never written for a passive reader.
+ *
+ * @param string $session_id Michel Time Stamp session identifier.
+ * @return void
+ */
+function adzworld_preference_set_session_cookie( $session_id ) {
+	if ( headers_sent() || ! adzworld_preference_valid_session_id( $session_id ) ) {
+		return;
+	}
+
+	$_COOKIE[ ADZWORLD_PREFERENCE_SESSION_COOKIE ] = $session_id;
+
+	setcookie(
+		ADZWORLD_PREFERENCE_SESSION_COOKIE,
+		$session_id,
+		array(
+			'expires'  => 0,
+			'path'     => COOKIEPATH ? COOKIEPATH : '/',
+			'domain'   => COOKIE_DOMAIN,
+			'secure'   => is_ssl(),
+			'httponly' => true,
+			'samesite' => 'Lax',
+		)
+	);
+}
+
+/**
+ * Michel Time Stamp for this browser session.
+ *
+ * Written the first time the reader states a preference or a rating.
+ * A guest or member account does not receive one. The value is not an address,
+ * a name, or an email address.
+ *
+ * @return string Empty when this account stores preferences on the profile.
+ */
+function adzworld_preference_ensure_session_id() {
+	if ( adzworld_preference_uses_profile() ) {
+		return '';
+	}
+
+	adzworld_preference_open_session();
+
+	if ( PHP_SESSION_ACTIVE !== session_status() ) {
+		return '';
+	}
+
+	$current = isset( $_SESSION['adzworld_session_id'] ) && is_string( $_SESSION['adzworld_session_id'] )
+		? sanitize_text_field( wp_unslash( $_SESSION['adzworld_session_id'] ) )
+		: '';
+
+	if ( adzworld_preference_valid_session_id( $current ) ) {
+		adzworld_preference_set_session_cookie( $current );
+		return $current;
+	}
+
+	$current                         = adzworld_michel_timestamp();
+	$_SESSION['adzworld_session_id'] = $current;
+	adzworld_preference_set_session_cookie( $current );
+
+	return $current;
+}
+
+/**
+ * Return the existing anonymous preference-session identifier.
+ *
+ * This reader does not create a session. It exposes only a session that was
+ * already created when the reader stated a preference or rating.
+ *
+ * @return string Michel Time Stamp, or an empty string when none exists.
+ */
+function adzworld_preference_session_id() {
+	if ( adzworld_preference_uses_profile() || ! adzworld_preference_session_cookie_present() ) {
+		return '';
+	}
+
+	adzworld_preference_open_session();
+
+	if ( PHP_SESSION_ACTIVE !== session_status() ) {
+		return '';
+	}
+
+	$current = isset( $_SESSION['adzworld_session_id'] ) && is_string( $_SESSION['adzworld_session_id'] )
+		? sanitize_text_field( wp_unslash( $_SESSION['adzworld_session_id'] ) )
+		: '';
+
+	return adzworld_preference_valid_session_id( $current ) ? $current : '';
+}
 
 /**
  * The current visitor's preference.
@@ -226,6 +376,10 @@ function adzworld_current_preference() {
 		$stored = get_user_meta( get_current_user_id(), ADZWORLD_PREFERENCE_META, true );
 
 		return is_array( $stored ) ? adzworld_sanitize_preference( $stored ) : adzworld_empty_preference();
+	}
+
+	if ( ! adzworld_preference_session_cookie_present() ) {
+		return adzworld_empty_preference();
 	}
 
 	adzworld_preference_open_session();
@@ -257,7 +411,7 @@ function adzworld_store_preference( $pref ) {
 		return;
 	}
 
-	adzworld_preference_open_session();
+	adzworld_preference_ensure_session_id();
 	$_SESSION[ ADZWORLD_PREFERENCE_SESSION ] = $pref;
 }
 
@@ -270,6 +424,10 @@ function adzworld_clear_preference() {
 	if ( adzworld_preference_uses_profile() ) {
 		delete_user_meta( get_current_user_id(), ADZWORLD_PREFERENCE_META );
 
+		return;
+	}
+
+	if ( ! adzworld_preference_session_cookie_present() ) {
 		return;
 	}
 
@@ -528,17 +686,16 @@ function adzworld_render_chips( $chips ) {
 		<details class="adz-panel__categories" open>
 			<summary><?php esc_html_e( 'Categories', 'adz-world' ); ?></summary>
 			<ul class="adz-panel__chiplist">
-				<?php foreach ( $categories as $tone => $chip ) : ?>
+				<?php foreach ( $categories as $chip ) : ?>
 					<?php
 					$category_id = wp_unique_id( 'adz-category-' );
-					$tone_class  = 'adz-panel__chip--tone-' . ( (int) $tone % 4 );
 					$slots_label = sprintf(
 						/* translators: %s: category name. */
 						__( '%s adz slots', 'adz-world' ),
 						$chip['label']
 					);
 					?>
-					<li class="adz-panel__chip adz-panel__chip--categories <?php echo esc_attr( $tone_class ); ?><?php echo ! empty( $chip['active'] ) ? ' is-active' : ''; ?>">
+					<li class="adz-panel__chip adz-panel__chip--categories<?php echo ! empty( $chip['active'] ) ? ' is-active' : ''; ?>">
 						<div class="adz-panel__category-row">
 							<button type="button" class="adz-panel__category" data-adz-category="<?php echo esc_attr( $chip['value'] ); ?>">
 								<?php echo esc_html( $chip['label'] ); ?>

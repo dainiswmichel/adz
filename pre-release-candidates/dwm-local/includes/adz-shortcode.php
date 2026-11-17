@@ -84,10 +84,10 @@ function adzworld_shortcode( $atts, $content = null ) {
 		$adz_sequence = $attributes['adz_sequence'];
 	}
 
-	$output     = $content;
-	$visitor_ip = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+	$output          = $content;
+	$viewer_identity = adzworld_view_identity();
 
-	$adz_views = adzworld_get_view_row( $visitor_ip, (int) get_the_ID(), 'shortcode' );
+	$adz_views = adzworld_get_view_row( $viewer_identity, (int) get_the_ID(), 'shortcode' );
 
 	$adz_to_serve = adzworld_check_shortcode_rotation_completed( $adz_sequence );
 

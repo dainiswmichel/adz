@@ -7,6 +7,68 @@
 
 defined( 'ABSPATH' ) || exit; // Exit if accessed directly.
 
+/** Site-controlled text shown by the information control on adz panels. */
+const ADZWORLD_NOTICE_OPTION = 'adzworld_notice_text';
+
+/**
+ * Default information-panel text.
+ *
+ * Each entry is one paragraph. A paragraph beginning with a pilcrow and an
+ * em dash has its label emphasized when rendered.
+ *
+ * @return string
+ */
+function adzworld_notice_default_text() {
+	$paragraphs = array(
+		__( '¶ 1. Before you say anything — We do not know who you are and we collect nothing. No session is started, no cookie is set, and nothing about you is written down. You are shown adz specified by adzadmins, and that is all that happens.', 'adz-world' ),
+		__( 'Most people using modern technology have, often unknowingly, agreed to terms that permit extensive surveillance and tracking by Big Tech. Governments also engage in digital surveillance, sometimes without people’s knowledge or consent.', 'adz-world' ),
+		__( 'Every visit to this site costs its owner money, whether the visitor is a human being, a bot, an artificial intelligence system, or a web crawler. Advertising helps pay for the content and services that people enjoy without charge. Site owners also need to protect themselves against malicious or abusive consumption of their resources. But neither the cost of providing a website nor the need to protect it justifies surveilling the people who visit.', 'adz-world' ),
+		__( '¶ 2. What we cannot speak for — Much of today’s digital advertising operates through surveillance-based capitalism. Surveillance Tracking Advertising, Logging & Knowledge Systems (S.T.A.L.K.S.) follow people across websites and applications, collecting information about their activities. Surveillance Capitalism Advertising Manipulation Systems (S.C.A.M.S.) turn that information into behavioral profiles and predictions designed to influence purchasing decisions. Slimy Loser Advertising Placement Systems (S.L.A.P.S.) then use those predictions to determine which advertisements people see.', 'adz-world' ),
+		__( 'Rather than simply asking people what they want, these systems watch what people do, track and log their behavior, guess what they might want, and attempt to manipulate their decisions.', 'adz-world' ),
+		__( 'A slot on this page may be filled by a third-party advertising network, such as Google AdSense, Google Ad Manager, Taboola, Outbrain, Criteo or Amazon Advertising. These networks may employ Surveillance Advertising Display Systems (S.A.D.S.). They operate under their own terms and arrangements with the site owner, not ours. We cannot control their data collection, but we can tell you when their advertising is present.', 'adz-world' ),
+		__( '¶ 3. When you tell us what you want — Permission-based advertising works differently. Rather than watching your behavior and guessing what you might want, we simply let you tell us.', 'adz-world' ),
+		__( 'Typing what you are looking for, or rating adz, starts a session. The session consists of a timestamped identifier and the words or preferences you chose. These are used to select relevant adz, not to construct a behavioral profile. The session does not require your name, email or address, is not joined to other personal information, and ends when you close your browser.', 'adz-world' ),
+		__( '¶ 4. If you make a profile — Your advertising preferences are kept with your account on this site. Rather than allowing advertisers to build a profile about you through surveillance, you create and control your own profile.', 'adz-world' ),
+		__( 'This plugin can then act for you the way a lawyer acts for a client: representing your expressed interests to advertisers, so that what reaches you reflects what you actually want to buy, rather than what someone has guessed you might buy.', 'adz-world' ),
+		__( 'Your preferences belong under your control. You can see them, change them, and delete them.', 'adz-world' ),
+		__( '¶ 5. Summary — With his software, Dainis W. Michel is changing the digital landscape from one of surveillance-based advertising to enjoyable permission-based advertising. Adz are shown because you asked for them. “Old style” surveillance-based advertising brings you annoyance and inconvenience. Newer-style permission-based adz bring you joy and convenience: that is the whole idea.', 'adz-world' ),
+	);
+
+	return implode( "\n\n", $paragraphs );
+}
+
+/**
+ * Information-panel text configured by this site.
+ *
+ * @return string
+ */
+function adzworld_notice_text() {
+	$stored = get_option( ADZWORLD_NOTICE_OPTION, null );
+
+	return is_string( $stored ) ? $stored : adzworld_notice_default_text();
+}
+
+/**
+ * Split site-controlled information text into paragraphs.
+ *
+ * @return array<int,string>
+ */
+function adzworld_notice_paragraphs() {
+	$text       = str_replace( array( "\r\n", "\r" ), "\n", adzworld_notice_text() );
+	$paragraphs = preg_split( '/\n[\t ]*\n+/', trim( $text ) );
+
+	if ( ! is_array( $paragraphs ) ) {
+		return array();
+	}
+
+	return array_values(
+		array_filter(
+			array_map( 'trim', $paragraphs ),
+			'strlen'
+		)
+	);
+}
+
 /**
  * Render the scheduled page-advertising request controls.
  *
@@ -352,39 +414,41 @@ function adzworld_ad_content( $content ) {
 }
 
 /**
- * Look up the current account only when the external service is enabled.
+ * The WordPress account on this site, when one is signed in.
+ *
+ * A reader who is not signed in is unknown. This function does not call the
+ * network and does not read the visitor address.
  *
  * @return int|false Account identifier, or false when not logged in.
  */
 function adzworld_logged_in() {
+	return is_user_logged_in() ? get_current_user_id() : false;
+}
 
-	// With no network connected there is no remote visitor to look up, and
-	// 1.0.8 sent the visitor's IP address here on every call.
-	if ( ! adzworld_network_enabled() ) {
-		return is_user_logged_in() ? get_current_user_id() : false;
+/**
+ * Return the local identity used for view-frequency records.
+ *
+ * A passive anonymous reader has no identity. The first stated preference or
+ * rating creates a short-lived browser session with a Michel Time Stamp. A
+ * signed-in reader uses the local WordPress account. This value remains on
+ * this WordPress installation and is never sent to an advertising provider.
+ *
+ * @return string Local identity, or an empty string for an unknown reader.
+ */
+function adzworld_view_identity() {
+	$user_id = adzworld_logged_in();
+	if ( $user_id ) {
+		return 'user:' . absint( $user_id );
 	}
 
-	global $adzworld_network_base_url;
-	$visitor_ip     = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
-	$ad_network_url = add_query_arg( 'visitor_ip', $visitor_ip, $adzworld_network_base_url . 'wp-json/adz_server/v1/ads/is_visitor_logged' );
-	$args           = array();
-	$response       = wp_remote_get( $ad_network_url, $args );
-
-	if ( is_wp_error( $response ) ) {
-		return false;
+	if ( ! function_exists( 'adzworld_preference_session_id' ) ) {
+		return '';
 	}
 
-	$body          = wp_remote_retrieve_body( $response );
-	$json_repsonse = json_decode( $body );
+	$session_id = adzworld_preference_session_id();
 
-	// A failed or empty response decodes to null; reading ->status on that is
-	// a warning on PHP 8, which the activation check treats as a failure.
-	if ( is_object( $json_repsonse ) && isset( $json_repsonse->status ) && 'logged_in' === $json_repsonse->status ) {
-		return $json_repsonse->user_id;
-	} else {
-		return false;
-	}
-}//end adzworld_logged_in()
+	return '' === $session_id ? '' : 'session:' . $session_id;
+}
 
 /**
  * Select the next unserved ad from a configured rotation.
@@ -569,20 +633,25 @@ function adzworld_available_templates() {
 }
 
 /**
- * Build a privacy-preserving key for one visitor's daily view record.
+ * Build a privacy-preserving key for one local viewer's daily view record.
  *
- * The raw address is never stored. WordPress salts make the digest specific to
- * this installation, and the date naturally separates daily records.
+ * WordPress salts make the digest specific to this installation, and the date
+ * naturally separates daily records.
  *
- * @param string $visitor_ip Visitor address.
+ * @param string $viewer_identity Local account or engaged-session identity.
  * @param int    $target_id Target post identifier.
  * @param string $target_type Display context.
- * @return string Transient key.
+ * @return string Empty when the reader has no local identity; otherwise a transient key.
  */
-function adzworld_view_key( $visitor_ip, $target_id, $target_type ) {
+function adzworld_view_key( $viewer_identity, $target_id, $target_type ) {
+	$viewer_identity = sanitize_text_field( (string) $viewer_identity );
+	if ( '' === $viewer_identity ) {
+		return '';
+	}
+
 	$identity = wp_json_encode(
 		array(
-			sanitize_text_field( (string) $visitor_ip ),
+			$viewer_identity,
 			absint( $target_id ),
 			sanitize_key( $target_type ),
 			current_time( 'Y-m-d' ),
@@ -593,28 +662,37 @@ function adzworld_view_key( $visitor_ip, $target_id, $target_type ) {
 }
 
 /**
- * Look up today's view record for a visitor against one target.
+ * Look up today's view record for a local viewer against one target.
  *
- * @param string $visitor_ip Visitor address.
+ * @param string $viewer_identity Local account or engaged-session identity.
  * @param int    $target_id Target post identifier.
  * @param string $target_type Display context.
  * @return object|null View record, or null when no view was recorded today.
  */
-function adzworld_get_view_row( $visitor_ip, $target_id, $target_type = '' ) {
-	$record = get_transient( adzworld_view_key( $visitor_ip, $target_id, $target_type ) );
+function adzworld_get_view_row( $viewer_identity, $target_id, $target_type = '' ) {
+	$key = adzworld_view_key( $viewer_identity, $target_id, $target_type );
+	if ( '' === $key ) {
+		return null;
+	}
+
+	$record = get_transient( $key );
 	return is_array( $record ) ? (object) $record : null;
 }
 
 /**
  * Record a completed ad view until the end of the current site-local day.
  *
- * @param string $visitor_ip Visitor address.
+ * @param string $viewer_identity Local account or engaged-session identity.
  * @param int    $target_id Target post identifier.
  * @param string $target_type Display context.
  * @return bool Whether the record was stored.
  */
-function adzworld_record_view( $visitor_ip, $target_id, $target_type ) {
-	$key      = adzworld_view_key( $visitor_ip, $target_id, $target_type );
+function adzworld_record_view( $viewer_identity, $target_id, $target_type ) {
+	$key = adzworld_view_key( $viewer_identity, $target_id, $target_type );
+	if ( '' === $key ) {
+		return true;
+	}
+
 	$existing = get_transient( $key );
 	$count    = is_array( $existing ) && isset( $existing['number_of_times'] ) ? absint( $existing['number_of_times'] ) + 1 : 1;
 	$now      = current_datetime();

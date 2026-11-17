@@ -1278,6 +1278,9 @@ function adzworld_rotation_cycle_index( $key, $count ) {
 	if ( $count < 1 ) {
 		return 0;
 	}
+	if ( '' === adzworld_view_identity() ) {
+		return wp_rand( 0, $count - 1 );
+	}
 	$name  = 'adzworld_pos_' . substr( hash( 'sha256', $key ), 0, 16 );
 	$raw   = isset( $_COOKIE[ $name ] ) ? sanitize_text_field( wp_unslash( $_COOKIE[ $name ] ) ) : '0';
 	$index = absint( $raw ) % $count;
@@ -1464,8 +1467,9 @@ function adzworld_render_rotation_level( $attributes ) {
 		}
 		$category_attribute = '' !== $category ? ' data-adzworld-category="' . esc_attr( $category ) . '"' : '';
 		$slot_attribute     = '' !== $category ? ' data-adzworld-category-slot="' . esc_attr( (string) $category_slot ) . '"' : '';
+		$notice             = 'r' === $slot['type'] ? '' : adzworld_rotation_notice();
 		$slides            .= '<section class="adzworld-slide" id="' . esc_attr( $slide_id ) . '"' . $category_attribute . $slot_attribute . ' role="group" aria-roledescription="'
-			. esc_attr__( 'slide', 'adz-world' ) . '" aria-label="' . esc_attr( ( $index + 1 ) . ' / ' . count( $slots ) ) . '">' . $html . '</section>';
+			. esc_attr__( 'slide', 'adz-world' ) . '" aria-label="' . esc_attr( ( $index + 1 ) . ' / ' . count( $slots ) ) . '">' . $html . $notice . '</section>';
 		if ( 'intro' === $slot['type'] ) {
 			$dot_class = ' class="adzworld-hub-position"';
 			$dot_label = __( 'Show your adz hub', 'adz-world' );
@@ -1520,6 +1524,37 @@ function adzworld_render_rotation_level( $attributes ) {
 	return '<div class="' . esc_attr( $classes ) . '" id="' . esc_attr( $id )
 		. '"' . $multiple . ' role="region" aria-label="' . esc_attr( $attributes['label'] ) . '"><div class="adzworld-carousel"><div class="adzworld-slides">' . $slides
 		. '</div><div class="adzworld-navigation" hidden>' . $navigation . '</div>' . $dismiss . '</div></div>';
+}
+
+/**
+ * The (i) note on one adz panel.
+ *
+ * The same note is on every slide. It states what this install stores, and
+ * which placed services collect on their own.
+ *
+ * @return string
+ */
+function adzworld_rotation_notice() {
+	$id      = wp_unique_id( 'adzworld-notice-' );
+	$content = '';
+	$em_dash = ' — ';
+	$pilcrow = '¶ ';
+
+	foreach ( adzworld_notice_paragraphs() as $paragraph ) {
+		$separator = strpos( $paragraph, $em_dash );
+		if ( 0 === strpos( $paragraph, $pilcrow ) && false !== $separator ) {
+			$heading  = substr( $paragraph, 0, $separator );
+			$body     = substr( $paragraph, $separator + strlen( $em_dash ) );
+			$content .= '<p><strong>' . esc_html( $heading ) . '</strong> — ' . esc_html( $body ) . '</p>';
+			continue;
+		}
+		$content .= '<p>' . esc_html( $paragraph ) . '</p>';
+	}
+
+	return '<div class="adzworld-notice"><button type="button" class="adzworld-notice__mark" aria-label="'
+		. esc_attr__( 'How adz are served here', 'adz-world' ) . '" aria-describedby="' . esc_attr( $id ) . '">'
+		. '<span aria-hidden="true">i</span></button><div class="adzworld-notice__text" id="' . esc_attr( $id ) . '" role="note">'
+		. $content . '</div></div>';
 }
 
 /**

@@ -136,6 +136,7 @@
 }
 
 .adzworld-rotation .adzworld-slide {
+	position: relative;
 	min-width: 0;
 	padding: 0;
 	background: var(--adz-surface);
@@ -564,94 +565,10 @@
 	color: var(--adz-ink);
 }
 
-/*
- * The four category tones.
- *
- * A tone exists to tell one category from another at a glance, so what has to
- * survive is the difference in hue -- not a fixed pair of pale blues that
- * vanish on a dark theme. Each tone therefore carries only a hue angle, and
- * both states are built from it: the resting chip as a wash of that hue over
- * the derived surface, the active chip as the hue itself.
- *
- * The literal pairs below are the fallback for a browser without oklch(). The
- * active lightness is held at or under 0.50 so that --adz-on-accent clears
- * 4.5:1 across the whole gradient, not only at its dark end.
- */
-.adzworld-rotation .adz-panel__chip--tone-0 {
-	background: linear-gradient(135deg, #f4f8fb 0%, #d5e5ef 100%);
-	border-color: #8aafc2;
-	color: #1a3c50;
-}
-
-.adzworld-rotation .adz-panel__chip--tone-1 {
-	background: linear-gradient(135deg, #f3f8f6 0%, #d5ebe4 100%);
-	border-color: #7eb3a6;
-	color: #1a403b;
-}
-
-.adzworld-rotation .adz-panel__chip--tone-2 {
-	background: linear-gradient(135deg, #f4f6fa 0%, #dce3ee 100%);
-	border-color: #8ea0bb;
-	color: #2a3a52;
-}
-
-.adzworld-rotation .adz-panel__chip--tone-3 {
-	background: linear-gradient(135deg, #f3f7f8 0%, #d7e6ea 100%);
-	border-color: #86aeb8;
-	color: #1d3d46;
-}
-
-.adzworld-rotation .adz-panel__chip--tone-0.is-active {
-	background: linear-gradient(135deg, #30586d 0%, #3e6d86 100%);
-	border-color: #30586d;
-	color: var(--adz-on-accent);
-}
-
-.adzworld-rotation .adz-panel__chip--tone-1.is-active {
-	background: linear-gradient(135deg, #25544f 0%, #2f6b64 100%);
-	border-color: #25544f;
-	color: var(--adz-on-accent);
-}
-
-.adzworld-rotation .adz-panel__chip--tone-2.is-active {
-	background: linear-gradient(135deg, #313e53 0%, #3d4d68 100%);
-	border-color: #313e53;
-	color: var(--adz-on-accent);
-}
-
-.adzworld-rotation .adz-panel__chip--tone-3.is-active {
-	background: linear-gradient(135deg, #2e4e59 0%, #3a6270 100%);
-	border-color: #2e4e59;
-	color: var(--adz-on-accent);
-}
-
-@supports (color: oklch(0.5 0.09 200)) {
-	.adzworld-rotation .adz-panel__chip--tone-0 { --adz-tone: 237; }
-	.adzworld-rotation .adz-panel__chip--tone-1 { --adz-tone: 172; }
-	.adzworld-rotation .adz-panel__chip--tone-2 { --adz-tone: 281; }
-	.adzworld-rotation .adz-panel__chip--tone-3 { --adz-tone: 205; }
-
-	.adzworld-rotation .adz-panel__chip--tone-0,
-	.adzworld-rotation .adz-panel__chip--tone-1,
-	.adzworld-rotation .adz-panel__chip--tone-2,
-	.adzworld-rotation .adz-panel__chip--tone-3 {
-		background: color-mix(in oklab, oklch(0.5 0.09 var(--adz-tone)) 14%, var(--adz-surface));
-		border-color: color-mix(in oklab, oklch(0.5 0.09 var(--adz-tone)) 48%, transparent);
-		color: inherit;
-	}
-
-	.adzworld-rotation .adz-panel__chip--tone-0.is-active,
-	.adzworld-rotation .adz-panel__chip--tone-1.is-active,
-	.adzworld-rotation .adz-panel__chip--tone-2.is-active,
-	.adzworld-rotation .adz-panel__chip--tone-3.is-active {
-		background: linear-gradient(
-			135deg,
-			oklch(0.42 0.09 var(--adz-tone)) 0%,
-			oklch(0.5 0.09 var(--adz-tone)) 100%
-		);
-		border-color: oklch(0.42 0.09 var(--adz-tone));
-		color: var(--adz-on-accent);
-	}
+.adzworld-rotation .adz-panel__chip--categories.is-active {
+	background: color-mix(in oklab, var(--adz-accent) 12%, var(--adz-surface));
+	border-color: var(--adz-accent);
+	color: var(--adz-ink);
 }
 
 .adzworld-rotation .adz-panel__category-row {
@@ -2300,4 +2217,66 @@
  */
 .adzworld-network-unit.adzworld-network-unit--open {
 	min-height: 0;
+}
+
+.adzworld-rotation .adzworld-notice {
+	position: absolute;
+	right: 8px;
+	bottom: 8px;
+	z-index: 6;
+}
+
+.adzworld-rotation .adzworld-notice__mark {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	padding: 0;
+	color: var(--adz-ink);
+	font-family: Georgia, serif;
+	font-size: 13px;
+	font-style: italic;
+	line-height: 1;
+	background: var(--adz-surface);
+	border: 1px solid var(--adz-line);
+	border-radius: 50%;
+	cursor: pointer;
+}
+
+.adzworld-rotation .adzworld-notice__mark:hover,
+.adzworld-rotation .adzworld-notice__mark:focus-visible {
+	border-color: var(--adz-accent);
+}
+
+.adzworld-rotation .adzworld-notice__text {
+	position: absolute;
+	right: 0;
+	bottom: 28px;
+	display: none;
+	width: min(22rem, 70vw);
+	max-height: 16rem;
+	padding: 10px 12px;
+	overflow: auto;
+	color: var(--adz-ink);
+	font-size: 13px;
+	line-height: 1.45;
+	text-align: left;
+	background: var(--adz-surface);
+	border: 1px solid var(--adz-line);
+	border-radius: 8px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.adzworld-rotation .adzworld-notice:hover .adzworld-notice__text,
+.adzworld-rotation .adzworld-notice:focus-within .adzworld-notice__text {
+	display: block;
+}
+
+.adzworld-rotation .adzworld-notice__text p {
+	margin: 0 0 8px;
+}
+
+.adzworld-rotation .adzworld-notice__text p:last-child {
+	margin-bottom: 0;
 }

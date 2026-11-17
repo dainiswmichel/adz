@@ -120,10 +120,11 @@ The optional adz-world.com connection supplies permission-based adz and can
 synchronize advertisements created by the publisher. It is off until an
 administrator enables it under adz-world > Connections. Registration sends the
 site URL, site title and administrator email address. Network requests send the
-publisher identifier, access token, referral code and the visitor IP address
-when requesting an adz or checking network visitor state. Publishing or deleting
-a network adz sends that adz's title, content and categories. Switching the
-connection off stops network delivery and synchronization.
+publisher identifier, access token and referral code when requesting an adz.
+They do not send the visitor IP address, anonymous session identifier or local
+WordPress user id. Publishing or deleting a network adz sends that adz's title,
+content and categories. Switching the connection off stops network delivery
+and synchronization.
 
 The separate Earnings connection is also off by default. Only an administrator's
 explicit statement request sends the saved publisher identifier and read-only

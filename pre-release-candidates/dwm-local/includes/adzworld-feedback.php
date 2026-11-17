@@ -77,6 +77,10 @@ function adzworld_store_feedback( $feedback ) {
 		return;
 	}
 
+	if ( function_exists( 'adzworld_preference_ensure_session_id' ) ) {
+		adzworld_preference_ensure_session_id();
+	}
+
 	$json = wp_json_encode( $feedback );
 	if ( ! is_string( $json ) || headers_sent() ) {
 		return;
@@ -197,7 +201,7 @@ function adzworld_feedback_control( $target, $category, $can_evaluate = true, $s
 		<div class="adzworld-improve">
 			<?php if ( $show_category && '' !== $category ) : ?>
 				<p class="adzworld-improve__category">
-					<span class="adz-panel__chip adz-panel__chip--categories adz-panel__chip--tone-0 is-active">
+					<span class="adz-panel__chip adz-panel__chip--categories is-active">
 						<span class="adz-panel__chiptext"><?php echo esc_html( $category ); ?></span>
 					</span>
 				</p>

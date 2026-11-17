@@ -397,6 +397,65 @@ add_action( 'admin_menu', 'adzworld_templates_setting_menu', 11 );
 
 
 /**
+ * Save this site's information-panel text.
+ *
+ * @return true|WP_Error Whether the save succeeded.
+ */
+function adzworld_save_notice_settings() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return new WP_Error( 'adzworld_notice_forbidden', __( 'Administrator permission is required.', 'adz-world' ) );
+	}
+
+	$nonce = isset( $_POST['adzworld_notice_nonce'] ) && is_string( $_POST['adzworld_notice_nonce'] )
+		? sanitize_text_field( wp_unslash( $_POST['adzworld_notice_nonce'] ) ) : '';
+	if ( ! wp_verify_nonce( $nonce, 'adzworld_notice_save' ) ) {
+		return new WP_Error( 'adzworld_notice_nonce', __( 'The disclosure-text save request could not be verified.', 'adz-world' ) );
+	}
+
+	$text = isset( $_POST['adzworld_notice_text'] ) && is_string( $_POST['adzworld_notice_text'] )
+		? sanitize_textarea_field( wp_unslash( $_POST['adzworld_notice_text'] ) ) : '';
+	if ( '' === $text ) {
+		return new WP_Error( 'adzworld_notice_empty', __( 'Disclosure text cannot be empty.', 'adz-world' ) );
+	}
+	if ( get_option( ADZWORLD_NOTICE_OPTION, null ) !== $text && ! update_option( ADZWORLD_NOTICE_OPTION, $text, false ) ) {
+		return new WP_Error( 'adzworld_notice_storage', __( 'The disclosure text could not be saved.', 'adz-world' ) );
+	}
+
+	return true;
+}
+
+
+/**
+ * Render the site-wide information-panel editor.
+ *
+ * @return void
+ */
+function adzworld_notice_setting() {
+	$result = null;
+	$submit = filter_input( INPUT_POST, 'adzworld_notice_submit', FILTER_UNSAFE_RAW );
+	if ( null !== $submit ) {
+		$result = adzworld_save_notice_settings();
+	}
+
+	if ( true === $result || is_wp_error( $result ) ) {
+		$message = is_wp_error( $result ) ? $result->get_error_message() : __( 'Disclosure text saved.', 'adz-world' );
+		$class   = is_wp_error( $result ) ? 'notice notice-error' : 'notice notice-success';
+		echo '<div class="' . esc_attr( $class ) . '"><p>' . esc_html( $message ) . '</p></div>';
+	}
+
+	echo '<section class="adzworld-desk-intro"><h2>' . esc_html__( 'Adz information text', 'adz-world' ) . '</h2>';
+	echo '<p>' . esc_html__( 'This text appears from the information control on every adz panel. Separate paragraphs with a blank line. In a paragraph beginning with ¶, text before the first em dash is emphasized.', 'adz-world' ) . '</p>';
+	echo '<form method="post" action="">';
+	wp_nonce_field( 'adzworld_notice_save', 'adzworld_notice_nonce' );
+	echo '<label class="screen-reader-text" for="adzworld_notice_text">' . esc_html__( 'Adz information text', 'adz-world' ) . '</label>';
+	echo '<textarea class="large-text code" rows="18" id="adzworld_notice_text" name="adzworld_notice_text">' . esc_textarea( adzworld_notice_text() ) . '</textarea>';
+	echo '<p class="submit">';
+	submit_button( __( 'Save disclosure text', 'adz-world' ), 'secondary', 'adzworld_notice_submit', false );
+	echo '</p></form></section>';
+}
+
+
+/**
  * Save one shipped template's administrator-controlled text and alignment.
  *
  * @return true|WP_Error Whether the save succeeded.
@@ -438,6 +497,7 @@ function adzworld_template_setting() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( esc_html__( 'Administrator permission is required.', 'adz-world' ), '', array( 'response' => 403 ) );
 	}
+	adzworld_notice_setting();
 	if ( isset( $_POST['adz_template'] ) ) {
 		check_admin_referer( 'adzworld_template_save', 'adzworld_template_nonce' );
 		$result = adzworld_save_template_settings();
