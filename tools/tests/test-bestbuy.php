@@ -115,7 +115,8 @@ $mapped  = adzworld_bestbuy_map_product( $product );
 adzworld_bestbuy_check( 'the attributed URL wins over the plain URL', $mapped['url'], $product['affiliateUrl'] );
 adzworld_bestbuy_check( 'the API price is formatted as US dollars', $mapped['price'], '$137.89' );
 unset( $product['affiliateUrl'] );
-adzworld_bestbuy_check( 'an untracked product is rejected', adzworld_bestbuy_map_product( $product ), null );
+$plain = adzworld_bestbuy_map_product( $product );
+adzworld_bestbuy_check( 'without a Partner ID the plain product link is used', $plain['url'], 'https://www.bestbuy.com/untracked' );
 
 $GLOBALS['adz_http_response'] = array(
 	'response' => array( 'code' => 200 ),
@@ -143,10 +144,17 @@ adzworld_bestbuy_check( 'the response becomes two carousel results', count( $res
 adzworld_bestbuy_check( 'the live request uses the full search string', false !== strpos( $GLOBALS['adz_requested_url'], 'search=couch&search=light&search=fabric' ), true );
 adzworld_bestbuy_check( 'results cache for fifteen minutes', $GLOBALS['adz_transient'][2], 15 * MINUTE_IN_SECONDS );
 
+/*
+ * The Impact Partner ID is optional: products serve with plain links until it
+ * is saved, as eBay and Apple do. Only the API key is required.
+ */
 $GLOBALS['adz_accounts']['bestbuy']['ipid'] = '';
+$unpaid = adzworld_bestbuy_product_results( 'couch' );
+adzworld_bestbuy_check( 'products still serve without a Partner ID', is_array( $unpaid ), true );
+$GLOBALS['adz_accounts']['bestbuy']['api_key'] = '';
 $error = adzworld_bestbuy_product_results( 'couch' );
-adzworld_bestbuy_check( 'missing attribution credentials block the fetch', is_wp_error( $error ), true );
-adzworld_bestbuy_check( 'the credential error is explicit', $error->code, 'adzworld_bestbuy_credentials' );
+adzworld_bestbuy_check( 'a missing API key blocks the fetch', is_wp_error( $error ), true );
+adzworld_bestbuy_check( 'the credential error is explicit', is_wp_error( $error ) ? $error->code : '', 'adzworld_bestbuy_credentials' );
 
 printf( "\n%d passed, %d failed\n", $pass, $fail );
 exit( $fail > 0 ? 1 : 0 );

@@ -191,22 +191,70 @@ Rakuten Advertising, ClickBank, or eBay Partner Network. A public sponsored
 link contains the publisher's identifiers. Except for ClickBank, its destination
 search uses the category and refinements entered by the visitor. ClickBank uses
 only the administrator's saved affiliate, vendor, and optional tracking
-identifiers; visitor preference text is not sent to ClickBank. When a visitor
-follows a sponsored link, the browser connects to that network and sends the URL
-parameters plus normal request information such as IP address, browser data and
-referrer. The network performs attribution and pays the publisher under its own
+identifiers; visitor preference text is not sent to ClickBank. Sponsored links go
+through each network's own link host: Awin links through www.awin1.com, Rakuten
+Advertising and Etsy links through click.linksynergy.com, Travelpayouts flight
+links to www.aviasales.com, and Walmart links through goto.walmart.com. When a
+visitor follows a sponsored link, the browser connects to that network and sends
+the URL parameters plus normal request information such as IP address, browser
+data and referrer. The network performs attribution and pays the publisher under its own
 agreement. Connections includes the registration procedure for each programme.
 The Register control opens that programme’s sign-up page when an administrator
 clicks it. The plugin does not create the account.
 
-When a Best Buy connection is enabled and both required identifiers are saved,
-the site server sends the category and that category's refinements, the Best Buy
-API key and the Impact Partner ID to https://api.bestbuy.com/v1/products. Best
-Buy returns product names, images, current prices and attributed product URLs.
+When a Best Buy connection is enabled and its API key is saved, the site server
+sends the category and that category's refinements, the Best Buy API key and,
+when saved, the Impact Partner ID to https://api.bestbuy.com/v1/products. Best
+Buy returns product names, images, current prices and product URLs, attributed
+to the publisher when the Partner ID was sent.
 The response is cached on the site for 15 minutes. The visitor's browser loads
 the returned product image and the required Best Buy logo from Best Buy hosts.
 Disabling the connection stops these requests. The API key is never printed in
 the public page.
+
+The product connections below work the same way. Each is off until an
+administrator enables it and saves its required identifiers. A request is made
+by the site server only when a rotation slot for that category is displayed and
+no cached answer exists. Each sends the category and that category's
+refinements as the search text, never the visitor's IP address, session
+identifier or WordPress user id. Returned product names, images, prices and
+links are cached on the site, and the visitor's browser loads the product
+images from the provider's image hosts. Credentials are never printed in the
+public page. Disabling a connection stops its requests.
+
+* Amazon Creators API — the site server exchanges the saved credential ID and
+  secret for an access token at the regional Amazon endpoint for the
+  credential version: https://api.amazon.com/auth/o2/token,
+  https://api.amazon.co.uk/auth/o2/token or https://api.amazon.co.jp/auth/o2/token.
+  It then sends the token, the selected marketplace, the Associates tag and the
+  search text to https://creatorsapi.amazon/catalog/v1/searchItems. Tokens are
+  cached until they expire; results for 15 minutes.
+* eBay Browse API — the site server exchanges the saved client ID and secret for
+  an application token at https://api.ebay.com/identity/v1/oauth2/token (or
+  https://api.sandbox.ebay.com in sandbox mode), then sends the token, the search
+  text and, when saved, the eBay Partner Network campaign ID to
+  /buy/browse/v1/item_summary/search on the same host. Tokens are cached for
+  110 minutes; results for 15 minutes.
+* Etsy Open API — the site server sends the saved keystring and shared secret
+  and the search text to https://api.etsy.com/v3/application/listings/active,
+  then requests each returned listing's images from
+  https://api.etsy.com/v3/application/listings/<listing id>/images. Results are
+  cached for 15 minutes. With Rakuten Advertising identifiers saved, listing
+  links go through click.linksynergy.com.
+* Apple Search API — the site server sends the search text, the country US, the
+  selected media type and a result limit to https://itunes.apple.com/search. No
+  key is needed. The optional Apple Services Performance Partners token is added
+  to the returned store links. Results are cached for 15 minutes.
+* AvantLink — the site server sends the saved affiliate ID and website ID and
+  the search text to https://classic.avantlink.com/api.php (ProductSearch).
+  Results are cached for 15 minutes.
+* Travelpayouts — the site server sends a place name from the search text to
+  https://autocomplete.travelpayouts.com/places2 to find its airport code
+  (cached for 7 days), then sends the saved API token, the saved origin, that
+  destination code, the currency and any month to
+  https://api.travelpayouts.com/v1/prices/cheap or /v1/prices/direct. Results
+  are cached for 30 minutes. Flight links go to www.aviasales.com with the
+  saved Travelpayouts marker.
 
 * Amazon Associates — Sign up: https://associates.amazon.com/signup ; Agreement: https://affiliate-program.amazon.com/help/operating/agreement/ ; Privacy: https://www.amazon.com/gp/help/customer/display.html?nodeId=GX7NJQ4ZB8MHFRNJ
 * Best Buy Developer API and Publisher Program — API terms and branding: https://developer.bestbuy.com/legal ; Privacy: https://www.bestbuy.com/site/help-topics/privacy-policy/pcmcat204400050062.c?id=pcmcat204400050062
@@ -216,6 +264,13 @@ the public page.
 * Rakuten Advertising — Terms: https://rakutenadvertising.com/legal-notices/terms-conditions/ ; Privacy: https://rakutenadvertising.com/legal-notices/services-privacy-policy/
 * ClickBank — Sign up: https://accounts.clickbank.com/master/makebank.html ; Client contract: https://support.clickbank.com/hc/en-us/articles/220376507-ClickBank-Client-Contract ; Privacy: https://www.clickbank.com/privacy-policy/
 * eBay Partner Network — Agreement: https://partnernetwork.ebay.com/page/network-agreement ; Privacy: https://www.ebay.com/help/policies/member-behavior-policies/user-privacy-notice-privacy-policy?id=4260
+* Amazon Creators API — Policy: https://affiliate-program.amazon.com/help/operating/creatorsapipolicy ; Agreement: https://affiliate-program.amazon.com/help/operating/agreement/ ; Privacy: https://www.amazon.com/gp/help/customer/display.html?nodeId=GX7NJQ4ZB8MHFRNJ (also covers amazon.co.uk and amazon.co.jp)
+* eBay Browse API — API License Agreement: https://developer.ebay.com/join/api-license-agreement ; Privacy: https://www.ebay.com/help/policies/member-behavior-policies/user-privacy-notice-privacy-policy?id=4260
+* Etsy Open API (etsy.com) — API terms: https://www.etsy.com/legal/api ; Privacy: https://www.etsy.com/legal/privacy
+* Apple Search API and Apple Services Performance Partners (apple.com) — Terms: https://www.apple.com/legal/internet-services/itunes/ ; Program: https://performance-partners.apple.com/ ; Privacy: https://www.apple.com/legal/privacy/
+* AvantLink (avantlink.com) — Terms: https://www.avantlink.com/terms-of-use/ ; Privacy: https://www.avantlink.com/privacy-policy/
+* Travelpayouts (travelpayouts.com) and Aviasales (aviasales.com) — Terms: https://www.travelpayouts.com/en/terms ; Privacy: https://www.travelpayouts.com/en/privacy ; Aviasales privacy: https://www.aviasales.com/privacy
+* Awin link host (awin1.com) and Rakuten Advertising link host (linksynergy.com) — covered by the Awin and Rakuten Advertising terms and privacy policies above.
 
 = Administrator links and iframe destinations =
 

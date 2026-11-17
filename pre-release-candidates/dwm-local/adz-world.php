@@ -142,9 +142,23 @@ function adzworld_enqueue_scripts() {
 
 	wp_enqueue_style( 'adz_custombox', plugin_dir_url( __FILE__ ) . 'css/overlay.css', array(), '1.0.9' );
 	wp_enqueue_style( 'adz_css', plugin_dir_url( __FILE__ ) . 'css/styles.css', array(), '1.0.9' );
-	wp_enqueue_script( 'jquery' );
-	wp_enqueue_script( 'adzworld-legacy', plugin_dir_url( __FILE__ ) . 'assets/legacy.js', array( 'jquery' ), '1.0.9', true );
+	wp_enqueue_script( 'adzworld-legacy' );
 }//end adzworld_enqueue_scripts()
+
+/**
+ * Register the legacy timed and gated adz script.
+ *
+ * It is registered on every request so the shortcode, the page rotations and
+ * the thru-page template can each enqueue it and queue their settings with
+ * adzworld_legacy_request().
+ *
+ * @return void
+ */
+function adzworld_register_legacy_script() {
+	$path = __DIR__ . '/assets/legacy.js';
+	wp_register_script( 'adzworld-legacy', plugin_dir_url( __FILE__ ) . 'assets/legacy.js', array( 'jquery' ), (string) filemtime( $path ), true );
+}
+add_action( 'init', 'adzworld_register_legacy_script' );
 
 add_action( 'wp_enqueue_scripts', 'adzworld_enqueue_scripts' );
 

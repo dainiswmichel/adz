@@ -32,53 +32,16 @@ if ( 'thru_page' === $display_type ) {
 	<?php
 	wp_enqueue_style( 'adz_css' );
 	wp_print_styles( 'adz_css' );
-	wp_enqueue_script( 'jquery' );
-	wp_print_scripts( 'jquery' );
+	adzworld_legacy_request(
+		array(
+			'mode'    => 'thru',
+			'seconds' => absint( $ad_visibility ),
+			'request' => array(),
+			'close'   => adzworld_legacy_close_fields( $target_type, $target, $ad_visibility_interval, $repeat_times, $rotation_id ),
+		)
+	);
+	wp_print_scripts( array( 'jquery', 'adzworld-legacy' ) );
 	?>
-	<script type="text/javascript">
-		jQuery(document).ready(function(){
-
-			var i = <?php echo absint( $ad_visibility ); ?>;
-			var adz_interval = setInterval(function () {
-				if (i >= 0) {
-					jQuery('.adz_timer').text(" "+i+" ");
-					i--;
-				} else {
-					jQuery('.continue_reading').text('Continue >>');
-					jQuery('.continue_reading').addClass('close_adz');
-					clearInterval(adz_interval);
-				}
-			}, 1000);
-
-			jQuery(document).on('click','.close_adz',function(){
-				jQuery.ajax({
-					url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
-					type : 'post',
-					data: {
-						action :'adzworld_get_advertise_content',
-						target_type : '<?php echo esc_js( $target_type ); ?>',
-						target : '<?php echo esc_js( $target ); ?>',
-						ad_visibility_interval : '<?php echo esc_js( $ad_visibility_interval ); ?>',
-						repeat_times : '<?php echo esc_js( $repeat_times ); ?>',
-						close_adz : 'true',
-						rotations_id: '<?php echo esc_js( $rotation_id ); ?>',
-						adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>',
-						adzworld_context: '<?php echo esc_js( adzworld_ad_request_token( $target_type, $target, $ad_visibility_interval, $repeat_times, '', $rotation_id, '', '', '', 'true' ) ); ?>',
-
-					},
-					success:function(data) {
-						if(data != 'continue'){
-							location.reload();
-						}
-					},
-					error: function(errorThrown){
-						console.log(errorThrown);
-					}
-				});
-			});
-		});
-
-	</script>
 	</head>
 	<!-- BEGIN: Sticky Header -->
 	<div id="adz_header_container">

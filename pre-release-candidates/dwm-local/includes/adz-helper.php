@@ -89,120 +89,15 @@ function adzworld_get_advertise( $ad_visibility, $ad_visibility_interval, $repea
 		$_SESSION['first_time'] = time() + $ad_visibility_interval;
 	}
 
-	?>
-	<script type="text/javascript">
-
-		jQuery(document).ready(function(){
-			var repeat_adz = 'yes';
-			var interval = setInterval(function () {
-				if(repeat_adz == 'yes'){
-
-					browsing_advertise();
-				}
-
-			}, 60000);
-			function browsing_advertise(){
-
-
-				jQuery.ajax({
-					url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
-					type : 'post',
-					data: {
-						action :'adzworld_get_advertise_content',
-						target_type : '<?php echo esc_js( $target_type ); ?>',
-						target : '<?php echo esc_js( $target ); ?>',
-						ad_visibility_interval : '<?php echo esc_js( $ad_visibility_interval ); ?>',
-						ad_to_serve : '<?php echo esc_js( $ad_to_serve ); ?>',
-						rotations_id : '<?php echo esc_js( $rotations_id ); ?>',
-						sequence : '<?php echo esc_js( $sequence ); ?>',
-						display_type : '<?php echo esc_js( $display_type ); ?>',
-						adz_template : '<?php echo esc_js( $adz_template ); ?>',
-						repeat_times : '<?php echo esc_js( $repeat_times ); ?>' ,
-						adzworld_context: '<?php echo esc_js( adzworld_ad_request_token( $target_type, $target, $ad_visibility_interval, $repeat_times, $ad_to_serve, $rotations_id, $sequence, $display_type, $adz_template ) ); ?>',
-						adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
-					},
-					success:function(data) {
-
-						if(jQuery.trim(data) != 'continue'){
-							<?php if ( is_category() ) { ?>
-								jQuery('.page-header').after('<div class="adz-world-category-wapper"></div>');
-								jQuery('.status-publish').remove();
-								jQuery('.pagination').remove();
-
-							<?php } ?>
-							<?php if ( is_category() ) { ?>
-								jQuery(document).find('.adz-world-category-wapper').html(window.adzworldDecodeAd(data));
-								var i = <?php echo absint( $ad_visibility ); ?>;
-								var adz_interval = setInterval(function () {
-									if (i >= 0) {
-										jQuery('.adz_timer').text(" "+i+" ");
-										i--;
-									} else {
-										jQuery('.continue_reading').text('Continue >>');
-										jQuery('.continue_reading').addClass('close_adz');
-										clearInterval(adz_interval);
-										repeat_adz = 'no';
-									}
-								}, 1000);
-							<?php } else { ?>
-								jQuery('.adz-world-container').html(window.adzworldDecodeAd(data));
-								var i = <?php echo absint( $ad_visibility ); ?>;
-								var adz_interval = setInterval(function () {
-									if (i >= 0) {
-										jQuery('.adz_timer').text(" "+i+" ");
-										i--;
-									} else {
-										jQuery('.continue_reading').text('Continue >>');
-										jQuery('.continue_reading').addClass('close_adz');
-										clearInterval(adz_interval);
-										repeat_adz = 'no';
-									}
-								}, 1000);
-							<?php } ?>
-
-
-						}else{
-						}
-					},
-					error: function(errorThrown){
-						console.log(errorThrown);
-					}
-				});
-			}
-
-			jQuery(document).on('click','.close_adz',function(){
-				jQuery.ajax({
-					url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
-					type : 'post',
-					data: {
-						action :'adzworld_get_advertise_content',
-						target_type : '<?php echo esc_js( $target_type ); ?>',
-						target : '<?php echo esc_js( $target ); ?>',
-						ad_visibility_interval : '<?php echo esc_js( $ad_visibility_interval ); ?>',
-						repeat_times : '<?php echo esc_js( $repeat_times ); ?>',
-						close_adz : 'true',
-						rotations_id : '<?php echo esc_js( $rotations_id ); ?>',
-						adzworld_context: '<?php echo esc_js( adzworld_ad_request_token( $target_type, $target, $ad_visibility_interval, $repeat_times, '', $rotations_id, '', '', '', 'true' ) ); ?>',
-						adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
-
-
-					},
-					success:function(data) {
-						if(jQuery.trim(data) != 'continue'){
-							repeat_adz = 'yes';
-							location.reload();
-						}
-					},
-					error: function(errorThrown){
-						console.log(errorThrown);
-					}
-				});
-
-			});
-		});
-
-	</script>
-	<?php
+	adzworld_legacy_request(
+		array(
+			'mode'     => 'browse',
+			'seconds'  => absint( $ad_visibility ),
+			'category' => is_category(),
+			'request'  => adzworld_legacy_request_fields( $target_type, $target, $ad_visibility_interval, $repeat_times, $ad_to_serve, $rotations_id, $sequence, $display_type, $adz_template ),
+			'close'    => adzworld_legacy_close_fields( $target_type, $target, $ad_visibility_interval, $repeat_times, $rotations_id ),
+		)
+	);
 }
 /**
  * Render the scheduled popup advertising request controls.
@@ -232,96 +127,108 @@ function adzworld_get_advertise_popup( $ad_visibility, $ad_visibility_interval, 
 		</div>
 	</div>
 
-	<script type="text/javascript">
-	jQuery(document).ready(function(){
-
-		var repeat_adz = 'yes';
-		var interval = setInterval(function () {
-			if(repeat_adz == 'yes'){
-				browsing_advertise();
-			}
-
-		}, 60000);
-		function browsing_advertise(){
-
-			jQuery.ajax({
-				url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
-				type : 'post',
-				data: {
-					action :'adzworld_get_advertise_content',
-					target_type : '<?php echo esc_js( $target_type ); ?>',
-					target : '<?php echo esc_js( $target ); ?>',
-					ad_visibility_interval : '<?php echo esc_js( $ad_visibility_interval ); ?>',
-					ad_to_serve : '<?php echo esc_js( $ad_to_serve ); ?>',
-					rotations_id : '<?php echo esc_js( $rotations_id ); ?>',
-					sequence : '<?php echo esc_js( $sequence ); ?>',
-					display_type : '<?php echo esc_js( $display_type ); ?>',
-					adz_template : '<?php echo esc_js( $adz_template ); ?>',
-					repeat_times : '<?php echo esc_js( $repeat_times ); ?>',
-					adzworld_context: '<?php echo esc_js( adzworld_ad_request_token( $target_type, $target, $ad_visibility_interval, $repeat_times, $ad_to_serve, $rotations_id, $sequence, $display_type, $adz_template ) ); ?>',
-					show_popup : 'true',
-					adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
-
-				},
-				success:function(data) {
-
-					if(jQuery.trim(data) != 'continue'){
-						jQuery('#show_overlay').addClass('adzworld-is-visible');
-						jQuery('.adz_popup .content').html(window.adzworldDecodeAd(data));
-
-
-						var i = <?php echo absint( $ad_visibility ); ?>;
-						var adz_interval = setInterval(function () {
-							if (i >= 0) {
-								jQuery('.adz_timer').text(" "+i+" ");
-								i--;
-							} else {
-								jQuery('.continue_reading').text('Continue >>');
-								jQuery('.continue_reading').addClass('close_adz');
-								clearInterval(adz_interval);
-								repeat_adz = 'no';
-							}
-						}, 1000);
-					}
-				},
-				error: function(errorThrown){
-					console.log(errorThrown);
-				}
-			});
-
-		}
-
-		jQuery(document).on('click','.close_adz',function(){
-			jQuery.ajax({
-				url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
-				type : 'post',
-				data: {
-					action :'adzworld_get_advertise_content',
-					target_type : '<?php echo esc_js( $target_type ); ?>',
-					target : '<?php echo esc_js( $target ); ?>',
-					ad_visibility_interval : '<?php echo esc_js( $ad_visibility_interval ); ?>',
-					repeat_times : '<?php echo esc_js( $repeat_times ); ?>',
-					close_adz : 'true',
-					rotations_id : '<?php echo esc_js( $rotations_id ); ?>',
-					adzworld_context: '<?php echo esc_js( adzworld_ad_request_token( $target_type, $target, $ad_visibility_interval, $repeat_times, '', $rotations_id, '', '', '', 'true' ) ); ?>',
-					show_popup : 'true',
-					adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
-				},
-				success:function(data) {
-					jQuery('#show_overlay').removeClass('adzworld-is-visible');
-					repeat_adz = 'yes';
-				},
-				error: function(errorThrown){
-					console.log(errorThrown);
-				}
-			});
-
-
-		});
-	});
-
-	</script>
 	<?php
+	adzworld_legacy_request(
+		array(
+			'mode'    => 'browse-popup',
+			'seconds' => absint( $ad_visibility ),
+			'request' => adzworld_legacy_request_fields( $target_type, $target, $ad_visibility_interval, $repeat_times, $ad_to_serve, $rotations_id, $sequence, $display_type, $adz_template, true ),
+			'close'   => adzworld_legacy_close_fields( $target_type, $target, $ad_visibility_interval, $repeat_times, $rotations_id, true ),
+		)
+	);
+}
+
+/**
+ * Queue one legacy timed or gated adz request for assets/legacy.js.
+ *
+ * The settings travel as JSON through wp_add_inline_script(), so no script
+ * is printed by PHP. See assets/legacy.js for every setting.
+ *
+ * @param array $settings Request settings: mode, seconds, request, close, and optional category or content.
+ * @return void
+ */
+function adzworld_legacy_request( $settings ) {
+	$settings = array_merge(
+		array(
+			'ajaxUrl'  => admin_url( 'admin-ajax.php' ),
+			'continue' => __( 'Continue >>', 'adz-world' ),
+		),
+		$settings
+	);
+	wp_enqueue_script( 'adzworld-legacy' );
+	wp_add_inline_script(
+		'adzworld-legacy',
+		'window.adzworldLegacyRequests = window.adzworldLegacyRequests || []; window.adzworldLegacyRequests.push('
+			. wp_json_encode( $settings, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ) . ');',
+		'before'
+	);
+}
+
+/**
+ * POST fields that ask the endpoint for one legacy adz.
+ *
+ * @param string $target_type            Target kind.
+ * @param mixed  $target                 Target identifier.
+ * @param mixed  $ad_visibility_interval Minimum seconds between adz.
+ * @param mixed  $repeat_times           Repeat count or infinite.
+ * @param mixed  $ad_to_serve            Selected adz identifier.
+ * @param string $rotations_id           Saved rotation identifier.
+ * @param string $sequence               Configured adz sequence.
+ * @param string $display_type           Presentation kind.
+ * @param string $adz_template           Template filename.
+ * @param bool   $popup                  Whether the adz opens in the overlay.
+ * @return array<string,string>
+ */
+function adzworld_legacy_request_fields( $target_type, $target, $ad_visibility_interval, $repeat_times, $ad_to_serve, $rotations_id, $sequence, $display_type, $adz_template, $popup = false ) {
+	$fields = array(
+		'action'                 => 'adzworld_get_advertise_content',
+		'target_type'            => (string) $target_type,
+		'target'                 => (string) $target,
+		'ad_visibility_interval' => (string) $ad_visibility_interval,
+		'ad_to_serve'            => (string) $ad_to_serve,
+		'rotations_id'           => (string) $rotations_id,
+		'sequence'               => (string) $sequence,
+		'display_type'           => (string) $display_type,
+		'adz_template'           => (string) $adz_template,
+		'repeat_times'           => (string) $repeat_times,
+		'adzworld_context'       => adzworld_ad_request_token( $target_type, $target, $ad_visibility_interval, $repeat_times, $ad_to_serve, $rotations_id, $sequence, $display_type, $adz_template ),
+		'adz_nonce'              => wp_create_nonce( 'adzdotworld' ),
+	);
+	if ( $popup ) {
+		$fields['show_popup'] = 'true';
+	}
+
+	return $fields;
+}
+
+/**
+ * POST fields sent when the reader continues past a legacy adz.
+ *
+ * @param string $target_type            Target kind.
+ * @param mixed  $target                 Target identifier.
+ * @param mixed  $ad_visibility_interval Minimum seconds between adz.
+ * @param mixed  $repeat_times           Repeat count or infinite.
+ * @param string $rotations_id           Saved rotation identifier.
+ * @param bool   $popup                  Whether the adz opened in the overlay.
+ * @return array<string,string>
+ */
+function adzworld_legacy_close_fields( $target_type, $target, $ad_visibility_interval, $repeat_times, $rotations_id, $popup = false ) {
+	$fields = array(
+		'action'                 => 'adzworld_get_advertise_content',
+		'target_type'            => (string) $target_type,
+		'target'                 => (string) $target,
+		'ad_visibility_interval' => (string) $ad_visibility_interval,
+		'repeat_times'           => (string) $repeat_times,
+		'close_adz'              => 'true',
+		'rotations_id'           => (string) $rotations_id,
+		'adzworld_context'       => adzworld_ad_request_token( $target_type, $target, $ad_visibility_interval, $repeat_times, '', $rotations_id, '', '', '', 'true' ),
+		'adz_nonce'              => wp_create_nonce( 'adzdotworld' ),
+	);
+	if ( $popup ) {
+		$fields['show_popup'] = 'true';
+	}
+
+	return $fields;
 }
 
 /**
