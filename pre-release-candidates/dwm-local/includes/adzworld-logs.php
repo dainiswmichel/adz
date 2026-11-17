@@ -552,11 +552,7 @@ function adzworld_journey_where( $event ) {
 	$parts = array();
 	if ( ! empty( $event['rotation'] ) ) {
 		$rotations = adzworld_named_rotations();
-		$parts[]   = sprintf(
-			/* translators: %s: rotation name. */
-			__( 'Rotation %s', 'adz-world' ),
-			isset( $rotations[ $event['rotation'] ] ) ? $rotations[ $event['rotation'] ]['name'] : $event['rotation']
-		);
+		$parts[]   = isset( $rotations[ $event['rotation'] ] ) ? $rotations[ $event['rotation'] ]['name'] : $event['rotation'];
 	}
 	if ( ! empty( $event['slot'] ) ) {
 		$parts[] = sprintf(
