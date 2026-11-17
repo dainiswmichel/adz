@@ -8,9 +8,12 @@ WordPress plugin remediation workspace for `adz-world`.
 |---|---|---|
 | `ancestor/` | Frozen 2018 plugin, network server, and premium plugin reference | No |
 | `adz-world/` | The plugin: Dainis' approved production release source, identical to WordPress.org SVN | Yes, on approved release |
-| `adz-world-wordpress-codebase/` | Historical integrated source retained for comparison | No |
 | `pre-release-candidates/<agent>/` | Independent agent repair candidates | No |
 | `../adz-world-com/` | Website project: server/WordPress setup, site-specific code, and deployment configuration | Separately, to adz-world.com |
+
+The former `adz-world-wordpress-codebase/` historical integrated source is kept
+in git as tag `archive/integrated-codebase-2026-11-15`
+(`git checkout archive/integrated-codebase-2026-11-15 -- adz-world-wordpress-codebase`).
 
 `adz-world/` is the production release source, not a running
 WordPress site. It is not yet a claim of WordPress.org compliance. Never modify
@@ -26,11 +29,11 @@ agent-specific documentation directories.
 
 Agents work on bounded repairs in their own candidates against an identified
 baseline. Each repair must identify changed behavior and tests actually run.
-No agent's candidate is authoritative. Compare a candidate with the integrated
+No agent's candidate is authoritative. Compare a candidate with the production
 source to review its proposed changes:
 
 ```bash
-diff -qr adz-world-wordpress-codebase pre-release-candidates/claude-code-web
+diff -qr adz-world pre-release-candidates/claude-code-web
 ```
 
 Human and AI review selects repairs for integration into
