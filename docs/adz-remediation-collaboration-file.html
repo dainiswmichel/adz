@@ -50,6 +50,80 @@
   This document itemizes work; it does not repair code, select winners, run a gate, authorize publication, or certify compliance.</div>
 </header>
 
+<section id="codex-release-review-2026y-11m-12d-EET-10h-16m">
+<h2>Codex — 1.0.9 functional correction and human-review handoff</h2>
+<p class="meta"><strong>Local MTS:</strong>
+<time datetime="2026-11-12T10:16:35+02:00">2026y-11m-12d-EET-10h-16m</time>.
+Production source: <code>pre-release-candidates/dwm-local/</code>. Review target:
+<code>https://adz-world.com/</code>. WordPress.org publication is not yet authorized by this entry.</p>
+<p>Corrected the category/advertisement hierarchy without inventing advertising
+inventory. A local adz now uses editor content or its featured image as the
+advertisement creative. Its excerpt is matching refinement data and is never
+rendered where the advertisement belongs. A configured slot with no creative
+remains in the carousel, retains its arrows and category target, and presents
+the honest state “No matching adz is available yet.” Evaluation controls appear
+only when an actual creative is present; category refinement remains available
+for an empty result.</p>
+<p>The invitation accepts detailed free-form input. A colon separates a category
+from comma-separated refinements; a pipe is the separator when the category
+itself contains a colon. Long input receives a short three-word display label
+ending in an ellipsis and the remaining text stays attached as a refinement.
+Category/refinement pairs use reversible collision-safe encoding, so one
+category cannot receive another category’s refinements. Anonymous preference
+state starts fresh after 24 hours; only this plugin’s preference state is
+cleared, not unrelated session data.</p>
+<p><strong>Measured evidence before the final 24-hour-lifetime rerun:</strong>
+full production WPCS returned zero findings; all production PHP and JavaScript
+parsed; matching tests passed 19/19; preference/parser tests passed 53/53; own
+code resolution found zero missing internal calls, arity errors, or duplicate
+functions; forbidden inline/runtime styling and WPCS-suppression searches each
+returned zero matches. The exact review ZIP had SHA-256
+<code>d662c3b21187cedfaee50ccc35f7a6f83c3a67456652095e911ad599fa9fc37f</code>
+and was installed on the review target after a recoverable server-side backup.
+Official Plugin Check on WordPress 7.1.4 and PHP 8.3.35 returned
+<code>Success: Checks complete. No errors found.</code>. An anonymous live request
+created <code>outdoor sauna</code> with two separately scoped refinements,
+preserved them across a reload, and selected the category successfully.</p>
+<p><strong>Open human-review items:</strong> no connected visual browser was
+available to Codex, so arrow clicks, category clicks, responsive layout, theme
+variations, focus order, and screen-reader behavior require human review. The
+site has no enabled network account and the three example local posts contain
+refinement excerpts but no advertisement creative; therefore the correct live
+result is an empty-result message, not a fabricated advertisement. Human review
+should add one temporary real local creative and, if credentials are available,
+one approved provider unit; verify display, Improve, category/refinement scope,
+rotation navigation, and administrator previews; then remove the temporary data.
+The final gate, artifact hash, Git commit, GitHub quality result, and SVN dry run
+must be appended after this new lifetime change is rebuilt and tested.</p>
+</section>
+
+<section id="codex-remove-visitor-ip-2026y-11m-15d-UTC">
+<h2>Codex — remove visitor-IP network identification</h2>
+<p class="meta"><strong>Date:</strong> 2026-11-15. Integrated candidate:
+<code>pre-release-candidates/dwm-local/</code>.</p>
+<p>The legacy cross-site account lookup sent the raw visitor address to the
+configured adz network endpoint <code>wp-json/adz_server/v1/ads/is_visitor_logged</code>.
+That lookup and the associated remote visitor-ad pool were removed. Passive
+anonymous readers now receive the configured rotation without a preference
+session or local view identity. The first category, refinement, or rating
+creates a local 24-hour anonymous session identified by an MTS. Signed-in
+readers use their local WordPress account and store preferences in local user
+meta. Neither the MTS nor the local WordPress user ID is sent to the legacy adz
+network.</p>
+<p>A CSS-only, keyboard-focusable information control now appears at the
+bottom-right of each effective adz panel. It explains the passive, anonymous
+session, and signed-in stages and distinguishes adz-world processing from any
+third-party advertising creative deliberately placed by the publisher.</p>
+<p><strong>Verification:</strong> the forbidden-pattern search for
+<code>REMOTE_ADDR</code>, <code>visitor_ip</code>, remote visitor identifiers,
+inline styles, and PHPCS suppressions returned zero matches. Preference tests
+passed 53/53; matching tests passed 19/19; PHP lint and diff checking passed.
+The pinned WPCS gate reported zero errors and one pre-existing warning for the
+eBay HTTP Basic authentication use of <code>base64_encode()</code>; therefore
+the complete zero-warning production gate is not yet satisfied. No live
+deployment or browser visual review was performed.</p>
+</section>
+
 <section id="workflow">
   <h2>How a task becomes and stays fixed</h2>
   <p><strong>Shared editing and Git publication:</strong> Claude Code and all other agents update this same file.
@@ -82,6 +156,49 @@
   <p>This is the remediation task register, not another setup specsheet or competing gate.
   Existing setup: <a href="adz-world-com-do-and-fast-gate-spec-2026-10m-25d.html">shared setup and fast-gate specification</a>.
   Earlier analysis: <a href="remediation-scope.md">remediation scope</a>; its historical DONE labels are not inherited as current integrated evidence.</p>
+</section>
+
+<section id="codex-bestbuy-fetcher-2026y-11m-13d-EET-09h-39m">
+<h2>Codex integration — Best Buy attributed product fetcher</h2>
+<p class="meta"><strong>Local MTS:</strong>
+<time datetime="2026-11-13T09:39:23+02:00">2026y-11m-13d-EET-09h-39m</time>.
+Integration tree: <code>pre-release-candidates/dwm-local/</code>. No deployment,
+version bump, release packaging, or WordPress.org operation was performed.</p>
+<p>Added a separate Best Buy Products API adapter. The administrator connection
+requires a Best Buy Developer API key and the Impact Partner ID from an approved
+Best Buy Publisher Program account. The API key uses the existing secret-field
+handling. A connection is not reported ready unless it is enabled and both
+values are present.</p>
+<p>The fetcher converts the existing category plus that category's refinements
+into the Products API's individual search terms, requests three active and
+online-available products, and maps name, image, sale price, and
+<code>affiliateUrl</code> into the existing inner result carousel. A plain
+product URL is never used as fallback: a result without Best Buy's attributed
+URL is rejected. Results are cached for 15 minutes. The official Best Buy logo
+and developer attribution are rendered with API results, as required by Best
+Buy's branding guidelines. The readme now discloses the optional server-side
+request, fields sent, browser image/logo requests, cache period, terms, and
+privacy policy.</p>
+<p>The shared integration points are filters for provider fields, registration
+instructions, request behavior, account readiness, and normalized product
+results. This lets Best Buy, Etsy, eBay, Amazon, and later structured-result
+providers coexist without one provider replacing another's fetcher.</p>
+<p><strong>Verification:</strong> the focused Best Buy contract passed 12/12
+assertions, including full request-string term generation, IPID transmission,
+use of <code>affiliateUrl</code>, rejection of an untracked URL, response
+mapping, 15-minute caching, and blocking incomplete credentials. The shared
+project runner reported zero failures: PHP lint passed, project-prefixed call
+resolution returned zero own-code unresolved calls, zero arity errors, and zero
+duplicate definitions, preference tests passed 53/53, matching tests passed
+19/19, and the Best Buy contract passed 12/12. Full WPCS over the complete
+<code>dwm-local</code> plugin exited 0 with zero findings. Scoped diff checking
+passed and no inline style or PHPCS-suppression directive was introduced.</p>
+<p><strong>Not claimed:</strong> no live Best Buy API request was possible
+because no Best Buy API key or approved Impact Partner ID was available. The
+adapter has not been opened in WordPress, visually reviewed in a browser, or
+deployed. The repository-wide <code>git diff --check</code> remains non-zero
+because of pre-existing trailing whitespace in the dirty
+<code>grok-4-6</code> candidate; the files in this integration pass are clean.</p>
 </section>
 
 <section id="codex-live-release-baseline-2026y-11m-11d-EET-17h-02m">
@@ -2518,4 +2635,36 @@ warning, notice, parse error, uncaught exception, or fatal to the debug log.
 Release packaging must continue to exclude macOS <code>._*</code> metadata.
 The tested feature commit is <code>8a24eb0</code>; it was preserved in the
 GitHub main-branch merge history.</p>
+</section>
+<section id="claude-code-cli-adzlogs-2026y-11m-17d">
+<h2>claude-code-cli — AdzLogs journeys, ratings bands, slot response messages</h2>
+<p class="meta"><strong>MTS:</strong> 2026y-11m-17d-UTC12h. Production source:
+<code>pre-release-candidates/dwm-local/</code>. Commits <code>ef81bf5</code>
+(Codex baseline), <code>52b4618</code>, <code>c18eb90</code>. Deployed to
+<code>https://adz-world.com/</code> (container <code>adz-dwm-test-wp-1</code>) from
+<code>git archive c18eb90</code>, ZIP SHA-256
+<code>11088b2b51df7cecaee5013ae393e47b111d62231c9107e38a9c30bcb74aecc7</code>, 86 files.
+No version bump; no SVN action.</p>
+<p>AdzLogs tab: one private <code>adzworld_journey</code> post per reader session,
+one append-only post-meta row per event. A journey starts at the reader's first
+rating, refinement or category change; passive views record nothing and set no
+cookie. Each action records rotation, visible slot (from 1), and the exact adz
+acted on (<code>ad-31</code>, <code>provider-ebay-…</code>, <code>source-…</code>,
+<code>hub</code>); the adz line is written only when it changes. Session identifier
+= MTS of first action + 5 random characters. FLOSC Chat Logs layout: adz left,
+reader right, labelled rule per slot change. Retention days (default 30), optional
+journey cap, daily cron, delete selected/all.</p>
+<p>Profile saving requires both the adzadmin setting and the reader's own
+profile-page choice; otherwise a signed-in reader is session-only. Ratings bands
+(Templates tab) are stored by upper end, so overlap and gaps are impossible.
+Per-slot response message (default, own, none), recorded in the journey. Golden
+slider from claude-code-web <code>4d89748</code> ported. New
+<code>uninstall.php</code>, privacy-policy text, exporter and eraser.</p>
+<p><strong>Verified:</strong> php -l all files; <code>composer wpcs</code> exit 0, zero
+suppressions; node --check all scripts; <code>git diff --check</code> clean;
+run-all.sh on dwm-local 5 passed / 1 failed / 2 skipped — test-bestbuy 9/3 fails
+identically on baseline <code>ef81bf5</code>. Live: anonymous view sets no cookie;
+category + rating + refinement over admin-ajax produced the expected journey rows;
+AdzLogs, Templates and Rotation screens render with zero PHP warnings; band
+validation rejects overlap, gap and missing words.</p>
 </section>
