@@ -331,7 +331,7 @@ function adzworld_has_preference( $pref ) {
  * The introduction panel: what this is, before anything is asked of the visitor.
  *
  * Shown above the input throughout the invitation-to-hub journey. It names
- * what the rotation is doing, because a visitor who does not know what an adz
+ * what the rotation is doing, because a visitor who does not know what an adzad
  * is cannot meaningfully opt in to one.
  *
  * @param string $depth full | short.
@@ -425,6 +425,12 @@ function adzworld_render_preference_panel( $pref, $has_pref, $intro = 'full' ) {
 		<p class="adz-panel__status" data-adz-status role="status" aria-live="polite"></p>
 	</form>
 	<?php
+	/*
+	 * The standing explanation, in the corner of the panel where a reader
+	 * states what they want. It sits outside the form so opening it cannot
+	 * submit anything.
+	 */
+	adzworld_privacy_note_echo();
 }
 
 /**
@@ -459,17 +465,17 @@ function adzworld_render_chips( $chips ) {
 		<details class="adz-panel__categories" open>
 			<summary><?php esc_html_e( 'Categories', 'adz-world' ); ?></summary>
 			<ul class="adz-panel__chiplist">
-				<?php foreach ( $categories as $tone => $chip ) : ?>
+				<?php foreach ( $categories as $chip ) : ?>
 					<?php
 					$category_id = wp_unique_id( 'adz-category-' );
-					$tone_class  = 'adz-panel__chip--tone-' . ( (int) $tone % 4 );
+					$tone_style  = '--adz-tone: ' . adzworld_category_tone( $chip['value'] ) . ';';
 					$slots_label = sprintf(
 						/* translators: %s: category name. */
 						__( '%s adz slots', 'adz-world' ),
 						$chip['label']
 					);
 					?>
-					<li class="adz-panel__chip adz-panel__chip--categories <?php echo esc_attr( $tone_class ); ?><?php echo ! empty( $chip['active'] ) ? ' is-active' : ''; ?>">
+					<li class="adz-panel__chip adz-panel__chip--categories<?php echo ! empty( $chip['active'] ) ? ' is-active' : ''; ?>" style="<?php echo esc_attr( $tone_style ); ?>">
 						<div class="adz-panel__category-row">
 							<button type="button" class="adz-panel__category" data-adz-category="<?php echo esc_attr( $chip['value'] ); ?>">
 								<?php echo esc_html( $chip['label'] ); ?>
@@ -595,14 +601,50 @@ function adzworld_ajax_refine() {
 
 	$pref = adzworld_current_preference();
 
+	/*
+	 * A response that AdzLogs should file against the adzad that prompted it.
+	 * Filled in by the branch that accepted the response, and recorded once
+	 * below, after the preference has been stored.
+	 *
+	 * The place is read from $_POST inline in each branch rather than by a
+	 * shared helper: the nonce is verified at the top of this handler, and a
+	 * helper reading $_POST elsewhere would need its nonce sniff silenced.
+	 * This candidate carries no sniff suppressions, so the four lines repeat.
+	 */
+	$log_response = array();
+
 	if ( 'select' === $action ) {
 		$category = isset( $_POST['value'] ) ? sanitize_text_field( wp_unslash( $_POST['value'] ) ) : '';
 		$known    = adzworld_preference_with_catalog( $pref );
 		if ( ! in_array( $category, $known['categories'], true ) ) {
-			wp_send_json_error( array( 'message' => __( 'That category is not available.', 'adz-world' ) ), 400 );
+			adzworld_send_preference( $pref, __( 'Updated.', 'adz-world' ) );
 		}
+
 		$pref['active_category'] = $category;
 		adzworld_store_preference( $pref );
+
+		if ( function_exists( 'adzworld_logs_record_response' ) && isset( $_POST['ad'] ) && is_string( $_POST['ad'] ) ) {
+			$log_rotation   = isset( $_POST['rotation'] ) && is_string( $_POST['rotation'] ) ? sanitize_key( wp_unslash( $_POST['rotation'] ) ) : '';
+			$log_slot       = isset( $_POST['slot'] ) && is_string( $_POST['slot'] ) ? sanitize_text_field( wp_unslash( $_POST['slot'] ) ) : '-1';
+			$log_outer      = isset( $_POST['outer_rotation'] ) && is_string( $_POST['outer_rotation'] ) ? sanitize_key( wp_unslash( $_POST['outer_rotation'] ) ) : '';
+			$log_outer_slot = isset( $_POST['outer_slot'] ) && is_string( $_POST['outer_slot'] ) ? sanitize_text_field( wp_unslash( $_POST['outer_slot'] ) ) : '0';
+			$log_items      = isset( $_POST['items'] ) && is_string( $_POST['items'] ) ? explode( ' ', sanitize_text_field( wp_unslash( $_POST['items'] ) ) ) : array();
+			$log_ad         = sanitize_key( wp_unslash( $_POST['ad'] ) );
+
+			adzworld_logs_record_response(
+				$log_rotation,
+				$log_slot,
+				$log_outer,
+				$log_outer_slot,
+				$log_ad,
+				array(
+					'category' => $category,
+				),
+				0 === strpos( $log_ad, 'source-' ),
+				$log_items
+			);
+		}
+
 		wp_send_json_success( array( 'message' => __( 'Category selected.', 'adz-world' ) ) );
 	}
 
@@ -614,11 +656,28 @@ function adzworld_ajax_refine() {
 			? adzworld_normalize_category( sanitize_text_field( wp_unslash( $_POST['refinement'] ) ) )
 			: '';
 
-		if ( ! in_array( $old, $pref['categories'], true ) || ! adzworld_valid_category( $category ) ) {
-			wp_send_json_error( array( 'message' => __( 'Categories can use up to 3 words and 48 characters.', 'adz-world' ) ), 400 );
+		/*
+		 * A rename reads the same way as a first entry: the opening words
+		 * name the thing, the rest describes it. Nothing typed here is
+		 * refused for its length.
+		 */
+		$renamed  = adzworld_split_category_input( $category );
+		$category = $renamed['category'];
+
+		if ( ! in_array( $old, $pref['categories'], true ) || '' === $category ) {
+			wp_send_json_success( array( 'message' => __( 'Category unchanged.', 'adz-world' ) ) );
 		}
 
 		$pref = adzworld_rename_category( $pref, $old, $category );
+
+		if ( '' !== $renamed['refinement'] ) {
+			$pair = mb_substr( adzworld_pair_join( $category, $renamed['refinement'] ), 0, 240 );
+
+			if ( ! in_array( $pair, $pref['category_refinements'], true ) ) {
+				$pref['category_refinements'][] = $pair;
+			}
+		}
+
 		adzworld_store_preference( $pref );
 		wp_send_json_success( array( 'message' => __( 'Category updated.', 'adz-world' ) ) );
 	}
@@ -639,8 +698,20 @@ function adzworld_ajax_refine() {
 		$refinement = trim( mb_substr( $refinement, 0, 120 ) );
 		$parts      = adzworld_pair_split( $old );
 
-		if ( ! in_array( $old, $pref['category_refinements'], true ) || '' === $parts[0] || '' === $refinement ) {
-			wp_send_json_error( array( 'message' => __( 'Enter a refinement to keep improving these adz.', 'adz-world' ) ), 400 );
+		/* The one being edited is already gone, so the page is behind. */
+		if ( ! in_array( $old, $pref['category_refinements'], true ) || '' === $parts[0] ) {
+			adzworld_send_preference( $pref, __( 'Updated.', 'adz-world' ) );
+		}
+
+		/*
+		 * Emptying the box means the reader no longer wants that refinement.
+		 * Taking it away is what they asked for; telling them to type
+		 * something is not.
+		 */
+		if ( '' === $refinement ) {
+			$pref = adzworld_remove_facet( $pref, 'category_refinements', $old );
+			adzworld_store_preference( $pref );
+			adzworld_send_preference( $pref, __( 'Refinement removed.', 'adz-world' ) );
 		}
 
 		$replacement = mb_substr( adzworld_pair_join( $parts[0], $refinement ), 0, 240 );
@@ -660,13 +731,19 @@ function adzworld_ajax_refine() {
 			: '';
 
 		$known = adzworld_preference_with_catalog( $pref );
+
 		if ( ! in_array( $category, $known['categories'], true ) ) {
-			wp_send_json_error( array( 'message' => __( 'That category is not available.', 'adz-world' ) ), 400 );
+			adzworld_send_preference( $pref, __( 'Updated.', 'adz-world' ) );
 		}
 
 		$count = adzworld_category_slot_count( $pref, $category );
+
+		/*
+		 * A real limit, so the reader is told, but being at a limit is not a
+		 * failure and nothing about the page is wrong afterwards.
+		 */
 		if ( $count >= ADZWORLD_CATEGORY_MAX_SLOTS ) {
-			wp_send_json_error( array( 'message' => __( 'This category already has the maximum number of adz slots.', 'adz-world' ) ), 400 );
+			adzworld_send_preference( $pref, __( 'This category already has the most adz slots it can have.', 'adz-world' ) );
 		}
 
 		++$count;
@@ -684,8 +761,13 @@ function adzworld_ajax_refine() {
 		$facet = isset( $_POST['facet'] ) ? sanitize_key( wp_unslash( $_POST['facet'] ) ) : '';
 		$value = isset( $_POST['value'] ) ? sanitize_text_field( wp_unslash( $_POST['value'] ) ) : '';
 
+		/*
+		 * The request did not say what kind of thing to remove. A chip always
+		 * says, so this is a malformed request rather than anything a reader
+		 * did; the page is redrawn and nothing changes.
+		 */
 		if ( '' === $facet ) {
-			wp_send_json_error( array( 'message' => __( 'Nothing to remove.', 'adz-world' ) ), 400 );
+			adzworld_send_preference( $pref, __( 'Updated.', 'adz-world' ) );
 		}
 
 		$pref    = adzworld_remove_facet( $pref, $facet, $value );
@@ -694,8 +776,9 @@ function adzworld_ajax_refine() {
 		$text = isset( $_POST['refinement'] ) ? sanitize_textarea_field( wp_unslash( $_POST['refinement'] ) ) : '';
 		$text = trim( mb_substr( $text, 0, 500 ) );
 
+		/* An empty box is not a mistake. There is simply nothing to add. */
 		if ( '' === $text ) {
-			wp_send_json_error( array( 'message' => __( 'Nothing was entered.', 'adz-world' ) ), 400 );
+			adzworld_send_preference( $pref, __( 'Nothing to add.', 'adz-world' ) );
 		}
 
 		if ( 'improve' === $action ) {
@@ -703,48 +786,154 @@ function adzworld_ajax_refine() {
 			$known    = adzworld_preference_with_catalog( $pref );
 			$category = adzworld_refinement_category_for_target( $target, $known );
 
+			/*
+			 * The adzad may sit in a category the reader has never named.
+			 * That is not their mistake to be told about: fall back to the
+			 * one they are working in, and if there is none, the words they
+			 * just typed name it.
+			 */
 			if ( '' === $category || ! in_array( $category, $known['categories'], true ) ) {
-				wp_send_json_error( array( 'message' => __( 'Add or select this category in the invitation hub before refining it.', 'adz-world' ) ), 400 );
+				$category = isset( $pref['active_category'] ) ? (string) $pref['active_category'] : '';
 			}
 
-			if ( '' === trim( $text ) ) {
-				wp_send_json_error( array( 'message' => __( 'Enter a refinement to keep improving these adz.', 'adz-world' ) ), 400 );
+			if ( '' === $category && ! empty( $pref['categories'] ) ) {
+				$category = (string) $pref['categories'][0];
+			}
+
+			if ( '' === $category ) {
+				$made     = adzworld_split_category_input( $text );
+				$category = $made['category'];
+				$text     = '' !== $made['refinement'] ? $made['refinement'] : $text;
+
+				if ( '' !== $category && ! in_array( $category, $pref['categories'], true ) ) {
+					$pref['categories'][]    = $category;
+					$pref['active_category'] = $category;
+				}
 			}
 
 			$pair = mb_substr( adzworld_pair_join( $category, $text ), 0, 240 );
 			if ( ! in_array( $pair, $pref['category_refinements'], true ) ) {
 				$pref['category_refinements'][] = $pair;
 			}
-			$message = __( 'adz refinement added.', 'adz-world' );
+
+			/* Verbatim: what the reader typed is what AdzLogs shows. */
+			$log_response = array(
+				'ad'       => $target,
+				'changes'  => array(
+					'refinement' => $text,
+				),
+				'external' => 0 === strpos( $target, 'source-' ),
+			);
+			$message      = __( 'adz refinement added.', 'adz-world' );
 		} elseif ( 'category' === $action ) {
-			$category = adzworld_normalize_category( $text );
-			if ( ! adzworld_valid_category( $category ) ) {
-				wp_send_json_error( array( 'message' => __( 'Categories can use up to 3 words and 48 characters.', 'adz-world' ) ), 400 );
-			}
+			/*
+			 * The reader answers one question: what are you looking for. The
+			 * opening words name the thing and become the category; the rest
+			 * describes it and becomes a refinement of that category. They
+			 * are not asked to fill in two boxes, and a sentence is no longer
+			 * refused for being longer than three words.
+			 */
+			$split    = adzworld_split_category_input( $text );
+			$category = $split['category'];
+
 			if ( ! in_array( $category, $pref['categories'], true ) ) {
 				$pref['categories'][] = $category;
 			}
+
 			$pref['active_category'] = $category;
-			$pref                    = adzworld_parse_refinement( $text, $pref );
-			$message                 = __( 'Category added.', 'adz-world' );
-		} elseif ( empty( $pref['categories'] ) ) {
-			wp_send_json_error( array( 'message' => __( 'Add a category in the invitation hub before refining it.', 'adz-world' ) ), 400 );
-		} else {
-			$active = isset( $pref['active_category'] ) ? $pref['active_category'] : $pref['categories'][0];
-			if ( '' === trim( $text ) ) {
-				wp_send_json_error( array( 'message' => __( 'Enter a refinement to keep improving these adz.', 'adz-world' ) ), 400 );
+
+			if ( '' !== $split['refinement'] ) {
+				$pair = mb_substr( adzworld_pair_join( $category, $split['refinement'] ), 0, 240 );
+
+				if ( ! in_array( $pair, $pref['category_refinements'], true ) ) {
+					$pref['category_refinements'][] = $pair;
+				}
 			}
 
-			$pair = mb_substr( adzworld_pair_join( $active, $text ), 0, 240 );
-			if ( ! in_array( $pair, $pref['category_refinements'], true ) ) {
-				$pref['category_refinements'][] = $pair;
+			$message = __( 'Category added.', 'adz-world' );
+		} else {
+			/*
+			 * Typing into the refine box before naming anything is not an
+			 * error to be corrected. The words name the thing, and whatever
+			 * follows describes it, exactly as the first box would read it.
+			 */
+			if ( empty( $pref['categories'] ) ) {
+				$made = adzworld_split_category_input( $text );
+
+				if ( '' !== $made['category'] ) {
+					$pref['categories'][]    = $made['category'];
+					$pref['active_category'] = $made['category'];
+					$text                    = '' !== $made['refinement'] ? $made['refinement'] : '';
+				}
 			}
-			$message = __( 'Refinement added.', 'adz-world' );
+
+			$text = trim( $text );
+
+			if ( empty( $pref['categories'] ) ) {
+				/* Nothing usable was typed, so nothing changes and nothing fails. */
+				$message = __( 'Nothing to add.', 'adz-world' );
+			} else {
+				$active = isset( $pref['active_category'] ) && '' !== $pref['active_category']
+					? $pref['active_category']
+					: $pref['categories'][0];
+
+				if ( '' === $text ) {
+					/* The words were the category. There is no description to keep. */
+					$message = __( 'Category added.', 'adz-world' );
+				} else {
+					$pair = mb_substr( adzworld_pair_join( $active, $text ), 0, 240 );
+
+					if ( ! in_array( $pair, $pref['category_refinements'], true ) ) {
+						$pref['category_refinements'][] = $pair;
+					}
+
+					$message = __( 'Refinement added.', 'adz-world' );
+				}
+			}
 		}
 	}
 
 	adzworld_store_preference( $pref );
 
+	if ( ! empty( $log_response['ad'] ) && function_exists( 'adzworld_logs_record_response' ) ) {
+			$log_rotation   = isset( $_POST['rotation'] ) && is_string( $_POST['rotation'] ) ? sanitize_key( wp_unslash( $_POST['rotation'] ) ) : '';
+			$log_slot       = isset( $_POST['slot'] ) && is_string( $_POST['slot'] ) ? sanitize_text_field( wp_unslash( $_POST['slot'] ) ) : '-1';
+			$log_outer      = isset( $_POST['outer_rotation'] ) && is_string( $_POST['outer_rotation'] ) ? sanitize_key( wp_unslash( $_POST['outer_rotation'] ) ) : '';
+			$log_outer_slot = isset( $_POST['outer_slot'] ) && is_string( $_POST['outer_slot'] ) ? sanitize_text_field( wp_unslash( $_POST['outer_slot'] ) ) : '0';
+		$log_items          = isset( $_POST['items'] ) && is_string( $_POST['items'] ) ? explode( ' ', sanitize_text_field( wp_unslash( $_POST['items'] ) ) ) : array();
+
+		adzworld_logs_record_response(
+			$log_rotation,
+			$log_slot,
+			$log_outer,
+			$log_outer_slot,
+			$log_response['ad'],
+			$log_response['changes'],
+			$log_response['external'],
+			$log_items
+		);
+	}
+
+	adzworld_send_preference( $pref, $message );
+}
+
+/**
+ * Answer with the reader's preference as it actually stands.
+ *
+ * Used for every outcome, including the ones that used to be errors. A page
+ * can fall behind what is stored: a second tab, the back button, or a
+ * session that expired while the tab sat open. The chips on screen are then
+ * real but the thing they name is gone. That is not the reader doing
+ * something wrong and it is not worth a message in red; the page simply
+ * redraws itself from the truth and the stale chip disappears.
+ *
+ * @since 1.0.0
+ *
+ * @param array<string,mixed> $pref    Preference to render.
+ * @param string              $message Short note for the status line.
+ * @return void
+ */
+function adzworld_send_preference( $pref, $message ) {
 	$pref  = adzworld_sanitize_preference( $pref );
 	$chips = adzworld_preference_chips( $pref );
 

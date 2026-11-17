@@ -89,3 +89,24 @@ function number_format_i18n( $n, $d = 0 ) {
 function absint( $n ) {
 	return abs( (int) $n );
 }
+
+/**
+ * Deterministic stand-in for WordPress's random password generator.
+ *
+ * Real randomness would make a visit identifier different on every run and
+ * nothing could assert against it.
+ *
+ * @param int $length Characters wanted.
+ * @return string
+ */
+function wp_generate_password( $length = 12 ) {
+	return substr( str_repeat( 'k7m2qx9d4bvt', 4 ), 0, max( 1, (int) $length ) );
+}
+
+/**
+ * Pluck one field out of each row of a list.
+ *
+ * @param array  $list  Rows.
+ * @param string $field Field wanted.
+ * @return array
+ */

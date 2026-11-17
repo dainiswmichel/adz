@@ -102,6 +102,7 @@ function adzworld_products_normalise_row( $row, $provider_id = '' ) {
 	}
 
 	return array(
+		/* provider:id, which is what AdzLogs records as the adzad served. */
 		'id'       => $provider . ':' . $id,
 		'title'    => $title,
 		'url'      => $url,
@@ -109,6 +110,13 @@ function adzworld_products_normalise_row( $row, $provider_id = '' ) {
 		'price'    => isset( $row['price'] ) ? trim( wp_strip_all_tags( (string) $row['price'] ) ) : '',
 		'provider' => $provider,
 		'source'   => isset( $labels[ $provider ] ) ? $labels[ $provider ] : '',
+
+		/*
+		 * The bare identifier, without the provider in front of it. A rating
+		 * given to one result is keyed on provider-<provider>-<item_id>, so
+		 * each listing carries its own verdict rather than the slot's.
+		 */
+		'item_id'  => sanitize_key( $id ),
 	);
 }
 
@@ -157,8 +165,9 @@ function adzworld_products_interleave( $rows, $limit = ADZWORLD_PRODUCTS_LIMIT )
  *
  * @param string $request Reader's request: the category and its refinements.
  * @return array<int,array<string,string>> Normalised, interleaved rows.
+ * @param string $provider Show only this provider's rows, or empty for all.
  */
-function adzworld_products_collect( $request ) {
+function adzworld_products_collect( $request, $provider = '' ) {
 	$request = trim( wp_strip_all_tags( (string) $request ) );
 
 	if ( '' === $request ) {
@@ -181,11 +190,18 @@ function adzworld_products_collect( $request ) {
 		return array();
 	}
 
-	$clean = array();
-	$seen  = array();
+	$provider = sanitize_key( (string) $provider );
+	$clean    = array();
+	$seen     = array();
+
 	foreach ( $rows as $row ) {
 		$normal = adzworld_products_normalise_row( $row );
 		if ( null === $normal ) {
+			continue;
+		}
+
+		/* A slot configured for one provider shows that provider only. */
+		if ( '' !== $provider && $provider !== $normal['provider'] ) {
 			continue;
 		}
 
@@ -213,6 +229,22 @@ function adzworld_products_markup( $results, $request ) {
 		return '';
 	}
 
+	/*
+	 * Which products these cards are. The rotation cannot see inside the
+	 * provider shortcode it renders, so the identifiers are left here for
+	 * AdzLogs to collect: without them a log of ten provider rounds reads as
+	 * ten identical rows saying only which provider answered.
+	 */
+	$served = array();
+
+	foreach ( $results as $result ) {
+		if ( isset( $result['id'] ) ) {
+			$served[] = $result['id'];
+		}
+	}
+
+	adzworld_products_remember_served( $served );
+
 	$request = trim( wp_strip_all_tags( (string) $request ) );
 
 	$html = '<div class="adzworld-products">';
@@ -230,7 +262,7 @@ function adzworld_products_markup( $results, $request ) {
 	$html .= '<ul class="adzworld-products__list">';
 
 	foreach ( $results as $result ) {
-		$html .= '<li class="adzworld-product">';
+		$html .= '<li class="adzworld-product" data-adzworld-item="' . esc_attr( (string) $result['id'] ) . '">';
 		$html .= '<a class="adzworld-product__link" href="' . esc_url( $result['url'] ) . '" rel="sponsored nofollow" target="_blank">';
 
 		if ( '' !== $result['image'] ) {
@@ -256,4 +288,38 @@ function adzworld_products_markup( $results, $request ) {
 	}
 
 	return $html . '</ul></div>';
+}
+
+/**
+ * Hold, or take, the product identifiers rendered during this request.
+ *
+ * A provider's cards are built inside a shortcode that the rotation renders
+ * without seeing its contents, so the identifiers cannot be returned up the
+ * call stack. They are left here instead and collected once, by the slot
+ * that is about to be logged.
+ *
+ * @since 1.0.0
+ *
+ * @param string[]|null $ids Identifiers to add, or null to take and clear.
+ * @return string[] The identifiers held, when taking; otherwise empty.
+ */
+function adzworld_products_remember_served( $ids = null ) {
+	static $served = array();
+
+	if ( null === $ids ) {
+		$taken  = $served;
+		$served = array();
+
+		return $taken;
+	}
+
+	foreach ( (array) $ids as $id ) {
+		$id = trim( (string) $id );
+
+		if ( '' !== $id && ! in_array( $id, $served, true ) ) {
+			$served[] = $id;
+		}
+	}
+
+	return array();
 }

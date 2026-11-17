@@ -27,6 +27,12 @@ defined( 'ABSPATH' ) || exit;
 /** Meta key holding the creative size. */
 const ADZWORLD_INTERNAL_SIZE_KEY = 'adzworld_size';
 
+/** Meta key holding the title row printed above an adzad. */
+const ADZWORLD_INTERNAL_TITLE_KEY = 'adzworld_title_row';
+
+/** Meta key holding the search provider an adzad's showcase draws from. */
+const ADZWORLD_INTERNAL_PROVIDER_KEY = 'adzworld_provider';
+
 /** Meta key holding the click destination. */
 const ADZWORLD_INTERNAL_URL_KEY = 'adzworld_destination';
 
@@ -286,13 +292,13 @@ function adzworld_internal_preview( $ad ) {
 			return '<p class="adz-int-preview__empty">' . esc_html(
 				sprintf(
 					/* translators: %s: comma-separated list of HTML tag names. */
-					__( 'Nothing will render: %s is removed when an adz is served. Code that needs a script belongs on Get Paid.', 'adz-world' ),
+					__( 'Nothing will render: %s is removed when served. Code that needs a script belongs on Get Paid.', 'adz-world' ),
 					implode( ', ', $stripped )
 				)
 			) . '</p>';
 		}
 
-		return '<p class="adz-int-preview__empty">' . esc_html__( 'This adz has no content yet.', 'adz-world' ) . '</p>';
+		return '<p class="adz-int-preview__empty">' . esc_html__( 'This slot has no content yet.', 'adz-world' ) . '</p>';
 	}
 
 	return $content;
@@ -406,7 +412,7 @@ function adzworld_internal_card( $ad ) {
 		echo '<span class="adz-int-flag adz-int-flag--stripped" title="' . esc_attr(
 			sprintf(
 				/* translators: %s: comma-separated list of HTML tag names. */
-				__( 'These tags are removed when the adz is served: %s. A unit that needs a script belongs on Get Paid.', 'adz-world' ),
+				__( 'These tags are removed when adz are served: %s. A unit that needs a script belongs on Get Paid.', 'adz-world' ),
 				implode( ', ', $stripped )
 			)
 		) . '">';
@@ -457,7 +463,7 @@ function adzworld_internal_page() {
 
 	echo '<h1 class="wp-heading-inline">' . esc_html__( 'Internal Adz', 'adz-world' ) . '</h1>';
 	echo ' <a href="' . esc_url( admin_url( 'post-new.php?post_type=adz_ad' ) ) . '" class="page-title-action">'
-		. esc_html__( 'Add an adz', 'adz-world' ) . '</a>';
+		. esc_html__( 'Add adz', 'adz-world' ) . '</a>';
 	echo '<hr class="wp-header-end">';
 
 	echo '<p class="description adz-int-intro">' . esc_html__( 'Adz you design and serve to your own audience. No network, no revenue share. An image and a link is a complete adz; the body is ordinary post content.', 'adz-world' ) . '</p>';
@@ -472,7 +478,7 @@ function adzworld_internal_page() {
 	echo '<p class="adz-int-summary">';
 	printf(
 		/* translators: 1: adz ready to serve, 2: total adz. */
-		esc_html__( '%1$d of %2$d ready to serve. An adz is ready when it is published and has a destination.', 'adz-world' ),
+		esc_html__( '%1$d of %2$d ready to serve. Adz are ready when published and given a destination.', 'adz-world' ),
 		absint( $ready ),
 		absint( $total )
 	);
@@ -489,4 +495,93 @@ function adzworld_internal_page() {
 		echo '</ul>';
 		echo '</section>';
 	}
+}
+
+/**
+ * Apply an adzad's destination to its rendered creative.
+ *
+ * The destination field is the click target, and without this the field was
+ * stored, shown in the editor and counted towards an adzad being "ready"
+ * while the adzad itself was not clickable. An advertisement nobody can
+ * click is not an advertisement.
+ *
+ * @since 1.0.0
+ *
+ * @param string $creative Filtered creative markup.
+ * @param int    $ad_id    Adzad post id.
+ * @return string Linked creative, or the creative unchanged when no
+ *                destination is stored.
+ */
+function adzworld_internal_link_creative( $creative, $ad_id ) {
+	return adzworld_internal_link_markup(
+		$creative,
+		get_post_meta( (int) $ad_id, ADZWORLD_INTERNAL_URL_KEY, true )
+	);
+}
+
+/**
+ * Wrap one creative in a sponsored link.
+ *
+ * Any anchor already inside the creative is removed while its text is kept.
+ * Nesting one link inside another is invalid, and it would let a link the
+ * adzadmin pasted into the body outrank the destination they set, so the
+ * sponsored relationship covers the whole adzad and nothing else competes
+ * with it.
+ *
+ * @since 1.0.0
+ *
+ * @param string $creative    Creative markup.
+ * @param string $destination Click target.
+ * @return string Linked creative, or the original creative when there is no
+ *                destination to send anyone to.
+ */
+function adzworld_internal_link_markup( $creative, $destination ) {
+	$destination = adzworld_internal_sanitize_destination( $destination );
+
+	if ( '' === $destination || '' === trim( $creative ) ) {
+		return $creative;
+	}
+
+	$allowed = wp_kses_allowed_html( 'post' );
+	unset( $allowed['a'] );
+	$creative = wp_kses( $creative, $allowed );
+
+	return '<a class="adzworld-creative__destination" href="' . esc_url( $destination )
+		. '" rel="sponsored nofollow">' . $creative . '</a>';
+}
+
+/**
+ * Validate the title row printed above an adz.
+ *
+ * @param mixed $title Candidate title.
+ * @return string Title of at most 120 characters.
+ */
+function adzworld_internal_sanitize_title_row( $title ) {
+	$title = is_scalar( $title ) ? sanitize_text_field( (string) $title ) : '';
+
+	return mb_substr( $title, 0, 120 );
+}
+
+/**
+ * Validate a dynamic search provider.
+ *
+ * @param mixed $provider Candidate provider id.
+ * @return string Supported provider id, or an empty string for every provider.
+ */
+function adzworld_internal_sanitize_provider( $provider ) {
+	$provider = is_scalar( $provider ) ? sanitize_key( (string) $provider ) : '';
+
+	return in_array( $provider, array( 'etsy', 'itunes' ), true ) ? $provider : '';
+}
+
+/**
+ * The title row saved on one adz.
+ *
+ * @param WP_Post|int $ad Adz post or its id.
+ * @return string Saved title, empty when the ad has none.
+ */
+function adzworld_internal_title_row( $ad ) {
+	$ad_id = $ad instanceof WP_Post ? $ad->ID : (int) $ad;
+
+	return adzworld_internal_sanitize_title_row( get_post_meta( $ad_id, ADZWORLD_INTERNAL_TITLE_KEY, true ) );
 }

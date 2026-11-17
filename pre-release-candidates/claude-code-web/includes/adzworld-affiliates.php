@@ -560,3 +560,393 @@ function adzworld_affiliate_page( $embedded = false ) {
 	submit_button( __( 'Save affiliate accounts', 'adz-world' ) );
 	echo '</form>';
 }
+
+/**
+ * Whether a Rakuten account can be credited for a sale.
+ *
+ * Rakuten pays against the deep link built by adzworld_affiliate_url(): the
+ * publisher site id, the advertiser id, and a destination holding {query}.
+ * All three have to be present, because a link missing any of them is not
+ * attributed and the publisher is shown as earning when they are not.
+ *
+ * Nothing is requested from Rakuten to decide this. The saved fields say it.
+ *
+ * @since 1.0.0
+ *
+ * @param bool                 $earns   Whether the account earns.
+ * @param string               $id      Provider id.
+ * @param array<string,string> $account Saved provider fields.
+ * @return bool Whether Rakuten can attribute a qualifying transaction.
+ */
+function adzworld_rakuten_filter_account_earns( $earns, $id, $account ) {
+	if ( 'rakuten' !== $id ) {
+		return $earns;
+	}
+
+	$account = (array) $account;
+
+	foreach ( array( 'id', 'mid', 'destination' ) as $field ) {
+		if ( empty( $account[ $field ] ) ) {
+			return false;
+		}
+	}
+
+	return '' !== adzworld_affiliate_destination_template( $account['destination'] );
+}
+
+add_filter( 'adzworld_affiliate_account_earns', 'adzworld_rakuten_filter_account_earns', 10, 3 );
+
+/**
+ * Retrieve three tracked Amazon product results.
+ *
+ * The tag alone does not return images, titles, or prices. Those come from
+ * SearchItems after the Creators API credential is saved.
+ *
+ * @param string $request Category and refinements.
+ * @return array<int,array{image:string,title:string,price:string,url:string}>|WP_Error
+ */
+function adzworld_amazon_product_results( $request ) {
+	$accounts = adzworld_affiliate_accounts();
+	$amazon   = isset( $accounts['amazon'] ) ? $accounts['amazon'] : array();
+	$request  = trim( wp_strip_all_tags( (string) $request ) );
+	$required = array( 'tag', 'host', 'credential_id', 'credential_secret', 'credential_version' );
+
+	foreach ( $required as $field ) {
+		if ( empty( $amazon[ $field ] ) ) {
+			return new WP_Error( 'adzworld_amazon_credentials', __( 'Amazon Creators API credentials are incomplete.', 'adz-world' ) );
+		}
+	}
+	if ( '' === $request ) {
+		return new WP_Error( 'adzworld_amazon_request', __( 'The Amazon product request is empty.', 'adz-world' ) );
+	}
+
+	$result_key = 'adzworld_amazon_results_' . md5( $amazon['host'] . '|' . $amazon['tag'] . '|' . $request );
+	$cached     = get_transient( $result_key );
+	if ( false !== $cached && is_array( $cached ) ) {
+		return $cached;
+	}
+
+	$token_key = 'adzworld_amazon_token_' . md5( $amazon['credential_id'] . '|' . $amazon['credential_version'] );
+	$token     = get_transient( $token_key );
+	if ( ! is_string( $token ) || '' === $token ) {
+		$endpoints = array(
+			'3.1' => 'https://api.amazon.com/auth/o2/token',
+			'3.2' => 'https://api.amazon.co.uk/auth/o2/token',
+			'3.3' => 'https://api.amazon.co.jp/auth/o2/token',
+		);
+		$version   = $amazon['credential_version'];
+		if ( ! isset( $endpoints[ $version ] ) ) {
+			return new WP_Error( 'adzworld_amazon_version', __( 'The Amazon credential version is invalid.', 'adz-world' ) );
+		}
+
+		$token_response = wp_safe_remote_post(
+			$endpoints[ $version ],
+			array(
+				'timeout' => 15,
+				'headers' => array(
+					'Content-Type' => 'application/json',
+				),
+				'body'    => wp_json_encode(
+					array(
+						'grant_type'    => 'client_credentials',
+						'client_id'     => $amazon['credential_id'],
+						'client_secret' => $amazon['credential_secret'],
+						'scope'         => 'creatorsapi::default',
+					)
+				),
+			)
+		);
+		if ( is_wp_error( $token_response ) ) {
+			return $token_response;
+		}
+
+		$token_data = json_decode( wp_remote_retrieve_body( $token_response ), true );
+		$token      = is_array( $token_data ) && isset( $token_data['access_token'] ) ? (string) $token_data['access_token'] : '';
+		if ( 200 !== (int) wp_remote_retrieve_response_code( $token_response ) || '' === $token || 1 === preg_match( '/[\x00-\x20\x7F]/', $token ) ) {
+			return new WP_Error( 'adzworld_amazon_token', __( 'Amazon did not issue an access token.', 'adz-world' ) );
+		}
+
+		$expires = isset( $token_data['expires_in'] ) ? max( 60, (int) $token_data['expires_in'] - 60 ) : 3300;
+		set_transient( $token_key, $token, $expires );
+	}
+
+	$response = wp_safe_remote_post(
+		'https://creatorsapi.amazon/catalog/v1/searchItems',
+		array(
+			'timeout' => 20,
+			'headers' => array(
+				'Authorization' => 'Bearer ' . $token,
+				'Content-Type'  => 'application/json',
+				'x-marketplace' => $amazon['host'],
+			),
+			'body'    => wp_json_encode(
+				array(
+					'marketplace' => $amazon['host'],
+					'partnerTag'  => $amazon['tag'],
+					'keywords'    => $request,
+					'searchIndex' => 'All',
+					'itemCount'   => 3,
+					'resources'   => array(
+						'images.primary.medium',
+						'itemInfo.title',
+						'offersV2.listings.price',
+					),
+				)
+			),
+		)
+	);
+	if ( is_wp_error( $response ) ) {
+		return $response;
+	}
+
+	$data = json_decode( wp_remote_retrieve_body( $response ), true );
+	if ( 200 !== (int) wp_remote_retrieve_response_code( $response ) || ! is_array( $data ) ) {
+		return new WP_Error( 'adzworld_amazon_search', __( 'Amazon did not return product results.', 'adz-world' ) );
+	}
+
+	$items   = isset( $data['searchResult']['items'] ) && is_array( $data['searchResult']['items'] ) ? $data['searchResult']['items'] : array();
+	$results = array();
+	foreach ( $items as $item ) {
+		$url   = isset( $item['detailPageURL'] ) ? esc_url_raw( $item['detailPageURL'] ) : '';
+		$image = isset( $item['images']['primary']['medium']['url'] ) ? esc_url_raw( $item['images']['primary']['medium']['url'] ) : '';
+		$title = isset( $item['itemInfo']['title']['displayValue'] ) ? sanitize_text_field( $item['itemInfo']['title']['displayValue'] ) : '';
+		$price = isset( $item['offersV2']['listings'][0]['price']['money']['displayAmount'] ) ? sanitize_text_field( $item['offersV2']['listings'][0]['price']['money']['displayAmount'] ) : '';
+		if ( '' === $url || '' === $image || '' === $title ) {
+			continue;
+		}
+
+		/*
+		 * The ASIN is the product. Without it a rating and a log row name
+		 * Amazon and not the listing, which is the whole point of recording
+		 * which adzad was served. Amazon returns it as a field on the item;
+		 * when it does not, it is in the detail page URL as /dp/<asin>.
+		 */
+		$asin = isset( $item['asin'] ) ? sanitize_key( (string) $item['asin'] ) : '';
+
+		if ( '' === $asin && preg_match( '#/(?:dp|gp/product)/([A-Z0-9]{10})#i', $url, $found ) ) {
+			$asin = sanitize_key( $found[1] );
+		}
+
+		$results[] = array(
+			'id'      => $asin,
+			'item_id' => $asin,
+			'image'   => $image,
+			'title'   => $title,
+			'price'   => $price,
+			'url'     => $url,
+		);
+		if ( 3 === count( $results ) ) {
+			break;
+		}
+	}
+
+	set_transient( $result_key, $results, 15 * MINUTE_IN_SECONDS );
+	return $results;
+}
+
+/**
+ * One Amazon product inside the results carousel.
+ *
+ * @param array{image:string,title:string,price:string,url:string} $result Product result.
+ * @param int                                                      $index  Zero-based result position.
+ * @param int                                                      $count  Number of results.
+ * @return string Result markup.
+ */
+function adzworld_amazon_result_slide( $result, $index, $count ) {
+	return adzworld_affiliate_result_slide( $result, $index, $count );
+}
+
+/**
+ * One structured product inside the results carousel.
+ *
+ * @param array $result Product result.
+ * @param int   $index  Zero-based result position.
+ * @param int   $count  Number of results.
+ * @return string Result markup.
+ */
+function adzworld_affiliate_result_slide( $result, $index, $count ) {
+	$provider = isset( $result['provider'] ) ? sanitize_key( (string) $result['provider'] ) : '';
+	$item_id  = isset( $result['item_id'] ) ? sanitize_key( (string) $result['item_id'] ) : '';
+	if ( '' === $item_id ) {
+		$item_id = md5( (string) $result['url'] );
+	}
+	$target      = sanitize_key( 'provider-' . $provider . '-' . $item_id );
+	$feedback    = adzworld_current_feedback();
+	$score       = isset( $feedback[ $target ]['score'] ) ? (int) $feedback[ $target ]['score'] : 0;
+	$price       = '';
+	$offer_class = 'adzworld-results__offer';
+	if ( '' !== $result['price'] ) {
+		$price = '<span class="adzworld-results__price">' . esc_html( $result['price'] ) . '</span>';
+	}
+	$media = '';
+	if ( ! empty( $result['image'] ) ) {
+		$media = '<span class="adzworld-results__media"><img class="adzworld-results__image" src="' . esc_url( $result['image'] ) . '" alt="" loading="lazy" decoding="async"></span>';
+	} else {
+		$offer_class .= ' adzworld-results__offer--text';
+	}
+	$source = '';
+	if ( ! empty( $result['source'] ) ) {
+		$source = '<span class="adzworld-results__source">' . esc_html( $result['source'] ) . '</span>';
+	} elseif ( ! empty( $result['source_image'] ) && ! empty( $result['source_label'] ) && ! empty( $result['source_url'] ) ) {
+		$source = '<a class="adzworld-results__source" href="' . esc_url( $result['source_url'] ) . '" target="_blank" rel="noopener noreferrer"><img class="adzworld-results__source-image" src="' . esc_url( $result['source_image'] ) . '" alt="' . esc_attr( $result['source_label'] ) . '" loading="lazy" decoding="async"></a>';
+	} elseif ( ! empty( $result['source_label'] ) ) {
+		$source = '<span class="adzworld-results__source">' . esc_html( $result['source_label'] ) . '</span>';
+	}
+
+	return '<section class="adzworld-results__slide" data-adzworld-result-target="' . esc_attr( $target ) . '" data-adzworld-result-score="' . esc_attr( (string) $score ) . '"' . ( 0 === $index ? '' : ' hidden' ) . ' aria-roledescription="' . esc_attr__( 'slide', 'adz-world' ) . '" aria-label="'
+		. esc_attr( ( $index + 1 ) . ' / ' . $count ) . '"><a class="' . esc_attr( $offer_class ) . '" href="' . esc_url( $result['url'] ) . '" rel="sponsored nofollow" target="_blank">'
+		. $media
+		. '<span class="adzworld-results__body"><span class="adzworld-results__product-title">' . esc_html( $result['title'] ) . '</span>'
+		. $price . '</span></a>' . $source . '</section>';
+}
+
+/**
+ * Add Amazon Creators API products to the shared collector.
+ *
+ * @param array<int,array<string,string>> $results Rows from earlier providers.
+ * @param string                          $request Reader's request.
+ * @return array<int,array<string,string>> Rows with Amazon products appended.
+ */
+function adzworld_amazon_append_product_results( $results, $request ) {
+	$amazon = adzworld_amazon_product_results( $request );
+	if ( is_wp_error( $amazon ) || ! is_array( $amazon ) ) {
+		return $results;
+	}
+
+	foreach ( $amazon as $row ) {
+		$row['provider'] = 'amazon';
+		$results[]       = $row;
+	}
+
+	return $results;
+}
+
+add_filter( 'adzworld_affiliate_product_results', 'adzworld_amazon_append_product_results', 5, 2 );
+
+/**
+ * Inner carousel of search results for one category.
+ *
+ * The outer rotation moves between categories. This carousel moves between
+ * attributed product results from connected search providers. AdSense is not
+ * a member.
+ *
+ * @param array  $pref     Preference hierarchy.
+ * @param string $category Category.
+ * @param string $title    Title row saved on the adz. Empty prints no row.
+ * @param string $provider Optional provider id for a provider-specific slot.
+ * @return string Results markup, empty when no search account is connected.
+ */
+function adzworld_affiliate_showcase( $pref, $category, $title = '', $provider = '' ) {
+	$request = adzworld_affiliate_request_string( $pref, $category );
+	$results = adzworld_products_collect( $request, $provider );
+	$scoped  = adzworld_category_refinement_preference( $pref, $category );
+	$title   = function_exists( 'adzworld_internal_sanitize_title_row' )
+		? adzworld_internal_sanitize_title_row( $title )
+		: sanitize_text_field( (string) $title );
+
+	if ( ! $results ) {
+		return '';
+	}
+
+	if ( ! empty( $scoped['exclude'] ) ) {
+		$results = array_values(
+			array_filter(
+				$results,
+				static function ( $result ) use ( $scoped ) {
+					$title = strtolower( (string) $result['title'] );
+					foreach ( $scoped['exclude'] as $term ) {
+						if ( preg_match( '/\b' . preg_quote( strtolower( (string) $term ), '/' ) . '\b/', $title ) ) {
+							return false;
+						}
+					}
+
+					return true;
+				}
+			)
+		);
+	}
+
+	if ( ! $results ) {
+		return '';
+	}
+
+	$count   = count( $results );
+	$slides  = '';
+	$buttons = '';
+	$row     = '';
+
+	foreach ( $results as $index => $result ) {
+		$slides .= adzworld_affiliate_result_slide( $result, (int) $index, $count );
+	}
+	if ( '' === $slides ) {
+		return '';
+	}
+
+	if ( '' !== $title ) {
+		$row = '<div class="adzworld-results__title">' . esc_html( $title ) . '</div>';
+	}
+
+	if ( $count > 1 ) {
+		$buttons = '<button class="adzworld-results__previous" type="button" data-adzworld-result-step="-1"><span aria-hidden="true">&#8249;</span><span class="screen-reader-text">'
+			. esc_html__( 'Previous result', 'adz-world' ) . '</span></button>'
+			. '<button class="adzworld-results__next" type="button" data-adzworld-result-step="1"><span aria-hidden="true">&#8250;</span><span class="screen-reader-text">'
+			. esc_html__( 'Next result', 'adz-world' ) . '</span></button>';
+	}
+
+	return '<div class="adzworld-results" data-adzworld-results role="region" aria-label="' . esc_attr( '' !== $title ? $title : __( 'Search results', 'adz-world' ) ) . '">'
+		. $row
+		. '<div class="adzworld-results__slides">' . $slides . '</div>'
+		. '<div class="adzworld-results__navigation" hidden>' . $buttons . '</div></div>';
+}
+
+/**
+ * Amazon search URL for one category and the refinements attached to it.
+ *
+ * @param array  $pref     Preference hierarchy.
+ * @param string $category Category.
+ * @return string Tagged search URL, empty when Amazon is not connected.
+ */
+function adzworld_affiliate_category_url( $pref, $category ) {
+	$accounts = adzworld_affiliate_accounts();
+	if ( ! isset( $accounts['amazon']['enabled'] ) || '1' !== $accounts['amazon']['enabled'] ) {
+		return '';
+	}
+
+	return adzworld_affiliate_url( 'amazon', $accounts['amazon'], adzworld_affiliate_request_string( $pref, $category ) );
+}
+
+/**
+ * Showcase readout for one category: the request string, the saved Amazon
+ * tracking id, and the tagged search URL, each written as text.
+ *
+ * @param array  $pref     Preference hierarchy.
+ * @param string $category Category.
+ * @return string Readout markup, or an empty string when unavailable.
+ */
+function adzworld_affiliate_category_search_link( $pref, $category ) {
+	$request  = adzworld_affiliate_request_string( $pref, $category );
+	$url      = adzworld_affiliate_category_url( $pref, $category );
+	$accounts = adzworld_affiliate_accounts();
+	$tag      = isset( $accounts['amazon']['tag'] ) ? (string) $accounts['amazon']['tag'] : '';
+
+	if ( '' === $request || '' === $url || '' === $tag ) {
+		return '';
+	}
+
+	return '<div class="adzworld-category-search">'
+		. '<p class="adzworld-category-search__line"><span class="adzworld-category-search__label">'
+		. esc_html__( 'Request string', 'adz-world' )
+		. '</span> <code class="adzworld-category-search__value">'
+		. esc_html( $request )
+		. '</code></p>'
+		. '<p class="adzworld-category-search__line"><span class="adzworld-category-search__label">'
+		. esc_html__( 'Amazon tracking id', 'adz-world' )
+		. '</span> <code class="adzworld-category-search__value">'
+		. esc_html( $tag )
+		. '</code></p>'
+		. '<p class="adzworld-category-search__line"><a href="'
+		. esc_url( $url )
+		. '" rel="sponsored nofollow" target="_blank"><code class="adzworld-category-search__value">'
+		. esc_html( $url )
+		. '</code></a></p></div>';
+}

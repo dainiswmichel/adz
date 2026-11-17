@@ -236,6 +236,104 @@
 	}
 
 	/**
+	 * Rotation, slot, and outer slot for the slide that holds this node.
+	 *
+	 * A response is only useful in AdzLogs if it says where it was given, so
+	 * every request that records one carries the place it came from.
+	 *
+	 * @param {HTMLElement} node Control inside a rotation.
+	 * @return {Object} Place fields.
+	 */
+	function placeFields( node ) {
+		var rotation = node ? node.closest( '.adzworld-rotation' ) : null;
+		var slide = node ? node.closest( '.adzworld-slide' ) : null;
+		var fields = {};
+
+		if ( ! rotation ) {
+			return fields;
+		}
+
+		fields.rotation = rotation.dataset.adzworldRotation || '';
+
+		if ( slide && slide.dataset.adzworldSlot ) {
+			fields.slot = slide.dataset.adzworldSlot;
+		}
+
+		if ( rotation.dataset.adzworldOuterRotation ) {
+			fields.outer_rotation = rotation.dataset.adzworldOuterRotation;
+			fields.outer_slot = rotation.dataset.adzworldOuterSlot || '0';
+		}
+
+		/*
+		 * Which products this slide is showing. The response arrives in its
+		 * own request, by which time the server no longer holds the list it
+		 * built while rendering, so the page reports what it has on screen.
+		 * Without this the round a reader's first input answers records the
+		 * provider and not the product.
+		 */
+		if ( slide ) {
+			var items = [];
+
+			slide.querySelectorAll( '[data-adzworld-item]' ).forEach(
+				function ( card ) {
+					var id = card.dataset.adzworldItem || '';
+
+					if ( id && -1 === items.indexOf( id ) ) {
+						items.push( id );
+					}
+				}
+			);
+
+			if ( items.length ) {
+				fields.items = items.join( ' ' );
+			}
+		}
+
+		return fields;
+	}
+
+	/**
+	 * Copy place fields onto a request.
+	 *
+	 * @param {Object}      values Request values.
+	 * @param {HTMLElement} node   Control inside a rotation.
+	 * @return {Object} Request values.
+	 */
+	function assignPlace( values, node ) {
+		var place = placeFields( node );
+
+		Object.keys( place ).forEach(
+			function ( key ) {
+				values[ key ] = place[ key ];
+			}
+		);
+
+		return values;
+	}
+
+	/**
+	 * Active slide that is serving an adzad.
+	 *
+	 * A category or refinement change is a response to the adzad the reader
+	 * was looking at when they made it, not to the rotation as a whole.
+	 *
+	 * @param {HTMLElement} rotation Rotation root.
+	 * @return {HTMLElement|null} Slide, or null when none is serving one.
+	 */
+	function showingAd( rotation ) {
+		var slides = rotation ? rotation.querySelectorAll( '.adzworld-slide.adzworld-active' ) : [];
+		var index;
+
+		for ( index = slides.length - 1; index >= 0; index-- ) {
+			if ( slides[ index ].dataset.adzworldAd ) {
+				return slides[ index ];
+			}
+		}
+
+		return null;
+	}
+
+	/**
 	 * Post a small, nonce-protected request to WordPress.
 	 *
 	 * @param {string} action AJAX action.
@@ -299,6 +397,83 @@
 	 *
 	 * @param {HTMLElement} rotation Rotation root.
 	 */
+	/**
+	 * Move between search-result networks inside one category slide.
+	 *
+	 * Buttons here use their own step attribute. The category carousel reads a
+	 * different attribute, and a click inside this carousel returns before that
+	 * listener runs.
+	 *
+	 * @param {HTMLElement} results Results carousel.
+	 */
+	function prepareResults( results ) {
+		var slides = Array.from( results.querySelectorAll( ':scope > .adzworld-results__slides > .adzworld-results__slide' ) );
+		var navigation = results.querySelector( ':scope > .adzworld-results__navigation' );
+		var evaluation = results.parentElement ? results.parentElement.querySelector( ':scope > .adzworld-evaluation' ) : null;
+		var current = 0;
+
+		if ( ! slides.length ) {
+			return;
+		}
+
+		function selectEvaluation( slide ) {
+			var input;
+			var output;
+			var status;
+			var score;
+
+			if ( ! evaluation || ! slide ) {
+				return;
+			}
+			input = evaluation.querySelector( 'input[type="range"]' );
+			output = evaluation.querySelector( 'output' );
+			status = evaluation.querySelector( '.adzworld-evaluation__status' );
+			score = Number( slide.dataset.adzworldResultScore || 0 );
+			evaluation.dataset.adzworldFeedbackTarget = slide.dataset.adzworldResultTarget || '';
+			if ( input ) {
+				input.value = String( score );
+				input.dispatchEvent( new window.Event( 'input', { bubbles: true } ) );
+			}
+			if ( output ) {
+				output.textContent = evaluationLabel( score );
+			}
+			if ( status ) {
+				status.textContent = '';
+			}
+		}
+
+		function show( position ) {
+			current = ( position + slides.length ) % slides.length;
+			slides.forEach(
+				function ( slide, index ) {
+					var active = index === current;
+
+					slide.hidden = ! active;
+					slide.setAttribute( 'aria-hidden', String( ! active ) );
+				}
+			);
+			selectEvaluation( slides[ current ] );
+		}
+
+		results.addEventListener(
+			'click',
+			function ( event ) {
+				var button = event.target.closest( '[data-adzworld-result-step]' );
+
+				if ( ! button || ! results.contains( button ) ) {
+					return;
+				}
+				event.stopPropagation();
+				show( current + Number( button.dataset.adzworldResultStep ) );
+			}
+		);
+
+		show( 0 );
+		if ( navigation && slides.length > 1 ) {
+			navigation.hidden = false;
+		}
+	}
+
 	function prepareRotation( rotation ) {
 		var slides = Array.from( rotation.querySelectorAll( ':scope > .adzworld-carousel > .adzworld-slides > .adzworld-slide' ) );
 		var current = 0;
@@ -308,6 +483,7 @@
 			return;
 		}
 
+		rotation.querySelectorAll( '.adzworld-results' ).forEach( prepareResults );
 		rotation.classList.add( 'adzworld-enhanced' );
 
 		/*
@@ -415,7 +591,13 @@
 				var categorySlot;
 				var status;
 
-				if ( ! button ) {
+				/*
+				 * The showcase has its own previous and next buttons inside
+				 * this rotation. They are handled where the showcase is
+				 * prepared, so a click on one must not also move the
+				 * rotation underneath it.
+				 */
+				if ( ! button || button.closest( '.adzworld-results' ) ) {
 					return;
 				}
 				if ( button.hasAttribute( 'data-adzworld-category-first' ) ) {
@@ -593,11 +775,14 @@
 				post(
 					'adzworld_refine',
 					settings.preferenceNonce,
-					{
-						mode: mode,
-						refinement: input.value,
-						target: improveTarget
-					}
+					assignPlace(
+						{
+							mode: mode,
+							refinement: input.value,
+							target: improveTarget
+						},
+						form
+					)
 				).then(
 					function ( payload ) {
 						if ( payload && payload.success ) {
@@ -702,20 +887,34 @@
 				}
 
 				if ( category ) {
+					var selected = category.dataset.adzCategory || '';
+					var showing = showingAd( rotation );
+					var selectValues = {
+						mode: 'select',
+						value: selected
+					};
+
 					event.preventDefault();
+
+					/*
+					 * Only a change counts as a response. Clicking the
+					 * category an adzad is already in says nothing.
+					 */
+					if ( showing && ( showing.dataset.adzworldCategory || '' ) !== selected ) {
+						assignPlace( selectValues, showing );
+						selectValues.ad = showing.dataset.adzworldAd || '';
+					}
+
 					rotation.dispatchEvent(
 						new window.CustomEvent(
 							'adzworld:show-category',
-							{ detail: { category: category.dataset.adzCategory || '', slot: 0 } }
+							{ detail: { category: selected, slot: 0 } }
 						)
 					);
 					post(
 						'adzworld_refine',
 						settings.preferenceNonce,
-						{
-							mode: 'select',
-							value: category.dataset.adzCategory || ''
-						}
+						selectValues
 					);
 					return;
 				}
@@ -820,10 +1019,13 @@
 				post(
 					'adzworld_evaluate',
 					settings.feedbackNonce,
-					{
-						score: input.value,
-						target: control.dataset.adzworldFeedbackTarget || ''
-					}
+					assignPlace(
+						{
+							score: input.value,
+							target: control.dataset.adzworldFeedbackTarget || ''
+						},
+						control
+					)
 				).then(
 					function ( payload ) {
 						if ( output && payload && payload.success ) {

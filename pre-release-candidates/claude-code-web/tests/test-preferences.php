@@ -143,5 +143,77 @@ $empty = adzworld_empty_preference();
 check( 'has_preference false when empty', adzworld_has_preference( $empty ), false );
 check( 'has_preference true with a term', adzworld_has_preference( adzworld_parse_refinement( 'a couch', null ) ), true );
 
+echo "\n=== category tone comes from the name, not the position ===\n";
+$names = array( 'couch', 'bicycle', 'dinner in atlanta', 'shoes', 'laptop', 'coffee', 'a', 'zzzz' );
+
+foreach ( $names as $name ) {
+	$hue = adzworld_category_tone( $name );
+	printf( "  %-20s hue %d\n", $name, $hue );
+	check( 'hue at or above 200', $hue >= 200, true );
+	check( 'hue at or below 305', $hue <= 305, true );
+}
+
+/* The same name must give the same tone wherever it appears in a list. */
+check( 'tone is stable', adzworld_category_tone( 'couch' ), adzworld_category_tone( 'couch' ) );
+check( 'case does not change it', adzworld_category_tone( 'Couch' ), adzworld_category_tone( 'couch' ) );
+check( 'surrounding space ignored', adzworld_category_tone( '  couch ' ), adzworld_category_tone( 'couch' ) );
+
+/*
+ * The band exists to keep category chips away from the three scoring
+ * colours. Green sits near 145, yellow near 100, red near 25: none of
+ * those may be reachable from any name.
+ */
+$lowest = 400;
+
+foreach ( array_merge( $names, array( 'x', 'bike', 'rug', 'tv', 'hat', 'pan', 'book', 'desk', 'lamp' ) ) as $name ) {
+	$lowest = min( $lowest, adzworld_category_tone( $name ) );
+}
+
+check( 'never reaches green, yellow or red', $lowest > 180, true );
+
+echo "\n=== whatever is typed becomes a category, however long ===\n";
+$typed = array(
+	'couch'                                        => array( 'couch', '' ),
+	'couch brown leather no arms'                  => array( 'couch brown leather no', 'arms' ),
+	'dinner in atlanta vegetarian outdoor seating' => array( 'dinner in atlanta', 'vegetarian outdoor seating' ),
+	'second hand mountain bike frame under 200'    => array( 'second hand mountain', 'bike frame under 200' ),
+);
+
+foreach ( $typed as $text => $want ) {
+	$got = adzworld_split_category_input( $text );
+	check( 'category from "' . substr( $text, 0, 22 ) . '"', $got['category'], $want[0] );
+	check( 'refinement from it', $got['refinement'], $want[1] );
+	check( 'the category is always valid', adzworld_valid_category( $got['category'] ), true );
+	check( 'and fits a pill', mb_strlen( $got['category'] ) <= ADZWORLD_CATEGORY_MAX_LENGTH, true );
+}
+
+/* A category is no longer capped at three words, only at a pill's width. */
+$got = adzworld_split_category_input( 'dinner in atlanta tonight' );
+check( 'four words are one category', $got['category'], 'dinner in atlanta' );
+$got = adzworld_split_category_input( 'red leather couch' );
+check( 'three words stay together', $got['category'], 'red leather couch' );
+check( 'with nothing pushed out', $got['refinement'], '' );
+
+/* Words are never cut in half. */
+$got = adzworld_split_category_input( 'extraordinarily comfortable chair' );
+check( 'a word is never split', $got['category'], 'extraordinarily' );
+check( 'the rest follows whole', $got['refinement'], 'comfortable chair' );
+
+/* A sentence of any length is accepted, never refused. */
+$long = str_repeat( 'word ', 60 );
+$got  = adzworld_split_category_input( $long );
+check( 'a very long sentence still gives a category', '' !== $got['category'], true );
+check( 'and it is within the limits', adzworld_valid_category( $got['category'] ), true );
+check( 'the rest is kept as the refinement', '' !== $got['refinement'], true );
+
+/* A single word longer than the limit still names something. */
+$huge = str_repeat( 'z', 120 );
+$got  = adzworld_split_category_input( $huge );
+check( 'one enormous word is cut, not refused', adzworld_valid_category( $got['category'] ), true );
+
+/* Nothing typed gives nothing, and that is not an error either. */
+$got = adzworld_split_category_input( '   ' );
+check( 'empty in, empty out', $got['category'], '' );
+
 printf( "\n%d passed, %d failed\n", $pass, $fail );
 exit( $fail > 0 ? 1 : 0 );

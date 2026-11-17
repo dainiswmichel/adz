@@ -13,7 +13,8 @@ echo "   clean"
 echo
 echo "== harnesses =="
 for t in test-matching test-preferences test-product-merge test-ebay-fetcher \
-         test-itunes-fetcher test-avantlink-fetcher test-travelpayouts-fetcher; do
+         test-itunes-fetcher test-avantlink-fetcher test-travelpayouts-fetcher \
+         test-adzlogs; do
   [ -f "$HERE/$t.php" ] || continue
   OUT=$(ADZ_SRC="$SRC" php "$HERE/$t.php" 2>&1 | tail -1)
   printf "   %-30s %s\n" "$t" "$OUT"

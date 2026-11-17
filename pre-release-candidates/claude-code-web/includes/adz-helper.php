@@ -102,8 +102,8 @@ function adzworld_get_advertise( $ad_visibility, $ad_visibility_interval, $repea
 						}else{
 						}
 					},
-					error: function(errorThrown){
-						console.log(errorThrown);
+					error: function(){
+						/* The request failed. The page keeps what it has. */
 					}
 				});
 			}
@@ -131,8 +131,8 @@ function adzworld_get_advertise( $ad_visibility, $ad_visibility_interval, $repea
 							location.reload();
 						}
 					},
-					error: function(errorThrown){
-						console.log(errorThrown);
+					error: function(){
+						/* The request failed. The page keeps what it has. */
 					}
 				});
 
@@ -222,8 +222,8 @@ function adzworld_get_advertise_popup( $ad_visibility, $ad_visibility_interval, 
 						}, 1000);
 					}
 				},
-				error: function(errorThrown){
-					console.log(errorThrown);
+				error: function(){
+					/* The request failed. The page keeps what it has. */
 				}
 			});
 
@@ -249,8 +249,8 @@ function adzworld_get_advertise_popup( $ad_visibility, $ad_visibility_interval, 
 					jQuery('#show_overlay').removeClass('adzworld-is-visible');
 					repeat_adz = 'yes';
 				},
-				error: function(errorThrown){
-					console.log(errorThrown);
+				error: function(){
+					/* The request failed. The page keeps what it has. */
 				}
 			});
 
@@ -352,39 +352,30 @@ function adzworld_ad_content( $content ) {
 }
 
 /**
- * Look up the current account only when the external service is enabled.
+ * The account of the reader currently viewing the page.
  *
- * @return int|false Account identifier, or false when not logged in.
+ * A reader is known here only if they signed in to this site. Nothing is
+ * asked of any other reader and nothing about them leaves the site.
+ *
+ * Until 1.0.9 this sent the visitor's IP address to the advertising network
+ * on every call, in the query string of an is_visitor_logged lookup, so the
+ * network could recognise a visitor who had an account there. The site
+ * administrator had consented to connecting the network; the visitor whose
+ * address was sent had not consented to anything. WordPress guideline 7 is
+ * about the person being tracked, so the lookup is gone rather than gated
+ * more tightly.
+ *
+ * The consequence is stated plainly: a reader with an advertising network
+ * account who is not signed in to this site is no longer recognised as that
+ * account. Signing in is how a reader chooses to be known.
+ *
+ * @since 1.0.0
+ *
+ * @return int|false Account identifier, or false when not signed in.
  */
 function adzworld_logged_in() {
-
-	// With no network connected there is no remote visitor to look up, and
-	// 1.0.8 sent the visitor's IP address here on every call.
-	if ( ! adzworld_network_enabled() ) {
-		return is_user_logged_in() ? get_current_user_id() : false;
-	}
-
-	global $adzworld_network_base_url;
-	$visitor_ip     = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
-	$ad_network_url = add_query_arg( 'visitor_ip', $visitor_ip, $adzworld_network_base_url . 'wp-json/adz_server/v1/ads/is_visitor_logged' );
-	$args           = array();
-	$response       = wp_remote_get( $ad_network_url, $args );
-
-	if ( is_wp_error( $response ) ) {
-		return false;
-	}
-
-	$body          = wp_remote_retrieve_body( $response );
-	$json_repsonse = json_decode( $body );
-
-	// A failed or empty response decodes to null; reading ->status on that is
-	// a warning on PHP 8, which the activation check treats as a failure.
-	if ( is_object( $json_repsonse ) && isset( $json_repsonse->status ) && 'logged_in' === $json_repsonse->status ) {
-		return $json_repsonse->user_id;
-	} else {
-		return false;
-	}
-}//end adzworld_logged_in()
+	return is_user_logged_in() ? get_current_user_id() : false;
+}
 
 /**
  * Select the next unserved ad from a configured rotation.

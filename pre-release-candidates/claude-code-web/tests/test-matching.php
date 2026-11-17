@@ -103,7 +103,51 @@ function wp_cache_delete( $key, $group = '' ) {
 $GLOBALS['adz_cache'] = array();
 
 $base = $adz_plugin . '/includes/';
+/*
+ * What adzworld-internal.php needs from WordPress to decide a destination
+ * and wrap a creative in it. Close enough to the real behaviour to test the
+ * decision, not a reimplementation of WordPress.
+ */
+function esc_url_raw( $url, $schemes = array( 'http', 'https' ) ) {
+	$url = trim( (string) $url );
+
+	if ( ! filter_var( $url, FILTER_VALIDATE_URL ) ) {
+		return '';
+	}
+
+	return in_array( strtolower( (string) wp_parse_url( $url, PHP_URL_SCHEME ) ), $schemes, true ) ? $url : '';
+}
+
+function esc_url( $url ) {
+	return esc_url_raw( $url );
+}
+
+function wp_parse_url( $url, $component = -1 ) {
+	return parse_url( $url, $component );
+}
+
+function wp_kses_allowed_html( $context = 'post' ) {
+	return array(
+		'a'   => array( 'href' => true, 'rel' => true ),
+		'img' => array( 'src' => true, 'alt' => true ),
+		'p'   => array(),
+	);
+}
+
+function wp_kses( $text, $allowed ) {
+	$tags = '';
+
+	foreach ( array_keys( (array) $allowed ) as $tag ) { $tags .= '<' . $tag . '>'; }
+
+	return strip_tags( (string) $text, $tags );
+}
+
+function get_post_meta( $id, $key = '', $single = false ) {
+	return isset( $GLOBALS['adz_meta'][ (int) $id ] ) ? $GLOBALS['adz_meta'][ (int) $id ] : '';
+}
+
 require $base . 'adz-preferences.php';
+require $base . 'adzworld-internal.php';
 require $base . 'adz-preference-ui.php';
 
 $pass                    = 0;
@@ -145,10 +189,17 @@ echo "\n=== count=0 means none, which is the shortcode's job not the matcher's =
 check( 'matcher never returns zero on request', count( adzworld_match_adz( $empty, 1 ) ), 1 );
 
 echo "\n=== a preference reorders rather than gates ===\n";
-$p   = adzworld_parse_refinement( 'a light couch for 2 ppl', null );
-$ids = adzworld_match_adz( $p, 6 );
+/*
+ * The reader states a category and refines it in their own words. The
+ * refinement is matched as written; it is not parsed into facets first.
+ */
+$p                         = adzworld_empty_preference();
+$p['categories']           = array( 'couch' );
+$p['category_refinements'] = array( adzworld_pair_join( 'couch', 'light grey' ) );
+$ids                       = adzworld_match_adz( $p, 6 );
 echo '  ' . implode( "\n  ", titles( $ids ) ) . "\n";
 check( 'best match first', $ids[0], 13 );
+check( 'nothing is gated out', count( $ids ), 6 );
 check( 'unmatched adz still present', count( $ids ), 6 );
 
 echo "\n=== an exclusion is absolute, not a demotion ===\n";
@@ -282,6 +333,20 @@ $GLOBALS['adz_feedback'] = array(
 );
 check( 'and the order follows the reader, not the catalogue', adzworld_match_adz( $rated, 2 )[0], 31 );
 
+/*
+ * A reader who moved the control to the middle engaged. One who never touched
+ * it did not. Both used to rank as 0 and the difference was lost. Engagement
+ * sits below the rating, so it only ever decides a tie: an adzad rated below
+ * zero must not outrank an unrated one just for having been touched.
+ */
+$GLOBALS['adz_feedback'] = array( 'ad-32' => array( 'score' => 0 ) );
+check( 'a chosen zero outranks an adzad never rated', adzworld_match_adz( $rated, 2 )[0], 32 );
+check( 'the chosen zero is marked as engaged', adzworld_rank_ad( 32, $rated )['engaged'], 1 );
+check( 'the untouched one is not', adzworld_rank_ad( 31, $rated )['engaged'], 0 );
+
+$GLOBALS['adz_feedback'] = array( 'ad-31' => array( 'score' => -4 ) );
+check( 'and engagement never outranks a rating', adzworld_match_adz( $rated, 2 )[0], 32 );
+
 echo "\n=== a term matches on word boundaries, not as a substring ===\n";
 $GLOBALS['adz_catalogue'] = array(
 	41 => 'Bicycle catalogue, 2026 edition',
@@ -311,6 +376,27 @@ $known               = adzworld_empty_preference();
 $known['categories'] = array( 'bicycle' );
 $known['exclude']    = array( 'pedals' );
 check( 'known limitation: "no pedals" copy is still excluded by "pedals"', in_array( 44, adzworld_match_adz( $known, 2 ), true ), false );
+
+echo "\n=== an adzad goes where the adzadmin sent it ===\n";
+
+
+/* The destination field is the click target. */
+$GLOBALS['adz_meta'] = array( 412 => 'https://link.amazon/B0blGdIeA' );
+
+$linked = adzworld_internal_link_markup( '<img src="https://x.test/a.png" alt="">', 'https://link.amazon/B0blGdIeA' );
+check( 'the creative becomes a link', false !== strpos( $linked, 'adzworld-creative__destination' ), true );
+check( 'to the destination', false !== strpos( $linked, 'https://link.amazon/B0blGdIeA' ), true );
+check( 'marked sponsored', false !== strpos( $linked, 'rel="sponsored nofollow"' ), true );
+
+/* A link already in the body must not nest inside the destination link. */
+$nested = adzworld_internal_link_markup( '<a href="https://spam.test/">click</a> me', 'https://link.amazon/B0blGdIeA' );
+check( 'an inner anchor is unwrapped', substr_count( $nested, '<a ' ), 1 );
+check( 'and its text is kept', false !== strpos( $nested, 'click me' ), true );
+check( 'while the pasted url is gone', false !== strpos( $nested, 'spam.test' ), false );
+
+/* No destination means no link, not an empty one. */
+check( 'no destination leaves it alone', adzworld_internal_link_markup( 'plain', '' ), 'plain' );
+check( 'and an empty creative is untouched', adzworld_internal_link_markup( '', 'https://x.test/' ), '' );
 
 printf( "\n%d passed, %d failed\n", $pass, $fail );
 exit( $fail > 0 ? 1 : 0 );

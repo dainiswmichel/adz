@@ -177,7 +177,7 @@ function adzworld_feedback_control( $target, $category ) {
 		<div class="adzworld-evaluation__control">
 			<span aria-hidden="true"><?php esc_html_e( 'Dislike', 'adz-world' ); ?></span>
 			<label class="screen-reader-text" for="<?php echo esc_attr( $input_id ); ?>">
-				<?php esc_html_e( 'How useful is this adz?', 'adz-world' ); ?>
+				<?php esc_html_e( 'How useful is this ad?', 'adz-world' ); ?>
 			</label>
 			<input id="<?php echo esc_attr( $input_id ); ?>" type="range" min="-100" max="100" step="1" value="<?php echo esc_attr( (string) $score ); ?>">
 			<span aria-hidden="true"><?php esc_html_e( 'Like', 'adz-world' ); ?></span>
@@ -343,6 +343,32 @@ function adzworld_ajax_evaluate() {
 		'updated' => time(),
 	);
 	adzworld_store_feedback( $feedback );
+
+	/*
+	 * The same rating, recorded in AdzLogs against the slot it was given in.
+	 * The place comes from the posting slide, so a rating given to the third
+	 * slot is not filed against the first.
+	 */
+	if ( function_exists( 'adzworld_logs_record_response' ) ) {
+		$log_rotation   = isset( $_POST['rotation'] ) && is_string( $_POST['rotation'] ) ? sanitize_key( wp_unslash( $_POST['rotation'] ) ) : '';
+		$log_slot       = isset( $_POST['slot'] ) && is_string( $_POST['slot'] ) ? sanitize_text_field( wp_unslash( $_POST['slot'] ) ) : '-1';
+		$log_outer      = isset( $_POST['outer_rotation'] ) && is_string( $_POST['outer_rotation'] ) ? sanitize_key( wp_unslash( $_POST['outer_rotation'] ) ) : '';
+		$log_outer_slot = isset( $_POST['outer_slot'] ) && is_string( $_POST['outer_slot'] ) ? sanitize_text_field( wp_unslash( $_POST['outer_slot'] ) ) : '0';
+		$log_items      = isset( $_POST['items'] ) && is_string( $_POST['items'] ) ? explode( ' ', sanitize_text_field( wp_unslash( $_POST['items'] ) ) ) : array();
+
+		adzworld_logs_record_response(
+			$log_rotation,
+			$log_slot,
+			$log_outer,
+			$log_outer_slot,
+			$target,
+			array(
+				'rating' => (int) $score,
+			),
+			0 === strpos( $target, 'source-' ),
+			$log_items
+		);
+	}
 
 	wp_send_json_success(
 		array(
