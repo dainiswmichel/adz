@@ -123,9 +123,9 @@ forbidden.
 - `pre-release-candidates/<agent>/` holds independent, complete plugin
   candidates. No candidate is authoritative merely because an agent made it.
 - Identify the baseline and exact repair scope. Review individual changes for
-  integration into `pre-release-candidates/dwm-local/`; do not replace that
+  integration into `adz-world/`; do not replace that
   production tree wholesale with another candidate.
-- `pre-release-candidates/dwm-local/` is the sole source for the release gate,
+- `adz-world/` is the sole source for the release gate,
   release ZIP, production website, and WordPress.org submission. Candidate
   checks do not replace production-tree checks.
 - The sibling `../adz-world-com/` is the website project, not another plugin
@@ -152,7 +152,7 @@ forbidden.
 
 ## Mandatory production gate
 
-One command runs every local check on `pre-release-candidates/dwm-local/`:
+One command runs every local check on `adz-world/`:
 
     bash /Users/dainismichel/2026/adz-project-folder/verify-clean-code/verify-adz-world.sh
 
@@ -163,7 +163,7 @@ directory it prints. Plugin Check is not in that command; Dainis runs it.
 These requirements are release blockers, not suggestions. No agent may call a
 production change finished, commit it as a release, create a GitHub release,
 or publish it to WordPress.org unless the exact
-`pre-release-candidates/dwm-local/` tree passes all of them:
+`adz-world/` tree passes all of them:
 
 - PHP lint and JavaScript parsing.
 - Full WPCS using `phpcs.xml.dist`, with zero errors and zero warnings.

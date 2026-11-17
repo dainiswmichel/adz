@@ -5,7 +5,7 @@
  * @package adz-world-tests
  */
 
-$adz_plugin = isset( $argv[1] ) ? rtrim( $argv[1], '/' ) : dirname( __DIR__, 2 ) . '/pre-release-candidates/dwm-local';
+$adz_plugin = isset( $argv[1] ) ? rtrim( $argv[1], '/' ) : dirname( __DIR__, 2 ) . '/adz-world';
 $adz_file   = $adz_plugin . '/includes/adzworld-bestbuy.php';
 if ( ! is_file( $adz_file ) ) {
 	printf( "SKIP: %s has no includes/adzworld-bestbuy.php\n", basename( $adz_plugin ) );

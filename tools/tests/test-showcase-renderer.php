@@ -59,8 +59,8 @@ function esc_attr__( $value ) {
 	return esc_attr( $value );
 }
 
-require dirname( __DIR__, 2 ) . '/pre-release-candidates/dwm-local/includes/adzworld-products.php';
-require dirname( __DIR__, 2 ) . '/pre-release-candidates/dwm-local/includes/adzworld-affiliates.php';
+require dirname( __DIR__, 2 ) . '/adz-world/includes/adzworld-products.php';
+require dirname( __DIR__, 2 ) . '/adz-world/includes/adzworld-affiliates.php';
 
 /* Replace live provider callbacks with deterministic rows for this harness. */
 $adz_filters['adzworld_affiliate_product_results'] = array();

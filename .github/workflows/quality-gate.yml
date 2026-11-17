@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'pre-release-candidates/dwm-local/**'
+      - 'adz-world/**'
       - 'pre-release-candidates/site-theme/adz-world-2026/**'
       - 'tools/**'
       - 'composer.json'
@@ -14,7 +14,7 @@ on:
       - '.github/workflows/quality-gate.yml'
   pull_request:
     paths:
-      - 'pre-release-candidates/dwm-local/**'
+      - 'adz-world/**'
       - 'pre-release-candidates/site-theme/adz-world-2026/**'
       - 'tools/**'
       - 'composer.json'
@@ -54,14 +54,14 @@ jobs:
 
       - name: Lint every production PHP file
         run: |
-          find pre-release-candidates/dwm-local \
+          find adz-world \
             pre-release-candidates/site-theme/adz-world-2026 \
             -name '*.php' -print0 \
             | xargs -0 -n1 php -l > /dev/null
 
       - name: Parse every production JavaScript file
         run: |
-          find pre-release-candidates/dwm-local \
+          find adz-world \
             pre-release-candidates/site-theme/adz-world-2026 \
             -name '*.js' -print0 \
             | xargs -0 -n1 node --check
@@ -78,7 +78,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          BUILD=pre-release-candidates/dwm-local
+          BUILD=adz-world
           THEME=pre-release-candidates/site-theme/adz-world-2026
 
           if grep -RInE --include='*.php' --include='*.js' \
@@ -179,15 +179,15 @@ jobs:
 
       - name: Run production regression checks
         run: |
-          php tools/tests/test-matching.php pre-release-candidates/dwm-local
-          php tools/tests/test-preferences.php pre-release-candidates/dwm-local
-          php tools/resolve-calls.php pre-release-candidates/dwm-local \
+          php tools/tests/test-matching.php adz-world
+          php tools/tests/test-preferences.php adz-world
+          php tools/resolve-calls.php adz-world \
             | tee /tmp/adzworld-call-resolution.txt
           grep -q '0 of them this codebase.s own.*, 0 arity, 0 duplicate' /tmp/adzworld-call-resolution.txt
 
       - name: Run official WordPress Plugin Check
         uses: wordpress/plugin-check-action@v1
         with:
-          build-dir: './pre-release-candidates/dwm-local'
+          build-dir: './adz-world'
           slug: adz-world
           strict: true

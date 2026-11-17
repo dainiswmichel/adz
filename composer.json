@@ -16,6 +16,6 @@
 	},
 	"scripts": {
 		"wpcs": "sh tools/wpcs-gate.sh",
-		"wpcs:plugin": "phpcs --standard=phpcs.xml.dist --report=full pre-release-candidates/dwm-local"
+		"wpcs:plugin": "phpcs --standard=phpcs.xml.dist --report=full adz-world"
 	}
 }

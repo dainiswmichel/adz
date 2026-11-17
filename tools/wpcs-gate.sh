@@ -4,7 +4,7 @@ set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 PHPCS="$ROOT/vendor/bin/phpcs"
-PLUGIN="$ROOT/pre-release-candidates/dwm-local"
+PLUGIN="$ROOT/adz-world"
 THEME="$ROOT/pre-release-candidates/site-theme/adz-world-2026"
 
 if [ ! -x "$PHPCS" ]; then

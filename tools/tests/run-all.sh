@@ -15,7 +15,7 @@
 # tests had fatalled.
 
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
-PLUGIN=${1:-"$ROOT/pre-release-candidates/claude-code-web"}
+PLUGIN=${1:-"$ROOT/adz-world"}
 
 if [ ! -d "$PLUGIN" ]; then
 	echo "Not a directory: $PLUGIN"

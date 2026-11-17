@@ -12,8 +12,8 @@
 set -euo pipefail
 
 TAG="${1:-}"
-PLUGIN_FILE="pre-release-candidates/dwm-local/adz-world.php"
-README="pre-release-candidates/dwm-local/readme.txt"
+PLUGIN_FILE="adz-world/adz-world.php"
+README="adz-world/readme.txt"
 
 HEADER=$(grep -m1 '^ *\* *Version:\|^Version:' "$PLUGIN_FILE" | sed 's/.*Version: *//' | tr -d '[:space:]')
 STABLE=$(grep -m1 '^Stable tag:' "$README" | sed 's/^Stable tag: *//' | tr -d '[:space:]')

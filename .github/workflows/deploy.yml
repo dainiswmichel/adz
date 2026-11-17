@@ -1,6 +1,6 @@
 # Deploys the plugin to the WordPress.org directory.
 #
-# Publishing a GitHub release commits pre-release-candidates/dwm-local/ to SVN
+# Publishing a GitHub release commits adz-world/ to SVN
 # trunk and creates the matching SVN tag. Nothing deploys on an ordinary push.
 #
 # Requires two repository secrets, under Settings > Secrets and variables >
@@ -52,5 +52,5 @@ jobs:
           # The repository is named "adz"; the directory slug is "adz-world".
           SLUG: adz-world
           # Only the production codebase is deployed. Candidates and ancestor never ship.
-          BUILD_DIR: pre-release-candidates/dwm-local
+          BUILD_DIR: adz-world
           VERSION: ${{ github.event.release.tag_name || inputs.tag }}

@@ -7,12 +7,12 @@ WordPress plugin remediation workspace for `adz-world`.
 | Directory | Purpose | Deploys? |
 |---|---|---|
 | `ancestor/` | Frozen 2018 plugin, network server, and premium plugin reference | No |
-| `pre-release-candidates/dwm-local/` | Dainis' approved production release source | Yes, on approved release |
+| `adz-world/` | The plugin: Dainis' approved production release source, identical to WordPress.org SVN | Yes, on approved release |
 | `adz-world-wordpress-codebase/` | Historical integrated source retained for comparison | No |
 | `pre-release-candidates/<agent>/` | Independent agent repair candidates | No |
 | `../adz-world-com/` | Website project: server/WordPress setup, site-specific code, and deployment configuration | Separately, to adz-world.com |
 
-`pre-release-candidates/dwm-local/` is the production release source, not a running
+`adz-world/` is the production release source, not a running
 WordPress site. It is not yet a claim of WordPress.org compliance. Never modify
 `ancestor/`.
 
@@ -34,14 +34,14 @@ diff -qr adz-world-wordpress-codebase pre-release-candidates/claude-code-web
 ```
 
 Human and AI review selects repairs for integration into
-`pre-release-candidates/dwm-local/`. Run one shared verification gate against
+`adz-world/`. Run one shared verification gate against
 that production source, including regression tests, PHP lint, PHPCS/WPCS, Plugin
 Check, and real WordPress activation with `WP_DEBUG` and `WP_DEBUG_LOG`.
 
 Build one release ZIP from the integrated source and test that exact ZIP on
 clean WordPress. Only approved, tested code goes to the demonstration website
 or WordPress.org. Agent candidates never deploy. The sole deployable directory
-under `pre-release-candidates/` is `dwm-local/`.
+is `adz-world/`.
 
 The `Production quality gate` workflow runs on every production-source pull
 request and every production-source push to `main`. It checks matching version
@@ -70,7 +70,7 @@ dependencies. Runtime data needs separate backups, not source commits.
 
 ## Releasing
 
-Publishing a GitHub release deploys `pre-release-candidates/dwm-local/` to the
+Publishing a GitHub release deploys `adz-world/` to the
 WordPress.org SVN repository — trunk, plus a matching tag. Nothing deploys on
 an ordinary push.
 
@@ -78,8 +78,8 @@ Before a release, the version must agree in three places:
 
 | Where | Field |
 |---|---|
-| `pre-release-candidates/dwm-local/adz-world.php` | `Version:` |
-| `pre-release-candidates/dwm-local/readme.txt` | `Stable tag:` |
+| `adz-world/adz-world.php` | `Version:` |
+| `adz-world/readme.txt` | `Stable tag:` |
 | The GitHub release | Tag name |
 
 `.github/scripts/check-version.sh` checks these values before deployment. A
