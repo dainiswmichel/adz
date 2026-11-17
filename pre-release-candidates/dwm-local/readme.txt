@@ -336,6 +336,11 @@ administrator-controlled opt-ins.
 * Added named mixed-source rotations, administrator slot previews, established network and affiliate connections, earnings guidance, and starter packs.
 * Added invitation categories with scoped refinements, editable category navigation, collision-safe storage, and anonymous preference reset after 24 hours.
 * Separated local advertisement creative from matching refinements: editor content or a featured image is the ad, while the excerpt is matching data and is never presented as the ad.
+* Removed the visitor-IP network lookup. Nothing is stored or sent for a visitor who only looks; the first category, refinement or rating starts a session.
+* Added AdzLogs: an administrator tab showing each reader's engagement journey (rotation, slot, exact adz, rating and words entered), with retention settings, deletion, privacy export and erase.
+* Added configurable ratings bands, per-slot response messages, and a reader's own choice to save adz requests with their profile.
+* Moved the legacy timed, popup and shortcode adz scripts into one enqueued file.
+* Disclosed every external service the plugin can contact.
 
 
 == Upgrade Notice ==
