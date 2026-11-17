@@ -498,6 +498,7 @@ function adzworld_template_setting() {
 		wp_die( esc_html__( 'Administrator permission is required.', 'adz-world' ), '', array( 'response' => 403 ) );
 	}
 	adzworld_notice_setting();
+	adzworld_response_settings();
 	if ( isset( $_POST['adz_template'] ) ) {
 		check_admin_referer( 'adzworld_template_save', 'adzworld_template_nonce' );
 		$result = adzworld_save_template_settings();

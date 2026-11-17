@@ -263,24 +263,28 @@ function adzworld_sanitize_named_rotations( $raw ) {
 		if ( '' === $key || ! is_array( $rotation ) || isset( $draft[ $key ] ) ) {
 			continue;
 		}
-		$name  = isset( $rotation['name'] ) ? sanitize_text_field( $rotation['name'] ) : '';
-		$slots = isset( $rotation['slots'] ) && is_array( $rotation['slots'] ) ? $rotation['slots'] : array();
-		$slots = array_slice( $slots, 0, ADZWORLD_ROTATION_MAX_SLOTS );
+		$name      = isset( $rotation['name'] ) ? sanitize_text_field( $rotation['name'] ) : '';
+		$slots     = isset( $rotation['slots'] ) && is_array( $rotation['slots'] ) ? array_values( $rotation['slots'] ) : array();
+		$slots     = array_slice( $slots, 0, ADZWORLD_ROTATION_MAX_SLOTS );
+		$responses = isset( $rotation['responses'] ) && is_array( $rotation['responses'] ) ? array_values( $rotation['responses'] ) : array();
 		if ( '' === $name || empty( $slots ) ) {
 			continue;
 		}
 		$draft[ $key ] = array(
 			'name'         => $name,
 			'slots'        => $slots,
+			'responses'    => $responses,
 			'presentation' => adzworld_rotation_presentation( $rotation ),
 		);
 	}
 	foreach ( $draft as $key => $rotation ) {
-		$clean_slots = array();
-		foreach ( $rotation['slots'] as $slot ) {
+		$clean_slots     = array();
+		$clean_responses = array();
+		foreach ( $rotation['slots'] as $index => $slot ) {
 			$slot = adzworld_accept_rotation_slot( $slot, $choices, $draft, $key );
 			if ( '' !== $slot ) {
-				$clean_slots[] = $slot;
+				$clean_slots[]     = $slot;
+				$clean_responses[] = adzworld_sanitize_slot_response( isset( $rotation['responses'][ $index ] ) ? $rotation['responses'][ $index ] : array() );
 			}
 		}
 		if ( empty( $clean_slots ) ) {
@@ -288,15 +292,17 @@ function adzworld_sanitize_named_rotations( $raw ) {
 		}
 		$clean[ $key ] = array_merge(
 			array(
-				'name'  => $rotation['name'],
-				'slots' => $clean_slots,
+				'name'      => $rotation['name'],
+				'slots'     => $clean_slots,
+				'responses' => $clean_responses,
 			),
 			$rotation['presentation']
 		);
 	}
 	foreach ( $clean as $key => $rotation ) {
-		$slots = array();
-		foreach ( $rotation['slots'] as $slot ) {
+		$slots     = array();
+		$responses = array();
+		foreach ( $rotation['slots'] as $index => $slot ) {
 			if ( is_string( $slot ) && 0 === strpos( $slot, 'r:' ) ) {
 				$target = substr( $slot, 2 );
 				if ( ! isset( $clean[ $target ] ) ) {
@@ -312,13 +318,15 @@ function adzworld_sanitize_named_rotations( $raw ) {
 					continue;
 				}
 			}
-			$slots[] = $slot;
+			$slots[]     = $slot;
+			$responses[] = $rotation['responses'][ $index ];
 		}
 		if ( empty( $slots ) ) {
 			unset( $clean[ $key ] );
 			continue;
 		}
-		$clean[ $key ]['slots'] = $slots;
+		$clean[ $key ]['slots']     = $slots;
+		$clean[ $key ]['responses'] = $responses;
 	}
 	return $clean;
 }
@@ -374,6 +382,8 @@ function adzworld_save_named_rotation() {
 	$original = isset( $_POST['original_rotation_key'] ) && is_string( $_POST['original_rotation_key'] ) ? sanitize_key( wp_unslash( $_POST['original_rotation_key'] ) ) : '';
 	$name     = isset( $_POST['rotation_name'] ) && is_string( $_POST['rotation_name'] ) ? sanitize_text_field( wp_unslash( $_POST['rotation_name'] ) ) : '';
 	$slots    = isset( $_POST['rotation_slots'] ) && is_array( $_POST['rotation_slots'] ) ? map_deep( wp_unslash( $_POST['rotation_slots'] ), 'sanitize_text_field' ) : array();
+	$modes    = isset( $_POST['rotation_response_mode'] ) && is_array( $_POST['rotation_response_mode'] ) ? array_values( map_deep( wp_unslash( $_POST['rotation_response_mode'] ), 'sanitize_key' ) ) : array();
+	$texts    = isset( $_POST['rotation_response_text'] ) && is_array( $_POST['rotation_response_text'] ) ? array_values( map_deep( wp_unslash( $_POST['rotation_response_text'] ), 'sanitize_text_field' ) ) : array();
 	$posted   = array(
 		'display'  => isset( $_POST['rotation_display'] ) && is_string( $_POST['rotation_display'] ) ? sanitize_key( wp_unslash( $_POST['rotation_display'] ) ) : '',
 		'controls' => isset( $_POST['rotation_controls'] ) && is_string( $_POST['rotation_controls'] ) ? sanitize_key( wp_unslash( $_POST['rotation_controls'] ) ) : '',
@@ -401,12 +411,19 @@ function adzworld_save_named_rotation() {
 			ADZWORLD_ROTATION_MAX_SLOTS
 		);
 	} else {
-		$choices     = adzworld_rotation_editor_choices( $key, $stored );
-		$clean_slots = array();
-		foreach ( $slots as $slot ) {
+		$choices         = adzworld_rotation_editor_choices( $key, $stored );
+		$clean_slots     = array();
+		$clean_responses = array();
+		foreach ( array_values( $slots ) as $index => $slot ) {
 			$slot = adzworld_accept_rotation_slot( $slot, $choices, $stored, $key );
 			if ( '' !== $slot ) {
-				$clean_slots[] = $slot;
+				$clean_slots[]     = $slot;
+				$clean_responses[] = adzworld_sanitize_slot_response(
+					array(
+						'mode' => isset( $modes[ $index ] ) ? $modes[ $index ] : 'default',
+						'text' => isset( $texts[ $index ] ) ? $texts[ $index ] : '',
+					)
+				);
 			}
 		}
 		if ( empty( $clean_slots ) || count( $clean_slots ) !== count( $slots ) ) {
@@ -423,8 +440,9 @@ function adzworld_save_named_rotation() {
 	}
 	$stored[ $key ] = array_merge(
 		array(
-			'name'  => $name,
-			'slots' => $clean_slots,
+			'name'      => $name,
+			'slots'     => $clean_slots,
+			'responses' => $clean_responses,
 		),
 		adzworld_rotation_presentation( $posted )
 	);
@@ -502,13 +520,15 @@ add_action( 'wp_ajax_adzworld_refresh_rotation_slot', 'adzworld_refresh_admin_ro
 /**
  * Render one editable vertical rotation slot.
  *
- * @param int                  $index   Zero-based position.
- * @param string               $slot    Slot reference.
- * @param array<string,string> $choices Available choices.
- * @param string               $form_id Save form id.
+ * @param int                  $index    Zero-based position.
+ * @param string               $slot     Slot reference.
+ * @param array<string,string> $choices  Available choices.
+ * @param string               $form_id  Save form id.
+ * @param array                $response Slot response setting.
  * @return void
  */
-function adzworld_admin_rotation_slot_row( $index, $slot, $choices, $form_id ) {
+function adzworld_admin_rotation_slot_row( $index, $slot, $choices, $form_id, $response = array() ) {
+	$response = adzworld_sanitize_slot_response( $response );
 	echo '<article class="adzworld-admin-slot" data-adzworld-admin-slot><header><strong data-adzworld-slot-number>';
 	printf(
 		/* translators: %d: rotation slot number. */
@@ -522,7 +542,14 @@ function adzworld_admin_rotation_slot_row( $index, $slot, $choices, $form_id ) {
 	foreach ( $choices as $value => $label ) {
 		echo '<option value="' . esc_attr( $value ) . '"' . selected( $slot, $value, false ) . '>' . esc_html( $label ) . '</option>';
 	}
-	echo '</select></label><div class="adzworld-admin-slot__preview" data-adzworld-slot-preview><div data-adzworld-slot-preview-body>';
+	echo '</select></label>';
+	echo '<div class="adzworld-admin-slot__response"><label>' . esc_html__( 'After a reader responds', 'adz-world' ) . '<select name="rotation_response_mode[]" form="' . esc_attr( $form_id ) . '">';
+	foreach ( adzworld_slot_response_modes() as $mode => $mode_label ) {
+		echo '<option value="' . esc_attr( $mode ) . '"' . selected( $response['mode'], $mode, false ) . '>' . esc_html( $mode_label ) . '</option>';
+	}
+	echo '</select></label><label>' . esc_html__( 'This slot’s own message', 'adz-world' ) . '<input type="text" maxlength="300" name="rotation_response_text[]" form="' . esc_attr( $form_id )
+		. '" value="' . esc_attr( $response['text'] ) . '" placeholder="' . esc_attr( adzworld_default_response_message() ) . '"></label></div>';
+	echo '<div class="adzworld-admin-slot__preview" data-adzworld-slot-preview><div data-adzworld-slot-preview-body>';
 	echo wp_kses_post( adzworld_admin_rotation_slot_preview( $slot ) );
 	echo '</div><button type="button" class="button" data-adzworld-refresh-slot>' . esc_html__( 'Refresh this adz preview', 'adz-world' ) . '</button><span class="spinner" data-adzworld-slot-spinner></span></div></article>';
 }
@@ -682,7 +709,8 @@ function adzworld_rotation_admin_page() {
 	}
 	echo '</section><div class="adzworld-admin-slots" data-adzworld-admin-slots>';
 	foreach ( $rotation['slots'] as $index => $slot ) {
-		adzworld_admin_rotation_slot_row( $index, $slot, $choices, $form_id );
+		$response = isset( $rotation['responses'][ $index ] ) ? $rotation['responses'][ $index ] : array();
+		adzworld_admin_rotation_slot_row( $index, $slot, $choices, $form_id, $response );
 	}
 	echo '</div><template id="adzworld-slot-template">';
 	adzworld_admin_rotation_slot_row( 0, array_key_first( $choices ), $choices, $form_id );
@@ -812,6 +840,7 @@ function adzworld_parse_rotation( $specification ) {
 			'value'       => $value,
 			'weight'      => $weight,
 			'placeholder' => $placeholder,
+			'position'    => count( $slots ),
 		);
 		$total  += $weight;
 	}
@@ -862,13 +891,7 @@ function adzworld_enqueue_rotation_assets() {
 			'taboolaBase'     => 'https://cdn.taboola.com/libtrc/',
 			'preferenceNonce' => wp_create_nonce( 'adzworld_preference' ),
 			'feedbackNonce'   => wp_create_nonce( 'adzworld_feedback' ),
-			'labels'          => array(
-				'strongDislike' => __( 'Strongly dislike', 'adz-world' ),
-				'dislike'       => __( 'Dislike', 'adz-world' ),
-				'neutral'       => __( 'Neutral', 'adz-world' ),
-				'like'          => __( 'Like', 'adz-world' ),
-				'strongLike'    => __( 'Strongly like', 'adz-world' ),
-			),
+			'bands'           => adzworld_rating_bands(),
 		)
 	);
 }
@@ -1467,8 +1490,10 @@ function adzworld_render_rotation_level( $attributes ) {
 		}
 		$category_attribute = '' !== $category ? ' data-adzworld-category="' . esc_attr( $category ) . '"' : '';
 		$slot_attribute     = '' !== $category ? ' data-adzworld-category-slot="' . esc_attr( (string) $category_slot ) . '"' : '';
-		$notice             = 'r' === $slot['type'] ? '' : adzworld_rotation_notice();
-		$slides            .= '<section class="adzworld-slide" id="' . esc_attr( $slide_id ) . '"' . $category_attribute . $slot_attribute . ' role="group" aria-roledescription="'
+		$journey_attribute  = ' data-adzworld-rotation="' . esc_attr( $name ) . '" data-adzworld-slot="' . esc_attr( (string) ( $index + 1 ) )
+			. '" data-adzworld-slot-position="' . esc_attr( (string) $slot['position'] ) . '" data-adzworld-ad="' . esc_attr( adzworld_rotation_slot_ad( $slot ) ) . '"';
+		$notice             = 'r' === $slot['type'] ? '' : '<p class="adzworld-response" role="status" aria-live="polite" hidden></p>' . adzworld_rotation_notice();
+		$slides            .= '<section class="adzworld-slide" id="' . esc_attr( $slide_id ) . '"' . $category_attribute . $slot_attribute . $journey_attribute . ' role="group" aria-roledescription="'
 			. esc_attr__( 'slide', 'adz-world' ) . '" aria-label="' . esc_attr( ( $index + 1 ) . ' / ' . count( $slots ) ) . '">' . $html . $notice . '</section>';
 		if ( 'intro' === $slot['type'] ) {
 			$dot_class = ' class="adzworld-hub-position"';
@@ -1524,6 +1549,29 @@ function adzworld_render_rotation_level( $attributes ) {
 	return '<div class="' . esc_attr( $classes ) . '" id="' . esc_attr( $id )
 		. '"' . $multiple . ' role="region" aria-label="' . esc_attr( $attributes['label'] ) . '"><div class="adzworld-carousel"><div class="adzworld-slides">' . $slides
 		. '</div><div class="adzworld-navigation" hidden>' . $navigation . '</div>' . $dismiss . '</div></div>';
+}
+
+/**
+ * The adz identifier a slide shows before any product carousel moves.
+ *
+ * Product carousels name each product on its own slide, and the script sends
+ * the product on screen instead of this identifier.
+ *
+ * @param array $slot Parsed slot.
+ * @return string hub, ad-ID, source-key, or an empty string.
+ */
+function adzworld_rotation_slot_ad( $slot ) {
+	if ( 'intro' === $slot['type'] ) {
+		return 'hub';
+	}
+	if ( 'ad' === $slot['type'] ) {
+		return 'ad-' . absint( $slot['value'] );
+	}
+	if ( 'source' === $slot['type'] ) {
+		return sanitize_key( 'source-' . $slot['value'] );
+	}
+
+	return '';
 }
 
 /**

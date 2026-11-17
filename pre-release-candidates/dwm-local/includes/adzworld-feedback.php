@@ -46,7 +46,7 @@ function adzworld_sanitize_feedback( $feedback ) {
  * @return array<string,array{score:int,updated:int}>
  */
 function adzworld_current_feedback() {
-	if ( is_user_logged_in() ) {
+	if ( adzworld_preference_uses_profile() ) {
 		$stored = get_user_meta( get_current_user_id(), ADZWORLD_FEEDBACK_META, true );
 		return adzworld_sanitize_feedback( $stored );
 	}
@@ -72,7 +72,7 @@ function adzworld_current_feedback() {
 function adzworld_store_feedback( $feedback ) {
 	$feedback = adzworld_sanitize_feedback( $feedback );
 
-	if ( is_user_logged_in() ) {
+	if ( adzworld_preference_uses_profile() ) {
 		update_user_meta( get_current_user_id(), ADZWORLD_FEEDBACK_META, $feedback );
 		return;
 	}
@@ -103,26 +103,13 @@ function adzworld_store_feedback( $feedback ) {
 }
 
 /**
- * Translate a numeric evaluation into clear language.
+ * Translate a numeric evaluation into the words of its ratings band.
  *
  * @param int $score Score from -100 to 100.
  * @return string Human-readable evaluation.
  */
 function adzworld_feedback_label( $score ) {
-	if ( $score <= -75 ) {
-		return __( 'Strongly dislike', 'adz-world' );
-	}
-	if ( $score <= -25 ) {
-		return __( 'Dislike', 'adz-world' );
-	}
-	if ( $score < 25 ) {
-		return __( 'Neutral', 'adz-world' );
-	}
-	if ( $score < 75 ) {
-		return __( 'Like', 'adz-world' );
-	}
-
-	return __( 'Strongly like', 'adz-world' );
+	return adzworld_rating_label( (int) $score );
 }
 
 /**
@@ -335,8 +322,8 @@ add_action( 'wp_ajax_nopriv_adzworld_evaluate', 'adzworld_ajax_evaluate' );
 /**
  * Save one explicit evaluation.
  *
- * An untouched slider creates no record. Moving it to zero records an explicit
- * neutral response, which remains distinct from no response.
+ * An untouched slider creates no record. Moving it records that score, and the
+ * journey records which adz was rated, where it was, and the score before.
  *
  * @return void
  */
@@ -354,17 +341,37 @@ function adzworld_ajax_evaluate() {
 		wp_send_json_error( array( 'message' => __( 'That evaluation is invalid.', 'adz-world' ) ), 400 );
 	}
 
+	$context = adzworld_journey_context(
+		isset( $_POST['journey_rotation'] ) ? sanitize_key( wp_unslash( $_POST['journey_rotation'] ) ) : '',
+		isset( $_POST['journey_slot'] ) ? absint( wp_unslash( $_POST['journey_slot'] ) ) : 0,
+		isset( $_POST['journey_position'] ) ? sanitize_text_field( wp_unslash( $_POST['journey_position'] ) ) : '',
+		$target
+	);
+
 	$feedback            = adzworld_current_feedback();
+	$previous            = isset( $feedback[ $target ]['score'] ) ? (int) $feedback[ $target ]['score'] : '';
 	$feedback[ $target ] = array(
 		'score'   => (int) $score,
 		'updated' => time(),
 	);
 	adzworld_store_feedback( $feedback );
 
+	$label = adzworld_feedback_label( (int) $score );
+	adzworld_journey_record(
+		$context,
+		array(
+			'type'     => 'rating',
+			'score'    => (int) $score,
+			'label'    => $label,
+			'previous' => $previous,
+		)
+	);
+
 	wp_send_json_success(
 		array(
-			'label'   => adzworld_feedback_label( (int) $score ),
-			'message' => __( 'Evaluation saved.', 'adz-world' ),
+			'label'    => $label,
+			'message'  => __( 'Evaluation saved.', 'adz-world' ),
+			'response' => adzworld_journey_response( $context ),
 		)
 	);
 }

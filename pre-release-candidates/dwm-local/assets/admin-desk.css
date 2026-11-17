@@ -1493,3 +1493,257 @@ body.wp-admin .adzworld-paid-card .adzworld-connection-card select {
 	color: #674a00;
 	background: #fcf3dc;
 }
+
+/*
+ * AdzLogs: one expandable card per journey, laid out like FLOSC Chat Logs.
+ * Adz speak on the left, the reader on the right, and a thin labelled rule
+ * marks each move to a different rotation slot.
+ */
+.adzworld-logs__toolbar {
+	align-items: baseline;
+	display: flex;
+	gap: 12px;
+}
+
+.adzworld-logs__count {
+	color: #646970;
+	font-size: 13px;
+}
+
+.adzworld-logs__empty {
+	background: #fff;
+	border: 1px dashed #c3c4c7;
+	border-radius: 6px;
+	color: #646970;
+	padding: 16px;
+}
+
+.adzworld-logs__list {
+	margin-top: 12px;
+}
+
+.adzworld-journey-row {
+	align-items: flex-start;
+	display: flex;
+	gap: 10px;
+	margin: 0 0 10px;
+}
+
+.adzworld-journey-row__select {
+	margin-top: 14px !important;
+}
+
+.adzworld-journey {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.adzworld-journey[open] {
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.adzworld-journey__head {
+	align-items: center;
+	cursor: pointer;
+	display: flex;
+	gap: 10px;
+	list-style: none;
+	padding: 11px 14px;
+}
+
+.adzworld-journey__head::-webkit-details-marker {
+	display: none;
+}
+
+.adzworld-journey__head:hover {
+	background: #f6f7f7;
+}
+
+.adzworld-journey__chevron {
+	color: #2271b1;
+	font-size: 12px;
+	transition: transform 0.2s ease;
+}
+
+.adzworld-journey[open] .adzworld-journey__chevron {
+	transform: rotate(90deg);
+}
+
+.adzworld-journey__title {
+	font-family: ui-monospace, Menlo, Consolas, monospace;
+	font-size: 13px;
+	font-variant-numeric: tabular-nums;
+	font-weight: 600;
+}
+
+.adzworld-journey__id {
+	background: #f0f0f1;
+	border-radius: 3px;
+	font-size: 11px;
+	padding: 1px 6px;
+}
+
+.adzworld-journey__meta {
+	color: #50575e;
+	font-size: 12px;
+	white-space: nowrap;
+}
+
+.adzworld-journey__preview {
+	color: #646970;
+	font-size: 12px;
+	margin-left: auto;
+	max-width: 45%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.adzworld-journey__body {
+	background: #fcfcfc;
+	border-top: 1px solid #f0f0f1;
+	padding: 12px 16px 16px;
+}
+
+.adzworld-msg {
+	margin: 10px 0;
+}
+
+.adzworld-msg__meta {
+	color: #999;
+	font-size: 11px;
+	margin-bottom: 2px;
+}
+
+.adzworld-msg__who {
+	color: #444;
+	font-weight: 600;
+}
+
+.adzworld-msg__body {
+	border-radius: 8px;
+	display: inline-block;
+	max-width: 80%;
+	padding: 7px 11px;
+	text-align: left;
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.adzworld-msg--adz .adzworld-msg__body {
+	background: #eef6fb;
+}
+
+.adzworld-msg--response .adzworld-msg__body {
+	background: #fdf7e3;
+	font-style: italic;
+}
+
+.adzworld-msg--reader {
+	text-align: right;
+}
+
+.adzworld-msg--reader .adzworld-msg__body {
+	background: #f0f0f1;
+}
+
+.adzworld-msg__label {
+	color: #50575e;
+}
+
+.adzworld-msg__id {
+	background: transparent;
+	font-size: 12px;
+	padding: 0;
+}
+
+.adzworld-msg-state {
+	align-items: center;
+	display: flex;
+	gap: 8px;
+	margin: 16px 0 10px;
+}
+
+.adzworld-msg-state__rule {
+	background: #dcdcde;
+	flex: 1 1 auto;
+	height: 1px;
+}
+
+.adzworld-msg-state__label {
+	background: #eef6fb;
+	border: 1px solid #c5d9ed;
+	border-radius: 10px;
+	color: #1d4f7a;
+	flex: 0 0 auto;
+	font-family: ui-monospace, Menlo, Consolas, monospace;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	padding: 2px 10px;
+}
+
+.adzworld-logs__actions {
+	margin: 12px 0 0 28px;
+}
+
+.adzworld-logs__pages {
+	margin: 12px 0 0 28px;
+}
+
+.adzworld-logs__pages .page-numbers {
+	margin-right: 6px;
+}
+
+.adzworld-logs__settings {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	margin-top: 24px;
+	padding: 4px 16px 12px;
+}
+
+/* Ratings bands editor on the Templates tab. */
+.adzworld-bands__table {
+	max-width: 640px;
+}
+
+.adzworld-bands__from {
+	color: #50575e;
+	font-variant-numeric: tabular-nums;
+	width: 60px;
+}
+
+/* Response setting inside each rotation slot. */
+.adzworld-admin-slot__response {
+	display: grid;
+	gap: 8px;
+	grid-template-columns: minmax(180px, 1fr) minmax(220px, 2fr);
+	margin: 8px 0;
+}
+
+.adzworld-admin-slot__response label {
+	display: flex;
+	flex-direction: column;
+	font-size: 12px;
+	gap: 2px;
+}
+
+@media (max-width: 782px) {
+
+	.adzworld-journey__head {
+		flex-wrap: wrap;
+	}
+
+	.adzworld-journey__preview {
+		margin-left: 0;
+		max-width: 100%;
+	}
+
+	.adzworld-admin-slot__response {
+		grid-template-columns: 1fr;
+	}
+}

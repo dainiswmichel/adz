@@ -243,11 +243,138 @@
 	 * @param {Object} values Request values.
 	 * @return {Promise} Parsed JSON response.
 	 */
+	/*
+	 * The slide the reader last touched. Every request a reader makes is about
+	 * that slide, so its rotation, slot and adz travel with the request and the
+	 * journey records exactly what the reader acted on.
+	 */
+	var journeySlide = null;
+
+	/**
+	 * Remember the slide holding an element the reader is using.
+	 *
+	 * @param {Event} event Pointer or focus event.
+	 */
+	function noteJourneySlide( event ) {
+		var slide = event.target && event.target.closest ? event.target.closest( '.adzworld-slide' ) : null;
+
+		if ( slide ) {
+			journeySlide = slide;
+		}
+	}
+
+	/**
+	 * Rotation, slot and adz of one slide. A product carousel names the product
+	 * on screen; any other slide names its own adz.
+	 *
+	 * @param {HTMLElement|null} slide Slide.
+	 * @return {Object} Request fields.
+	 */
+	function journeyFields( slide ) {
+		var product;
+
+		if ( ! slide ) {
+			return {};
+		}
+		product = slide.querySelector( '.adzworld-results__slide:not([hidden])' );
+		return {
+			journey_rotation: slide.dataset.adzworldRotation || '',
+			journey_slot: slide.dataset.adzworldSlot || '',
+			journey_position: slide.dataset.adzworldSlotPosition || '',
+			journey_ad: product ? product.dataset.adzworldResultTarget || '' : slide.dataset.adzworldAd || ''
+		};
+	}
+
+	/**
+	 * Show a slot's response message for a few seconds.
+	 *
+	 * @param {HTMLElement|null} slide Slide.
+	 * @param {string}           text  Message.
+	 */
+	function showResponse( slide, text ) {
+		var line = slide ? slide.querySelector( ':scope > .adzworld-response' ) : null;
+
+		if ( ! line || ! text ) {
+			return;
+		}
+		line.textContent = text;
+		line.hidden = false;
+		window.clearTimeout( Number( line.dataset.adzworldTimer || 0 ) );
+		line.dataset.adzworldTimer = String(
+			window.setTimeout(
+				function () {
+					line.hidden = true;
+				},
+				8000
+			)
+		);
+	}
+
+	/**
+	 * Keep a response message across the reload that follows some changes.
+	 * Refinements reload the page; ratings do not.
+	 *
+	 * @param {HTMLElement|null} slide Slide.
+	 * @param {string}           text  Message.
+	 */
+	function rememberResponse( slide, text ) {
+		if ( ! slide || ! text ) {
+			return;
+		}
+		try {
+			window.sessionStorage.setItem(
+				'adzworldResponse',
+				JSON.stringify(
+					{
+						rotation: slide.dataset.adzworldRotation || '',
+						slot: slide.dataset.adzworldSlot || '',
+						text: text,
+						at: Date.now()
+					}
+				)
+			);
+		} catch ( error ) {
+			// The message is a courtesy; the change itself is saved.
+		}
+	}
+
+	/**
+	 * Show a response message remembered before a reload.
+	 */
+	function restoreResponse() {
+		var saved;
+		var slide;
+
+		try {
+			saved = JSON.parse( window.sessionStorage.getItem( 'adzworldResponse' ) || 'null' );
+			window.sessionStorage.removeItem( 'adzworldResponse' );
+		} catch ( error ) {
+			saved = null;
+		}
+		// Only the reload that follows a change shows the message again.
+		if ( ! saved || ! saved.rotation || Date.now() - Number( saved.at || 0 ) > 10000 ) {
+			return;
+		}
+		slide = Array.from( document.querySelectorAll( '.adzworld-slide' ) ).find(
+			function ( candidate ) {
+				return candidate.dataset.adzworldRotation === saved.rotation && candidate.dataset.adzworldSlot === saved.slot;
+			}
+		);
+		showResponse( slide || null, saved.text );
+	}
+
 	function post( action, nonce, values ) {
 		var body = new window.FormData();
+		var slide = journeySlide;
+		var fields = journeyFields( slide );
 
 		body.append( 'action', action );
 		body.append( 'nonce', nonce );
+		Object.keys( fields ).forEach(
+			function ( key ) {
+				body.append( key, fields[ key ] );
+			}
+		);
 		Object.keys( values ).forEach(
 			function ( key ) {
 				body.append( key, values[ key ] );
@@ -264,6 +391,14 @@
 		).then(
 			function ( response ) {
 				return response.json();
+			}
+		).then(
+			function ( payload ) {
+				if ( payload && payload.success && payload.data && payload.data.response ) {
+					rememberResponse( slide, payload.data.response );
+					showResponse( slide, payload.data.response );
+				}
+				return payload;
 			}
 		);
 	}
@@ -873,21 +1008,15 @@
 	 * @return {string} Evaluation label.
 	 */
 	function evaluationLabel( score ) {
-		var labels = settings.labels || {};
+		var bands = Array.isArray( settings.bands ) ? settings.bands : [];
+		var index;
 
-		if ( score <= -75 ) {
-			return labels.strongDislike || 'Strongly dislike';
+		for ( index = 0; index < bands.length; index++ ) {
+			if ( score <= Number( bands[ index ].to ) ) {
+				return bands[ index ].label;
+			}
 		}
-		if ( score <= -25 ) {
-			return labels.dislike || 'Dislike';
-		}
-		if ( score < 25 ) {
-			return labels.neutral || 'Neutral';
-		}
-		if ( score < 75 ) {
-			return labels.like || 'Like';
-		}
-		return labels.strongLike || 'Strongly like';
+		return '';
 	}
 
 	/**
@@ -959,9 +1088,12 @@
 		if ( ! window.fetch || ! window.FormData || ! settings.ajaxUrl ) {
 			return;
 		}
+		document.addEventListener( 'pointerdown', noteJourneySlide, true );
+		document.addEventListener( 'focusin', noteJourneySlide, true );
 		document.querySelectorAll( '.adzworld-rotation' ).forEach( prepareRotation );
 		document.querySelectorAll( '[data-adz-panel]' ).forEach( preparePanel );
 		document.querySelectorAll( '[data-adzworld-feedback-target]' ).forEach( prepareEvaluation );
+		restoreResponse();
 		document.addEventListener(
 			'adzworld:mount-network',
 			function ( event ) {

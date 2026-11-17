@@ -53,12 +53,25 @@ installed plugin can still be saved on Connections. adz-world does not recreate
 a provider's account, inventory, auction, reporting, or payment system.
 
 The invitation accepts categories and refinements in the visitor's own words.
-Logged-out preferences use a server-side PHP session identified by a session
-cookie and start fresh after 24 hours; signed-in guest and member preferences
-use user metadata. Visible editable pills show the visitor's categories and
-refinements, matching local adz are prioritised, and explicit -100 to 100
-evaluations add positive or negative weight. Untouched adz remain distinct from
-an explicit neutral rating.
+Nothing is stored for a visitor who only looks. The first category, refinement
+or rating starts a server-side PHP session, identified by a session cookie
+holding the Michel Time Stamp of that action plus five random characters; it
+starts fresh after 24 hours. A signed-in reader's preferences are kept on their
+profile only when the site allows it and the reader chooses "Save my adz
+requests with my profile" on their profile page. Visible editable pills show
+the visitor's categories and refinements, matching local adz are prioritised,
+and explicit -100 to 100 evaluations add positive or negative weight. Ratings
+bands, set on the Templates tab, give each range of scores its words. Untouched
+adz remain distinct from an explicit rating.
+
+AdzLogs, an administrator tab, records each reader's journey after their first
+action: the rotation, slot and exact adz acted on, the rating, and the words
+entered, in order. Adz the reader only looks at are not recorded, and no IP
+address is kept. Each rotation slot can show a response message after a reader
+responds. Journeys are deleted after a number of days the site owner sets
+(30 by default), can be capped in number, and are removed when the plugin is
+deleted. WordPress's personal-data export and erase tools include journeys
+attached to a profile.
 Configured provider sources remain responsible for their own inventory,
 targeting, consent rules, and request behavior.
 
