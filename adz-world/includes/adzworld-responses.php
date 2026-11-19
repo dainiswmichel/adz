@@ -308,7 +308,7 @@ function adzworld_response_settings() {
 
 	$bands = adzworld_rating_bands_with_start();
 	echo '<section class="adzworld-desk-intro adzworld-bands"><h2>' . esc_html__( 'Ratings bands', 'adz-world' ) . '</h2>';
-	echo '<p>' . esc_html__( 'Readers rate an adz from -100 to 100. Each band gives a range of scores its own words. The first band starts at -100, each band starts one above the end of the band before it, and the last band ends at 100, so bands never overlap and every score has words. To remove a band, clear its end and its words. To add one, fill in a blank row.', 'adz-world' ) . '</p>';
+	echo '<p>' . esc_html__( 'Readers rate an adzad from -100 to 100. Each band gives a range of scores its own words. The first band starts at -100, each band starts one above the end of the band before it, and the last band ends at 100, so bands never overlap and every score has words. To remove a band, clear its end and its words. To add one, fill in a blank row.', 'adz-world' ) . '</p>';
 	echo '<form method="post" action="">';
 	wp_nonce_field( 'adzworld_responses_save', 'adzworld_responses_nonce' );
 	echo '<table class="widefat striped adzworld-bands__table"><thead><tr><th scope="col">' . esc_html__( 'From', 'adz-world' ) . '</th><th scope="col">'
@@ -327,7 +327,7 @@ function adzworld_response_settings() {
 	echo '</tbody></table>';
 
 	echo '<h2>' . esc_html__( 'Response message', 'adz-world' ) . '</h2>';
-	echo '<p>' . esc_html__( 'After a reader rates an adz, refines it, or changes its category, the adz panel shows this message. In the Rotation tab, each slot can use this message, its own message, or none.', 'adz-world' ) . '</p>';
+	echo '<p>' . esc_html__( 'After a reader rates an adzad, refines it, or changes its category, the adzad panel shows this message. In the Rotation tab, each slot can use this message, its own message, or none.', 'adz-world' ) . '</p>';
 	echo '<p><label for="adzworld-response-message">' . esc_html__( 'Default response message', 'adz-world' ) . '</label><br>'
 		. '<input class="large-text" type="text" maxlength="300" id="adzworld-response-message" name="adzworld_response_message" value="' . esc_attr( adzworld_default_response_message() ) . '"></p>';
 	echo '<p class="submit">';

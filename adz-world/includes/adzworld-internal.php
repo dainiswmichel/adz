@@ -282,7 +282,7 @@ function adzworld_internal_meta_box_markup( $post ) {
 
 	echo '<p><label for="adzworld-internal-title"><strong>' . esc_html__( 'Title row', 'adz-world' ) . '</strong></label><br>';
 	echo '<input type="text" class="widefat" id="adzworld-internal-title" name="adzworld_internal_title" maxlength="120" value="' . esc_attr( $title ) . '">';
-	echo '<span class="description">' . esc_html__( 'The line above this adz. For example, Amazon adz showcase.', 'adz-world' ) . '</span></p>';
+	echo '<span class="description">' . esc_html__( 'The line above this adzad. For example, Amazon ad showcase.', 'adz-world' ) . '</span></p>';
 
 	echo '<p><label for="adzworld-internal-size"><strong>' . esc_html__( 'Creative size', 'adz-world' ) . '</strong></label><br>';
 	echo '<select class="widefat" id="adzworld-internal-size" name="adzworld_internal_size">';
@@ -420,13 +420,13 @@ function adzworld_internal_preview( $ad ) {
 			return '<p class="adz-int-preview__empty">' . esc_html(
 				sprintf(
 					/* translators: %s: comma-separated list of HTML tag names. */
-					__( 'Nothing will render: %s is removed when an adz is served. Code that needs a script belongs on Get Paid.', 'adz-world' ),
+					__( 'Nothing will render: %s is removed when an adzad is served. Code that needs a script belongs on Get Paid.', 'adz-world' ),
 					implode( ', ', $stripped )
 				)
 			) . '</p>';
 		}
 
-		return '<p class="adz-int-preview__empty">' . esc_html__( 'This adz has no content yet.', 'adz-world' ) . '</p>';
+		return '<p class="adz-int-preview__empty">' . esc_html__( 'This adzad has no content yet.', 'adz-world' ) . '</p>';
 	}
 
 	return $content;
@@ -591,14 +591,14 @@ function adzworld_internal_page() {
 
 	echo '<h1 class="wp-heading-inline">' . esc_html__( 'Internal Adz', 'adz-world' ) . '</h1>';
 	echo ' <a href="' . esc_url( admin_url( 'post-new.php?post_type=adz_ad' ) ) . '" class="page-title-action">'
-		. esc_html__( 'Add an adz', 'adz-world' ) . '</a>';
+		. esc_html__( 'Add adz', 'adz-world' ) . '</a>';
 	echo '<hr class="wp-header-end">';
 
-	echo '<p class="description adz-int-intro">' . esc_html__( 'Adz you design and serve to your own audience. No network, no revenue share. An image and a link is a complete adz; the body is ordinary post content.', 'adz-world' ) . '</p>';
+	echo '<p class="description adz-int-intro">' . esc_html__( 'Adz you design and serve to your own audience. No network, no revenue share. An image and a link are one complete adzad; the body is ordinary post content.', 'adz-world' ) . '</p>';
 
 	if ( 0 === $total ) {
 		echo '<div class="notice notice-info inline"><p>'
-			. esc_html__( 'No internal adz yet. Add one, give it a size and a destination, then place it in a rotation.', 'adz-world' )
+			. esc_html__( 'No internal adz yet. Add adz, give one adzad a size and a destination, then place it in a rotation.', 'adz-world' )
 			. '</p></div>';
 		return;
 	}
@@ -606,7 +606,7 @@ function adzworld_internal_page() {
 	echo '<p class="adz-int-summary">';
 	printf(
 		/* translators: 1: adz ready to serve, 2: total adz. */
-		esc_html__( '%1$d of %2$d ready to serve. An adz is ready when it is published and has a destination.', 'adz-world' ),
+		esc_html__( '%1$d of %2$d ready to serve. One adzad is ready when it is published and has a destination.', 'adz-world' ),
 		absint( $ready ),
 		absint( $total )
 	);

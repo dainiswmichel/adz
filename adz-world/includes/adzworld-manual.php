@@ -325,7 +325,7 @@ function adzworld_manual_provider_rows() {
 			$stored = isset( $accounts[ $id ] ) && is_array( $accounts[ $id ] ) ? $accounts[ $id ] : array();
 			$note   = 'clickbank' === $id
 				? __( 'One vendor HopLink. The visitor’s words are not added to the URL.', 'adz-world' )
-				: __( 'Search link under a local ad that matches the visitor’s words. The link is not a rotation slot.', 'adz-world' );
+				: __( 'Search link under one local adzad that matches the visitor’s words. The link is not a rotation slot.', 'adz-world' );
 			$rows[] = array(
 				'label'  => (string) $network['label'],
 				'kind'   => __( 'Affiliate link', 'adz-world' ),
@@ -405,8 +405,8 @@ function adzworld_manual_render_setup() {
 	echo '<h2>' . esc_html__( 'Setup', 'adz-world' ) . '</h2>';
 	echo '<p>' . esc_html__( 'This manual reads the accounts saved on this site. A network section stays on the account step until those identifiers are saved. The rotation steps for that account appear after that.', 'adz-world' ) . '</p>';
 
-	adzworld_manual_open( $published > 0 ? 'is-done' : 'is-open', __( 'Publish a local ad', 'adz-world' ) );
-	echo '<p>' . esc_html__( 'One ad is one thing. The title names that thing, the editor content or featured image is the advertisement creative, and the excerpt supplies matching refinements. A draft is ignored.', 'adz-world' ) . '</p>';
+	adzworld_manual_open( $published > 0 ? 'is-done' : 'is-open', __( 'Publish one local adzad', 'adz-world' ) );
+	echo '<p>' . esc_html__( 'One post is one adzad. The title is its name. Visitors see the featured image and the editor body. The excerpt is used to match what a visitor typed, and visitors do not see it. A draft is not served.', 'adz-world' ) . '</p>';
 	if ( $published > 0 ) {
 		echo '<ul>';
 		foreach ( $ads as $ad ) {
@@ -416,7 +416,7 @@ function adzworld_manual_render_setup() {
 		}
 		echo '</ul>';
 	} else {
-		echo '<p><a class="button" href="' . esc_url( admin_url( 'post-new.php?post_type=adz_ad' ) ) . '">' . esc_html__( 'Add a local ad', 'adz-world' ) . '</a></p>';
+		echo '<p><a class="button" href="' . esc_url( admin_url( 'post-new.php?post_type=adz_ad' ) ) . '">' . esc_html__( 'Add adz', 'adz-world' ) . '</a></p>';
 		if ( $drafts > 0 ) {
 			echo '<p>' . esc_html__( 'Drafts exist. Publish one before it can occupy a slot.', 'adz-world' ) . '</p>';
 		}
@@ -425,7 +425,7 @@ function adzworld_manual_render_setup() {
 
 	$key = adzworld_manual_primary_rotation_key();
 	adzworld_manual_open( '' !== $key ? 'is-done' : 'is-open', __( 'Save a rotation', 'adz-world' ) );
-	echo '<p>' . esc_html__( 'The page names a rotation. The slot list stays in that saved rotation. Add the invitation hub and each published ad, then save. Post ids change from one site to the next, so a page that hard-codes them has to be rewritten on the next install.', 'adz-world' ) . '</p>';
+	echo '<p>' . esc_html__( 'The page names a rotation. The slot list stays in that saved rotation. Add the invitation hub and each published adzad, then save. Post ids change from one site to the next, so a page that hard-codes them has to be rewritten on the next install.', 'adz-world' ) . '</p>';
 	if ( '' !== $key && function_exists( 'adzworld_named_rotations' ) ) {
 		echo '<ul>';
 		foreach ( adzworld_named_rotations() as $rotation_key => $rotation ) {
@@ -463,7 +463,7 @@ function adzworld_manual_render_setup() {
 	echo '</section>';
 
 	adzworld_manual_open( 'is-open', __( 'What the visitor types', 'adz-world' ) );
-	echo '<p>' . esc_html__( 'The hub question is “What are you looking to buy?”. Visitors can enter as much useful detail as they need. A long entry gets a short category label while the remaining text stays attached as refinements. An ad whose title, creative, excerpt, or Ad Type matches that category and its refinements moves ahead. The hub stays first. An ad that is not in the slot list never appears.', 'adz-world' ) . '</p>';
+	echo '<p>' . esc_html__( 'The hub question is “What are you looking to buy?”. Visitors can enter as much useful detail as they need. A long entry gets a short category label while the remaining text stays attached as refinements. An adzad whose title, creative, excerpt, or Ad Type matches that category and its refinements moves ahead. The hub stays first. An adzad that is not in the slot list never appears.', 'adz-world' ) . '</p>';
 	echo '</section>';
 }
 
@@ -626,7 +626,7 @@ function adzworld_manual_render_affiliates() {
 		if ( 'clickbank' === $id ) {
 			echo '<p>' . esc_html__( 'The HopLink uses the saved account nickname and vendor nickname. The words a visitor types are not added to that URL.', 'adz-world' ) . '</p>';
 		} else {
-			echo '<p>' . esc_html__( 'A sponsored search link is drawn under a local ad that matches the words the visitor typed. The link is not a rotation slot. The matching ad has to be in the rotation.', 'adz-world' ) . '</p>';
+			echo '<p>' . esc_html__( 'A sponsored search link is drawn under one local adzad that matches the words the visitor typed. The link is not a rotation slot. The matching adzad has to be in the rotation.', 'adz-world' ) . '</p>';
 		}
 		echo '</section>';
 	}
@@ -765,9 +765,9 @@ function adzworld_manual_chapters() {
 	return array(
 		array(
 			'slug'    => 'publish-a-local-ad',
-			'title'   => __( 'Publish a local ad', 'adz-world' ),
-			'excerpt' => __( 'One ad is one thing. The image goes in the post body.', 'adz-world' ),
-			'content' => '<p>' . esc_html__( 'The title names the thing. The editor content or featured image is the advertisement creative, and the excerpt supplies matching refinements. A draft is ignored.', 'adz-world' ) . '</p><p><a href="' . esc_url( admin_url( 'post-new.php?post_type=adz_ad' ) ) . '">' . esc_html__( 'Add a local ad', 'adz-world' ) . '</a></p>',
+			'title'   => __( 'Publish one local adzad', 'adz-world' ),
+			'excerpt' => __( 'One post is one adzad. Visitors see the featured image and the editor body.', 'adz-world' ),
+			'content' => '<p>' . esc_html__( 'One post is one adzad. The title is its name. Visitors see the featured image and the editor body. The excerpt is used to match what a visitor typed, and visitors do not see it. A draft is not served.', 'adz-world' ) . '</p><p><a href="' . esc_url( admin_url( 'post-new.php?post_type=adz_ad' ) ) . '">' . esc_html__( 'Add adz', 'adz-world' ) . '</a></p>',
 		),
 		array(
 			'slug'    => 'save-a-rotation',

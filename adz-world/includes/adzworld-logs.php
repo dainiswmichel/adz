@@ -769,7 +769,7 @@ function adzworld_logs_page() {
 	echo '<p class="description">' . esc_html__( 'Each journey begins at the Michel Time Stamp of a reader’s first action. Adz are on the left, the reader on the right. Adz that readers only look at are never recorded.', 'adz-world' ) . '</p>';
 
 	if ( ! $query->have_posts() ) {
-		echo '<p class="adzworld-logs__empty">' . esc_html__( 'No journeys yet. A journey appears after a reader rates an adz, refines it, or chooses a category.', 'adz-world' ) . '</p>';
+		echo '<p class="adzworld-logs__empty">' . esc_html__( 'No journeys yet. A journey appears after a reader rates an adzad, refines it, or chooses a category.', 'adz-world' ) . '</p>';
 	} else {
 		echo '<form id="adzworld-logs-delete" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="adzworld_logs_delete">';
 		wp_nonce_field( 'adzworld_logs_delete', 'adzworld_logs_delete_nonce' );
@@ -902,7 +902,7 @@ function adzworld_logs_privacy_policy() {
 		return;
 	}
 
-	$content = '<p>' . esc_html__( 'Adz on this site record nothing about a reader who only looks at them. When a reader rates an adz, refines it, or chooses a category, the site starts a browser session named by the time of that first action and five random characters. It keeps a journey of those actions: which rotation and slot, which adz, the rating, and the words the reader entered. No IP address, name or email address is kept in it.', 'adz-world' ) . '</p>'
+	$content = '<p>' . esc_html__( 'Adz on this site record nothing about a reader who only looks at them. When a reader rates an adzad, refines it, or chooses a category, the site starts a browser session named by the time of that first action and five random characters. It keeps a journey of those actions: which rotation and slot, which adzad, the rating, and the words the reader entered. No IP address, name or email address is kept in it.', 'adz-world' ) . '</p>'
 		. '<p>' . esc_html__( 'A signed-in reader may choose on their profile page to keep adz requests with their profile. Only then are their preferences and journeys attached to their account. Journeys are deleted after the number of days the site owner sets.', 'adz-world' ) . '</p>';
 	wp_add_privacy_policy_content( ADZWORLD_NAME, wp_kses_post( $content ) );
 }

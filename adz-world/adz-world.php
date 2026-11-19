@@ -2,7 +2,7 @@
 /**
  * Plugin Name: adz-world
  * Description: Run your website like a TV station by requiring adz views in exchange for access to content.
- * Version: 1.0.9
+ * Version: 1.1.0
  * Author: dainismichel
  * Author URI: http://www.dainiswmichel.com
  * License: GPLv3
@@ -17,7 +17,7 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
-define( 'ADZWORLD_VERSION', '1.0.9' );
+define( 'ADZWORLD_VERSION', '1.1.0' );
 
 /**
  * Product name and public site.
@@ -140,8 +140,8 @@ function adzworld_enqueue_scripts() {
 		return;
 	}
 
-	wp_enqueue_style( 'adz_custombox', plugin_dir_url( __FILE__ ) . 'css/overlay.css', array(), '1.0.9' );
-	wp_enqueue_style( 'adz_css', plugin_dir_url( __FILE__ ) . 'css/styles.css', array(), '1.0.9' );
+	wp_enqueue_style( 'adz_custombox', plugin_dir_url( __FILE__ ) . 'css/overlay.css', array(), ADZWORLD_VERSION );
+	wp_enqueue_style( 'adz_css', plugin_dir_url( __FILE__ ) . 'css/styles.css', array(), ADZWORLD_VERSION );
 	wp_enqueue_script( 'adzworld-legacy' );
 }//end adzworld_enqueue_scripts()
 
@@ -188,7 +188,7 @@ function adzworld_enqueue_scripts_admin() {
 		return;
 	}
 
-	wp_enqueue_script( 'adz_admin_script', plugin_dir_url( __FILE__ ) . 'js/plugin.js', array( 'jquery' ), '1.0.9', true );
+	wp_enqueue_script( 'adz_admin_script', plugin_dir_url( __FILE__ ) . 'js/plugin.js', array( 'jquery' ), ADZWORLD_VERSION, true );
 	wp_localize_script(
 		'adz_admin_script',
 		'adzworldAdmin',

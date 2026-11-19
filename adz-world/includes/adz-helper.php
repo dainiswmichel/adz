@@ -281,7 +281,7 @@ function adzworld_get_network_id( $adz_ids ) {
 function adzworld_local_ad_response( $post_id ) {
 	$post = get_post( absint( $post_id ) );
 	if ( ! $post || 'adz_ad' !== $post->post_type || 'publish' !== $post->post_status || '' !== $post->post_password ) {
-		return new WP_Error( 'adzworld_ad_unavailable', __( 'The selected local ad is not publicly available.', 'adz-world' ) );
+		return new WP_Error( 'adzworld_ad_unavailable', __( 'The selected local adzad is not publicly available.', 'adz-world' ) );
 	}
 	return array(
 		'response' => array( 'code' => 200 ),

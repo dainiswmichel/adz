@@ -26,12 +26,12 @@ function adzworld_ad_post_type_pub() {
 		'attributes'            => __( 'adz attributes', 'adz-world' ),
 		'parent_item_colon'     => __( 'Parent Item:', 'adz-world' ),
 		'all_items'             => __( 'All adz', 'adz-world' ),
-		'add_new_item'          => __( 'Add new adz', 'adz-world' ),
-		'add_new'               => __( 'Add new adz', 'adz-world' ),
-		'new_item'              => __( 'New adz', 'adz-world' ),
-		'edit_item'             => __( 'Edit adz', 'adz-world' ),
-		'update_item'           => __( 'Update adz', 'adz-world' ),
-		'view_item'             => __( 'View adz', 'adz-world' ),
+		'add_new_item'          => __( 'Add adz', 'adz-world' ),
+		'add_new'               => __( 'Add adz', 'adz-world' ),
+		'new_item'              => __( 'New adzad', 'adz-world' ),
+		'edit_item'             => __( 'Edit adzad', 'adz-world' ),
+		'update_item'           => __( 'Update adzad', 'adz-world' ),
+		'view_item'             => __( 'View adzad', 'adz-world' ),
 		'view_items'            => __( 'View adz', 'adz-world' ),
 		'search_items'          => sprintf(
 			/* translators: %s: product name. */
@@ -45,7 +45,7 @@ function adzworld_ad_post_type_pub() {
 		'remove_featured_image' => __( 'Remove featured image', 'adz-world' ),
 		'use_featured_image'    => __( 'Use as featured image', 'adz-world' ),
 		'insert_into_item'      => __( 'Insert into item', 'adz-world' ),
-		'uploaded_to_this_item' => __( 'Uploaded to this adz', 'adz-world' ),
+		'uploaded_to_this_item' => __( 'Uploaded to this adzad', 'adz-world' ),
 		'items_list'            => sprintf(
 			/* translators: %s: product name. */
 			__( '%s list', 'adz-world' ),
@@ -523,7 +523,7 @@ function adzworld_template_setting() {
 		}
 	}
 
-	echo "</select> <span class='loading_data adzworld-is-hidden'>Please Wait While its Loading...</span>";
+	echo "</select> <span class='loading_data adzworld-is-hidden'>Please wait while it is loading.</span>";
 	echo '<br><label>Enter Header Text here.</label><br>';
 	echo '<textarea name="header_text" id="header_text"></textarea>';
 	echo '<br><label>Select Text Alignment For Header.</label><br>';

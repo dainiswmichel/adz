@@ -17,7 +17,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 function adzworld_desk_tabs() {
 	return array(
 		'dashboard'  => __( 'Dashboard', 'adz-world' ),
-		'manual'     => __( 'Manual', 'adz-world' ),
 		'affiliates' => __( 'Get Paid', 'adz-world' ),
 		'internal'   => __( 'Internal Adz', 'adz-world' ),
 		'rotation'   => __( 'Rotation', 'adz-world' ),
@@ -25,6 +24,7 @@ function adzworld_desk_tabs() {
 		'earnings'   => __( 'Earnings', 'adz-world' ),
 		'templates'  => __( 'Templates', 'adz-world' ),
 		'starter'    => __( 'Starter packs', 'adz-world' ),
+		'manual'     => __( 'Interactive Documentation', 'adz-world' ),
 	);
 }
 
@@ -175,9 +175,9 @@ function adzworld_desk_dashboard() {
 	$earnings    = get_option( 'adzworld_earnings_connection', array() );
 	$cards       = array(
 		array(
-			'label' => __( 'Setup manual', 'adz-world' ),
+			'label' => __( 'Interactive Documentation', 'adz-world' ),
 			'value' => (string) adzworld_enabled_network_count(),
-			'text'  => __( 'Direct network accounts enabled. A network section of the manual fills in after that account is saved.', 'adz-world' ),
+			'text'  => __( 'Direct network accounts enabled. Provider instructions appear after an account is saved.', 'adz-world' ),
 			'tab'   => 'manual',
 		),
 		array(

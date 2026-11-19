@@ -551,7 +551,7 @@ function adzworld_admin_rotation_slot_row( $index, $slot, $choices, $form_id, $r
 		. '" value="' . esc_attr( $response['text'] ) . '" placeholder="' . esc_attr( adzworld_default_response_message() ) . '"></label></div>';
 	echo '<div class="adzworld-admin-slot__preview" data-adzworld-slot-preview><div data-adzworld-slot-preview-body>';
 	echo wp_kses_post( adzworld_admin_rotation_slot_preview( $slot ) );
-	echo '</div><button type="button" class="button" data-adzworld-refresh-slot>' . esc_html__( 'Refresh this adz preview', 'adz-world' ) . '</button><span class="spinner" data-adzworld-slot-spinner></span></div></article>';
+	echo '</div><button type="button" class="button" data-adzworld-refresh-slot>' . esc_html__( 'Refresh this adzad preview', 'adz-world' ) . '</button><span class="spinner" data-adzworld-slot-spinner></span></div></article>';
 }
 
 /**
@@ -923,7 +923,7 @@ function adzworld_rotation_admin_assets() {
 			'maxSlots' => ADZWORLD_ROTATION_MAX_SLOTS,
 			'labels'   => array(
 				'loading' => __( 'Refreshing…', 'adz-world' ),
-				'refresh' => __( 'Refresh this adz preview', 'adz-world' ),
+				'refresh' => __( 'Refresh this adzad preview', 'adz-world' ),
 				'failed'  => __( 'The preview could not be refreshed.', 'adz-world' ),
 			),
 		)
