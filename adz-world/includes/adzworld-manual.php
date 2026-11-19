@@ -402,30 +402,18 @@ function adzworld_manual_render_setup() {
 		);
 	}
 
-	echo '<h2>' . esc_html__( 'Setup', 'adz-world' ) . '</h2>';
-	echo '<p>' . esc_html__( 'This manual reads the accounts saved on this site. A network section stays on the account step until those identifiers are saved. The rotation steps for that account appear after that.', 'adz-world' ) . '</p>';
-
-	adzworld_manual_open( $published > 0 ? 'is-done' : 'is-open', __( 'Publish one local adzad', 'adz-world' ) );
-	echo '<p>' . esc_html__( 'One post is one adzad. The title is its name. Visitors see the featured image and the editor body. The excerpt is used to match what a visitor typed, and visitors do not see it. A draft is not served.', 'adz-world' ) . '</p>';
-	if ( $published > 0 ) {
-		echo '<ul>';
-		foreach ( $ads as $ad ) {
-			if ( $ad instanceof WP_Post ) {
-				echo '<li>' . esc_html( get_the_title( $ad ) ) . '</li>';
-			}
-		}
-		echo '</ul>';
-	} else {
-		echo '<p><a class="button" href="' . esc_url( admin_url( 'post-new.php?post_type=adz_ad' ) ) . '">' . esc_html__( 'Add adz', 'adz-world' ) . '</a></p>';
-		if ( $drafts > 0 ) {
-			echo '<p>' . esc_html__( 'Drafts exist. Publish one before it can occupy a slot.', 'adz-world' ) . '</p>';
-		}
-	}
-	echo '</section>';
+	echo '<h2>' . esc_html__( 'Start here', 'adz-world' ) . '</h2>';
+	echo '<p>' . esc_html__( 'A rotation is a name, a display type, and a list of slots. A page shows that rotation with its shortcode. These are three ways to use one:', 'adz-world' ) . '</p>';
+	echo '<ul>';
+	echo '<li>' . esc_html__( 'Your own adz in one rotation, drawn as a card in an article.', 'adz-world' ) . '</li>';
+	echo '<li>' . esc_html__( 'A provider advertisement, then one of your rotations, then that advertisement again. The example form further down saves this one.', 'adz-world' ) . '</li>';
+	echo '<li>' . esc_html__( 'An affiliate link under one local adzad that matches the words a visitor typed. That link is not a slot.', 'adz-world' ) . '</li>';
+	echo '</ul>';
 
 	$key = adzworld_manual_primary_rotation_key();
 	adzworld_manual_open( '' !== $key ? 'is-done' : 'is-open', __( 'Save a rotation', 'adz-world' ) );
-	echo '<p>' . esc_html__( 'The page names a rotation. The slot list stays in that saved rotation. Add the invitation hub and each published adzad, then save. Post ids change from one site to the next, so a page that hard-codes them has to be rewritten on the next install.', 'adz-world' ) . '</p>';
+	echo '<p>' . esc_html__( 'Open Rotation. Name the rotation, choose its display type, and add the slots in the order visitors should meet them. A slot can be the invitation, one of your adz, a provider advertisement, or another rotation. Save.', 'adz-world' ) . '</p>';
+	echo '<p>' . esc_html__( 'The display type is how that rotation is drawn on the page. Single shows one slot each time the page is viewed. A carousel shows the slot in front and hides the others, so a provider advertisement that must stay visible belongs in Single. The menu does not block a combination.', 'adz-world' ) . '</p>';
 	if ( '' !== $key && function_exists( 'adzworld_named_rotations' ) ) {
 		echo '<ul>';
 		foreach ( adzworld_named_rotations() as $rotation_key => $rotation ) {
@@ -444,7 +432,7 @@ function adzworld_manual_render_setup() {
 	if ( '' === $key ) {
 		echo '<p>' . esc_html__( 'The key main in that example is not saved yet. Save the rotation first, then use its key.', 'adz-world' ) . '</p>';
 	}
-	echo '<p>' . esc_html__( 'Display, controls, and size are fields on that rotation. A carousel repeats. Single advances one slot on each page view and then repeats. Repeating the same slot in the list serves that slot again.', 'adz-world' ) . '</p>';
+	echo '<p>' . esc_html__( 'For the article card, save the rotation with the display type In-article card, then paste its shortcode into the page. Controls and size are the other two fields on that rotation. Size is empty unless the slot must stay at one standard creative size.', 'adz-world' ) . '</p>';
 	if ( $pages ) {
 		echo '<ul>';
 		foreach ( $pages as $post ) {
@@ -463,7 +451,25 @@ function adzworld_manual_render_setup() {
 	echo '</section>';
 
 	adzworld_manual_open( 'is-open', __( 'What the visitor types', 'adz-world' ) );
-	echo '<p>' . esc_html__( 'The hub question is “What are you looking to buy?”. Visitors can enter as much useful detail as they need. A long entry gets a short category label while the remaining text stays attached as refinements. An adzad whose title, creative, excerpt, or Ad Type matches that category and its refinements moves ahead. The hub stays first. An adzad that is not in the slot list never appears.', 'adz-world' ) . '</p>';
+	echo '<p>' . esc_html__( 'Put the invitation in the first slot when visitors should say what they are looking for. The question is “What are you looking to buy?”. A long answer keeps a short category, and the rest stays attached as refinements. An adzad already in the rotation moves ahead when its title, body, excerpt, or Ad Type matches. An adzad that is not in a slot is not shown.', 'adz-world' ) . '</p>';
+	echo '</section>';
+
+	adzworld_manual_open( $published > 0 ? 'is-done' : 'is-open', __( 'Add your own adz', 'adz-world' ) );
+	echo '<p>' . esc_html__( 'Your own adz are one kind of slot. A rotation can be saved with none. One local adzad is one post: the title is its name, visitors see the featured image and the editor body, and the excerpt is used only to match what a visitor typed. Add as many as that rotation needs, and publish each one before a slot can use it.', 'adz-world' ) . '</p>';
+	if ( $published > 0 ) {
+		echo '<ul>';
+		foreach ( $ads as $ad ) {
+			if ( $ad instanceof WP_Post ) {
+				echo '<li>' . esc_html( get_the_title( $ad ) ) . '</li>';
+			}
+		}
+		echo '</ul>';
+	} else {
+		echo '<p><a class="button" href="' . esc_url( admin_url( 'post-new.php?post_type=adz_ad' ) ) . '">' . esc_html__( 'Add adz', 'adz-world' ) . '</a></p>';
+		if ( $drafts > 0 ) {
+			echo '<p>' . esc_html__( 'Drafts exist. Publish one before a slot can use it.', 'adz-world' ) . '</p>';
+		}
+	}
 	echo '</section>';
 }
 
@@ -477,6 +483,7 @@ function adzworld_manual_render_networks() {
 		return;
 	}
 	echo '<h2>' . esc_html__( 'Direct ad networks', 'adz-world' ) . '</h2>';
+	echo '<p>' . esc_html__( 'Use a direct ad network when a slot should show an advertisement from an account you own, such as Google AdSense. The account step stays closed until those identifiers are saved. After that, add the provider slot on Rotation.', 'adz-world' ) . '</p>';
 	$settings = adzworld_network_settings();
 	foreach ( adzworld_network_catalog() as $id => $network ) {
 		$row    = isset( $settings[ $id ] ) && is_array( $settings[ $id ] ) ? $settings[ $id ] : array();
@@ -588,6 +595,7 @@ function adzworld_manual_render_affiliates() {
 		return;
 	}
 	echo '<h2>' . esc_html__( 'Affiliate programs', 'adz-world' ) . '</h2>';
+	echo '<p>' . esc_html__( 'Use an affiliate program when a local adzad should carry a sponsored link for the words a visitor typed. The link is drawn under that adzad. It is not a slot in the rotation.', 'adz-world' ) . '</p>';
 	$accounts = adzworld_affiliate_accounts();
 	foreach ( adzworld_affiliate_networks() as $id => $network ) {
 		$account = isset( $accounts[ $id ] ) && is_array( $accounts[ $id ] ) ? $accounts[ $id ] : array();
@@ -845,8 +853,8 @@ function adzworld_manual_render_chapters() {
 			'posts_per_page' => 20,
 		)
 	);
-	echo '<h2>' . esc_html__( 'Chapters', 'adz-world' ) . '</h2>';
-	echo '<p>' . esc_html__( 'These chapters are links and explanations. They do not rebuild themselves.', 'adz-world' ) . '</p><ul class="adzworld-manual-chapters">';
+	echo '<h2>' . esc_html__( 'Notes', 'adz-world' ) . '</h2>';
+	echo '<p>' . esc_html__( 'Longer notes saved on this site. Each one is a private post. Editing a note here does not change the steps above.', 'adz-world' ) . '</p><ul class="adzworld-manual-chapters">';
 	foreach ( $posts as $post ) {
 		if ( ! $post instanceof WP_Post ) {
 			continue;
@@ -1061,13 +1069,13 @@ function adzworld_manual_render_builder() {
 		$rotation = (string) array_key_first( $named );
 	}
 	echo '<section class="adzworld-manual-builder" id="adzworld-build">';
-	echo '<h2>' . esc_html__( 'Build a display', 'adz-world' ) . '</h2>';
-	echo '<p>' . esc_html__( 'Pick the display. Slot 1 is the provider unit. Slot 2 is a saved rotation of local offers. The pattern repeats 1, 2, 1, 2 and is saved as its own rotation. The page shortcode names that rotation.', 'adz-world' ) . '</p>';
+	echo '<h2>' . esc_html__( 'Example: a provider advertisement, then your rotation', 'adz-world' ) . '</h2>';
+	echo '<p>' . esc_html__( 'This is the second use case from the top of the page. Display type is how this rotation is drawn. Slot 1 is one advertisement from a provider. Slot 2 is one rotation of your adz. Pairs is how many times those two alternate. The button saves that rotation and shows its shortcode. Change its slots afterward on Rotation. Choose Single when that provider advertisement must stay visible, because a carousel hides every slot except the one in front.', 'adz-world' ) . '</p>';
 	echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 	echo '<input type="hidden" name="action" value="adzworld_manual_build">';
 	wp_nonce_field( 'adzworld_manual_build' );
 	echo '<table class="form-table"><tbody>';
-	echo '<tr><th scope="row"><label for="adzworld-build-display">' . esc_html__( 'Display', 'adz-world' ) . '</label></th><td><select id="adzworld-build-display" name="display">';
+	echo '<tr><th scope="row"><label for="adzworld-build-display">' . esc_html__( 'Display type', 'adz-world' ) . '</label></th><td><select id="adzworld-build-display" name="display">';
 	foreach ( $displays as $name => $label ) {
 		echo '<option value="' . esc_attr( $name ) . '"' . selected( $display, $name, false ) . '>' . esc_html( $label ) . '</option>';
 	}
@@ -1147,13 +1155,13 @@ function adzworld_manual_page() {
 		wp_die( esc_html__( 'Administrator permission is required.', 'adz-world' ), '', array( 'response' => 403 ) );
 	}
 	echo '<div class="adzworld-manual">';
-	adzworld_manual_render_builder();
-	adzworld_manual_render_chapters();
-	adzworld_manual_render_providers();
 	adzworld_manual_render_setup();
 	adzworld_manual_render_networks();
 	adzworld_manual_render_affiliates();
 	adzworld_manual_render_managed();
+	adzworld_manual_render_builder();
+	adzworld_manual_render_providers();
 	adzworld_manual_render_parameters();
+	adzworld_manual_render_chapters();
 	echo '</div>';
 }
