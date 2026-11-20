@@ -188,7 +188,8 @@ function adzworld_enqueue_scripts_admin() {
 		return;
 	}
 
-	wp_enqueue_script( 'adz_admin_script', plugin_dir_url( __FILE__ ) . 'js/plugin.js', array( 'jquery' ), ADZWORLD_VERSION, true );
+	$adzworld_admin_script = __DIR__ . '/js/plugin.js';
+	wp_enqueue_script( 'adz_admin_script', plugin_dir_url( __FILE__ ) . 'js/plugin.js', array( 'jquery' ), (string) filemtime( $adzworld_admin_script ), true );
 	wp_localize_script(
 		'adz_admin_script',
 		'adzworldAdmin',

@@ -505,34 +505,137 @@ function adzworld_template_setting() {
 		echo '<div class="notice ' . ( is_wp_error( $result ) ? 'notice-error' : 'notice-success' ) . '"><p>'
 			. esc_html( is_wp_error( $result ) ? $result->get_error_message() : __( 'Template settings saved.', 'adz-world' ) ) . '</p></div>';
 	}
-	echo '<form method="post" action="">';
-	wp_nonce_field( 'adzworld_template_save', 'adzworld_template_nonce' );
-	echo '<h3>' . esc_html__( 'Edit your adz template header and footer text here.', 'adz-world' ) . '</h3>';
-	echo '<label>' . esc_html__( 'Select adz template', 'adz-world' ) . '</label><br>';
-
-	echo "<select name='adz_template' id='adz_template_list'>";
-	echo "<option value=''>Select Template</option>";
-	$dir       = ADZ_WORLD . 'adz-templates';
-	$templates = scandir( $dir, 1 );
-	if ( ! empty( $templates ) ) {
-		foreach ( $templates as $template ) {
-			$ext = pathinfo( $template, PATHINFO_EXTENSION );
-			if ( 'php' === $ext ) {
-				echo "<option value='" . esc_attr( $template ) . "'>" . esc_html( $template ) . '</option>';
-			}
+	$templates = adzworld_available_templates();
+	$selected  = $templates ? $templates[0] : '';
+	$draft     = isset( $_POST['adzworld_template_nonce'] ) && is_string( $_POST['adzworld_template_nonce'] )
+		? sanitize_text_field( wp_unslash( $_POST['adzworld_template_nonce'] ) ) : '';
+	$use_post  = wp_verify_nonce( $draft, 'adzworld_template_save' );
+	if ( $use_post && isset( $_POST['adz_template'] ) && is_string( $_POST['adz_template'] ) && in_array( sanitize_text_field( wp_unslash( $_POST['adz_template'] ) ), $templates, true ) ) {
+		$selected = sanitize_text_field( wp_unslash( $_POST['adz_template'] ) );
+	}
+	$stored   = adzworld_template_settings( '' !== $selected ? get_option( 'template_' . $selected ) : array() );
+	$settings = wp_parse_args(
+		is_array( $stored ) ? $stored : array(),
+		array(
+			'header_text'  => '',
+			'footer_text'  => '',
+			'header_style' => 'center',
+			'footer_style' => 'center',
+		)
+	);
+	foreach ( array( 'header_style', 'footer_style' ) as $style_key ) {
+		$settings[ $style_key ] = in_array( $settings[ $style_key ], array( 'left', 'right', 'center' ), true ) ? $settings[ $style_key ] : 'center';
+	}
+	$saved = $settings;
+	if ( $use_post ) {
+		$settings['header_text']  = isset( $_POST['header_text'] ) && is_string( $_POST['header_text'] ) ? sanitize_textarea_field( wp_unslash( $_POST['header_text'] ) ) : $settings['header_text'];
+		$settings['footer_text']  = isset( $_POST['footer_text'] ) && is_string( $_POST['footer_text'] ) ? sanitize_textarea_field( wp_unslash( $_POST['footer_text'] ) ) : $settings['footer_text'];
+		$settings['header_style'] = isset( $_POST['header_style'] ) && is_string( $_POST['header_style'] ) ? sanitize_key( wp_unslash( $_POST['header_style'] ) ) : $settings['header_style'];
+		$settings['footer_style'] = isset( $_POST['footer_style'] ) && is_string( $_POST['footer_style'] ) ? sanitize_key( wp_unslash( $_POST['footer_style'] ) ) : $settings['footer_style'];
+	}
+	foreach ( array( 'header_style', 'footer_style' ) as $style_key ) {
+		$settings[ $style_key ] = in_array( $settings[ $style_key ], array( 'left', 'right', 'center' ), true ) ? $settings[ $style_key ] : 'center';
+	}
+	$align_labels  = array(
+		'left'   => __( 'Left', 'adz-world' ),
+		'center' => __( 'Center', 'adz-world' ),
+		'right'  => __( 'Right', 'adz-world' ),
+	);
+	$format_labels = array();
+	foreach ( adzworld_rotation_display_formats() as $format ) {
+		if ( isset( $format['label'] ) && is_string( $format['label'] ) ) {
+			$format_labels[] = $format['label'];
 		}
 	}
+	$option_key = '' !== $selected ? 'template_' . $selected : '';
+	$now_rows   = array(
+		array(
+			'key'   => 'adz_template',
+			'label' => __( 'Template file', 'adz-world' ),
+			'value' => $selected,
+		),
+		array(
+			'key'   => 'option',
+			'label' => __( 'Option key', 'adz-world' ),
+			'value' => $option_key,
+		),
+		array(
+			'key'   => 'header_text',
+			'label' => __( 'Header line', 'adz-world' ),
+			'value' => '' !== $saved['header_text'] ? $saved['header_text'] : __( 'None', 'adz-world' ),
+		),
+		array(
+			'key'   => 'header_style',
+			'label' => __( 'Header alignment', 'adz-world' ),
+			'value' => $saved['header_style'],
+		),
+		array(
+			'key'   => 'footer_text',
+			'label' => __( 'Footer line', 'adz-world' ),
+			'value' => '' !== $saved['footer_text'] ? $saved['footer_text'] : __( 'None', 'adz-world' ),
+		),
+		array(
+			'key'   => 'footer_style',
+			'label' => __( 'Footer alignment', 'adz-world' ),
+			'value' => $saved['footer_style'],
+		),
+	);
 
-	echo "</select> <span class='loading_data adzworld-is-hidden'>Please wait while it is loading.</span>";
-	echo '<br><label>Enter Header Text here.</label><br>';
-	echo '<textarea name="header_text" id="header_text"></textarea>';
-	echo '<br><label>Select Text Alignment For Header.</label><br>';
-	echo '<input type="radio" name="header_style" value="right" id="header_right"> Right  <input type="radio" name="header_style" value="left" id="header_left"> Left  <input type="radio" name="header_style" value="center" id="header_center" checked> Center';
-	echo '<br><label>Enter Footer Text here.</label><br>';
-	echo '<textarea name="footer_text" id="footer_text"></textarea>';
-	echo '<br><label>Select Text Alignment For Footer.</label><br>';
-	echo '<input type="radio" name="footer_style" value="right" id="footer_right"> Right  <input type="radio" name="footer_style" value="left" id="footer_left"> Left  <input type="radio" name="footer_style" value="center" id="footer_center" checked> Center';
-	submit_button();
+	echo '<form method="post" action="" class="adzworld-template-lines">';
+	wp_nonce_field( 'adzworld_template_save', 'adzworld_template_nonce' );
+	echo '<h2>' . esc_html__( 'Legacy template lines', 'adz-world' ) . '</h2>';
+	echo '<p>' . esc_html__( 'The table is the stored option. The fields below start from that copy. A rejected save keeps the table on the stored copy and leaves the submitted text in the fields.', 'adz-world' ) . '</p>';
+	echo '<div class="adzworld-template-lines__panel">';
+	echo '<h3>' . esc_html__( 'Saved now', 'adz-world' ) . '</h3>';
+	echo '<table class="widefat striped adzworld-template-lines__now"><thead><tr><th scope="col">' . esc_html__( 'Parameter', 'adz-world' ) . '</th><th scope="col">' . esc_html__( 'Saved value', 'adz-world' ) . '</th></tr></thead><tbody>';
+	foreach ( $now_rows as $now_row ) {
+		echo '<tr><th scope="row"><code>' . esc_html( $now_row['key'] ) . '</code><span class="adzworld-template-lines__name">' . esc_html( $now_row['label'] ) . '</span></th>';
+		echo '<td data-adzworld-saved="' . esc_attr( $now_row['key'] ) . '" data-empty-label="' . esc_attr__( 'None', 'adz-world' ) . '">' . esc_html( $now_row['value'] ) . '</td></tr>';
+	}
+	echo '</tbody></table>';
+	echo '<h3>' . esc_html__( 'Where a visitor sees them', 'adz-world' ) . '</h3>';
+	echo '<ol class="adzworld-template-lines__outcome">';
+	echo '<li>' . esc_html__( 'Save template lines writes header_text, footer_text, header_style, and footer_style into the option key above.', 'adz-world' ) . '</li>';
+	echo '<li>' . esc_html__( 'adz-templates/template1.php reads that option when the old advertising view runs.', 'adz-world' ) . '</li>';
+	echo '<li>' . esc_html__( 'Full page, display type thru_page: the header line is above the advertisement and the footer line is below it. The countdown follows each line.', 'adz-world' ) . '</li>';
+	echo '<li>' . esc_html__( 'Popup: the same file prints the same two lines in the popup.', 'adz-world' ) . '</li>';
+	echo '<li>' . esc_html__( 'The [Adzworld] shortcode sends adz_template, which defaults to template1.php. That request loads the template file, so these lines appear there too.', 'adz-world' ) . '</li>';
+	echo '</ol>';
+	echo '<p class="adzworld-template-lines__formats">' . esc_html__( 'Rotation display formats do not read these lines:', 'adz-world' ) . ' ' . esc_html( implode( ', ', $format_labels ) ) . '.</p>';
+	echo '</div>';
+	echo '<h3>' . esc_html__( 'Preview', 'adz-world' ) . '</h3>';
+	echo '<p>' . esc_html__( 'The number of seconds is filled in when the advertisement runs.', 'adz-world' ) . '</p>';
+	echo '<div class="adzworld-template-lines__preview">';
+	echo '<p class="adzworld-template-lines__sample adzworld-align-' . esc_attr( $settings['header_style'] ) . '" data-adzworld-template-header-row>';
+	echo '<span data-adzworld-template-header data-empty-label="' . esc_attr__( 'No header line', 'adz-world' ) . '">' . esc_html( '' !== $settings['header_text'] ? $settings['header_text'] : __( 'No header line', 'adz-world' ) ) . '</span> ';
+	echo '<span>' . esc_html__( 'seconds', 'adz-world' ) . '</span></p>';
+	echo '<p class="adzworld-template-lines__ad">' . esc_html__( 'Advertisement', 'adz-world' ) . '</p>';
+	echo '<p class="adzworld-template-lines__sample adzworld-align-' . esc_attr( $settings['footer_style'] ) . '" data-adzworld-template-footer-row>';
+	echo '<span data-adzworld-template-footer data-empty-label="' . esc_attr__( 'No footer line', 'adz-world' ) . '">' . esc_html( '' !== $settings['footer_text'] ? $settings['footer_text'] : __( 'No footer line', 'adz-world' ) ) . '</span> ';
+	echo '<span>' . esc_html__( 'seconds', 'adz-world' ) . '</span></p>';
+	echo '</div>';
+	echo '<h3>' . esc_html__( 'Change the saved lines', 'adz-world' ) . '</h3>';
+	echo '<p><label for="adz_template_list">' . esc_html__( 'Template file', 'adz-world' ) . '</label><br>';
+	echo '<select name="adz_template" id="adz_template_list">';
+	foreach ( $templates as $template ) {
+		echo '<option value="' . esc_attr( $template ) . '" ' . selected( $selected, $template, false ) . '>' . esc_html( $template ) . '</option>';
+	}
+	echo '</select> <span class="loading_data adzworld-is-hidden">' . esc_html__( 'Loading the saved lines.', 'adz-world' ) . '</span></p>';
+	echo '<p><label for="header_text">' . esc_html__( 'Header line', 'adz-world' ) . ' <code>header_text</code></label><br>';
+	echo '<textarea name="header_text" id="header_text" rows="3">' . esc_textarea( $settings['header_text'] ) . '</textarea></p>';
+	echo '<fieldset class="adzworld-template-lines__align"><legend>' . esc_html__( 'Header alignment', 'adz-world' ) . ' <code>header_style</code></legend>';
+	foreach ( $align_labels as $align => $align_label ) {
+		echo '<label><input type="radio" name="header_style" value="' . esc_attr( $align ) . '" id="header_' . esc_attr( $align ) . '" ' . checked( $settings['header_style'], $align, false ) . '> ' . esc_html( $align_label ) . '</label>';
+	}
+	echo '</fieldset>';
+	echo '<p><label for="footer_text">' . esc_html__( 'Footer line', 'adz-world' ) . ' <code>footer_text</code></label><br>';
+	echo '<textarea name="footer_text" id="footer_text" rows="3">' . esc_textarea( $settings['footer_text'] ) . '</textarea></p>';
+	echo '<fieldset class="adzworld-template-lines__align"><legend>' . esc_html__( 'Footer alignment', 'adz-world' ) . ' <code>footer_style</code></legend>';
+	foreach ( $align_labels as $align => $align_label ) {
+		echo '<label><input type="radio" name="footer_style" value="' . esc_attr( $align ) . '" id="footer_' . esc_attr( $align ) . '" ' . checked( $settings['footer_style'], $align, false ) . '> ' . esc_html( $align_label ) . '</label>';
+	}
+	echo '</fieldset>';
+	submit_button( __( 'Save template lines', 'adz-world' ) );
 	echo '</form>';
 }
 

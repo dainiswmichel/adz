@@ -1772,6 +1772,91 @@ body.wp-admin .adzworld-paid-card .adzworld-connection-card select {
 	margin-top: 8px;
 }
 
+.adzworld-template-lines {
+	max-width: 52rem;
+}
+
+.adzworld-template-lines h3 {
+	margin: 1.2em 0 0.4em;
+}
+
+.adzworld-template-lines__panel {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	box-sizing: border-box;
+	margin: 12px 0 16px;
+	padding: 4px 16px 12px;
+}
+
+.adzworld-template-lines__now th {
+	width: 14rem;
+}
+
+.adzworld-template-lines__name {
+	color: #646970;
+	display: block;
+	font-weight: 400;
+}
+
+.adzworld-template-lines__outcome {
+	margin-left: 1.2em;
+}
+
+.adzworld-template-lines__formats {
+	margin-bottom: 0;
+}
+
+.adzworld-template-lines textarea {
+	box-sizing: border-box;
+	max-width: 40rem;
+	width: 100%;
+}
+
+.adzworld-template-lines__preview {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	margin: 12px 0 16px;
+	max-width: 40rem;
+	padding: 0 16px;
+}
+
+.adzworld-template-lines__sample {
+	margin: 0;
+	padding: 10px 0;
+}
+
+.adzworld-template-lines__sample[data-adzworld-template-header-row] {
+	border-bottom: 1px solid #dcdcde;
+}
+
+.adzworld-template-lines__sample[data-adzworld-template-footer-row] {
+	border-top: 1px solid #dcdcde;
+}
+
+.adzworld-template-lines__ad {
+	background: #f6f7f7;
+	margin: 8px 0;
+	padding: 16px;
+	text-align: center;
+}
+
+.adzworld-template-lines__sample.adzworld-align-left {
+	text-align: left;
+}
+
+.adzworld-template-lines__sample.adzworld-align-center {
+	text-align: center;
+}
+
+.adzworld-template-lines__sample.adzworld-align-right {
+	text-align: right;
+}
+
+.adzworld-template-lines__align label {
+	margin-right: 12px;
+}
+
 .adzworld-bands__table {
 	max-width: 36rem;
 }
