@@ -527,6 +527,28 @@
 			return;
 		}
 
+		rotation.querySelectorAll( '[data-adzworld-countdown]' ).forEach(
+			function ( node ) {
+				var remaining = Number( node.getAttribute( 'data-adzworld-countdown' ) ) || 0;
+				var output = node.querySelector( '[data-adzworld-countdown-num]' );
+				var timer;
+
+				if ( ! output || remaining < 1 ) {
+					return;
+				}
+				timer = window.setInterval(
+					function () {
+						remaining -= 1;
+						if ( remaining < 0 ) {
+							window.clearInterval( timer );
+							return;
+						}
+						output.textContent = String( remaining );
+					},
+					1000
+				);
+			}
+		);
 		rotation.querySelectorAll( '.adzworld-results' ).forEach( prepareResults );
 		rotation.classList.add( 'adzworld-enhanced' );
 

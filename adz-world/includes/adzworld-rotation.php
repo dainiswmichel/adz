@@ -172,21 +172,44 @@ function adzworld_rotation_slot_choices() {
  * @return array{display:string,controls:string,size:string}
  */
 function adzworld_rotation_presentation( $rotation ) {
-	$rotation = is_array( $rotation ) ? $rotation : array();
-	$formats  = adzworld_rotation_display_formats();
-	$sizes    = adzworld_rotation_size_presets();
-	$display  = isset( $rotation['display'] ) && is_string( $rotation['display'] ) && isset( $formats[ $rotation['display'] ] )
+	$rotation  = is_array( $rotation ) ? $rotation : array();
+	$formats   = adzworld_rotation_display_formats();
+	$sizes     = adzworld_rotation_size_presets();
+	$display   = isset( $rotation['display'] ) && is_string( $rotation['display'] ) && isset( $formats[ $rotation['display'] ] )
 		? $rotation['display'] : 'flat';
-	$controls = isset( $rotation['controls'] ) && is_string( $rotation['controls'] )
+	$controls  = isset( $rotation['controls'] ) && is_string( $rotation['controls'] )
 		&& in_array( $rotation['controls'], array( 'arrows', 'dots', 'both', 'none' ), true )
 		? $rotation['controls'] : 'both';
-	$size     = isset( $rotation['size'] ) && is_string( $rotation['size'] ) && isset( $sizes[ $rotation['size'] ] )
+	$size      = isset( $rotation['size'] ) && is_string( $rotation['size'] ) && isset( $sizes[ $rotation['size'] ] )
 		? $rotation['size'] : '';
+	$countdown = isset( $rotation['countdown'] ) ? absint( $rotation['countdown'] ) : 0;
+	if ( $countdown > 600 ) {
+		$countdown = 600;
+	}
 	return array(
-		'display'  => $display,
-		'controls' => $controls,
-		'size'     => $size,
+		'display'   => $display,
+		'controls'  => $controls,
+		'size'      => $size,
+		'countdown' => $countdown,
 	);
+}
+
+/**
+ * The countdown line for one rotation slot.
+ *
+ * The number is display only. Reaching zero does not remove the slot.
+ *
+ * @param int $seconds Starting seconds.
+ * @return string Markup, or an empty string when no countdown is set.
+ */
+function adzworld_rotation_countdown_markup( $seconds ) {
+	$seconds = absint( $seconds );
+	if ( $seconds < 1 || $seconds > 600 ) {
+		return '';
+	}
+
+	return '<p class="adzworld-countdown" data-adzworld-countdown="' . esc_attr( (string) $seconds ) . '"><span data-adzworld-countdown-num>'
+		. esc_html( (string) $seconds ) . '</span> ' . esc_html__( 'seconds', 'adz-world' ) . '</p>';
 }
 
 /**
@@ -385,9 +408,10 @@ function adzworld_save_named_rotation() {
 	$modes    = isset( $_POST['rotation_response_mode'] ) && is_array( $_POST['rotation_response_mode'] ) ? array_values( map_deep( wp_unslash( $_POST['rotation_response_mode'] ), 'sanitize_key' ) ) : array();
 	$texts    = isset( $_POST['rotation_response_text'] ) && is_array( $_POST['rotation_response_text'] ) ? array_values( map_deep( wp_unslash( $_POST['rotation_response_text'] ), 'sanitize_text_field' ) ) : array();
 	$posted   = array(
-		'display'  => isset( $_POST['rotation_display'] ) && is_string( $_POST['rotation_display'] ) ? sanitize_key( wp_unslash( $_POST['rotation_display'] ) ) : '',
-		'controls' => isset( $_POST['rotation_controls'] ) && is_string( $_POST['rotation_controls'] ) ? sanitize_key( wp_unslash( $_POST['rotation_controls'] ) ) : '',
-		'size'     => isset( $_POST['rotation_size'] ) && is_string( $_POST['rotation_size'] ) ? sanitize_text_field( wp_unslash( $_POST['rotation_size'] ) ) : '',
+		'display'   => isset( $_POST['rotation_display'] ) && is_string( $_POST['rotation_display'] ) ? sanitize_key( wp_unslash( $_POST['rotation_display'] ) ) : '',
+		'controls'  => isset( $_POST['rotation_controls'] ) && is_string( $_POST['rotation_controls'] ) ? sanitize_key( wp_unslash( $_POST['rotation_controls'] ) ) : '',
+		'size'      => isset( $_POST['rotation_size'] ) && is_string( $_POST['rotation_size'] ) ? sanitize_text_field( wp_unslash( $_POST['rotation_size'] ) ) : '',
+		'countdown' => isset( $_POST['rotation_countdown'] ) && is_string( $_POST['rotation_countdown'] ) ? sanitize_text_field( wp_unslash( $_POST['rotation_countdown'] ) ) : '0',
 	);
 	$stored   = adzworld_named_rotations();
 	$error    = '';
@@ -704,6 +728,10 @@ function adzworld_rotation_admin_page() {
 		echo '<option value="' . esc_attr( $size ) . '"' . selected( $rotation['size'], $size, false ) . '>' . esc_html( $meta['label'] . ' (' . $size . ')' ) . '</option>';
 	}
 	echo '</select></p>';
+	echo '<p><label for="adzworld-rotation-countdown">' . esc_html__( 'Countdown seconds', 'adz-world' ) . '</label><br>';
+	echo '<input id="adzworld-rotation-countdown" name="rotation_countdown" form="' . esc_attr( $form_id ) . '" inputmode="numeric" maxlength="3" value="'
+		. esc_attr( (string) adzworld_rotation_presentation( $rotation )['countdown'] ) . '"></p>';
+	echo '<p>' . esc_html__( 'Parameter rotation_countdown. 0 shows no countdown. A number from 1 to 600 shows that countdown at the top of each slot on the page. At zero the slot stays. This does not open the countdown popup and does not remove the adzad.', 'adz-world' ) . '</p>';
 	if ( '' !== $key && isset( $rotations[ $key ] ) ) {
 		echo '<p class="adzworld-rotation-shortcode"><span>' . esc_html__( 'Widget shortcode', 'adz-world' ) . '</span><br><code>[adz_rotation name=&quot;' . esc_html( $key ) . '&quot;]</code></p>';
 	}
@@ -1382,15 +1410,16 @@ function adzworld_render_rotation_level( $attributes ) {
 	if ( '' === $name || ! isset( $rotations[ $name ] ) ) {
 		return '<p class="adzworld-rotation-error" role="alert">' . esc_html__( 'The named rotation is not available.', 'adz-world' ) . '</p>';
 	}
-	$rotation               = $rotations[ $name ];
-	$presentation           = adzworld_rotation_presentation( $rotation );
-	$attributes['slots']    = implode( ',', $rotation['slots'] );
-	$attributes['display']  = $presentation['display'];
-	$attributes['controls'] = $presentation['controls'];
-	$attributes['size']     = $presentation['size'];
-	$attributes['label']    = $rotation['name'];
-	$attributes['name']     = $name;
-	$slots                  = adzworld_parse_rotation( $attributes['slots'] );
+	$rotation                = $rotations[ $name ];
+	$presentation            = adzworld_rotation_presentation( $rotation );
+	$attributes['slots']     = implode( ',', $rotation['slots'] );
+	$attributes['display']   = $presentation['display'];
+	$attributes['controls']  = $presentation['controls'];
+	$attributes['size']      = $presentation['size'];
+	$attributes['countdown'] = $presentation['countdown'];
+	$attributes['label']     = $rotation['name'];
+	$attributes['name']      = $name;
+	$slots                   = adzworld_parse_rotation( $attributes['slots'] );
 	if ( is_wp_error( $slots ) ) {
 		return '<p class="adzworld-rotation-error" role="alert">' . esc_html( $slots->get_error_message() ) . '</p>';
 	}
@@ -1401,10 +1430,11 @@ function adzworld_render_rotation_level( $attributes ) {
 		|| ( '' !== $attributes['size'] && ! isset( $sizes[ $attributes['size'] ] ) ) ) {
 		return '<p class="adzworld-rotation-error" role="alert">' . esc_html__( 'The rotation display, size or controls setting is not supported.', 'adz-world' ) . '</p>';
 	}
-	$display  = $attributes['display'];
-	$controls = $attributes['controls'];
-	$size     = $attributes['size'];
-	$pref     = adzworld_preference_with_catalog( adzworld_current_preference() );
+	$display   = $attributes['display'];
+	$controls  = $attributes['controls'];
+	$size      = $attributes['size'];
+	$countdown = isset( $attributes['countdown'] ) ? absint( $attributes['countdown'] ) : 0;
+	$pref      = adzworld_preference_with_catalog( adzworld_current_preference() );
 	if ( adzworld_has_preference( $pref ) ) {
 		foreach ( $slots as $index => $candidate ) {
 			$slots[ $index ]['order'] = $index;
@@ -1509,7 +1539,7 @@ function adzworld_render_rotation_level( $attributes ) {
 			. '" data-adzworld-slot-position="' . esc_attr( (string) $slot['position'] ) . '" data-adzworld-ad="' . esc_attr( adzworld_rotation_slot_ad( $slot ) ) . '"';
 		$notice             = 'r' === $slot['type'] ? '' : '<p class="adzworld-response" role="status" aria-live="polite" hidden></p>' . adzworld_rotation_notice();
 		$slides            .= '<section class="adzworld-slide" id="' . esc_attr( $slide_id ) . '"' . $category_attribute . $slot_attribute . $journey_attribute . ' role="group" aria-roledescription="'
-			. esc_attr__( 'slide', 'adz-world' ) . '" aria-label="' . esc_attr( ( $index + 1 ) . ' / ' . count( $slots ) ) . '">' . $html . $notice . '</section>';
+			. esc_attr__( 'slide', 'adz-world' ) . '" aria-label="' . esc_attr( ( $index + 1 ) . ' / ' . count( $slots ) ) . '">' . adzworld_rotation_countdown_markup( $countdown ) . $html . $notice . '</section>';
 		if ( 'intro' === $slot['type'] ) {
 			$dot_class = ' class="adzworld-hub-position"';
 			$dot_label = __( 'Show your adz hub', 'adz-world' );

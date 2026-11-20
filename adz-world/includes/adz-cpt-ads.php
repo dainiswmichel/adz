@@ -595,7 +595,7 @@ function adzworld_template_setting() {
 			'key'   => 'ad_seconds',
 			'label' => __( 'Countdown length', 'adz-world' ),
 			'value' => __( 'Old rotation', 'adz-world' ),
-			'does'  => __( 'Seconds of adz. The number that counts down on a full page or in a popup.', 'adz-world' ),
+			'does'  => __( 'Seconds of adz on an old rotation. The number counts down on the full page or in the popup. At zero the line becomes Continue and the reader can leave.', 'adz-world' ),
 		),
 		array(
 			'key'   => 'adz_duration',
@@ -608,6 +608,12 @@ function adzworld_template_setting() {
 			'label' => __( 'Placement', 'adz-world' ),
 			'value' => __( 'Old rotation', 'adz-world' ),
 			'does'  => __( 'Popup, within the page, or full page. These lines are used for the popup and the full page.', 'adz-world' ),
+		),
+		array(
+			'key'   => 'rotation_countdown',
+			'label' => __( 'Rotation countdown', 'adz-world' ),
+			'value' => __( 'Rotation tab', 'adz-world' ),
+			'does'  => __( 'Seconds on a named rotation. The number counts down on each slot. At zero the slot stays.', 'adz-world' ),
 		),
 		array(
 			'key'   => 'browse_seconds',

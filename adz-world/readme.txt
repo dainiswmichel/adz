@@ -284,6 +284,7 @@ controlled by adzAdmins.
   the blue theme. Ember is ashy grey, black, and glowing ember orange. An
   adzadmin saves any other theme as three hex colours, and the plugin draws
   the gradient.
+* A named rotation can show a countdown on its slots. At zero the slot stays.
 
 = 1.1.0 =
 * Renamed the Manual tab to Interactive Documentation and moved it to the final

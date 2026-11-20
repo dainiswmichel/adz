@@ -2317,6 +2317,12 @@
  * the information control, and fades in so it reads as a reply rather than an
  * alert.
  */
+.adzworld-rotation .adzworld-countdown {
+	font-size: 0.85em;
+	font-variant-numeric: tabular-nums;
+	margin: 0.35rem 0.75rem 0;
+}
+
 .adzworld-rotation .adzworld-response {
 	margin: 0.5rem 2.25rem 0.5rem 0.75rem;
 	padding: 0.35rem 0.6rem;
