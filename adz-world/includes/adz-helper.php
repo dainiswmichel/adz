@@ -450,7 +450,7 @@ function adzworld_update_rotation_state( $rotation_id, $state ) {
  * Whether this site is connected to a remote adz network.
  *
  * Off unless the site owner turns it on. With it off ads come from this site's
- * own adz_ad posts. Separately consented earnings requests are independent.
+ * own adz_ad posts.
  *
  * 1.0.8 called adz-world unconditionally, on page loads, sending visitor IP
  * addresses with no disclosure and no way to decline. Those requests require
@@ -465,13 +465,7 @@ function adzworld_network_enabled() {
 	if ( empty( $options['connect_to_network'] ) ) {
 		return false;
 	}
-	$base_url  = adzworld_network_base_url();
-	$home_host = adzworld_home_host();
-	if ( '' !== $home_host && wp_parse_url( $base_url, PHP_URL_HOST ) === $home_host && empty( $options['adzworld_monetization_consent'] ) ) {
-		return false;
-	}
-
-	return '' !== $base_url;
+	return '' !== adzworld_network_base_url();
 }
 
 /**

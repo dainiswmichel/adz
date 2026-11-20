@@ -50,6 +50,35 @@
   This document itemizes work; it does not repair code, select winners, run a gate, authorize publication, or certify compliance.</div>
 </header>
 
+<section id="codex-remove-unintended-monetization-2026y-11m-20d">
+<h2>Codex — remove the unintended revenue-share subsystem</h2>
+<p class="meta"><strong>Date:</strong> 2026-11-20. Production source:
+<code>adz-world/</code>. Baseline commit: <code>c59d4fc</code>. No deployment,
+version bump, release publication, or live-site data change was performed.</p>
+<p>Removed the unsupported adz-world revenue-share implementation in full rather
+than replacing its percentage with placeholder terms. The plugin no longer has
+a commission-split calculation, remote earnings-statement endpoint, statement
+token, publisher-statement connection, settlement renderer, monetization-consent
+setting, PayPal payout-email setting, or payout-email registration payload. The
+optional shared-adz network remains a separate feature controlled by its existing
+network opt-in. Direct affiliate and advertising-network earnings continue to go
+to the publisher's own provider accounts.</p>
+<p>The Earnings screen now contains only the direct affiliate and advertising-network
+summaries plus the existing voluntary <code>https://dainis.net/donate/</code>
+button. Dashboard text and <code>readme.txt</code> now describe direct provider
+earnings without claiming that adz-world receives or redistributes them.</p>
+<p><strong>Regression and verification:</strong> added
+<code>tools/tests/test-monetization-removal.php</code> to reject the retired option,
+endpoint, split function, payout-email field, percentage claims, and statement
+token while requiring the donation URL and button to remain. That contract passed
+10/10. The production gate passed all 13 blocks, including PHP and JavaScript
+syntax, WPCS with zero errors and zero warnings, project tests, forbidden-pattern
+checks, call resolution, whitespace, headers, external-service disclosure, and
+release-ZIP structure. Report:
+<code>testing-logs/2026y-11m-20d-UTC-10h-11m-00s/00-summary.txt</code>. Official
+Plugin Check and browser review were not run in this change.</p>
+</section>
+
 <section id="codex-release-review-2026y-11m-12d-EET-10h-16m">
 <h2>Codex — 1.0.9 functional correction and human-review handoff</h2>
 <p class="meta"><strong>Local MTS:</strong>

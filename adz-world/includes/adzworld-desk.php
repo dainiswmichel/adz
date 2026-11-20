@@ -172,7 +172,6 @@ add_action( 'admin_enqueue_scripts', 'adzworld_desk_assets' );
 function adzworld_desk_dashboard() {
 	$post_counts = wp_count_posts( 'adz_ad' );
 	$local_adz   = isset( $post_counts->publish ) ? (int) $post_counts->publish : 0;
-	$earnings    = get_option( 'adzworld_earnings_connection', array() );
 	$cards       = array(
 		array(
 			'label' => __( 'Interactive Documentation', 'adz-world' ),
@@ -210,20 +209,14 @@ function adzworld_desk_dashboard() {
 		),
 		array(
 			'label' => __( 'Earnings', 'adz-world' ),
-			'value' => ! empty( $earnings['consent'] ) ? __( 'Connected', 'adz-world' ) : __( 'Off', 'adz-world' ),
-			'text'  => __( 'Read-only statement access; it does not initiate a payment.', 'adz-world' ),
+			'value' => __( 'Direct', 'adz-world' ),
+			'text'  => __( 'Affiliate and ad-network providers report and pay the site owner directly.', 'adz-world' ),
 			'tab'   => 'earnings',
 		),
 	);
 
-	echo '<div class="adzworld-desk-intro"><h2>' . esc_html__( 'Monetization and delivery', 'adz-world' ) . '</h2>';
-	echo '<p>' . esc_html(
-		sprintf(
-			/* translators: %s: product name. */
-			__( 'Direct affiliate and ad-network connections use the site owner’s own account identifiers. Those providers attribute revenue and pay the site owner under their existing agreements. The optional %s service is separate and remains off until explicitly connected.', 'adz-world' ),
-			ADZWORLD_NAME
-		)
-	) . '</p></div>';
+	echo '<div class="adzworld-desk-intro"><h2>' . esc_html__( 'Earnings and delivery', 'adz-world' ) . '</h2>';
+	echo '<p>' . esc_html__( 'Direct affiliate and ad-network connections use the site owner’s own account identifiers. Those providers attribute revenue and pay the site owner under their existing agreements.', 'adz-world' ) . '</p></div>';
 	echo '<div class="adzworld-desk-grid">';
 	foreach ( $cards as $card ) {
 		echo '<section class="adzworld-desk-card"><h3>' . esc_html( $card['label'] ) . '</h3><strong>' . esc_html( $card['value'] ) . '</strong><p>' . esc_html( $card['text'] ) . '</p><a class="button" href="' . esc_url( adzworld_desk_url( $card['tab'] ) ) . '">' . esc_html__( 'Open', 'adz-world' ) . '</a></section>';

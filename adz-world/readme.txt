@@ -96,7 +96,7 @@ and enabled by an adzAdmin. The providers currently supported are listed below.
 Availability and behavior are subject to change without notice based on the
 providers' decisions.
 
-= adz-world.com network and earnings =
+= adz-world.com network =
 
 The optional adz-world.com connection supplies permission-based adz and can
 synchronize adz created by the publisher. It remains off until enabled under
@@ -106,12 +106,6 @@ token, and referral code. They do not send the audience member's IP address,
 anonymous session identifier, or WordPress user ID. Publishing or deleting one
 network adzad sends its title, content, and categories. Disconnecting stops
 network delivery and synchronization.
-
-The separate Earnings connection is also off by default. Only an explicit
-statement request sends the saved publisher identifier and read-only token to
-https://adz-world.com/wp-json/adz-world/v1/earnings. The server receives the
-requesting site's IP address as part of the web request. Disconnecting removes
-the token.
 
 Terms: https://adz-world.com/terms/
 Privacy: https://adz-world.com/privacy/
@@ -269,8 +263,8 @@ adz can help finance access to Rev. Michel's lectures.
 
 = Does the plugin require the adz-world.com service? =
 No. Local adz and rotations work without registration or an external-service
-connection. Network, provider, affiliate, and earnings connections are separate
-opt-ins controlled by adzAdmins.
+connection. Network, provider, and affiliate connections are separate opt-ins
+controlled by adzAdmins.
 
 
 
