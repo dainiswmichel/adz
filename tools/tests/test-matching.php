@@ -37,6 +37,10 @@ $GLOBALS['adz_catalogue'] = array(
 	14 => 'Brown leather three seater sofa, clearance',
 	15 => 'Kids bicycle, 20 inch, suits ages 8 to 11',
 	16 => 'Garden shed assembly service',
+	17 => 'Catalogue of boat parts',
+	18 => 'A catamaran for weekend sailing',
+	19 => 'Vacation rentals and education courses',
+	20 => 'One cat, free to a good home',
 );
 
 class WP_Post {
@@ -120,10 +124,10 @@ check( 'matcher never returns zero on request', count( adzworld_match_adz( $empt
 
 echo "\n=== a preference reorders rather than gates ===\n";
 $p = adzworld_parse_refinement( 'a light couch for 2 ppl', null );
-$ids = adzworld_match_adz( $p, 6 );
+$ids = adzworld_match_adz( $p, 10 );
 echo '  ' . implode( "\n  ", titles( $ids ) ) . "\n";
 check( 'best match first', $ids[0], 13 );
-check( 'unmatched adz still present', count( $ids ), 6 );
+check( 'unmatched adz still present', count( $ids ), 10 );
 
 echo "\n=== an exclusion is absolute, not a demotion ===\n";
 $p = adzworld_parse_refinement( 'a couch but not leather', null );
@@ -146,11 +150,20 @@ for ( $i = 0; $i < 25; $i++ ) {
 }
 check( 'ordering is deterministic', count( array_unique( $runs ) ), 1 );
 
+echo "\n=== an exclusion of cat is that word alone ===\n";
+$p                 = adzworld_empty_preference();
+$p['exclude']      = array( 'cat' );
+$ids               = adzworld_match_adz( $p, 10 );
+check( 'the word cat is excluded', in_array( 20, $ids, true ), false );
+check( 'catalogue stays', in_array( 17, $ids, true ), true );
+check( 'catamaran stays', in_array( 18, $ids, true ), true );
+check( 'education and vacation stay', in_array( 19, $ids, true ), true );
+
 echo "\n=== the plugin's own adzworld_get_all_ad_ids() runs, not a stub ===\n";
 $GLOBALS['adz_cache']        = array();
 $GLOBALS['adz_cache_writes'] = 0;
 $ids = adzworld_get_all_ad_ids();
-check( 'returns the published adz', $ids, array( 11, 12, 13, 14, 15, 16 ) );
+check( 'returns the published adz', $ids, array( 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 ) );
 check( 'caches on first call', $GLOBALS['adz_cache_writes'], 1 );
 adzworld_get_all_ad_ids();
 check( 'second call served from cache', $GLOBALS['adz_cache_writes'], 1 );
