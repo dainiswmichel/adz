@@ -154,7 +154,7 @@ function adzworld_settings_setup() {
 				'title'   => sprintf( 'Optional %s monetization terms', $adzworld_name ),
 				'type'    => 'checkbox',
 				'default' => '0',
-				'desc'    => sprintf( 'I authorize %1$s service ads to use %1$s affiliate/referral codes. %1$s retains 10%% of settled affiliate commissions actually received; my publisher share is 90%%. This is not 10%% of product sales. Stripe/PayPal payout arrangements and fees remain TBD; this candidate does not enable live payments. Existing publisher links are not rewritten. This consent applies to %2$s, not to independently operated services. Terms: %3$s and privacy: %4$s must be available before service launch.', esc_html( $adzworld_name ), esc_html( $adzworld_host ), $adzworld_terms, $adzworld_privacy ),
+				'desc'    => sprintf( 'I authorize %1$s service ads to use %1$s affiliate/referral codes. No revenue share is set and no payments are enabled. Existing publisher links are not rewritten. This consent applies to %2$s, not to independently operated services. Terms: %3$s and privacy: %4$s must be available before service launch.', esc_html( $adzworld_name ), esc_html( $adzworld_host ), $adzworld_terms, $adzworld_privacy ),
 			),
 			'paypal_email'                  => array(
 				'type'    => 'email',

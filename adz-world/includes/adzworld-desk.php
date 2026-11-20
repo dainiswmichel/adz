@@ -22,7 +22,7 @@ function adzworld_desk_tabs() {
 		'rotation'   => __( 'Rotation', 'adz-world' ),
 		'logs'       => __( 'AdzLogs', 'adz-world' ),
 		'earnings'   => __( 'Earnings', 'adz-world' ),
-		'templates'  => __( 'Templates', 'adz-world' ),
+		'templates'  => __( 'Wording', 'adz-world' ),
 		'starter'    => __( 'Starter packs', 'adz-world' ),
 		'manual'     => __( 'Interactive Documentation', 'adz-world' ),
 	);

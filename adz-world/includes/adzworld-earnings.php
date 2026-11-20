@@ -34,23 +34,6 @@ function adzworld_currency_exponents() {
 }
 
 /**
- * Split settled affiliate commission using half-up rounding, without floats.
- *
- * @param int $settled_minor Net settled affiliate commission in minor units.
- * @return array|WP_Error Exact platform and publisher shares, or an error.
- */
-function adzworld_split_commission( $settled_minor ) {
-	if ( ! is_int( $settled_minor ) || $settled_minor < 0 ) {
-		return new WP_Error( 'adzworld_amount', __( 'A non-negative integer commission is required.', 'adz-world' ) );
-	}
-	$service_minor = intdiv( $settled_minor, 10 ) + ( $settled_minor % 10 >= 5 ? 1 : 0 );
-	return array(
-		'service_minor'   => $service_minor,
-		'publisher_minor' => $settled_minor - $service_minor,
-	);
-}
-
-/**
  * Format minor units without floating-point conversion.
  *
  * @param int    $minor    Amount, including a possible negative adjustment.
@@ -295,7 +278,7 @@ function adzworld_earnings_page() {
 			echo esc_html(
 				sprintf(
 					/* translators: 1: product name, 2: public site host. */
-					__( 'For the optional %1$s monetization service, %1$s retains 10%% of settled affiliate commissions and the publisher receives 90%%. This is not a percentage of product sales. Statements are authoritative only at %2$s.', 'adz-world' ),
+					__( 'The optional %1$s monetization service is not operating and no terms are set. Statements are authoritative only at %2$s.', 'adz-world' ),
 					ADZWORLD_NAME,
 					adzworld_home_host()
 				)
