@@ -82,8 +82,9 @@ Plugin Check and browser review were not run in this change.</p>
 <section id="codex-static-slider-theme-css-2026y-11m-20d">
 <h2>Codex — remove unrequested custom themes and inline CSS delivery</h2>
 <p class="meta"><strong>Date:</strong> 2026-11-20. Production source:
-<code>adz-world/</code>. Baseline commit: <code>629b42a</code>. No deployment,
-version bump, release publication, or live-site data change was performed.</p>
+<code>adz-world/</code>. Correcting commit: <code>5a7512c</code>. Deployed to
+<code>https://adz-world.com/</code>. No version bump, SVN action, or release
+publication was performed.</p>
 <p>The unrequested named custom-theme and arbitrary hex-colour code was removed.
 The available slider themes are Default, Tide, and Ember. Their stored identifiers
 are <code>adz-ratings-default-slider-theme</code>,
@@ -102,8 +103,15 @@ correction. The corrected production tree passed all 13 gate blocks, including
 zero forbidden inline/runtime-style findings and WPCS with zero errors and zero
 warnings. Report:
 <code>testing-logs/2026y-11m-20d-UTC-12h-57m-26s/00-summary.txt</code>. Official
-Plugin Check, WordPress runtime installation, and browser review remain separate
-release checks.</p>
+Plugin Check and signed-in browser review remain separate release checks.</p>
+<p><strong>Live evidence:</strong> installed ZIP SHA-256
+<code>25c4d41d24b0dd73ad4e0c2b705576f6f8d038bc0fd36cfd4afcad3a6426d637</code>
+on container <code>adz-dwm-test-wp-1</code>. WP-CLI reports adz-world 1.1.1 active.
+Hashes of the deployed response, rotation, admin CSS, Tide CSS, and Ember CSS
+match the tested local files. The homepage and both theme stylesheets returned
+HTTP 200; the post-install debug log and live searches for the removed custom
+theme UI and <code>wp_add_inline_style()</code> returned no output. The replaced
+plugin and ZIP are backed up under <code>/opt/adz-dwm-test/file-backups/</code>.</p>
 </section>
 
 <section id="codex-release-review-2026y-11m-12d-EET-10h-16m">
