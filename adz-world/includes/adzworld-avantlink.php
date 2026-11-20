@@ -56,7 +56,7 @@ function adzworld_avantlink_register_network( $networks ) {
 	$networks['avantlink'] = array(
 		'label'   => 'AvantLink',
 		'account' => 'https://www.avantlink.com/',
-		'note'    => __( 'The affiliate id and website id are both in your AvantLink account; ProductSearch needs no separate API key. AvantLink builds the tracked click-through itself, so products earn as soon as these two values are saved.', 'adz-world' ),
+		'note'    => __( 'The affiliate id and website id are both in your AvantLink account; ProductSearch needs no separate API key. AvantLink builds the tracked click-through itself, so products earn as soon as these two values are saved. A refinement such as “no pedals” is sent as the search term -pedals. With advanced syntax on, AvantLink treats a leading minus as an exclusion and a leading plus as a required word. Amazon, eBay, Best Buy, and Etsy are not sent that syntax.', 'adz-world' ),
 		'fields'  => array(
 			'affiliate_id' => array(
 				'label'   => __( 'Affiliate id', 'adz-world' ),

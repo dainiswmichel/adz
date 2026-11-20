@@ -633,6 +633,8 @@ function adzworld_manual_render_affiliates() {
 		}
 		if ( 'clickbank' === $id ) {
 			echo '<p>' . esc_html__( 'The HopLink uses the saved account nickname and vendor nickname. The words a visitor types are not added to that URL.', 'adz-world' ) . '</p>';
+		} elseif ( 'avantlink' === $id ) {
+			echo '<p>' . esc_html__( 'A refinement such as “no pedals” is sent to ProductSearch as -pedals, with advanced syntax on. AvantLink treats a leading minus as an exclusion and a leading plus as a required word. Amazon, eBay, Best Buy, and Etsy are sent the words without that syntax. After Etsy responds, a listing title that contains the excluded word as a whole word is dropped here.', 'adz-world' ) . '</p>';
 		} else {
 			echo '<p>' . esc_html__( 'A sponsored search link is drawn under one local adzad that matches the words the visitor typed. The link is not a rotation slot. The matching adzad has to be in the rotation.', 'adz-world' ) . '</p>';
 		}
