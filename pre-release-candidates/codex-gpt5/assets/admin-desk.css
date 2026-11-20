@@ -1493,3 +1493,455 @@ body.wp-admin .adzworld-paid-card .adzworld-connection-card select {
 	color: #674a00;
 	background: #fcf3dc;
 }
+
+/*
+ * AdzLogs: one expandable card per journey, laid out like FLOSC Chat Logs.
+ * Adz speak on the left, the reader on the right, and a thin labelled rule
+ * marks each move to a different rotation slot.
+ */
+.adzworld-logs__toolbar {
+	align-items: baseline;
+	display: flex;
+	gap: 12px;
+}
+
+.adzworld-logs__count {
+	color: #646970;
+	font-size: 13px;
+}
+
+.adzworld-logs__empty {
+	background: #fff;
+	border: 1px dashed #c3c4c7;
+	border-radius: 6px;
+	color: #646970;
+	padding: 16px;
+}
+
+.adzworld-logs__list {
+	margin-top: 12px;
+}
+
+.adzworld-journey-row {
+	align-items: flex-start;
+	display: flex;
+	gap: 10px;
+	margin: 0 0 10px;
+}
+
+.adzworld-journey-row__select {
+	margin-top: 14px !important;
+}
+
+.adzworld-journey {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.adzworld-journey[open] {
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.adzworld-journey__head {
+	align-items: center;
+	cursor: pointer;
+	display: flex;
+	gap: 10px;
+	list-style: none;
+	padding: 11px 14px;
+}
+
+.adzworld-journey__head::-webkit-details-marker {
+	display: none;
+}
+
+.adzworld-journey__head:hover {
+	background: #f6f7f7;
+}
+
+.adzworld-journey__chevron {
+	color: #2271b1;
+	font-size: 12px;
+	transition: transform 0.2s ease;
+}
+
+.adzworld-journey[open] .adzworld-journey__chevron {
+	transform: rotate(90deg);
+}
+
+.adzworld-journey__title {
+	font-family: ui-monospace, Menlo, Consolas, monospace;
+	font-size: 13px;
+	font-variant-numeric: tabular-nums;
+	font-weight: 600;
+}
+
+.adzworld-journey__id {
+	background: #f0f0f1;
+	border-radius: 3px;
+	font-size: 11px;
+	padding: 1px 6px;
+}
+
+.adzworld-journey__meta {
+	color: #50575e;
+	font-size: 12px;
+	white-space: nowrap;
+}
+
+.adzworld-journey__preview {
+	color: #646970;
+	font-size: 12px;
+	margin-left: auto;
+	max-width: 45%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.adzworld-journey__body {
+	background: #fcfcfc;
+	border-top: 1px solid #f0f0f1;
+	padding: 12px 16px 16px;
+}
+
+.adzworld-msg {
+	margin: 10px 0;
+}
+
+.adzworld-msg__meta {
+	color: #999;
+	font-size: 11px;
+	margin-bottom: 2px;
+}
+
+.adzworld-msg__who {
+	color: #444;
+	font-weight: 600;
+}
+
+.adzworld-msg__body {
+	border-radius: 8px;
+	display: inline-block;
+	max-width: 80%;
+	padding: 7px 11px;
+	text-align: left;
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.adzworld-msg--adz .adzworld-msg__body {
+	background: #eef6fb;
+}
+
+.adzworld-msg--response .adzworld-msg__body {
+	background: #fdf7e3;
+	font-style: italic;
+}
+
+.adzworld-msg--reader {
+	text-align: right;
+}
+
+.adzworld-msg--reader .adzworld-msg__body {
+	background: #f0f0f1;
+}
+
+.adzworld-msg__label {
+	color: #50575e;
+}
+
+.adzworld-msg__id {
+	background: transparent;
+	font-size: 12px;
+	padding: 0;
+}
+
+.adzworld-msg-state {
+	align-items: center;
+	display: flex;
+	gap: 8px;
+	margin: 16px 0 10px;
+}
+
+.adzworld-msg-state__rule {
+	background: #dcdcde;
+	flex: 1 1 auto;
+	height: 1px;
+}
+
+.adzworld-msg-state__label {
+	background: #eef6fb;
+	border: 1px solid #c5d9ed;
+	border-radius: 10px;
+	color: #1d4f7a;
+	flex: 0 0 auto;
+	font-family: ui-monospace, Menlo, Consolas, monospace;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	padding: 2px 10px;
+}
+
+.adzworld-logs__actions {
+	margin: 12px 0 0 28px;
+}
+
+.adzworld-logs__pages {
+	margin: 12px 0 0 28px;
+}
+
+.adzworld-logs__pages .page-numbers {
+	margin-right: 6px;
+}
+
+.adzworld-logs__settings {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	margin-top: 24px;
+	padding: 4px 16px 12px;
+}
+
+/* Ratings bands editor on the Templates tab. */
+.adzworld-bands__themes {
+	border: 0;
+	margin: 0 0 16px;
+	padding: 0;
+}
+
+.adzworld-bands__themes legend {
+	font-weight: 600;
+	margin-bottom: 4px;
+}
+
+.adzworld-bands__theme {
+	align-items: center;
+	display: inline-flex;
+	gap: 8px;
+	margin: 0 18px 8px 0;
+}
+
+.adzworld-bands__swatch {
+	border-radius: 999px;
+	display: inline-block;
+	height: 0.55rem;
+	width: 7rem;
+}
+
+.adzworld-bands__swatch--adz-ratings-default-slider-theme {
+	background: linear-gradient(
+		90deg,
+		#c92a2a 0%,
+		#de6012 20%,
+		hsl(46 97% 51%) 38%,
+		hsl(46 97% 51%) 62%,
+		#bbcd13 80%,
+		#16803a 100%
+	);
+}
+
+.adzworld-bands__swatch--adz-ratings-tide-slider-theme {
+	background: linear-gradient(
+		90deg,
+		hsl(222 62% 40%) 0%,
+		hsl(200 70% 46%) 20%,
+		hsl(188 35% 72%) 38%,
+		hsl(188 35% 72%) 62%,
+		hsl(168 50% 42%) 80%,
+		hsl(152 58% 32%) 100%
+	);
+}
+
+.adzworld-bands__swatch--adz-ratings-ember-slider-theme {
+	background: linear-gradient(
+		90deg,
+		#A3A7AD 0%,
+		#2E2F30 20%,
+		#000 38%,
+		#000 62%,
+		#B84C00 80%,
+		#FF6A00 100%
+	);
+}
+
+.adzworld-template-lines {
+	max-width: 52rem;
+}
+
+.adzworld-template-lines h3 {
+	margin: 1.2em 0 0.4em;
+}
+
+.adzworld-template-lines__panel {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	box-sizing: border-box;
+	margin: 12px 0 16px;
+	padding: 4px 16px 12px;
+}
+
+.adzworld-template-lines__now th[scope="row"] {
+	width: 11rem;
+}
+
+.adzworld-template-lines__now code {
+	color: #646970;
+	display: block;
+	font-size: 12px;
+	font-weight: 400;
+}
+
+.adzworld-template-lines__group th {
+	background: #f6f7f7;
+}
+
+.adzworld-template-lines__field-note {
+	color: #646970;
+	margin: 0.15em 0 0.8em;
+}
+
+.adzworld-template-lines__empty {
+	color: #646970;
+	font-style: italic;
+}
+
+.adzworld-template-lines textarea {
+	box-sizing: border-box;
+	max-width: 40rem;
+	width: 100%;
+}
+
+.adzworld-template-lines__preview {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	margin: 12px 0 16px;
+	max-width: 40rem;
+	padding: 0 16px;
+}
+
+.adzworld-template-lines__sample {
+	align-items: baseline;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35em 0.75em;
+	margin: 0;
+	padding: 10px 0;
+}
+
+.adzworld-template-lines__sample.adzworld-align-left {
+	justify-content: flex-start;
+}
+
+.adzworld-template-lines__sample.adzworld-align-center {
+	justify-content: center;
+}
+
+.adzworld-template-lines__sample.adzworld-align-right {
+	justify-content: flex-end;
+}
+
+.adzworld-template-lines__count-num {
+	font-variant-numeric: tabular-nums;
+	font-weight: 600;
+}
+
+.adzworld-template-lines__sample[data-adzworld-template-header-row] {
+	border-bottom: 1px solid #dcdcde;
+}
+
+.adzworld-template-lines__sample[data-adzworld-template-footer-row] {
+	border-top: 1px solid #dcdcde;
+}
+
+.adzworld-template-lines__ad {
+	background: #f6f7f7;
+	margin: 8px 0;
+	padding: 16px;
+	text-align: center;
+}
+
+.adzworld-template-lines__sample.adzworld-align-left {
+	text-align: left;
+}
+
+.adzworld-template-lines__sample.adzworld-align-center {
+	text-align: center;
+}
+
+.adzworld-template-lines__sample.adzworld-align-right {
+	text-align: right;
+}
+
+.adzworld-template-lines__align label {
+	margin-right: 12px;
+}
+
+.adzworld-bands__table {
+	max-width: 36rem;
+}
+
+.adzworld-bands__table th,
+.adzworld-bands__table td {
+	vertical-align: middle;
+}
+
+.adzworld-bands__table th:nth-child(1),
+.adzworld-bands__table th:nth-child(2),
+.adzworld-bands__table td:nth-child(1),
+.adzworld-bands__table td:nth-child(2) {
+	width: 6rem;
+}
+
+.adzworld-bands__table input.adzworld-bands__number {
+	font-variant-numeric: tabular-nums;
+	text-align: right;
+	width: 5rem;
+}
+
+.adzworld-bands__table input.adzworld-bands__words {
+	max-width: 16rem;
+	width: 100%;
+}
+
+.adzworld-bands__message {
+	box-sizing: border-box;
+	display: block;
+	max-width: 40rem;
+	width: 100%;
+}
+
+/* Response setting inside each rotation slot. */
+.adzworld-admin-slot__response {
+	display: grid;
+	gap: 8px;
+	grid-template-columns: minmax(180px, 1fr) minmax(220px, 2fr);
+	margin: 8px 0;
+}
+
+.adzworld-admin-slot__response label {
+	display: flex;
+	flex-direction: column;
+	font-size: 12px;
+	gap: 2px;
+}
+
+@media (max-width: 782px) {
+
+	.adzworld-journey__head {
+		flex-wrap: wrap;
+	}
+
+	.adzworld-journey__preview {
+		margin-left: 0;
+		max-width: 100%;
+	}
+
+	.adzworld-admin-slot__response {
+		grid-template-columns: 1fr;
+	}
+}

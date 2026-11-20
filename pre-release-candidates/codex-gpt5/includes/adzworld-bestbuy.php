@@ -3,9 +3,11 @@
  * Best Buy product fetcher for one adzAdRequest search string.
  *
  * The Products API receives the category and only that category's refinements.
- * Results use Best Buy's affiliateUrl field, which Best Buy generates after
- * the approved Impact Partner ID is supplied with the request. The plugin does
- * not create an attribution URL and does not emit an untracked fallback.
+ * Only the developer API key is required. When the approved Impact Partner ID
+ * is saved, it is sent with the request and Best Buy returns an attributed
+ * affiliateUrl, which the plugin uses. Until then products link to their plain
+ * Best Buy page and earn nothing. The plugin never builds an attribution URL
+ * itself.
  *
  * @package adz-world
  */

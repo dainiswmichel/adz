@@ -84,10 +84,10 @@ function adzworld_shortcode( $atts, $content = null ) {
 		$adz_sequence = $attributes['adz_sequence'];
 	}
 
-	$output     = $content;
-	$visitor_ip = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+	$output          = $content;
+	$viewer_identity = adzworld_view_identity();
 
-	$adz_views = adzworld_get_view_row( $visitor_ip, (int) get_the_ID(), 'shortcode' );
+	$adz_views = adzworld_get_view_row( $viewer_identity, (int) get_the_ID(), 'shortcode' );
 
 	$adz_to_serve = adzworld_check_shortcode_rotation_completed( $adz_sequence );
 
@@ -134,82 +134,15 @@ function adzworld_shortcode( $atts, $content = null ) {
  * @param mixed  $adz_to_serve Selected ad identifier.
  */
 function adzworld_in_page( $adz_interval_min, $adz_duration, $adz_sequence = '', $adz_template = 'template1.php', $adz_to_serve = '' ) {
-	?>
-	<script type="text/javascript">
-	jQuery(document).ready(function(){
-
-		jQuery('#show_adz').click(function(){
-			jQuery.ajax({
-				url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
-				type : 'post',
-				data: {
-					action :'adzworld_get_advertise_content',
-					target_type : 'shortcode',
-					target : '<?php echo absint( get_the_ID() ); ?>',
-					ad_visibility_interval : '<?php echo esc_js( $adz_interval_min ); ?>',
-					repeat_times : 'infinite',
-					ad_to_serve : '<?php echo esc_js( $adz_to_serve ); ?>',
-					sequence : '<?php echo esc_js( $adz_sequence ); ?>',
-					display_type : 'page',
-					adz_template : '<?php echo esc_js( $adz_template ); ?>',
-					adzworld_context: '<?php echo esc_js( adzworld_ad_request_token( 'shortcode', get_the_ID(), $adz_interval_min, 'infinite', $adz_to_serve, '', $adz_sequence, 'page', $adz_template ) ); ?>',
-					adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
-				},
-				success:function(data) {
-					if(data != 'continue'){
-						jQuery('#content_after_ad').html(window.adzworldDecodeAd(data));
-
-						var i = <?php echo absint( $adz_duration ); ?>;
-						var adz_interval = setInterval(function () {
-							if (i >= 0) {
-								jQuery('.adz_timer').text(" "+i+" ");
-								i--;
-							} else {
-								jQuery('.continue_reading').text('Continue reading >>');
-								jQuery('.continue_reading').addClass('close_adz');
-								clearInterval(adz_interval);
-							}
-						}, 1000);
-
-
-
-				}
-				},
-				error: function(errorThrown){
-					console.log(errorThrown);
-				}
-			});
-		});
-
-		jQuery(document).on('click','.close_adz',function(){
-			jQuery.ajax({
-				url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
-				type : 'post',
-				data: {
-					action :'adzworld_get_advertise_content',
-					target_type : 'shortcode',
-					target : '<?php echo absint( get_the_ID() ); ?>',
-					ad_visibility_interval : '<?php echo esc_js( $adz_interval_min ); ?>',
-					repeat_times : 'infinite',
-					close_adz : 'true',
-					adzworld_context: '<?php echo esc_js( adzworld_ad_request_token( 'shortcode', get_the_ID(), $adz_interval_min, 'infinite', '', '', '', '', '', 'true' ) ); ?>',
-					adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
-
-				},
-				success:function(data) {
-					if(data != 'continue'){
-						location.reload();
-					}
-				},
-				error: function(errorThrown){
-					console.log(errorThrown);
-				}
-			});
-
-		});
-	});
-	</script>
-	<?php
+	adzworld_legacy_request(
+		array(
+			'mode'     => 'gate',
+			'seconds'  => absint( $adz_duration ),
+			'continue' => __( 'Continue reading >>', 'adz-world' ),
+			'request'  => adzworld_legacy_request_fields( 'shortcode', get_the_ID(), $adz_interval_min, 'infinite', $adz_to_serve, '', $adz_sequence, 'page', $adz_template ),
+			'close'    => adzworld_legacy_close_fields( 'shortcode', get_the_ID(), $adz_interval_min, 'infinite', '' ),
+		)
+	);
 }
 /**
  * Render popup gated-ad controls and the enclosed content.
@@ -234,83 +167,17 @@ function adzworld_in_popup( $adz_interval_min, $adz_duration, $adz_sequence, $ad
 
 		</div>
 	</div>
-	<script type="text/javascript">
-	jQuery(document).ready(function(){
-		var content_after_ad = <?php echo wp_json_encode( (string) $content, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ); ?>;
-		jQuery('#show_adz').click(function(){
-			jQuery('.adz_popup .close_adz').addClass('adzworld-is-hidden');
-			jQuery.ajax({
-				url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
-				type : 'post',
-				data: {
-					action :'adzworld_get_advertise_content',
-					target_type : 'shortcode',
-					target : '<?php echo absint( get_the_ID() ); ?>',
-					ad_visibility_interval : '<?php echo esc_js( $adz_interval_min ); ?>',
-					sequence : '<?php echo esc_js( $adz_sequence ); ?>',
-					display_type : '<?php echo esc_js( $adz_display ); ?>',
-					adz_template : '<?php echo esc_js( $adz_template ); ?>',
-					ad_to_serve : '<?php echo esc_js( $adz_to_serve ); ?>',
-					repeat_times : 'infinite',
-					show_popup : 'true',
-					adzworld_context: '<?php echo esc_js( adzworld_ad_request_token( 'shortcode', get_the_ID(), $adz_interval_min, 'infinite', $adz_to_serve, '', $adz_sequence, $adz_display, $adz_template ) ); ?>',
-					adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
-				},
-				success:function(data) {
-					if(data != 'continue'){
-						jQuery('#show_overlay').addClass('adzworld-is-visible');
-						jQuery('.adz_popup .content').html(window.adzworldDecodeAd(data));
-						var i = <?php echo absint( $adz_duration ); ?>;
-						var adz_interval = setInterval(function () {
-							if (i >= 0) {
-								jQuery('.adz_timer').text(" "+i+" ");
-								i--;
-							} else {
-								jQuery('.continue_reading').text('Continue reading >>');
-								jQuery('.continue_reading').addClass('close_adz');
-								clearInterval(adz_interval);
-							}
-						}, 1000);
-
-
-					}
-				},
-				error: function(errorThrown){
-					console.log(errorThrown);
-				}
-			});
-
-		});
-
-		jQuery(document).on('click','.close_adz',function(){
-			jQuery.ajax({
-				url: "<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>",
-				type : 'post',
-				data: {
-					action :'adzworld_get_advertise_content',
-					target_type : 'shortcode',
-					target : '<?php echo absint( get_the_ID() ); ?>',
-					ad_visibility_interval : '<?php echo esc_js( $adz_interval_min ); ?>',
-					repeat_times : 'infinite',
-					close_adz : 'true',
-					adzworld_context: '<?php echo esc_js( adzworld_ad_request_token( 'shortcode', get_the_ID(), $adz_interval_min, 'infinite', '', '', '', '', '', 'true' ) ); ?>',
-					show_popup : 'true',
-					adz_nonce: '<?php echo esc_js( wp_create_nonce( 'adzdotworld' ) ); ?>'
-
-				},
-				success:function(data) {
-					jQuery('#show_overlay').removeClass('adzworld-is-visible');
-				},
-				error: function(errorThrown){
-					console.log(errorThrown);
-				}
-			});
-			jQuery('#content_after_ad').html(content_after_ad);
-		});
-	});
-
-	</script>
 	<?php
+	adzworld_legacy_request(
+		array(
+			'mode'     => 'gate-popup',
+			'seconds'  => absint( $adz_duration ),
+			'continue' => __( 'Continue reading >>', 'adz-world' ),
+			'content'  => (string) $content,
+			'request'  => adzworld_legacy_request_fields( 'shortcode', get_the_ID(), $adz_interval_min, 'infinite', $adz_to_serve, '', $adz_sequence, $adz_display, $adz_template, true ),
+			'close'    => adzworld_legacy_close_fields( 'shortcode', get_the_ID(), $adz_interval_min, 'infinite', '', true ),
+		)
+	);
 }
 
 /**

@@ -66,7 +66,7 @@
 	/* Scoring colours are semantic, not decorative, so they do not adapt. */
 	--adzworld-accent: var(--adz-accent-solid);
 	--adzworld-good: #16803a;
-	--adzworld-neutral: #f5c400;
+	--adzworld-neutral: hsl(46 97% 51%);
 	--adzworld-bad: #c92a2a;
 
 	position: relative;
@@ -136,6 +136,7 @@
 }
 
 .adzworld-rotation .adzworld-slide {
+	position: relative;
 	min-width: 0;
 	padding: 0;
 	background: var(--adz-surface);
@@ -564,94 +565,10 @@
 	color: var(--adz-ink);
 }
 
-/*
- * The four category tones.
- *
- * A tone exists to tell one category from another at a glance, so what has to
- * survive is the difference in hue -- not a fixed pair of pale blues that
- * vanish on a dark theme. Each tone therefore carries only a hue angle, and
- * both states are built from it: the resting chip as a wash of that hue over
- * the derived surface, the active chip as the hue itself.
- *
- * The literal pairs below are the fallback for a browser without oklch(). The
- * active lightness is held at or under 0.50 so that --adz-on-accent clears
- * 4.5:1 across the whole gradient, not only at its dark end.
- */
-.adzworld-rotation .adz-panel__chip--tone-0 {
-	background: linear-gradient(135deg, #f4f8fb 0%, #d5e5ef 100%);
-	border-color: #8aafc2;
-	color: #1a3c50;
-}
-
-.adzworld-rotation .adz-panel__chip--tone-1 {
-	background: linear-gradient(135deg, #f3f8f6 0%, #d5ebe4 100%);
-	border-color: #7eb3a6;
-	color: #1a403b;
-}
-
-.adzworld-rotation .adz-panel__chip--tone-2 {
-	background: linear-gradient(135deg, #f4f6fa 0%, #dce3ee 100%);
-	border-color: #8ea0bb;
-	color: #2a3a52;
-}
-
-.adzworld-rotation .adz-panel__chip--tone-3 {
-	background: linear-gradient(135deg, #f3f7f8 0%, #d7e6ea 100%);
-	border-color: #86aeb8;
-	color: #1d3d46;
-}
-
-.adzworld-rotation .adz-panel__chip--tone-0.is-active {
-	background: linear-gradient(135deg, #30586d 0%, #3e6d86 100%);
-	border-color: #30586d;
-	color: var(--adz-on-accent);
-}
-
-.adzworld-rotation .adz-panel__chip--tone-1.is-active {
-	background: linear-gradient(135deg, #25544f 0%, #2f6b64 100%);
-	border-color: #25544f;
-	color: var(--adz-on-accent);
-}
-
-.adzworld-rotation .adz-panel__chip--tone-2.is-active {
-	background: linear-gradient(135deg, #313e53 0%, #3d4d68 100%);
-	border-color: #313e53;
-	color: var(--adz-on-accent);
-}
-
-.adzworld-rotation .adz-panel__chip--tone-3.is-active {
-	background: linear-gradient(135deg, #2e4e59 0%, #3a6270 100%);
-	border-color: #2e4e59;
-	color: var(--adz-on-accent);
-}
-
-@supports (color: oklch(0.5 0.09 200)) {
-	.adzworld-rotation .adz-panel__chip--tone-0 { --adz-tone: 237; }
-	.adzworld-rotation .adz-panel__chip--tone-1 { --adz-tone: 172; }
-	.adzworld-rotation .adz-panel__chip--tone-2 { --adz-tone: 281; }
-	.adzworld-rotation .adz-panel__chip--tone-3 { --adz-tone: 205; }
-
-	.adzworld-rotation .adz-panel__chip--tone-0,
-	.adzworld-rotation .adz-panel__chip--tone-1,
-	.adzworld-rotation .adz-panel__chip--tone-2,
-	.adzworld-rotation .adz-panel__chip--tone-3 {
-		background: color-mix(in oklab, oklch(0.5 0.09 var(--adz-tone)) 14%, var(--adz-surface));
-		border-color: color-mix(in oklab, oklch(0.5 0.09 var(--adz-tone)) 48%, transparent);
-		color: inherit;
-	}
-
-	.adzworld-rotation .adz-panel__chip--tone-0.is-active,
-	.adzworld-rotation .adz-panel__chip--tone-1.is-active,
-	.adzworld-rotation .adz-panel__chip--tone-2.is-active,
-	.adzworld-rotation .adz-panel__chip--tone-3.is-active {
-		background: linear-gradient(
-			135deg,
-			oklch(0.42 0.09 var(--adz-tone)) 0%,
-			oklch(0.5 0.09 var(--adz-tone)) 100%
-		);
-		border-color: oklch(0.42 0.09 var(--adz-tone));
-		color: var(--adz-on-accent);
-	}
+.adzworld-rotation .adz-panel__chip--categories.is-active {
+	background: color-mix(in oklab, var(--adz-accent) 12%, var(--adz-surface));
+	border-color: var(--adz-accent);
+	color: var(--adz-ink);
 }
 
 .adzworld-rotation .adz-panel__category-row {
@@ -1269,33 +1186,300 @@
 	text-decoration: none;
 }
 
-.adzworld-evaluation__choices {
-	display: flex;
-	gap: 0.5rem;
+.adzworld-evaluation__control {
+	display: grid;
+	grid-template-columns: auto minmax(10rem, 1fr) auto;
+	gap: 0.75rem;
+	align-items: center;
 	margin-block-start: 0.75rem;
 }
 
-.adzworld-evaluation__choice {
-	padding: 0.35rem 0.75rem;
-	color: var(--adz-muted);
+.adzworld-evaluation input[type="range"] {
+	--adzworld-thumb: var(--adzworld-neutral);
+	appearance: none;
+	width: 100%;
+	height: 0.55rem;
+	margin: 0;
+	/*
+	 * Golden holds flat from 38% to 62%, which is score -24 to 24 on the
+	 * thumb curve below. The orange and yellow-green stops are that curve's
+	 * own colours at -60 and 40.
+	 */
+	background: linear-gradient(
+		90deg,
+		var(--adzworld-bad) 0%,
+		#de6012 20%,
+		var(--adzworld-neutral) 38%,
+		var(--adzworld-neutral) 62%,
+		#bbcd13 80%,
+		var(--adzworld-good) 100%
+	);
+	border: 0;
+	border-radius: 999px;
+	outline-offset: 0.3rem;
+}
+
+.adzworld-evaluation input[type="range"]::-webkit-slider-runnable-track {
+	height: 0.55rem;
 	background: transparent;
-	border: 1px solid var(--adz-line-strong);
-	border-radius: 4px;
-	cursor: pointer;
-	font: inherit;
+	border-radius: 999px;
 }
 
-.adzworld-evaluation__choice:hover,
-.adzworld-evaluation__choice:focus-visible,
-.adzworld-evaluation__choice.is-selected {
-	color: var(--adz-ink);
-	background: var(--adz-surface-raised);
-	border-color: var(--adz-accent);
+.adzworld-evaluation input[type="range"]::-webkit-slider-thumb {
+	width: 1.25rem;
+	height: 1.25rem;
+	margin-top: -0.35rem;
+	appearance: none;
+	background: var(--adzworld-thumb);
+	border: 3px solid var(--adz-ring);
+	border-radius: 50%;
+	box-shadow: 0 0 0 2px var(--adzworld-thumb);
 }
 
-.adzworld-evaluation__choice:disabled {
-	cursor: wait;
-	opacity: 0.65;
+.adzworld-evaluation input[type="range"]::-moz-range-track {
+	height: 0.55rem;
+	background: transparent;
+	border: 0;
+	border-radius: 999px;
+}
+
+.adzworld-evaluation input[type="range"]::-moz-range-progress {
+	background: transparent;
+}
+
+.adzworld-evaluation input[type="range"]::-moz-range-thumb {
+	width: 1rem;
+	height: 1rem;
+	background: var(--adzworld-thumb);
+	border: 3px solid var(--adz-ring);
+	border-radius: 50%;
+	box-shadow: 0 0 0 2px var(--adzworld-thumb);
+}
+
+/*
+ * The thumb colour for every score from -100 to 100.
+ *
+ * Hue runs red to golden to green, but it does not run at an even rate: it
+ * holds near golden from -24 to 24, so the middle of the slider is a band and
+ * not a single point the thumb skips over. The earlier curve ran the hue
+ * evenly, which put the golden hues at -36 to -13 and left score zero
+ * nowhere near the middle colour of the track.
+ *
+ * Lightness and saturation are keyed to the hue, not to the score, because
+ * yellow has to sit much lighter than red or green to read as yellow. The
+ * earlier curve held lightness at 43% for every hue, which made the middle
+ * hsl(48 72% 43%) -- #bd9d1f, a brown.
+ *
+ * The stops of the track gradient above are taken from this same curve, so
+ * the thumb never disagrees with the track underneath it.
+ */
+.adzworld-evaluation input.is-score-minus-100 { --adzworld-thumb: hsl(0 72% 43%); }
+.adzworld-evaluation input.is-score-minus-99 { --adzworld-thumb: hsl(1 72% 43%); }
+.adzworld-evaluation input.is-score-minus-98 { --adzworld-thumb: hsl(1 73% 43%); }
+.adzworld-evaluation input.is-score-minus-97 { --adzworld-thumb: hsl(2 73% 43%); }
+.adzworld-evaluation input.is-score-minus-96 { --adzworld-thumb: hsl(2 73% 43%); }
+.adzworld-evaluation input.is-score-minus-95 { --adzworld-thumb: hsl(3 74% 44%); }
+.adzworld-evaluation input.is-score-minus-94 { --adzworld-thumb: hsl(3 74% 44%); }
+.adzworld-evaluation input.is-score-minus-93 { --adzworld-thumb: hsl(4 74% 44%); }
+.adzworld-evaluation input.is-score-minus-92 { --adzworld-thumb: hsl(5 75% 44%); }
+.adzworld-evaluation input.is-score-minus-91 { --adzworld-thumb: hsl(5 75% 44%); }
+.adzworld-evaluation input.is-score-minus-90 { --adzworld-thumb: hsl(6 75% 44%); }
+.adzworld-evaluation input.is-score-minus-89 { --adzworld-thumb: hsl(6 75% 44%); }
+.adzworld-evaluation input.is-score-minus-88 { --adzworld-thumb: hsl(7 76% 44%); }
+.adzworld-evaluation input.is-score-minus-87 { --adzworld-thumb: hsl(8 76% 44%); }
+.adzworld-evaluation input.is-score-minus-86 { --adzworld-thumb: hsl(8 76% 44%); }
+.adzworld-evaluation input.is-score-minus-85 { --adzworld-thumb: hsl(9 77% 45%); }
+.adzworld-evaluation input.is-score-minus-84 { --adzworld-thumb: hsl(9 77% 45%); }
+.adzworld-evaluation input.is-score-minus-83 { --adzworld-thumb: hsl(10 77% 45%); }
+.adzworld-evaluation input.is-score-minus-82 { --adzworld-thumb: hsl(10 78% 45%); }
+.adzworld-evaluation input.is-score-minus-81 { --adzworld-thumb: hsl(11 78% 45%); }
+.adzworld-evaluation input.is-score-minus-80 { --adzworld-thumb: hsl(12 78% 45%); }
+.adzworld-evaluation input.is-score-minus-79 { --adzworld-thumb: hsl(12 79% 45%); }
+.adzworld-evaluation input.is-score-minus-78 { --adzworld-thumb: hsl(13 79% 45%); }
+.adzworld-evaluation input.is-score-minus-77 { --adzworld-thumb: hsl(13 79% 45%); }
+.adzworld-evaluation input.is-score-minus-76 { --adzworld-thumb: hsl(14 80% 45%); }
+.adzworld-evaluation input.is-score-minus-75 { --adzworld-thumb: hsl(14 80% 46%); }
+.adzworld-evaluation input.is-score-minus-74 { --adzworld-thumb: hsl(15 80% 46%); }
+.adzworld-evaluation input.is-score-minus-73 { --adzworld-thumb: hsl(16 80% 46%); }
+.adzworld-evaluation input.is-score-minus-72 { --adzworld-thumb: hsl(16 81% 46%); }
+.adzworld-evaluation input.is-score-minus-71 { --adzworld-thumb: hsl(17 81% 46%); }
+.adzworld-evaluation input.is-score-minus-70 { --adzworld-thumb: hsl(17 81% 46%); }
+.adzworld-evaluation input.is-score-minus-69 { --adzworld-thumb: hsl(18 82% 46%); }
+.adzworld-evaluation input.is-score-minus-68 { --adzworld-thumb: hsl(19 82% 46%); }
+.adzworld-evaluation input.is-score-minus-67 { --adzworld-thumb: hsl(19 82% 46%); }
+.adzworld-evaluation input.is-score-minus-66 { --adzworld-thumb: hsl(20 83% 46%); }
+.adzworld-evaluation input.is-score-minus-65 { --adzworld-thumb: hsl(20 83% 47%); }
+.adzworld-evaluation input.is-score-minus-64 { --adzworld-thumb: hsl(21 83% 47%); }
+.adzworld-evaluation input.is-score-minus-63 { --adzworld-thumb: hsl(21 84% 47%); }
+.adzworld-evaluation input.is-score-minus-62 { --adzworld-thumb: hsl(22 84% 47%); }
+.adzworld-evaluation input.is-score-minus-61 { --adzworld-thumb: hsl(23 84% 47%); }
+.adzworld-evaluation input.is-score-minus-60 { --adzworld-thumb: hsl(23 85% 47%); }
+.adzworld-evaluation input.is-score-minus-59 { --adzworld-thumb: hsl(24 85% 47%); }
+.adzworld-evaluation input.is-score-minus-58 { --adzworld-thumb: hsl(24 85% 47%); }
+.adzworld-evaluation input.is-score-minus-57 { --adzworld-thumb: hsl(25 86% 47%); }
+.adzworld-evaluation input.is-score-minus-56 { --adzworld-thumb: hsl(25 86% 47%); }
+.adzworld-evaluation input.is-score-minus-55 { --adzworld-thumb: hsl(26 86% 48%); }
+.adzworld-evaluation input.is-score-minus-54 { --adzworld-thumb: hsl(27 86% 48%); }
+.adzworld-evaluation input.is-score-minus-53 { --adzworld-thumb: hsl(27 87% 48%); }
+.adzworld-evaluation input.is-score-minus-52 { --adzworld-thumb: hsl(28 87% 48%); }
+.adzworld-evaluation input.is-score-minus-51 { --adzworld-thumb: hsl(28 87% 48%); }
+.adzworld-evaluation input.is-score-minus-50 { --adzworld-thumb: hsl(29 88% 48%); }
+.adzworld-evaluation input.is-score-minus-49 { --adzworld-thumb: hsl(30 88% 48%); }
+.adzworld-evaluation input.is-score-minus-48 { --adzworld-thumb: hsl(30 88% 48%); }
+.adzworld-evaluation input.is-score-minus-47 { --adzworld-thumb: hsl(31 89% 48%); }
+.adzworld-evaluation input.is-score-minus-46 { --adzworld-thumb: hsl(31 89% 48%); }
+.adzworld-evaluation input.is-score-minus-45 { --adzworld-thumb: hsl(32 89% 49%); }
+.adzworld-evaluation input.is-score-minus-44 { --adzworld-thumb: hsl(32 90% 49%); }
+.adzworld-evaluation input.is-score-minus-43 { --adzworld-thumb: hsl(33 90% 49%); }
+.adzworld-evaluation input.is-score-minus-42 { --adzworld-thumb: hsl(34 90% 49%); }
+.adzworld-evaluation input.is-score-minus-41 { --adzworld-thumb: hsl(34 91% 49%); }
+.adzworld-evaluation input.is-score-minus-40 { --adzworld-thumb: hsl(35 91% 49%); }
+.adzworld-evaluation input.is-score-minus-39 { --adzworld-thumb: hsl(35 91% 49%); }
+.adzworld-evaluation input.is-score-minus-38 { --adzworld-thumb: hsl(36 92% 49%); }
+.adzworld-evaluation input.is-score-minus-37 { --adzworld-thumb: hsl(36 92% 49%); }
+.adzworld-evaluation input.is-score-minus-36 { --adzworld-thumb: hsl(37 92% 49%); }
+.adzworld-evaluation input.is-score-minus-35 { --adzworld-thumb: hsl(38 92% 50%); }
+.adzworld-evaluation input.is-score-minus-34 { --adzworld-thumb: hsl(38 93% 50%); }
+.adzworld-evaluation input.is-score-minus-33 { --adzworld-thumb: hsl(39 93% 50%); }
+.adzworld-evaluation input.is-score-minus-32 { --adzworld-thumb: hsl(39 93% 50%); }
+.adzworld-evaluation input.is-score-minus-31 { --adzworld-thumb: hsl(40 94% 50%); }
+.adzworld-evaluation input.is-score-minus-30 { --adzworld-thumb: hsl(41 94% 50%); }
+.adzworld-evaluation input.is-score-minus-29 { --adzworld-thumb: hsl(41 94% 50%); }
+.adzworld-evaluation input.is-score-minus-28 { --adzworld-thumb: hsl(42 95% 50%); }
+.adzworld-evaluation input.is-score-minus-27 { --adzworld-thumb: hsl(42 95% 50%); }
+.adzworld-evaluation input.is-score-minus-26 { --adzworld-thumb: hsl(43 95% 50%); }
+.adzworld-evaluation input.is-score-minus-25 { --adzworld-thumb: hsl(43 96% 51%); }
+.adzworld-evaluation input.is-score-minus-24 { --adzworld-thumb: hsl(44 96% 51%); }
+.adzworld-evaluation input.is-score-minus-23 { --adzworld-thumb: hsl(44 96% 51%); }
+.adzworld-evaluation input.is-score-minus-22 { --adzworld-thumb: hsl(44 96% 51%); }
+.adzworld-evaluation input.is-score-minus-21 { --adzworld-thumb: hsl(44 96% 51%); }
+.adzworld-evaluation input.is-score-minus-20 { --adzworld-thumb: hsl(44 96% 51%); }
+.adzworld-evaluation input.is-score-minus-19 { --adzworld-thumb: hsl(45 96% 51%); }
+.adzworld-evaluation input.is-score-minus-18 { --adzworld-thumb: hsl(45 96% 51%); }
+.adzworld-evaluation input.is-score-minus-17 { --adzworld-thumb: hsl(45 96% 51%); }
+.adzworld-evaluation input.is-score-minus-16 { --adzworld-thumb: hsl(45 96% 51%); }
+.adzworld-evaluation input.is-score-minus-15 { --adzworld-thumb: hsl(45 96% 51%); }
+.adzworld-evaluation input.is-score-minus-14 { --adzworld-thumb: hsl(45 96% 51%); }
+.adzworld-evaluation input.is-score-minus-13 { --adzworld-thumb: hsl(45 97% 51%); }
+.adzworld-evaluation input.is-score-minus-12 { --adzworld-thumb: hsl(45 97% 51%); }
+.adzworld-evaluation input.is-score-minus-11 { --adzworld-thumb: hsl(45 97% 51%); }
+.adzworld-evaluation input.is-score-minus-10 { --adzworld-thumb: hsl(45 97% 51%); }
+.adzworld-evaluation input.is-score-minus-9 { --adzworld-thumb: hsl(46 97% 51%); }
+.adzworld-evaluation input.is-score-minus-8 { --adzworld-thumb: hsl(46 97% 51%); }
+.adzworld-evaluation input.is-score-minus-7 { --adzworld-thumb: hsl(46 97% 51%); }
+.adzworld-evaluation input.is-score-minus-6 { --adzworld-thumb: hsl(46 97% 51%); }
+.adzworld-evaluation input.is-score-minus-5 { --adzworld-thumb: hsl(46 97% 51%); }
+.adzworld-evaluation input.is-score-minus-4 { --adzworld-thumb: hsl(46 97% 51%); }
+.adzworld-evaluation input.is-score-minus-3 { --adzworld-thumb: hsl(46 97% 51%); }
+.adzworld-evaluation input.is-score-minus-2 { --adzworld-thumb: hsl(46 97% 51%); }
+.adzworld-evaluation input.is-score-minus-1 { --adzworld-thumb: hsl(46 97% 51%); }
+.adzworld-evaluation input.is-score-0 { --adzworld-thumb: hsl(46 97% 51%); }
+.adzworld-evaluation input.is-score-1 { --adzworld-thumb: hsl(47 97% 51%); }
+.adzworld-evaluation input.is-score-2 { --adzworld-thumb: hsl(47 96% 51%); }
+.adzworld-evaluation input.is-score-3 { --adzworld-thumb: hsl(47 96% 51%); }
+.adzworld-evaluation input.is-score-4 { --adzworld-thumb: hsl(47 96% 51%); }
+.adzworld-evaluation input.is-score-5 { --adzworld-thumb: hsl(47 96% 51%); }
+.adzworld-evaluation input.is-score-6 { --adzworld-thumb: hsl(47 96% 51%); }
+.adzworld-evaluation input.is-score-7 { --adzworld-thumb: hsl(47 96% 51%); }
+.adzworld-evaluation input.is-score-8 { --adzworld-thumb: hsl(47 96% 51%); }
+.adzworld-evaluation input.is-score-9 { --adzworld-thumb: hsl(47 96% 51%); }
+.adzworld-evaluation input.is-score-10 { --adzworld-thumb: hsl(48 96% 50%); }
+.adzworld-evaluation input.is-score-11 { --adzworld-thumb: hsl(48 96% 50%); }
+.adzworld-evaluation input.is-score-12 { --adzworld-thumb: hsl(48 96% 50%); }
+.adzworld-evaluation input.is-score-13 { --adzworld-thumb: hsl(48 96% 50%); }
+.adzworld-evaluation input.is-score-14 { --adzworld-thumb: hsl(48 96% 50%); }
+.adzworld-evaluation input.is-score-15 { --adzworld-thumb: hsl(48 95% 50%); }
+.adzworld-evaluation input.is-score-16 { --adzworld-thumb: hsl(48 95% 50%); }
+.adzworld-evaluation input.is-score-17 { --adzworld-thumb: hsl(48 95% 50%); }
+.adzworld-evaluation input.is-score-18 { --adzworld-thumb: hsl(48 95% 50%); }
+.adzworld-evaluation input.is-score-19 { --adzworld-thumb: hsl(48 95% 50%); }
+.adzworld-evaluation input.is-score-20 { --adzworld-thumb: hsl(49 95% 50%); }
+.adzworld-evaluation input.is-score-21 { --adzworld-thumb: hsl(49 95% 50%); }
+.adzworld-evaluation input.is-score-22 { --adzworld-thumb: hsl(49 95% 50%); }
+.adzworld-evaluation input.is-score-23 { --adzworld-thumb: hsl(49 95% 50%); }
+.adzworld-evaluation input.is-score-24 { --adzworld-thumb: hsl(49 95% 50%); }
+.adzworld-evaluation input.is-score-25 { --adzworld-thumb: hsl(50 94% 50%); }
+.adzworld-evaluation input.is-score-26 { --adzworld-thumb: hsl(51 93% 49%); }
+.adzworld-evaluation input.is-score-27 { --adzworld-thumb: hsl(52 93% 49%); }
+.adzworld-evaluation input.is-score-28 { --adzworld-thumb: hsl(53 92% 49%); }
+.adzworld-evaluation input.is-score-29 { --adzworld-thumb: hsl(54 91% 48%); }
+.adzworld-evaluation input.is-score-30 { --adzworld-thumb: hsl(55 90% 48%); }
+.adzworld-evaluation input.is-score-31 { --adzworld-thumb: hsl(56 89% 47%); }
+.adzworld-evaluation input.is-score-32 { --adzworld-thumb: hsl(57 89% 47%); }
+.adzworld-evaluation input.is-score-33 { --adzworld-thumb: hsl(58 88% 47%); }
+.adzworld-evaluation input.is-score-34 { --adzworld-thumb: hsl(59 87% 46%); }
+.adzworld-evaluation input.is-score-35 { --adzworld-thumb: hsl(60 86% 46%); }
+.adzworld-evaluation input.is-score-36 { --adzworld-thumb: hsl(61 86% 46%); }
+.adzworld-evaluation input.is-score-37 { --adzworld-thumb: hsl(63 85% 45%); }
+.adzworld-evaluation input.is-score-38 { --adzworld-thumb: hsl(64 84% 45%); }
+.adzworld-evaluation input.is-score-39 { --adzworld-thumb: hsl(65 83% 45%); }
+.adzworld-evaluation input.is-score-40 { --adzworld-thumb: hsl(66 83% 44%); }
+.adzworld-evaluation input.is-score-41 { --adzworld-thumb: hsl(67 82% 44%); }
+.adzworld-evaluation input.is-score-42 { --adzworld-thumb: hsl(68 81% 43%); }
+.adzworld-evaluation input.is-score-43 { --adzworld-thumb: hsl(69 80% 43%); }
+.adzworld-evaluation input.is-score-44 { --adzworld-thumb: hsl(70 80% 43%); }
+.adzworld-evaluation input.is-score-45 { --adzworld-thumb: hsl(71 79% 42%); }
+.adzworld-evaluation input.is-score-46 { --adzworld-thumb: hsl(72 78% 42%); }
+.adzworld-evaluation input.is-score-47 { --adzworld-thumb: hsl(73 78% 42%); }
+.adzworld-evaluation input.is-score-48 { --adzworld-thumb: hsl(74 78% 42%); }
+.adzworld-evaluation input.is-score-49 { --adzworld-thumb: hsl(75 77% 42%); }
+.adzworld-evaluation input.is-score-50 { --adzworld-thumb: hsl(76 77% 42%); }
+.adzworld-evaluation input.is-score-51 { --adzworld-thumb: hsl(77 77% 41%); }
+.adzworld-evaluation input.is-score-52 { --adzworld-thumb: hsl(78 77% 41%); }
+.adzworld-evaluation input.is-score-53 { --adzworld-thumb: hsl(79 77% 41%); }
+.adzworld-evaluation input.is-score-54 { --adzworld-thumb: hsl(80 77% 41%); }
+.adzworld-evaluation input.is-score-55 { --adzworld-thumb: hsl(81 76% 41%); }
+.adzworld-evaluation input.is-score-56 { --adzworld-thumb: hsl(82 76% 41%); }
+.adzworld-evaluation input.is-score-57 { --adzworld-thumb: hsl(83 76% 41%); }
+.adzworld-evaluation input.is-score-58 { --adzworld-thumb: hsl(84 76% 41%); }
+.adzworld-evaluation input.is-score-59 { --adzworld-thumb: hsl(85 76% 41%); }
+.adzworld-evaluation input.is-score-60 { --adzworld-thumb: hsl(86 75% 40%); }
+.adzworld-evaluation input.is-score-61 { --adzworld-thumb: hsl(87 75% 40%); }
+.adzworld-evaluation input.is-score-62 { --adzworld-thumb: hsl(88 75% 40%); }
+.adzworld-evaluation input.is-score-63 { --adzworld-thumb: hsl(90 75% 40%); }
+.adzworld-evaluation input.is-score-64 { --adzworld-thumb: hsl(91 75% 40%); }
+.adzworld-evaluation input.is-score-65 { --adzworld-thumb: hsl(92 74% 40%); }
+.adzworld-evaluation input.is-score-66 { --adzworld-thumb: hsl(93 74% 40%); }
+.adzworld-evaluation input.is-score-67 { --adzworld-thumb: hsl(94 74% 40%); }
+.adzworld-evaluation input.is-score-68 { --adzworld-thumb: hsl(95 74% 40%); }
+.adzworld-evaluation input.is-score-69 { --adzworld-thumb: hsl(96 74% 39%); }
+.adzworld-evaluation input.is-score-70 { --adzworld-thumb: hsl(97 74% 39%); }
+.adzworld-evaluation input.is-score-71 { --adzworld-thumb: hsl(98 73% 39%); }
+.adzworld-evaluation input.is-score-72 { --adzworld-thumb: hsl(99 73% 39%); }
+.adzworld-evaluation input.is-score-73 { --adzworld-thumb: hsl(100 73% 39%); }
+.adzworld-evaluation input.is-score-74 { --adzworld-thumb: hsl(101 73% 39%); }
+.adzworld-evaluation input.is-score-75 { --adzworld-thumb: hsl(102 73% 39%); }
+.adzworld-evaluation input.is-score-76 { --adzworld-thumb: hsl(103 72% 39%); }
+.adzworld-evaluation input.is-score-77 { --adzworld-thumb: hsl(104 72% 39%); }
+.adzworld-evaluation input.is-score-78 { --adzworld-thumb: hsl(105 72% 38%); }
+.adzworld-evaluation input.is-score-79 { --adzworld-thumb: hsl(106 72% 38%); }
+.adzworld-evaluation input.is-score-80 { --adzworld-thumb: hsl(107 72% 38%); }
+.adzworld-evaluation input.is-score-81 { --adzworld-thumb: hsl(108 72% 38%); }
+.adzworld-evaluation input.is-score-82 { --adzworld-thumb: hsl(109 71% 38%); }
+.adzworld-evaluation input.is-score-83 { --adzworld-thumb: hsl(110 71% 38%); }
+.adzworld-evaluation input.is-score-84 { --adzworld-thumb: hsl(111 71% 38%); }
+.adzworld-evaluation input.is-score-85 { --adzworld-thumb: hsl(112 71% 38%); }
+.adzworld-evaluation input.is-score-86 { --adzworld-thumb: hsl(113 71% 38%); }
+.adzworld-evaluation input.is-score-87 { --adzworld-thumb: hsl(114 70% 37%); }
+.adzworld-evaluation input.is-score-88 { --adzworld-thumb: hsl(116 70% 37%); }
+.adzworld-evaluation input.is-score-89 { --adzworld-thumb: hsl(117 70% 37%); }
+.adzworld-evaluation input.is-score-90 { --adzworld-thumb: hsl(118 70% 37%); }
+.adzworld-evaluation input.is-score-91 { --adzworld-thumb: hsl(119 70% 37%); }
+.adzworld-evaluation input.is-score-92 { --adzworld-thumb: hsl(120 69% 37%); }
+.adzworld-evaluation input.is-score-93 { --adzworld-thumb: hsl(121 69% 37%); }
+.adzworld-evaluation input.is-score-94 { --adzworld-thumb: hsl(122 69% 37%); }
+.adzworld-evaluation input.is-score-95 { --adzworld-thumb: hsl(123 69% 37%); }
+.adzworld-evaluation input.is-score-96 { --adzworld-thumb: hsl(124 69% 36%); }
+.adzworld-evaluation input.is-score-97 { --adzworld-thumb: hsl(125 69% 36%); }
+.adzworld-evaluation input.is-score-98 { --adzworld-thumb: hsl(126 68% 36%); }
+.adzworld-evaluation input.is-score-99 { --adzworld-thumb: hsl(127 68% 36%); }
+.adzworld-evaluation input.is-score-100 { --adzworld-thumb: hsl(128 68% 36%); }
+
+.adzworld-evaluation__value {
+	display: block;
+	margin-block-start: 0.5rem;
+	text-align: center;
+	font-weight: 600;
 }
 
 .adzworld-evaluation__status {
@@ -1408,6 +1592,11 @@
 	.adzworld-rotation .adz-panel__submit {
 		align-self: stretch;
 		justify-content: center;
+	}
+
+	.adzworld-evaluation__control {
+		grid-template-columns: 1fr;
+		text-align: center;
 	}
 
 	.adzworld-improve__row {
@@ -2058,4 +2247,121 @@
  */
 .adzworld-network-unit.adzworld-network-unit--open {
 	min-height: 0;
+}
+
+.adzworld-rotation .adzworld-notice {
+	position: absolute;
+	right: 8px;
+	bottom: 8px;
+	z-index: 6;
+}
+
+.adzworld-rotation .adzworld-notice__mark {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	padding: 0;
+	color: var(--adz-ink);
+	font-family: Georgia, serif;
+	font-size: 13px;
+	font-style: italic;
+	line-height: 1;
+	background: var(--adz-surface);
+	border: 1px solid var(--adz-line);
+	border-radius: 50%;
+	cursor: pointer;
+}
+
+.adzworld-rotation .adzworld-notice__mark:hover,
+.adzworld-rotation .adzworld-notice__mark:focus-visible {
+	border-color: var(--adz-accent);
+}
+
+.adzworld-rotation .adzworld-notice__text {
+	position: absolute;
+	right: 0;
+	bottom: 28px;
+	display: none;
+	width: min(22rem, 70vw);
+	max-height: 16rem;
+	padding: 10px 12px;
+	overflow: auto;
+	color: var(--adz-ink);
+	font-size: 13px;
+	line-height: 1.45;
+	text-align: left;
+	background: var(--adz-surface);
+	border: 1px solid var(--adz-line);
+	border-radius: 8px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.adzworld-rotation .adzworld-notice:hover .adzworld-notice__text,
+.adzworld-rotation .adzworld-notice:focus-within .adzworld-notice__text {
+	display: block;
+}
+
+.adzworld-rotation .adzworld-notice__text p {
+	margin: 0 0 8px;
+}
+
+.adzworld-rotation .adzworld-notice__text p:last-child {
+	margin-bottom: 0;
+}
+
+/*
+ * Response message: the short line a slot shows after a reader rates, refines
+ * or changes the category of an adz. It sits in the panel's own flow, above
+ * the information control, and fades in so it reads as a reply rather than an
+ * alert.
+ */
+.adzworld-rotation .adzworld-countdown {
+	font-size: 0.85em;
+	font-variant-numeric: tabular-nums;
+	margin: 0.35rem 0.75rem 0;
+}
+
+.adzworld-rotation .adzworld-response {
+	margin: 0.5rem 2.25rem 0.5rem 0.75rem;
+	padding: 0.35rem 0.6rem;
+	border-left: 3px solid var(--adzworld-neutral);
+	border-radius: 0 4px 4px 0;
+	background: color-mix(in srgb, var(--adzworld-neutral) 12%, transparent);
+	font-size: 0.85em;
+	font-style: italic;
+	line-height: 1.4;
+	animation: adzworld-response-in 0.35s ease-out;
+}
+
+.adzworld-rotation .adzworld-response[hidden] {
+	display: none;
+}
+
+@keyframes adzworld-response-in {
+
+	from {
+		opacity: 0;
+		transform: translateY(4px);
+	}
+
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.adzworld-rotation .adzworld-response {
+		animation: none;
+	}
+}
+
+/* Where a signed-in reader's adz requests are kept, and the link to change it. */
+.adz-panel__profile {
+	margin: 0.4rem 0;
+	font-size: 0.85em;
+	opacity: 0.85;
 }

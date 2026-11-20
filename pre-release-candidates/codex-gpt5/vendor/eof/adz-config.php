@@ -131,40 +131,26 @@ function adzworld_settings_setup() {
 		'id'       => 'tos',
 		'priority' => 1,
 		'fields'   => array(
-			'tos_heading'                   => array(
+			'tos_heading'                 => array(
 				'id'    => 'tos_heading',
 				'type'  => 'heading',
 				'title' => 'Terms of Service',
 				'desc'  => adzworld_get_data_from_file( 'tos.html' ),
 
 			),
-			'accept_tos_checkbox'           => array(
+			'accept_tos_checkbox'         => array(
 				'title'   => 'I Accept',
 				'desc'    => '',
 				'type'    => 'checkbox',
 				'default' => '0', // 1 = on | 0 = off
 			),
-			'connect_to_network'            => array(
+			'connect_to_network'          => array(
 				'title'   => sprintf( 'Connect to the %s network', $adzworld_host ),
 				'type'    => 'checkbox',
 				'default' => '0', // 1 = on | 0 = off
 				'desc'    => sprintf( 'Off by default. Your site serves only the adz you create here, and contacts no outside server. Switching this on connects the site to the %1$s network: your site will send your site URL, admin email and visitor IP addresses to %1$s in order to fetch adz, and the adz you publish will be shared with the network. See <a href="%2$s">Terms of Service</a> and <a href="%3$s">Privacy Policy</a>.', esc_html( $adzworld_host ), $adzworld_terms, $adzworld_privacy ),
 			),
-			'adzworld_monetization_consent' => array(
-				'title'   => sprintf( 'Optional %s monetization terms', $adzworld_name ),
-				'type'    => 'checkbox',
-				'default' => '0',
-				'desc'    => sprintf( 'I authorize %1$s service ads to use %1$s affiliate/referral codes. %1$s retains 10%% of settled affiliate commissions actually received; my publisher share is 90%%. This is not 10%% of product sales. Stripe/PayPal payout arrangements and fees remain TBD; this candidate does not enable live payments. Existing publisher links are not rewritten. This consent applies to %2$s, not to independently operated services. Terms: %3$s and privacy: %4$s must be available before service launch.', esc_html( $adzworld_name ), esc_html( $adzworld_host ), $adzworld_terms, $adzworld_privacy ),
-			),
-			'paypal_email'                  => array(
-				'type'    => 'email',
-				'title'   => 'Paypal Email',
-				'desc'    => '',
-				'default' => '',
-				'sizes'   => 'regular',
-			),
-
-			'adzdotworld_email'             => array(
+			'adzdotworld_email'           => array(
 				'type'    => 'email',
 				'title'   => sprintf( '%s Email', $adzworld_name ),
 				'default' => '',
@@ -173,7 +159,7 @@ function adzworld_settings_setup() {
 
 			),
 
-			'type_of_adz'                   => array(
+			'type_of_adz'                 => array(
 				'id'       => 'type_of_adz',
 				'type'     => 'select',
 				'options'  => adzworld_list_all_ad_types(),
@@ -183,19 +169,19 @@ function adzworld_settings_setup() {
 
 			),
 
-			'referral_code'                 => array(
+			'referral_code'               => array(
 				'id'    => 'referral_code',
 				'type'  => 'text',
 				'title' => 'Enter Referral Code',
 				'desc'  => 'Please enter if you have a referral code',
 			),
-			'amazon_affiliate_id'           => array(
+			'amazon_affiliate_id'         => array(
 				'id'    => 'amazon_affiliate_id',
 				'type'  => 'text',
 				'title' => 'Your Amazon.com Affiliate code.',
 				'desc'  => '',
 			),
-			'exclude_pages_from_rotation'   => array(
+			'exclude_pages_from_rotation' => array(
 				'title'    => 'Select the Pages which you not want to show in Rotation.',
 				'type'     => 'select',
 				'options'  => adzworld_get_all_pages(),
@@ -203,7 +189,7 @@ function adzworld_settings_setup() {
 
 			),
 
-			'reg_status'                    => array(
+			'reg_status'                  => array(
 				'id'       => 'reg_status',
 				'type'     => 'dynamic',
 				'title'    => 'Registration Status',

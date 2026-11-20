@@ -220,7 +220,7 @@ function adzworld_create_showcase() {
 	$rotation_key = adzworld_showcase_rotation();
 
 	if ( '' === $rotation_key ) {
-		set_transient( $notice, __( 'The showcase page needs at least one rotation slot. Add an adz or connect a provider first.', 'adz-world' ), MINUTE_IN_SECONDS );
+		set_transient( $notice, __( 'The showcase page needs at least one rotation slot. Add adz or connect a provider first.', 'adz-world' ), MINUTE_IN_SECONDS );
 		wp_safe_redirect( adzworld_desk_url( 'rotation' ) );
 		exit;
 	}

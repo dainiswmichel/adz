@@ -1009,6 +1009,12 @@ function adzworld_score_ad( $ad_id, $pref ) {
 		$score += 3;
 	}
 
+	$feedback = function_exists( 'adzworld_current_feedback' ) ? adzworld_current_feedback() : array();
+	$key      = sanitize_key( 'ad-' . $post->ID );
+	if ( isset( $feedback[ $key ]['score'] ) ) {
+		$score += (int) round( $feedback[ $key ]['score'] / 10 );
+	}
+
 	return max( 0, $score );
 }
 

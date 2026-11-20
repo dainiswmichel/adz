@@ -243,11 +243,138 @@
 	 * @param {Object} values Request values.
 	 * @return {Promise} Parsed JSON response.
 	 */
+	/*
+	 * The slide the reader last touched. Every request a reader makes is about
+	 * that slide, so its rotation, slot and adz travel with the request and the
+	 * journey records exactly what the reader acted on.
+	 */
+	var journeySlide = null;
+
+	/**
+	 * Remember the slide holding an element the reader is using.
+	 *
+	 * @param {Event} event Pointer or focus event.
+	 */
+	function noteJourneySlide( event ) {
+		var slide = event.target && event.target.closest ? event.target.closest( '.adzworld-slide' ) : null;
+
+		if ( slide ) {
+			journeySlide = slide;
+		}
+	}
+
+	/**
+	 * Rotation, slot and adz of one slide. A product carousel names the product
+	 * on screen; any other slide names its own adz.
+	 *
+	 * @param {HTMLElement|null} slide Slide.
+	 * @return {Object} Request fields.
+	 */
+	function journeyFields( slide ) {
+		var product;
+
+		if ( ! slide ) {
+			return {};
+		}
+		product = slide.querySelector( '.adzworld-results__slide:not([hidden])' );
+		return {
+			journey_rotation: slide.dataset.adzworldRotation || '',
+			journey_slot: slide.dataset.adzworldSlot || '',
+			journey_position: slide.dataset.adzworldSlotPosition || '',
+			journey_ad: product ? product.dataset.adzworldResultTarget || '' : slide.dataset.adzworldAd || ''
+		};
+	}
+
+	/**
+	 * Show a slot's response message for a few seconds.
+	 *
+	 * @param {HTMLElement|null} slide Slide.
+	 * @param {string}           text  Message.
+	 */
+	function showResponse( slide, text ) {
+		var line = slide ? slide.querySelector( ':scope > .adzworld-response' ) : null;
+
+		if ( ! line || ! text ) {
+			return;
+		}
+		line.textContent = text;
+		line.hidden = false;
+		window.clearTimeout( Number( line.dataset.adzworldTimer || 0 ) );
+		line.dataset.adzworldTimer = String(
+			window.setTimeout(
+				function () {
+					line.hidden = true;
+				},
+				8000
+			)
+		);
+	}
+
+	/**
+	 * Keep a response message across the reload that follows some changes.
+	 * Refinements reload the page; ratings do not.
+	 *
+	 * @param {HTMLElement|null} slide Slide.
+	 * @param {string}           text  Message.
+	 */
+	function rememberResponse( slide, text ) {
+		if ( ! slide || ! text ) {
+			return;
+		}
+		try {
+			window.sessionStorage.setItem(
+				'adzworldResponse',
+				JSON.stringify(
+					{
+						rotation: slide.dataset.adzworldRotation || '',
+						slot: slide.dataset.adzworldSlot || '',
+						text: text,
+						at: Date.now()
+					}
+				)
+			);
+		} catch ( error ) {
+			// The message is a courtesy; the change itself is saved.
+		}
+	}
+
+	/**
+	 * Show a response message remembered before a reload.
+	 */
+	function restoreResponse() {
+		var saved;
+		var slide;
+
+		try {
+			saved = JSON.parse( window.sessionStorage.getItem( 'adzworldResponse' ) || 'null' );
+			window.sessionStorage.removeItem( 'adzworldResponse' );
+		} catch ( error ) {
+			saved = null;
+		}
+		// Only the reload that follows a change shows the message again.
+		if ( ! saved || ! saved.rotation || Date.now() - Number( saved.at || 0 ) > 10000 ) {
+			return;
+		}
+		slide = Array.from( document.querySelectorAll( '.adzworld-slide' ) ).find(
+			function ( candidate ) {
+				return candidate.dataset.adzworldRotation === saved.rotation && candidate.dataset.adzworldSlot === saved.slot;
+			}
+		);
+		showResponse( slide || null, saved.text );
+	}
+
 	function post( action, nonce, values ) {
 		var body = new window.FormData();
+		var slide = journeySlide;
+		var fields = journeyFields( slide );
 
 		body.append( 'action', action );
 		body.append( 'nonce', nonce );
+		Object.keys( fields ).forEach(
+			function ( key ) {
+				body.append( key, fields[ key ] );
+			}
+		);
 		Object.keys( values ).forEach(
 			function ( key ) {
 				body.append( key, values[ key ] );
@@ -264,6 +391,14 @@
 		).then(
 			function ( response ) {
 				return response.json();
+			}
+		).then(
+			function ( payload ) {
+				if ( payload && payload.success && payload.data && payload.data.response ) {
+					rememberResponse( slide, payload.data.response );
+					showResponse( slide, payload.data.response );
+				}
+				return payload;
 			}
 		);
 	}
@@ -326,45 +461,28 @@
 		}
 
 		function selectEvaluation( slide ) {
-			var outerSlide;
+			var input;
+			var output;
 			var status;
-			var request;
+			var score;
 
 			if ( ! evaluation || ! slide ) {
 				return;
 			}
-			outerSlide = results.closest( '.adzworld-slide' );
+			input = evaluation.querySelector( 'input[type="range"]' );
+			output = evaluation.querySelector( 'output' );
 			status = evaluation.querySelector( '.adzworld-evaluation__status' );
-			request = results.dataset.adzworldRequest || '';
+			score = Number( slide.dataset.adzworldResultScore || 0 );
 			evaluation.dataset.adzworldFeedbackTarget = slide.dataset.adzworldResultTarget || '';
-			evaluation.dataset.adzworldFeedbackProvider = slide.dataset.adzworldProvider || '';
-			evaluation.dataset.adzworldFeedbackItemId = slide.dataset.adzworldItemId || '';
-			evaluation.dataset.adzworldFeedbackCategory = outerSlide ? outerSlide.dataset.adzworldCategory || '' : '';
-			evaluation.dataset.adzworldFeedbackRotation = outerSlide ? outerSlide.dataset.adzworldRotation || '' : '';
-			evaluation.dataset.adzworldFeedbackSlot = outerSlide ? outerSlide.dataset.adzworldCategorySlot || '0' : '0';
-			evaluation.querySelectorAll( '[data-adzworld-response]' ).forEach(
-				function ( button ) {
-					button.classList.remove( 'is-selected' );
-					button.removeAttribute( 'aria-pressed' );
-				}
-			);
+			if ( input ) {
+				input.value = String( score );
+				input.dispatchEvent( new window.Event( 'input', { bubbles: true } ) );
+			}
+			if ( output ) {
+				output.textContent = evaluationLabel( score );
+			}
 			if ( status ) {
 				status.textContent = '';
-			}
-			if ( ! slide.dataset.adzworldImpressionRecorded ) {
-				slide.dataset.adzworldImpressionRecorded = '1';
-				post(
-					'adzworld_journey_impression',
-					settings.feedbackNonce,
-					{
-						provider: evaluation.dataset.adzworldFeedbackProvider,
-						item_id: evaluation.dataset.adzworldFeedbackItemId,
-						category: evaluation.dataset.adzworldFeedbackCategory,
-						rotation: evaluation.dataset.adzworldFeedbackRotation,
-						slot: evaluation.dataset.adzworldFeedbackSlot,
-						request: request
-					}
-				);
 			}
 		}
 
@@ -409,6 +527,28 @@
 			return;
 		}
 
+		rotation.querySelectorAll( '[data-adzworld-countdown]' ).forEach(
+			function ( node ) {
+				var remaining = Number( node.getAttribute( 'data-adzworld-countdown' ) ) || 0;
+				var output = node.querySelector( '[data-adzworld-countdown-num]' );
+				var timer;
+
+				if ( ! output || remaining < 1 ) {
+					return;
+				}
+				timer = window.setInterval(
+					function () {
+						remaining -= 1;
+						if ( remaining < 0 ) {
+							window.clearInterval( timer );
+							return;
+						}
+						output.textContent = String( remaining );
+					},
+					1000
+				);
+			}
+		);
 		rotation.querySelectorAll( '.adzworld-results' ).forEach( prepareResults );
 		rotation.classList.add( 'adzworld-enhanced' );
 
@@ -691,7 +831,6 @@
 			'submit',
 			function ( event ) {
 				var mode = improveTarget ? 'improve' : ( event.submitter && event.submitter.value ? event.submitter.value : 'refine' );
-				var evaluation = form.closest( '.adzworld-evaluation' );
 
 				event.preventDefault();
 				if ( ! input || ! input.value.trim() ) {
@@ -704,12 +843,7 @@
 					{
 						mode: mode,
 						refinement: input.value,
-						target: improveTarget,
-						provider: evaluation ? evaluation.dataset.adzworldFeedbackProvider || form.dataset.adzworldProvider || '' : form.dataset.adzworldProvider || '',
-						item_id: evaluation ? evaluation.dataset.adzworldFeedbackItemId || '' : '',
-						category: evaluation ? evaluation.dataset.adzworldFeedbackCategory || form.dataset.adzworldCategory || '' : form.dataset.adzworldCategory || '',
-						rotation: evaluation ? evaluation.dataset.adzworldFeedbackRotation || form.dataset.adzworldRotation || '' : form.dataset.adzworldRotation || '',
-						slot: evaluation ? evaluation.dataset.adzworldFeedbackSlot || form.dataset.adzworldSlot || '0' : form.dataset.adzworldSlot || '0'
+						target: improveTarget
 					}
 				).then(
 					function ( payload ) {
@@ -890,67 +1024,98 @@
 	}
 
 	/**
+	 * Human-readable label for immediate slider feedback.
+	 *
+	 * @param {number} score Evaluation score.
+	 * @return {string} Evaluation label.
+	 */
+	function evaluationLabel( score ) {
+		var bands = Array.isArray( settings.bands ) ? settings.bands : [];
+		var index;
+
+		for ( index = 0; index < bands.length; index++ ) {
+			if ( score >= Number( bands[ index ].from ) && score <= Number( bands[ index ].to ) ) {
+				return bands[ index ].label;
+			}
+		}
+		return '';
+	}
+
+	/**
 	 * Wire one explicit evaluation control.
 	 *
 	 * @param {HTMLElement} control Evaluation root.
 	 */
 	function prepareEvaluation( control ) {
+		var input = control.querySelector( 'input[type="range"]' );
+		var output = control.querySelector( 'output' );
 		var status = control.querySelector( '.adzworld-evaluation__status' );
 
-		control.addEventListener(
-			'click',
-			function ( event ) {
-				var button = event.target.closest( '[data-adzworld-response]' );
-				var response;
+		if ( ! input ) {
+			return;
+		}
 
-				if ( ! button || ! control.contains( button ) ) {
-					return;
+		function reflect() {
+			var score = Number( input.value );
+			var scoreClass = 'is-score-' + String( score ).replace( '-', 'minus-' );
+
+			input.classList.toggle( 'is-negative', score < 0 );
+			input.classList.toggle( 'is-positive', score > 0 );
+			Array.from( input.classList ).forEach(
+				function ( className ) {
+					if ( 0 === className.indexOf( 'is-score-' ) ) {
+						input.classList.remove( className );
+					}
 				}
-				response = button.dataset.adzworldResponse || '';
-				button.disabled = true;
+			);
+			input.classList.add( scoreClass );
+			if ( output ) {
+				output.textContent = evaluationLabel( score );
+			}
+		}
+
+		input.addEventListener( 'input', reflect );
+		input.addEventListener(
+			'change',
+			function () {
+				var results = control.closest( '[data-adzworld-results]' );
+				var active = results ? results.querySelector( '.adzworld-results__slide:not([hidden])' ) : null;
+
+				if ( active ) {
+					active.dataset.adzworldResultScore = input.value;
+				}
 				post(
 					'adzworld_evaluate',
 					settings.feedbackNonce,
 					{
-						response: response,
-						provider: control.dataset.adzworldFeedbackProvider || '',
-						item_id: control.dataset.adzworldFeedbackItemId || '',
-						category: control.dataset.adzworldFeedbackCategory || '',
-						rotation: control.dataset.adzworldFeedbackRotation || '',
-						slot: control.dataset.adzworldFeedbackSlot || '0'
+						score: input.value,
+						target: control.dataset.adzworldFeedbackTarget || ''
 					}
 				).then(
 					function ( payload ) {
-						button.disabled = false;
-						if ( payload && payload.success ) {
-							control.querySelectorAll( '[data-adzworld-response]' ).forEach(
-								function ( choice ) {
-									var selected = choice === button;
-
-									choice.classList.toggle( 'is-selected', selected );
-									choice.setAttribute( 'aria-pressed', String( selected ) );
-								}
-							);
+						if ( output && payload && payload.success ) {
+							output.textContent = payload.data.label;
 						}
 						if ( status ) {
 							status.textContent = payload && payload.data ? payload.data.message : '';
-						}
-						if ( payload && payload.success && 'dislike' === response ) {
-							window.location.reload();
 						}
 					}
 				);
 			}
 		);
+		reflect();
 	}
 
 	function init() {
 		if ( ! window.fetch || ! window.FormData || ! settings.ajaxUrl ) {
 			return;
 		}
+		document.addEventListener( 'pointerdown', noteJourneySlide, true );
+		document.addEventListener( 'focusin', noteJourneySlide, true );
 		document.querySelectorAll( '.adzworld-rotation' ).forEach( prepareRotation );
 		document.querySelectorAll( '[data-adz-panel]' ).forEach( preparePanel );
 		document.querySelectorAll( '[data-adzworld-feedback-target]' ).forEach( prepareEvaluation );
+		restoreResponse();
 		document.addEventListener(
 			'adzworld:mount-network',
 			function ( event ) {

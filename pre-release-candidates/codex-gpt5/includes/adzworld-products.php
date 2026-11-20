@@ -100,7 +100,7 @@ function adzworld_products_normalise_row( $row, $provider_id = '' ) {
 		'price'    => isset( $row['price'] ) ? trim( wp_strip_all_tags( (string) $row['price'] ) ) : '',
 		'provider' => $provider,
 		'source'   => isset( $labels[ $provider ] ) ? $labels[ $provider ] : '',
-		'item_id'  => isset( $row['item_id'] ) ? sanitize_text_field( (string) $row['item_id'] ) : '',
+		'item_id'  => isset( $row['item_id'] ) ? sanitize_key( (string) $row['item_id'] ) : '',
 	);
 }
 
@@ -149,10 +149,9 @@ function adzworld_products_interleave( $rows, $limit = ADZWORLD_PRODUCTS_LIMIT )
  *
  * @param string $request  Reader's request: the category and its refinements.
  * @param string $provider Optional provider id for a provider-specific slot.
- * @param array  $context  Rotation, slot, and category scope.
  * @return array<int,array<string,string>> Normalised, interleaved rows.
  */
-function adzworld_products_collect( $request, $provider = '', $context = array() ) {
+function adzworld_products_collect( $request, $provider = '' ) {
 	$request  = trim( wp_strip_all_tags( (string) $request ) );
 	$provider = sanitize_key( (string) $provider );
 
@@ -176,28 +175,14 @@ function adzworld_products_collect( $request, $provider = '', $context = array()
 		return array();
 	}
 
-	$clean             = array();
-	$seen              = array();
-	$suppressed_by_key = array();
+	$clean = array();
+	$seen  = array();
 	foreach ( $rows as $row ) {
 		$normal = adzworld_products_normalise_row( $row );
 		if ( null === $normal ) {
 			continue;
 		}
 		if ( '' !== $provider && $provider !== $normal['provider'] ) {
-			continue;
-		}
-		if ( ! isset( $suppressed_by_key[ $normal['provider'] ] ) ) {
-			$suppressed_by_key[ $normal['provider'] ] = function_exists( 'adzworld_journey_suppressed_items' )
-				? adzworld_journey_suppressed_items(
-					isset( $context['rotation'] ) ? (string) $context['rotation'] : '',
-					isset( $context['slot'] ) ? (int) $context['slot'] : 0,
-					isset( $context['category'] ) ? (string) $context['category'] : '',
-					$normal['provider']
-				)
-				: array();
-		}
-		if ( in_array( $normal['item_id'], $suppressed_by_key[ $normal['provider'] ], true ) ) {
 			continue;
 		}
 

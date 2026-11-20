@@ -828,7 +828,7 @@ add_filter( 'script_loader_tag', 'adzworld_network_script_tag', 10, 2 );
 function adzworld_network_register_script( $handle, $src, $footer, $deps = array(), $before = '' ) {
 	static $sent = array();
 	if ( ! wp_script_is( $handle, 'enqueued' ) ) {
-		wp_enqueue_script( $handle, $src, $deps, '1.0.9', $footer );
+		wp_enqueue_script( $handle, $src, $deps, ADZWORLD_VERSION, $footer );
 	}
 	if ( '' === $before ) {
 		return;

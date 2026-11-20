@@ -109,6 +109,14 @@ function adzworld_ebay_token( $account ) {
 	if ( is_string( $cached ) && '' !== $cached ) {
 		return $cached;
 	}
+	if ( ! function_exists( 'sodium_bin2base64' ) ) {
+		return '';
+	}
+
+	$credentials = sodium_bin2base64(
+		$account['clientid'] . ':' . $account['clientsecret'],
+		SODIUM_BASE64_VARIANT_ORIGINAL
+	);
 
 	$response = wp_remote_post(
 		$host . '/identity/v1/oauth2/token',
@@ -116,7 +124,7 @@ function adzworld_ebay_token( $account ) {
 			'timeout' => 8,
 			'headers' => array(
 				'Content-Type'  => 'application/x-www-form-urlencoded',
-				'Authorization' => 'Basic ' . base64_encode( $account['clientid'] . ':' . $account['clientsecret'] ),
+				'Authorization' => 'Basic ' . $credentials,
 			),
 			'body'    => array(
 				'grant_type' => 'client_credentials',

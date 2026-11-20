@@ -73,7 +73,6 @@ class Adz_NetworkAuthorization {
 		$adz_publisher_options = get_option( 'adz_publisher_options', array() );
 		$adz_publisher_options = is_array( $adz_publisher_options ) ? $adz_publisher_options : array();
 		if ( ! empty( $adz_ad_options['accept_tos_checkbox'] ) ) {
-			$paypal_email      = isset( $adz_ad_options['paypal_email'] ) ? $adz_ad_options['paypal_email'] : '';
 			$adzdotworld_email = isset( $adz_ad_options['adzdotworld_email'] ) ? $adz_ad_options['adzdotworld_email'] : '';
 
 			$referral_code             = isset( $adz_ad_options['referral_code'] ) ? $adz_ad_options['referral_code'] : '';
@@ -82,7 +81,7 @@ class Adz_NetworkAuthorization {
 			$name                      = get_bloginfo( 'name' );
 			$email                     = get_bloginfo( 'admin_email' );
 			$adzworld_network_base_url = untrailingslashit( adzworld_network_base_url() );
-			$signature                 = hash( 'sha256', wp_json_encode( array( $paypal_email, $adzdotworld_email, $referral_code, $preferences, $url, $name, $email, $adzworld_network_base_url ) ) );
+			$signature                 = hash( 'sha256', wp_json_encode( array( $adzdotworld_email, $referral_code, $preferences, $url, $name, $email, $adzworld_network_base_url ) ) );
 		}
 
 		if ( isset( $adz_publisher_options['adz_registered'] ) && $adz_publisher_options['adz_registered'] ) {
@@ -112,7 +111,6 @@ class Adz_NetworkAuthorization {
 			$post_data['adzdotworld_email']            = $adzdotworld_email;
 			$post_data['publisher_user_id']            = isset( $adz_publisher_options['adz_registered']['publisher_user_id'] ) ? $adz_publisher_options['adz_registered']['publisher_user_id'] : 0;
 			$post_data['ad_networks']                  = array();
-			$post_data['ad_networks']['paypal_email']  = $paypal_email;
 			$post_data['ad_networks']['referral_code'] = $referral_code;
 			$post_data['ad_networks']['preferences']   = $preferences;
 

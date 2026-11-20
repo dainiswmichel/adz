@@ -737,11 +737,13 @@ function adzworld_amazon_result_slide( $result, $index, $count ) {
  */
 function adzworld_affiliate_result_slide( $result, $index, $count ) {
 	$provider = isset( $result['provider'] ) ? sanitize_key( (string) $result['provider'] ) : '';
-	$item_id  = isset( $result['item_id'] ) ? sanitize_text_field( (string) $result['item_id'] ) : '';
+	$item_id  = isset( $result['item_id'] ) ? sanitize_key( (string) $result['item_id'] ) : '';
 	if ( '' === $item_id ) {
 		$item_id = md5( (string) $result['url'] );
 	}
 	$target      = sanitize_key( 'provider-' . $provider . '-' . $item_id );
+	$feedback    = adzworld_current_feedback();
+	$score       = isset( $feedback[ $target ]['score'] ) ? (int) $feedback[ $target ]['score'] : 0;
 	$price       = '';
 	$offer_class = 'adzworld-results__offer';
 	if ( '' !== $result['price'] ) {
@@ -762,7 +764,7 @@ function adzworld_affiliate_result_slide( $result, $index, $count ) {
 		$source = '<span class="adzworld-results__source">' . esc_html( $result['source_label'] ) . '</span>';
 	}
 
-	return '<section class="adzworld-results__slide" data-adzworld-result-target="' . esc_attr( $target ) . '" data-adzworld-provider="' . esc_attr( $provider ) . '" data-adzworld-item-id="' . esc_attr( $item_id ) . '"' . ( 0 === $index ? '' : ' hidden' ) . ' aria-roledescription="' . esc_attr__( 'slide', 'adz-world' ) . '" aria-label="'
+	return '<section class="adzworld-results__slide" data-adzworld-result-target="' . esc_attr( $target ) . '" data-adzworld-result-score="' . esc_attr( (string) $score ) . '"' . ( 0 === $index ? '' : ' hidden' ) . ' aria-roledescription="' . esc_attr__( 'slide', 'adz-world' ) . '" aria-label="'
 		. esc_attr( ( $index + 1 ) . ' / ' . $count ) . '"><a class="' . esc_attr( $offer_class ) . '" href="' . esc_url( $result['url'] ) . '" rel="sponsored nofollow" target="_blank">'
 		. $media
 		. '<span class="adzworld-results__body"><span class="adzworld-results__product-title">' . esc_html( $result['title'] ) . '</span>'
@@ -813,21 +815,11 @@ function adzworld_affiliate_product_results( $request ) {
  * @param string $category Category.
  * @param string $title    Title row saved on the adz. Empty prints no row.
  * @param string $provider Optional provider id for a provider-specific slot.
- * @param string $rotation Rotation name.
- * @param int    $slot     Category slot number.
  * @return string Results markup, empty when no search account is connected.
  */
-function adzworld_affiliate_showcase( $pref, $category, $title = '', $provider = '', $rotation = '', $slot = 0 ) {
+function adzworld_affiliate_showcase( $pref, $category, $title = '', $provider = '' ) {
 	$request = adzworld_affiliate_request_string( $pref, $category );
-	$results = adzworld_products_collect(
-		$request,
-		$provider,
-		array(
-			'rotation' => $rotation,
-			'slot'     => $slot,
-			'category' => $category,
-		)
-	);
+	$results = adzworld_products_collect( $request, $provider );
 	$scoped  = adzworld_category_refinement_preference( $pref, $category );
 	$title   = function_exists( 'adzworld_internal_sanitize_title_row' )
 		? adzworld_internal_sanitize_title_row( $title )
@@ -882,7 +874,7 @@ function adzworld_affiliate_showcase( $pref, $category, $title = '', $provider =
 			. esc_html__( 'Next result', 'adz-world' ) . '</span></button>';
 	}
 
-	return '<div class="adzworld-results" data-adzworld-results data-adzworld-request="' . esc_attr( $request ) . '" role="region" aria-label="' . esc_attr( '' !== $title ? $title : __( 'Search results', 'adz-world' ) ) . '">'
+	return '<div class="adzworld-results" data-adzworld-results role="region" aria-label="' . esc_attr( '' !== $title ? $title : __( 'Search results', 'adz-world' ) ) . '">'
 		. $row
 		. '<div class="adzworld-results__slides">' . $slides . '</div>'
 		. '<div class="adzworld-results__navigation" hidden>' . $buttons . '</div></div>';
