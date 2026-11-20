@@ -280,8 +280,9 @@ controlled by adzAdmins.
 
 = 1.1.1 =
 * Rating bands now store a start and an end, and both are editable.
-* Added the Standard, Ember, and Tide slider colour themes. Standard keeps the
-  existing red, gold, and green curve.
+* Added named slider themes. Standard keeps the existing gradient. Ember is
+  ashy grey, black, and glowing ember orange. An adzadmin saves any other
+  theme as three hex colours, and the plugin draws the gradient.
 
 = 1.1.0 =
 * Renamed the Manual tab to Interactive Documentation and moved it to the final

@@ -1744,28 +1744,20 @@ body.wp-admin .adzworld-paid-card .adzworld-connection-card select {
 	);
 }
 
-.adzworld-bands__swatch--ember {
-	background: linear-gradient(
-		90deg,
-		hsl(6 72% 36%) 0%,
-		hsl(18 88% 46%) 20%,
-		hsl(34 96% 50%) 38%,
-		hsl(34 96% 50%) 62%,
-		hsl(72 72% 42%) 80%,
-		hsl(116 62% 30%) 100%
-	);
+.adzworld-bands__hex {
+	align-items: center;
+	display: inline-flex;
+	gap: 8px;
+	margin: 0 16px 8px 0;
 }
 
-.adzworld-bands__swatch--tide {
-	background: linear-gradient(
-		90deg,
-		hsl(222 62% 40%) 0%,
-		hsl(200 70% 46%) 20%,
-		hsl(188 35% 72%) 38%,
-		hsl(188 35% 72%) 62%,
-		hsl(168 50% 42%) 80%,
-		hsl(152 58% 32%) 100%
-	);
+.adzworld-bands__hex input[type="text"] {
+	font-variant-numeric: tabular-nums;
+	width: 7rem;
+}
+
+.adzworld-bands__save-theme {
+	margin-top: 8px;
 }
 
 .adzworld-bands__table {

@@ -161,6 +161,9 @@ function adzworld_desk_assets() {
 	}
 	$path = dirname( __DIR__ ) . '/assets/admin-desk.css';
 	wp_enqueue_style( 'adzworld-desk', plugins_url( 'assets/admin-desk.css', dirname( __DIR__ ) . '/adz-world.php' ), array(), (string) filemtime( $path ) );
+	if ( function_exists( 'adzworld_ratings_slider_swatch_css' ) ) {
+		wp_add_inline_style( 'adzworld-desk', adzworld_ratings_slider_swatch_css() );
+	}
 }
 add_action( 'admin_enqueue_scripts', 'adzworld_desk_assets' );
 

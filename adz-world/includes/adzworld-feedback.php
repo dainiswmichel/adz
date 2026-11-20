@@ -167,7 +167,7 @@ function adzworld_feedback_control( $target, $category, $can_evaluate = true, $s
 
 	ob_start();
 	?>
-	<details class="adzworld-evaluation <?php echo esc_attr( 'adzworld-ratings-slider-' . adzworld_ratings_slider_theme() ); ?>"
+	<details class="adzworld-evaluation <?php echo esc_attr( adzworld_ratings_slider_theme_class() ); ?>"
 		<?php if ( $can_evaluate ) : ?>
 			data-adzworld-feedback-target="<?php echo esc_attr( $target ); ?>"
 		<?php endif; ?>
