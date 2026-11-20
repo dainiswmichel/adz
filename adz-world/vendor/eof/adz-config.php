@@ -148,7 +148,7 @@ function adzworld_settings_setup() {
 				'title'   => sprintf( 'Connect to the %s network', $adzworld_host ),
 				'type'    => 'checkbox',
 				'default' => '0', // 1 = on | 0 = off
-				'desc'    => sprintf( 'Off by default. Your site serves only the adz you create here, and contacts no outside server. Switching this on connects the site to the %1$s network: your site will send your site URL, admin email and visitor IP addresses to %1$s in order to fetch adz, and the adz you publish will be shared with the network. See <a href="%2$s">Terms of Service</a> and <a href="%3$s">Privacy Policy</a>.', esc_html( $adzworld_host ), $adzworld_terms, $adzworld_privacy ),
+				'desc'    => sprintf( 'Off by default. Your site serves only the adz you create here, and contacts no outside server. Switching this on connects the site to the %1$s network. Registration sends the site URL, site title, and admin email. Requests for adz send the publisher identifier, access token, and referral code. They do not send the audience member\'s IP address. Publishing an adz sends its title, content, and categories. See <a href="%2$s">Terms of Service</a> and <a href="%3$s">Privacy Policy</a>.', esc_html( $adzworld_host ), $adzworld_terms, $adzworld_privacy ),
 			),
 			'adzdotworld_email'           => array(
 				'type'    => 'email',
