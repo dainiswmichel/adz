@@ -448,7 +448,8 @@ function adzworld_response_settings() {
 	echo '<h2>' . esc_html__( 'Response message', 'adz-world' ) . '</h2>';
 	echo '<p>' . esc_html__( 'After a reader rates an adzad, refines it, or changes its category, the adzad panel shows this message. In the Rotation tab, each slot can use this message, its own message, or none.', 'adz-world' ) . '</p>';
 	echo '<p><label for="adzworld-response-message">' . esc_html__( 'Default response message', 'adz-world' ) . '</label><br>'
-		. '<input class="large-text" type="text" maxlength="300" id="adzworld-response-message" name="adzworld_response_message" value="' . esc_attr( adzworld_default_response_message() ) . '"></p>';
+		. '<textarea class="adzworld-bands__message" maxlength="300" rows="3" cols="60" id="adzworld-response-message" name="adzworld_response_message">'
+		. esc_textarea( adzworld_default_response_message() ) . '</textarea></p>';
 	echo '<p class="submit">';
 	submit_button( __( 'Save ratings bands and slider colours', 'adz-world' ), 'secondary', 'adzworld_responses_submit', false );
 	echo '</p></form></section>';

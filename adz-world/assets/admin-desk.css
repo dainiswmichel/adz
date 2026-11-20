@@ -1795,6 +1795,13 @@ body.wp-admin .adzworld-paid-card .adzworld-connection-card select {
 	width: 100%;
 }
 
+.adzworld-bands__message {
+	box-sizing: border-box;
+	display: block;
+	max-width: 40rem;
+	width: 100%;
+}
+
 /* Response setting inside each rotation slot. */
 .adzworld-admin-slot__response {
 	display: grid;
