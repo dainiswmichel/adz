@@ -1789,22 +1789,29 @@ body.wp-admin .adzworld-paid-card .adzworld-connection-card select {
 	padding: 4px 16px 12px;
 }
 
-.adzworld-template-lines__now th {
-	width: 14rem;
+.adzworld-template-lines__now th[scope="row"] {
+	width: 11rem;
 }
 
-.adzworld-template-lines__name {
+.adzworld-template-lines__now code {
 	color: #646970;
 	display: block;
+	font-size: 12px;
 	font-weight: 400;
 }
 
-.adzworld-template-lines__outcome {
-	margin-left: 1.2em;
+.adzworld-template-lines__group th {
+	background: #f6f7f7;
 }
 
-.adzworld-template-lines__formats {
-	margin-bottom: 0;
+.adzworld-template-lines__field-note {
+	color: #646970;
+	margin: 0.15em 0 0.8em;
+}
+
+.adzworld-template-lines__empty {
+	color: #646970;
+	font-style: italic;
 }
 
 .adzworld-template-lines textarea {
@@ -1822,8 +1829,29 @@ body.wp-admin .adzworld-paid-card .adzworld-connection-card select {
 }
 
 .adzworld-template-lines__sample {
+	align-items: baseline;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35em 0.75em;
 	margin: 0;
 	padding: 10px 0;
+}
+
+.adzworld-template-lines__sample.adzworld-align-left {
+	justify-content: flex-start;
+}
+
+.adzworld-template-lines__sample.adzworld-align-center {
+	justify-content: center;
+}
+
+.adzworld-template-lines__sample.adzworld-align-right {
+	justify-content: flex-end;
+}
+
+.adzworld-template-lines__count-num {
+	font-variant-numeric: tabular-nums;
+	font-weight: 600;
 }
 
 .adzworld-template-lines__sample[data-adzworld-template-header-row] {

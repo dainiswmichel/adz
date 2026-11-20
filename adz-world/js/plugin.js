@@ -58,7 +58,11 @@ jQuery( document ).ready(
 
 		function adzworldTemplateLine( field, sample, alignName, row ) {
 			var text = field.val();
-			sample.text( text ? text : sample.data( 'emptyLabel' ) );
+			if ( text ) {
+				sample.text( text ).removeClass( 'adzworld-template-lines__empty' );
+			} else {
+				sample.text( sample.data( 'emptyLabel' ) ).addClass( 'adzworld-template-lines__empty' );
+			}
 			row.removeClass( 'adzworld-align-left adzworld-align-center adzworld-align-right' ).addClass( 'adzworld-align-' + ( jQuery( 'input[name="' + alignName + '"]:checked' ).val() || 'center' ) );
 		}
 
@@ -70,6 +74,17 @@ jQuery( document ).ready(
 		function adzworldTemplateSaved( key, value ) {
 			var cell  = jQuery( '[data-adzworld-saved="' + key + '"]' );
 			var empty = cell.data( 'emptyLabel' );
+			var prefix;
+			var label;
+			if ( ! cell.length ) {
+				return;
+			}
+			if ( 'align' === cell.data( 'kind' ) ) {
+				prefix = 'header_style' === key ? 'header_' : 'footer_';
+				label  = jQuery( '#' + prefix + value ).closest( 'label' ).text();
+				cell.text( label ? jQuery.trim( label ) : value );
+				return;
+			}
 			cell.text( value ? value : ( empty ? empty : '' ) );
 		}
 
