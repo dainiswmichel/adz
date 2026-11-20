@@ -1756,20 +1756,16 @@ body.wp-admin .adzworld-paid-card .adzworld-connection-card select {
 	);
 }
 
-.adzworld-bands__hex {
-	align-items: center;
-	display: inline-flex;
-	gap: 8px;
-	margin: 0 16px 8px 0;
-}
-
-.adzworld-bands__hex input[type="text"] {
-	font-variant-numeric: tabular-nums;
-	width: 7rem;
-}
-
-.adzworld-bands__save-theme {
-	margin-top: 8px;
+.adzworld-bands__swatch--adz-ratings-ember-slider-theme {
+	background: linear-gradient(
+		90deg,
+		#A3A7AD 0%,
+		#2E2F30 20%,
+		#000 38%,
+		#000 62%,
+		#B84C00 80%,
+		#FF6A00 100%
+	);
 }
 
 .adzworld-template-lines {

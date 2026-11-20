@@ -32,30 +32,6 @@ jQuery( document ).ready(
 			}
 		);
 
-		jQuery( '.adzworld-bands__hex' ).each(
-			function () {
-				var row    = jQuery( this );
-				var picker = row.find( 'input[type="color"]' );
-				var text   = row.find( 'input[type="text"]' );
-
-				picker.on(
-					'input',
-					function () {
-						text.val( picker.val().toUpperCase() );
-					}
-				);
-				text.on(
-					'input',
-					function () {
-						var value = text.val().trim();
-						if ( /^#[0-9A-Fa-f]{6}$/.test( value ) ) {
-							picker.val( value );
-						}
-					}
-				);
-			}
-		);
-
 		function adzworldTemplateLine( field, sample, alignName, row ) {
 			var text = field.val();
 			if ( text ) {

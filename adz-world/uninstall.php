@@ -14,17 +14,6 @@ defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 
 wp_clear_scheduled_hook( 'adzworld_logs_cleanup' );
 
-$adzworld_slider_stylesheet = get_option( 'adzworld_ratings_slider_stylesheet', array() );
-if ( is_array( $adzworld_slider_stylesheet ) && isset( $adzworld_slider_stylesheet['file'] ) && is_string( $adzworld_slider_stylesheet['file'] ) ) {
-	$adzworld_uploads         = wp_upload_dir();
-	$adzworld_upload_base     = isset( $adzworld_uploads['basedir'] ) ? trailingslashit( wp_normalize_path( $adzworld_uploads['basedir'] ) ) : '';
-	$adzworld_slider_file     = wp_normalize_path( $adzworld_slider_stylesheet['file'] );
-	$adzworld_file_in_uploads = '' !== $adzworld_upload_base && 0 === strpos( $adzworld_slider_file, $adzworld_upload_base );
-	if ( $adzworld_file_in_uploads && is_file( $adzworld_slider_file ) ) {
-		wp_delete_file( $adzworld_slider_file );
-	}
-}
-
 do {
 	$adzworld_journeys = get_posts(
 		array(
@@ -41,7 +30,7 @@ do {
 	$adzworld_more = 100 === count( $adzworld_journeys );
 } while ( $adzworld_more );
 
-foreach ( array( 'adzworld_logs_settings', 'adzworld_rating_bands', 'adzworld_ratings_slider_theme', 'adzworld_ratings_slider_themes', 'adzworld_ratings_slider_stylesheet', 'adzworld_response_message', 'adzworld_profile_saving' ) as $adzworld_option ) {
+foreach ( array( 'adzworld_logs_settings', 'adzworld_rating_bands', 'adzworld_ratings_slider_theme', 'adzworld_response_message', 'adzworld_profile_saving' ) as $adzworld_option ) {
 	delete_option( $adzworld_option );
 }
 

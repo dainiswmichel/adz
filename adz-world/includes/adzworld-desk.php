@@ -161,15 +161,6 @@ function adzworld_desk_assets() {
 	}
 	$path = dirname( __DIR__ ) . '/assets/admin-desk.css';
 	wp_enqueue_style( 'adzworld-desk', plugins_url( 'assets/admin-desk.css', dirname( __DIR__ ) . '/adz-world.php' ), array(), (string) filemtime( $path ) );
-	$slider_stylesheet = adzworld_ratings_slider_write_stylesheet();
-	if ( ! is_wp_error( $slider_stylesheet ) ) {
-		wp_enqueue_style(
-			'adzworld-ratings-slider-themes',
-			$slider_stylesheet['url'],
-			array( 'adzworld-desk' ),
-			$slider_stylesheet['version']
-		);
-	}
 }
 add_action( 'admin_enqueue_scripts', 'adzworld_desk_assets' );
 

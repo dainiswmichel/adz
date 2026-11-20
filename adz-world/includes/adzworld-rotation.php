@@ -899,6 +899,7 @@ function adzworld_enqueue_rotation_assets() {
 	$style_path  = dirname( __DIR__ ) . '/assets/rotation.css';
 	$script_path = dirname( __DIR__ ) . '/assets/rotation.js';
 	$tide_path   = dirname( __DIR__ ) . '/assets/ratings-slider-tide.css';
+	$ember_path  = dirname( __DIR__ ) . '/assets/ratings-slider-ember.css';
 	wp_enqueue_style(
 		'adzworld-rotation',
 		plugins_url( 'assets/rotation.css', dirname( __DIR__ ) . '/adz-world.php' ),
@@ -911,15 +912,12 @@ function adzworld_enqueue_rotation_assets() {
 		array( 'adzworld-rotation' ),
 		(string) filemtime( $tide_path )
 	);
-	$slider_stylesheet = adzworld_ratings_slider_write_stylesheet();
-	if ( ! is_wp_error( $slider_stylesheet ) ) {
-		wp_enqueue_style(
-			'adzworld-ratings-slider-themes',
-			$slider_stylesheet['url'],
-			array( 'adzworld-rotation' ),
-			$slider_stylesheet['version']
-		);
-	}
+	wp_enqueue_style(
+		'adzworld-ratings-slider-ember',
+		plugins_url( 'assets/ratings-slider-ember.css', dirname( __DIR__ ) . '/adz-world.php' ),
+		array( 'adzworld-rotation' ),
+		(string) filemtime( $ember_path )
+	);
 	wp_enqueue_script(
 		'adzworld-rotation',
 		plugins_url( 'assets/rotation.js', dirname( __DIR__ ) . '/adz-world.php' ),
