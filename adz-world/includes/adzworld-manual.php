@@ -452,6 +452,7 @@ function adzworld_manual_render_setup() {
 
 	adzworld_manual_open( 'is-open', __( 'What the visitor types', 'adz-world' ) );
 	echo '<p>' . esc_html__( 'Put the invitation in the first slot when visitors should say what they are looking for. The question is “What are you looking to buy?”. A long answer keeps a short category, and the rest stays attached as refinements. An adzad already in the rotation moves ahead when its title, body, excerpt, or Ad Type matches. An adzad that is not in a slot is not shown.', 'adz-world' ) . '</p>';
+	echo '<p><time datetime="2026-11-20T14:10:23Z">2026y-11m-20d-UTC14h-10m-23s</time>. ' . esc_html__( 'A refinement can use boolean-like language, such as “no pedals” or “not blue”. adz-world wishes to support user preferences as much as possible, including exclusions. Most surveillance-based advertisement providers do not respect their audiences enough to withhold what those audiences do not wish to see. AvantLink ProductSearch is the provider in this plugin that accepts a leading minus. The other providers are sent the words without that syntax.', 'adz-world' ) . '</p>';
 	echo '</section>';
 
 	adzworld_manual_open( $published > 0 ? 'is-done' : 'is-open', __( 'Add your own adz', 'adz-world' ) );
