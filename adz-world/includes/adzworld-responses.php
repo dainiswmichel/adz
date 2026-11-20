@@ -686,6 +686,30 @@ function adzworld_save_named_slider_theme() {
 }
 
 /**
+ * Save only the default response message.
+ *
+ * @return true|WP_Error
+ */
+function adzworld_save_response_message() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return new WP_Error( 'adzworld_responses_forbidden', __( 'Administrator permission is required.', 'adz-world' ) );
+	}
+	$nonce = isset( $_POST['adzworld_responses_nonce'] ) && is_string( $_POST['adzworld_responses_nonce'] )
+		? sanitize_text_field( wp_unslash( $_POST['adzworld_responses_nonce'] ) ) : '';
+	if ( ! wp_verify_nonce( $nonce, 'adzworld_responses_save' ) ) {
+		return new WP_Error( 'adzworld_responses_nonce', __( 'The ratings save request could not be verified.', 'adz-world' ) );
+	}
+	$message = isset( $_POST['adzworld_response_message'] ) && is_string( $_POST['adzworld_response_message'] )
+		? sanitize_text_field( wp_unslash( $_POST['adzworld_response_message'] ) ) : '';
+	if ( '' === $message ) {
+		return new WP_Error( 'adzworld_responses_message', __( 'The default response message cannot be empty. A slot can still be set to show no message.', 'adz-world' ) );
+	}
+	update_option( ADZWORLD_RESPONSE_OPTION, mb_substr( $message, 0, ADZWORLD_RESPONSE_TEXT_MAX ), false );
+
+	return true;
+}
+
+/**
  * Render the ratings bands and default response message editor.
  *
  * @return void
@@ -696,6 +720,9 @@ function adzworld_response_settings() {
 	if ( null !== filter_input( INPUT_POST, 'adzworld_slider_theme_save', FILTER_UNSAFE_RAW ) ) {
 		$result  = adzworld_save_named_slider_theme();
 		$success = __( 'Slider theme saved.', 'adz-world' );
+	} elseif ( null !== filter_input( INPUT_POST, 'adzworld_response_message_save', FILTER_UNSAFE_RAW ) ) {
+		$result  = adzworld_save_response_message();
+		$success = __( 'Response message saved.', 'adz-world' );
 	} elseif ( null !== filter_input( INPUT_POST, 'adzworld_responses_submit', FILTER_UNSAFE_RAW ) ) {
 		$result = adzworld_save_response_settings();
 	}
@@ -754,6 +781,9 @@ function adzworld_response_settings() {
 			. esc_attr( $band ? $band['label'] : '' ) . '"></td></tr>';
 	}
 	echo '</tbody></table>';
+	echo '<p class="submit">';
+	submit_button( __( 'Save ratings bands and slider colours', 'adz-world' ), 'secondary', 'adzworld_responses_submit', false );
+	echo '</p>';
 
 	$draft = adzworld_default_response_message();
 	if ( is_wp_error( $result ) ) {
@@ -769,6 +799,6 @@ function adzworld_response_settings() {
 		. '<textarea class="adzworld-bands__message" maxlength="300" rows="3" cols="60" id="adzworld-response-message" name="adzworld_response_message">'
 		. esc_textarea( $draft ) . '</textarea></p>';
 	echo '<p class="submit">';
-	submit_button( __( 'Save ratings bands and slider colours', 'adz-world' ), 'secondary', 'adzworld_responses_submit', false );
+	submit_button( __( 'Save response message', 'adz-world' ), 'secondary', 'adzworld_response_message_save', false );
 	echo '</p></form></section>';
 }
