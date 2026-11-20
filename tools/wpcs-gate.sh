@@ -18,6 +18,12 @@ if grep -RInE --include='*.php' \
 	exit 1
 fi
 
+if grep -RInE --include='*.php' --include='*.js' --include='*.html' \
+	'style=|<style|wp_add_inline_style|\.style[[:space:]]*=' "$PLUGIN" "$THEME"; then
+	printf '%s\n' 'Inline or runtime styling is forbidden in production code.' >&2
+	exit 1
+fi
+
 exec "$PHPCS" \
 	--standard="$ROOT/phpcs.xml.dist" \
 	--report=full \

@@ -29,6 +29,9 @@ const ADZWORLD_RATINGS_SLIDER_OPTION = 'adzworld_ratings_slider_theme';
 /** Option holding named slider themes an adzadmin has saved. */
 const ADZWORLD_RATINGS_SLIDER_THEMES_OPTION = 'adzworld_ratings_slider_themes';
 
+/** Option holding the generated external slider-theme stylesheet record. */
+const ADZWORLD_RATINGS_SLIDER_STYLESHEET_OPTION = 'adzworld_ratings_slider_stylesheet';
+
 /** Option holding the site default response message. */
 const ADZWORLD_RESPONSE_OPTION = 'adzworld_response_message';
 
@@ -102,23 +105,23 @@ function adzworld_ratings_slider_hex( $raw ) {
 /**
  * Built-in slider themes.
  *
- * Standard is the curve in assets/rotation.css. Tide is the blue curve in
+ * Default is the curve in assets/rotation.css. Tide is the blue curve in
  * assets/ratings-slider-tide.css. Ember is ashy grey, black, and glowing
- * ember orange. Its gradient is drawn by this file.
+ * ember orange. Ember and named themes are written to an external stylesheet.
  *
  * @return array<string,array{name:string,colors:array<int,string>}>
  */
 function adzworld_ratings_slider_builtin_themes() {
 	return array(
-		'standard' => array(
-			'name'   => __( 'Standard', 'adz-world' ),
+		'adz-ratings-default-slider-theme' => array(
+			'name'   => __( 'Default', 'adz-world' ),
 			'colors' => array(),
 		),
-		'ember'    => array(
+		'adz-ratings-ember-slider-theme'   => array(
 			'name'   => __( 'Ember', 'adz-world' ),
 			'colors' => array( '#A3A7AD', '#000000', '#FF6A00' ),
 		),
-		'tide'     => array(
+		'adz-ratings-tide-slider-theme'    => array(
 			'name'   => __( 'Tide', 'adz-world' ),
 			'colors' => array(),
 		),
@@ -177,30 +180,45 @@ function adzworld_ratings_slider_themes() {
  * @return string Theme slug.
  */
 function adzworld_ratings_slider_theme() {
-	$stored = get_option( ADZWORLD_RATINGS_SLIDER_OPTION, 'standard' );
-	$stored = is_string( $stored ) ? sanitize_key( $stored ) : 'standard';
+	$stored = get_option( ADZWORLD_RATINGS_SLIDER_OPTION, 'adz-ratings-default-slider-theme' );
+	$stored = is_string( $stored ) ? sanitize_key( $stored ) : 'adz-ratings-default-slider-theme';
 
-	return isset( adzworld_ratings_slider_themes()[ $stored ] ) ? $stored : 'standard';
+	return isset( adzworld_ratings_slider_themes()[ $stored ] ) ? $stored : 'adz-ratings-default-slider-theme';
 }
 
 /**
  * Stylesheet class for the active slider theme.
  *
- * Standard uses the curve in assets/rotation.css. Tide uses
- * assets/ratings-slider-tide.css. Every hex theme uses
- * adzworld-ratings-slider-custom, whose rules are built from that theme.
+ * Default uses the curve in assets/rotation.css. Tide uses
+ * assets/ratings-slider-tide.css. Every hex theme has a unique class in the
+ * generated external stylesheet.
  *
  * @return string
  */
 function adzworld_ratings_slider_theme_class() {
 	$themes = adzworld_ratings_slider_themes();
 	$theme  = adzworld_ratings_slider_theme();
-	if ( 'tide' === $theme ) {
-		return 'adzworld-ratings-slider-tide';
-	}
 	$colors = isset( $themes[ $theme ]['colors'] ) ? $themes[ $theme ]['colors'] : array();
+	if ( 3 === count( $colors ) ) {
+		return adzworld_ratings_slider_css_class( $theme );
+	}
 
-	return 3 === count( $colors ) ? 'adzworld-ratings-slider-custom' : 'adzworld-ratings-slider-standard';
+	return $theme;
+}
+
+/**
+ * Stylesheet class for a three-colour slider theme.
+ *
+ * @param string $slug Stored theme slug.
+ * @return string
+ */
+function adzworld_ratings_slider_css_class( $slug ) {
+	$slug = sanitize_html_class( $slug );
+	if ( 'adz-ratings-ember-slider-theme' === $slug ) {
+		return $slug;
+	}
+
+	return 'adz-ratings-custom-' . $slug . '-slider-theme';
 }
 
 /**
@@ -295,42 +313,94 @@ function adzworld_ratings_slider_gradient( $colors ) {
 }
 
 /**
- * Track and thumb rules for the active hex theme.
+ * Track and thumb rules for one hex theme.
  *
- * @param array<int,string> $colors Dislike, middle, and like colours.
+ * @param array<int,string> $colors   Dislike, middle, and like colours.
+ * @param string            $selector Theme class selector.
  * @return string
  */
-function adzworld_ratings_slider_css( $colors ) {
+function adzworld_ratings_slider_css( $colors, $selector ) {
 	if ( 3 !== count( $colors ) ) {
 		return '';
 	}
 	$lines = array(
-		'.adzworld-ratings-slider-custom input[type="range"] { background: ' . adzworld_ratings_slider_gradient( $colors ) . '; }',
+		$selector . ' input[type="range"] { background: ' . adzworld_ratings_slider_gradient( $colors ) . '; }',
 	);
 	for ( $score = ADZWORLD_RATING_MIN; $score <= ADZWORLD_RATING_MAX; $score++ ) {
 		$name    = $score < 0 ? 'minus-' . (string) abs( $score ) : (string) $score;
 		$color   = adzworld_ratings_slider_color_at( $colors, ( $score + 100 ) / 200 );
-		$lines[] = '.adzworld-ratings-slider-custom input.is-score-' . $name . ' { --adzworld-thumb: ' . $color . '; }';
+		$lines[] = $selector . ' input.is-score-' . $name . ' { --adzworld-thumb: ' . $color . '; }';
 	}
 
 	return implode( "\n", $lines );
 }
 
 /**
- * Admin swatches for every hex theme.
+ * External CSS for Ember and every named hex theme.
  *
+ * @param array<string,array{name:string,colors:array<int,string>}>|null $themes Themes to write, or null for saved themes.
  * @return string
  */
-function adzworld_ratings_slider_swatch_css() {
-	$lines = array();
-	foreach ( adzworld_ratings_slider_themes() as $slug => $theme ) {
+function adzworld_ratings_slider_stylesheet_css( $themes = null ) {
+	if ( null === $themes ) {
+		$themes = adzworld_ratings_slider_themes();
+	}
+	$blocks = array();
+	foreach ( $themes as $slug => $theme ) {
 		if ( 3 !== count( $theme['colors'] ) ) {
 			continue;
 		}
-		$lines[] = '.adzworld-bands__swatch--' . sanitize_html_class( $slug ) . ' { background: ' . adzworld_ratings_slider_gradient( $theme['colors'] ) . '; }';
+		$selector = '.' . adzworld_ratings_slider_css_class( $slug );
+		$blocks[] = adzworld_ratings_slider_css( $theme['colors'], $selector );
+		$blocks[] = '.adzworld-bands__swatch--' . sanitize_html_class( $slug ) . ' { background: ' . adzworld_ratings_slider_gradient( $theme['colors'] ) . '; }';
 	}
 
-	return implode( "\n", $lines );
+	return implode( "\n\n", $blocks ) . "\n";
+}
+
+/**
+ * Write the generated slider CSS to uploads and return its record.
+ *
+ * @param array<string,array{name:string,colors:array<int,string>}>|null $themes Themes to write, or null for saved themes.
+ * @return array{url:string,file:string,version:string}|WP_Error
+ */
+function adzworld_ratings_slider_write_stylesheet( $themes = null ) {
+	$css     = adzworld_ratings_slider_stylesheet_css( $themes );
+	$version = substr( hash( 'sha256', $css ), 0, 16 );
+	$current = get_option( ADZWORLD_RATINGS_SLIDER_STYLESHEET_OPTION, array() );
+	if ( is_array( $current )
+		&& isset( $current['url'], $current['file'], $current['version'] )
+		&& $version === $current['version']
+		&& is_string( $current['url'] )
+		&& is_string( $current['file'] )
+		&& is_file( $current['file'] ) ) {
+		return $current;
+	}
+
+	$upload = wp_upload_bits( 'adz-ratings-slider-themes-' . $version . '.css', null, $css );
+	if ( ! empty( $upload['error'] ) ) {
+		return new WP_Error( 'adzworld_slider_theme_stylesheet', sanitize_text_field( (string) $upload['error'] ) );
+	}
+	if ( empty( $upload['url'] ) || empty( $upload['file'] ) ) {
+		return new WP_Error( 'adzworld_slider_theme_stylesheet', __( 'The external slider-theme stylesheet could not be created.', 'adz-world' ) );
+	}
+
+	$record = array(
+		'url'     => esc_url_raw( $upload['url'] ),
+		'file'    => sanitize_text_field( $upload['file'] ),
+		'version' => $version,
+	);
+	update_option( ADZWORLD_RATINGS_SLIDER_STYLESHEET_OPTION, $record, false );
+
+	if ( is_array( $current )
+		&& isset( $current['file'] )
+		&& is_string( $current['file'] )
+		&& $current['file'] !== $record['file']
+		&& is_file( $current['file'] ) ) {
+		wp_delete_file( $current['file'] );
+	}
+
+	return $record;
 }
 
 /**
@@ -346,7 +416,7 @@ function adzworld_ratings_slider_save_named( $name, $colors ) {
 		return new WP_Error( 'adzworld_slider_theme_name', __( 'Name the slider theme.', 'adz-world' ) );
 	}
 	$slug = sanitize_title( $name );
-	if ( '' === $slug || isset( adzworld_ratings_slider_builtin_themes()[ $slug ] ) ) {
+	if ( '' === $slug || in_array( $slug, array( 'default', 'tide', 'ember' ), true ) || isset( adzworld_ratings_slider_builtin_themes()[ $slug ] ) ) {
 		return new WP_Error( 'adzworld_slider_theme_reserved', __( 'That slider theme name is reserved. Choose another name.', 'adz-world' ) );
 	}
 	$clean = array();
@@ -365,6 +435,10 @@ function adzworld_ratings_slider_save_named( $name, $colors ) {
 		'name'   => $name,
 		'colors' => $clean,
 	);
+	$stylesheet      = adzworld_ratings_slider_write_stylesheet( array_merge( adzworld_ratings_slider_builtin_themes(), $stored ) );
+	if ( is_wp_error( $stylesheet ) ) {
+		return $stylesheet;
+	}
 	update_option( ADZWORLD_RATINGS_SLIDER_THEMES_OPTION, $stored, false );
 	update_option( ADZWORLD_RATINGS_SLIDER_OPTION, $slug, false );
 
@@ -740,10 +814,10 @@ function adzworld_response_settings() {
 	wp_nonce_field( 'adzworld_responses_save', 'adzworld_responses_nonce' );
 	$active_colors = isset( adzworld_ratings_slider_themes()[ $theme ]['colors'] ) ? adzworld_ratings_slider_themes()[ $theme ]['colors'] : array();
 	if ( 3 !== count( $active_colors ) ) {
-		$active_colors = adzworld_ratings_slider_builtin_themes()['ember']['colors'];
+		$active_colors = adzworld_ratings_slider_builtin_themes()['adz-ratings-ember-slider-theme']['colors'];
 	}
 	echo '<fieldset class="adzworld-bands__themes"><legend>' . esc_html__( 'Slider colours', 'adz-world' ) . '</legend>';
-	echo '<p>' . esc_html__( 'Standard keeps its gradient. Tide is the blue theme. Ember is ashy grey, black, and glowing ember orange. A named theme uses three hex colours, and the plugin draws the gradient.', 'adz-world' ) . '</p>';
+	echo '<p>' . esc_html__( 'Default keeps its gradient. Tide is the blue theme. Ember is ashy grey, black, and glowing ember orange. A named theme uses three hex colours, and the plugin draws the gradient.', 'adz-world' ) . '</p>';
 	foreach ( adzworld_ratings_slider_themes() as $slug => $slider_theme ) {
 		echo '<label class="adzworld-bands__theme"><input type="radio" name="adzworld_ratings_slider_theme" value="' . esc_attr( $slug ) . '" ' . checked( $theme, $slug, false ) . '>';
 		echo '<span class="adzworld-bands__swatch adzworld-bands__swatch--' . esc_attr( sanitize_html_class( $slug ) ) . '" aria-hidden="true"></span>';

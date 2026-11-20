@@ -280,7 +280,7 @@ controlled by adzAdmins.
 
 = 1.1.1 =
 * Rating bands now store a start and an end, and both are editable.
-* Added named slider themes. Standard keeps the existing gradient. Tide is
+* Added named slider themes. Default keeps the existing gradient. Tide is
   the blue theme. Ember is ashy grey, black, and glowing ember orange. An
   adzadmin saves any other theme as three hex colours, and the plugin draws
   the gradient.

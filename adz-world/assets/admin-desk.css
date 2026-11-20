@@ -1732,7 +1732,7 @@ body.wp-admin .adzworld-paid-card .adzworld-connection-card select {
 	width: 7rem;
 }
 
-.adzworld-bands__swatch--standard {
+.adzworld-bands__swatch--adz-ratings-default-slider-theme {
 	background: linear-gradient(
 		90deg,
 		#c92a2a 0%,
@@ -1744,7 +1744,7 @@ body.wp-admin .adzworld-paid-card .adzworld-connection-card select {
 	);
 }
 
-.adzworld-bands__swatch--tide {
+.adzworld-bands__swatch--adz-ratings-tide-slider-theme {
 	background: linear-gradient(
 		90deg,
 		hsl(222 62% 40%) 0%,

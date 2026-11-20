@@ -911,13 +911,14 @@ function adzworld_enqueue_rotation_assets() {
 		array( 'adzworld-rotation' ),
 		(string) filemtime( $tide_path )
 	);
-	$slider_themes = adzworld_ratings_slider_themes();
-	$slider_theme  = adzworld_ratings_slider_theme();
-	$slider_colors = isset( $slider_themes[ $slider_theme ]['colors'] ) ? $slider_themes[ $slider_theme ]['colors'] : array();
-	if ( 3 === count( $slider_colors ) ) {
-		wp_register_style( 'adzworld-ratings-slider-custom', false, array( 'adzworld-rotation' ), ADZWORLD_VERSION );
-		wp_enqueue_style( 'adzworld-ratings-slider-custom' );
-		wp_add_inline_style( 'adzworld-ratings-slider-custom', adzworld_ratings_slider_css( $slider_colors ) );
+	$slider_stylesheet = adzworld_ratings_slider_write_stylesheet();
+	if ( ! is_wp_error( $slider_stylesheet ) ) {
+		wp_enqueue_style(
+			'adzworld-ratings-slider-themes',
+			$slider_stylesheet['url'],
+			array( 'adzworld-rotation' ),
+			$slider_stylesheet['version']
+		);
 	}
 	wp_enqueue_script(
 		'adzworld-rotation',

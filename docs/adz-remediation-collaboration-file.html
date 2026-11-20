@@ -79,6 +79,36 @@ release-ZIP structure. Report:
 Plugin Check and browser review were not run in this change.</p>
 </section>
 
+<section id="codex-external-slider-theme-css-2026y-11m-20d">
+<h2>Codex — preserve named slider themes and remove inline CSS delivery</h2>
+<p class="meta"><strong>Date:</strong> 2026-11-20. Production source:
+<code>adz-world/</code>. Baseline commit: <code>629b42a</code>. No deployment,
+version bump, release publication, or live-site data change was performed.</p>
+<p>The named slider-theme feature remains intact: an adzadmin can name a theme,
+choose and save its three hex colours, select it as the active theme, and receive
+the generated track, per-score thumb colours from −100 through 100, and admin
+swatch. The built-in visible names are Default, Tide, and Ember. Their stored
+identifiers are <code>adz-ratings-default-slider-theme</code>,
+<code>adz-ratings-tide-slider-theme</code>, and
+<code>adz-ratings-ember-slider-theme</code>.</p>
+<p>The two <code>wp_add_inline_style()</code> calls were replaced with one
+versioned external stylesheet generated in the WordPress uploads directory and
+enqueued through the normal stylesheet API. A replaced generated file is removed,
+and uninstall removes the current generated file and its option. The ordinary
+WPCS pre-commit command now also rejects inline style attributes,
+<code>&lt;style&gt;</code> blocks, <code>wp_add_inline_style()</code>, and JavaScript
+<code>.style</code> assignments.</p>
+<p><strong>Regression and verification:</strong> the new named-theme test passed
+11/11 checks covering the three approved identifiers, named-theme saving, all
+three stored colours, activation, unique classes, external track rules, score
+endpoints, admin swatches, and reserved built-in names. The production gate
+passed all 13 blocks, including zero forbidden inline/runtime-style findings,
+WPCS with zero errors and zero warnings, project tests, call resolution,
+whitespace, and the release ZIP. Report:
+<code>testing-logs/2026y-11m-20d-UTC-12h-48m-16s/00-summary.txt</code>. Official
+Plugin Check, WordPress runtime installation, and browser review were not run.</p>
+</section>
+
 <section id="codex-release-review-2026y-11m-12d-EET-10h-16m">
 <h2>Codex — 1.0.9 functional correction and human-review handoff</h2>
 <p class="meta"><strong>Local MTS:</strong>
