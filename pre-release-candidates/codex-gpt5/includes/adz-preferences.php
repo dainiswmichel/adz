@@ -952,10 +952,33 @@ function adzworld_category_refinement_preference( $pref, $category ) {
 }
 
 /**
+ * Whether an exclude term occurs as its own word.
+ *
+ * "cat" matches "cat" and leaves "catalogue", "catamaran", "education",
+ * and "vacation" in place.
+ *
+ * @param string $haystack Text to search.
+ * @param string $term     Exclude term.
+ * @return bool
+ */
+function adzworld_term_is_whole_word( $haystack, $term ) {
+	$term = strtolower( (string) $term );
+
+	if ( '' === $term ) {
+		return false;
+	}
+
+	return 1 === preg_match(
+		'/\b' . preg_quote( $term, '/' ) . '\b/',
+		strtolower( (string) $haystack )
+	);
+}
+
+/**
  * Score an adz post against a preference.
  *
- * Exclusions are absolute: one excluded term present and the adz is never
- * shown, whatever else matches. Everything else accumulates.
+ * Exclusions are absolute: one excluded term present as its own word and the
+ * adz is never shown, whatever else matches. Everything else accumulates.
  *
  * @param int   $ad_id adz post ID.
  * @param array $pref  Preference.
@@ -979,7 +1002,7 @@ function adzworld_score_ad( $ad_id, $pref ) {
 	$scoped   = adzworld_category_refinement_preference( $pref, $category );
 
 	foreach ( array_merge( $pref['exclude'], $scoped['exclude'] ) as $term ) {
-		if ( false !== strpos( $haystack, strtolower( $term ) ) ) {
+		if ( adzworld_term_is_whole_word( $haystack, $term ) ) {
 			return -1;
 		}
 	}
@@ -1012,10 +1035,10 @@ function adzworld_score_ad( $ad_id, $pref ) {
 	$feedback = function_exists( 'adzworld_current_feedback' ) ? adzworld_current_feedback() : array();
 	$key      = sanitize_key( 'ad-' . $post->ID );
 	if ( isset( $feedback[ $key ]['score'] ) ) {
-		$score += (int) round( $feedback[ $key ]['score'] / 10 );
+		$score += (int) $feedback[ $key ]['score'];
 	}
 
-	return max( 0, $score );
+	return $score;
 }
 
 /**

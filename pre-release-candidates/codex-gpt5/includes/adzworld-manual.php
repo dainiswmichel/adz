@@ -233,16 +233,19 @@ function adzworld_manual_state_label( $state ) {
 /**
  * Open one manual section.
  *
- * @param string $state   is-done, is-open, or is-waiting.
- * @param string $heading Section heading.
+ * @param string $state      is-done, is-open, or is-waiting.
+ * @param string $heading    Section heading.
+ * @param bool   $show_state Whether to print the status line.
  * @return void
  */
-function adzworld_manual_open( $state, $heading ) {
+function adzworld_manual_open( $state, $heading, $show_state = true ) {
 	if ( ! in_array( $state, array( 'is-done', 'is-open', 'is-waiting' ), true ) ) {
 		$state = 'is-waiting';
 	}
 	echo '<section class="adzworld-manual-step ' . esc_attr( $state ) . '">';
-	echo '<p class="adzworld-manual-state">' . esc_html( adzworld_manual_state_label( $state ) ) . '</p>';
+	if ( $show_state ) {
+		echo '<p class="adzworld-manual-state">' . esc_html( adzworld_manual_state_label( $state ) ) . '</p>';
+	}
 	echo '<h3>' . esc_html( $heading ) . '</h3>';
 }
 
@@ -450,8 +453,9 @@ function adzworld_manual_render_setup() {
 	}
 	echo '</section>';
 
-	adzworld_manual_open( 'is-open', __( 'What the visitor types', 'adz-world' ) );
+	adzworld_manual_open( 'is-open', __( 'What the visitor types', 'adz-world' ), false );
 	echo '<p>' . esc_html__( 'Put the invitation in the first slot when visitors should say what they are looking for. The question is “What are you looking to buy?”. A long answer keeps a short category, and the rest stays attached as refinements. An adzad already in the rotation moves ahead when its title, body, excerpt, or Ad Type matches. An adzad that is not in a slot is not shown.', 'adz-world' ) . '</p>';
+	echo '<p><time datetime="2026-11-20T14:10:23Z">2026y-11m-20d-UTC14h-10m-23s</time>. ' . esc_html__( 'A refinement can use boolean-like language, such as “no pedals” or “not blue”. adz-world wishes to support user preferences as much as possible, including exclusions. Most surveillance-based advertisement providers do not respect their audiences enough to withhold what those audiences do not wish to see. AvantLink ProductSearch is the provider in this plugin that accepts a leading minus. The other providers are sent the words without that syntax.', 'adz-world' ) . '</p>';
 	echo '</section>';
 
 	adzworld_manual_open( $published > 0 ? 'is-done' : 'is-open', __( 'Add your own adz', 'adz-world' ) );
@@ -633,6 +637,8 @@ function adzworld_manual_render_affiliates() {
 		}
 		if ( 'clickbank' === $id ) {
 			echo '<p>' . esc_html__( 'The HopLink uses the saved account nickname and vendor nickname. The words a visitor types are not added to that URL.', 'adz-world' ) . '</p>';
+		} elseif ( 'avantlink' === $id ) {
+			echo '<p>' . esc_html__( 'A refinement such as “no pedals” is sent to ProductSearch as -pedals, with advanced syntax on. AvantLink treats a leading minus as an exclusion and a leading plus as a required word. Amazon, eBay, Best Buy, and Etsy are sent the words without that syntax. After Etsy responds, a listing title that contains the excluded word as a whole word is dropped here.', 'adz-world' ) . '</p>';
 		} else {
 			echo '<p>' . esc_html__( 'A sponsored search link is drawn under one local adzad that matches the words the visitor typed. The link is not a rotation slot. The matching adzad has to be in the rotation.', 'adz-world' ) . '</p>';
 		}

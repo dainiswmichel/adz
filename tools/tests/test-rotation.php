@@ -1,108 +1,106 @@
 <?php
 /*
- * Rotation ordering. Extracts adzworld_build_rotation() from the candidate and
- * exercises its spacing, so the assertions run against the shipped source
- * rather than a copy that can drift from it.
- *
- * Defaults to the claude-code-web candidate; pass another candidate's path as
- * the first argument.
+ * Rotation parsing and weighted selection. Extracts the current rotation
+ * functions from the tree under test so the assertions exercise shipped code.
  */
-$adz_plugin = isset( $argv[1] ) ? rtrim( $argv[1], '/' ) : dirname( __DIR__, 2 ) . '/pre-release-candidates/claude-code-web';
+$adz_plugin = isset( $argv[1] ) ? rtrim( $argv[1], '/' ) : dirname( __DIR__, 2 ) . '/adz-world';
+$rotation   = $adz_plugin . '/includes/adzworld-rotation.php';
 
-if ( ! is_dir( $adz_plugin ) ) {
-	fwrite( STDERR, "Not a directory: $adz_plugin\n" );
-	exit( 2 );
+if ( ! is_file( $rotation ) ) {
+	printf( "SKIP: %s has no includes/adzworld-rotation.php\n", basename( $adz_plugin ) );
+	exit( 3 );
 }
 
-$adz_requires = array(
-	'includes/adz-rotation.php',
+$src = file_get_contents( $rotation );
+foreach ( array( 'adzworld_parse_rotation', 'adzworld_rotation_weighted_slot' ) as $function ) {
+	$matched = preg_match( '/function ' . $function . '.*?\n}/s', $src, $match );
+	if ( 1 !== $matched ) {
+		fwrite( STDERR, "Could not extract $function from $rotation\n" );
+		exit( 2 );
+	}
+	eval( $match[0] );
+}
+
+if ( ! defined( 'ADZWORLD_ROTATION_MAX_SLOTS' ) ) {
+	define( 'ADZWORLD_ROTATION_MAX_SLOTS', 200 );
+}
+
+class WP_Error {
+	private $code;
+
+	public function __construct( $code ) {
+		$this->code = $code;
+	}
+
+	public function get_error_code() {
+		return $this->code;
+	}
+}
+
+function __( $text ) {
+	return $text;
+}
+
+function is_wp_error( $value ) {
+	return $value instanceof WP_Error;
+}
+
+function sanitize_key( $value ) {
+	return preg_replace( '/[^a-z0-9_-]/', '', strtolower( (string) $value ) );
+}
+
+function adzworld_rotation_sources() {
+	return array();
+}
+
+function adzworld_local_ad_response() {
+	return array();
+}
+
+function shortcode_exists() {
+	return false;
+}
+
+function current_user_can() {
+	return false;
+}
+
+$pass = 0;
+$fail = 0;
+
+function check( $label, $got, $want ) {
+	global $pass, $fail;
+	$ok = $got === $want;
+	$ok ? ++$pass : ++$fail;
+	printf( "  [%s] %-44s got %s\n", $ok ? 'ok' : 'FAIL', $label, var_export( $got, true ) );
+}
+
+$slots = adzworld_parse_rotation( 'ad:11:2,intro:1,ad:12:3' );
+check( 'valid rotation parses', is_wp_error( $slots ), false );
+check( 'invitation moves to the first position', array_column( $slots, 'type' ), array( 'intro', 'ad', 'ad' ) );
+check( 'advertising order remains stable', array_column( $slots, 'value' ), array( '', '11', '12' ) );
+check( 'configured weights remain attached', array_column( $slots, 'weight' ), array( 1, 2, 3 ) );
+check( 'original positions remain attached', array_column( $slots, 'position' ), array( 1, 0, 2 ) );
+
+$draws = array();
+for ( $draw = 1; $draw <= 6; ++$draw ) {
+	$selected = adzworld_rotation_weighted_slot( $slots, $draw );
+	$draws[]  = $selected['type'] . ':' . $selected['value'];
+}
+check(
+	'weighted draws select the configured slots',
+	$draws,
+	array( 'intro:', 'ad:11', 'ad:11', 'ad:12', 'ad:12', 'ad:12' )
 );
 
-/*
- * This harness targets specific files. A candidate that does not have them is
- * not a failure, it is simply out of scope, so it exits 3 and says so. Exiting
- * 0 here would report a pass for a test that never ran.
- */
-foreach ( $adz_requires as $adz_needed ) {
-	if ( ! is_file( $adz_plugin . '/' . $adz_needed ) ) {
-		printf( "SKIP: %s has no %s\n", basename( $adz_plugin ), $adz_needed );
-		exit( 3 );
-	}
-}
+$invalid_weight = adzworld_parse_rotation( 'intro:0' );
+check( 'zero weight is rejected', $invalid_weight->get_error_code(), 'adzworld_rotation_weight' );
+$excessive_weight = adzworld_parse_rotation( 'intro:101' );
+check( 'weight above 100 is rejected', $excessive_weight->get_error_code(), 'adzworld_rotation_limit' );
+$unknown_type = adzworld_parse_rotation( 'unknown:item' );
+check( 'unknown slot type is rejected', $unknown_type->get_error_code(), 'adzworld_rotation_type' );
+$outside_draw = adzworld_rotation_weighted_slot( $slots, 7 );
+check( 'draw outside total weight is rejected', $outside_draw->get_error_code(), 'adzworld_rotation_draw' );
 
-$src = file_get_contents( $adz_plugin . '/includes/adz-rotation.php' );
-preg_match( '/function adzworld_build_rotation.*?\n}/s', $src, $m );
-eval( $m[0] );
-
-
-$GLOBALS['pass'] = 0;
-$GLOBALS['fail'] = 0;
-
-/**
- * Record one invariant.
- *
- * @param string $label What is being asserted.
- * @param bool   $ok    Whether it held.
- * @return void
- */
-function assert_that( $label, $ok ) {
-	if ( $ok ) {
-		++$GLOBALS['pass'];
-		return;
-	}
-
-	++$GLOBALS['fail'];
-	printf( "  [FAIL] %s\n", $label );
-}
-
-function slot( $n ) { return array( 'type' => 'network', 'label' => 'n' . $n ); }
-function adz( $n ) { return array( 'type' => 'adz', 'label' => 'A' . $n ); }
-
-$cases = array(
-	array( 1, 0 ), array( 1, 1 ), array( 9, 1 ), array( 9, 2 ), array( 9, 3 ),
-	array( 2, 3 ), array( 0, 2 ), array( 0, 0 ), array( 4, 1 ), array( 24, 4 ),
-);
-
-foreach ( $cases as list( $n, $a ) ) {
-	$net = array(); for ( $i = 1; $i <= $n; $i++ ) { $net[] = slot( $i ); }
-	$ads = array(); for ( $i = 1; $i <= $a; $i++ ) { $ads[] = adz( $i ); }
-
-	$out = adzworld_build_rotation( $net, $ads, 12 );
-	$seq = implode( ' ', array_column( $out, 'label' ) );
-
-	$net_out = count( array_filter( $out, fn( $s ) => 'network' === $s['type'] ) );
-	$adz_out = count( array_filter( $out, fn( $s ) => 'adz' === $s['type'] ) );
-	$dupes   = count( array_column( $out, 'label' ) ) - count( array_unique( array_column( $out, 'label' ) ) );
-	$first   = $out ? $out[0]['type'] : '-';
-
-	printf(
-		"net=%-2d adz=%-2d -> %-2d slides | kept %d/%d net, %d/%d adz | dupes=%d | first=%s | %s\n",
-		$n, $a, count( $out ), $net_out, min( $n, 12 ), $adz_out, min( $a, 12 ), $dupes, $first, $seq
-	);
-
-	// Invariants that must hold for every combination.
-	assert_that( "net=$n adz=$a: no slide repeated", 0 === $dupes );
-	assert_that( "net=$n adz=$a: within the cap", count( $out ) <= 12 );
-
-	if ( $n > 0 && $a > 0 ) {
-		assert_that( "net=$n adz=$a: a publisher slot goes first", 'network' === $first );
-		assert_that( "net=$n adz=$a: at least one adz placed", $adz_out > 0 );
-	}
-
-	if ( $n > 0 && 0 === $a ) {
-		assert_that( "net=$n adz=$a: no adz appear", 0 === $adz_out );
-	}
-
-	// No two adz adjacent while publisher slots remain unplaced.
-	$types = array_column( $out, 'type' );
-	for ( $i = 1; $i < count( $types ); $i++ ) {
-		if ( 'adz' === $types[ $i ] && 'adz' === $types[ $i - 1 ] ) {
-			$remaining = count( array_slice( $types, $i ) );
-			$nets_left = count( array_filter( array_slice( $types, $i ), function ( $t ) { return 'network' === $t; } ) );
-			assert_that( "net=$n adz=$a: adz only adjacent once slots are spent", 0 === $nets_left );
-		}
-	}
-}
-
-printf( "\n%d passed, %d failed\n", $GLOBALS['pass'], $GLOBALS['fail'] );
-exit( $GLOBALS['fail'] > 0 ? 1 : 0 );
+printf( "\n%d passed, %d failed\n", $pass, $fail );
+exit( $fail > 0 ? 1 : 0 );

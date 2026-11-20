@@ -482,6 +482,75 @@ function adzworld_network_base_url() {
 }
 
 /**
+ * The saved lines for one template, including those saved under its old name.
+ *
+ * Settings are stored in an option keyed by the template's filename. A file
+ * that has been renamed would leave the adzadmin's header and footer text
+ * stranded under the old key, so the old key is read when the current one
+ * holds nothing. Nothing is rewritten: the old option is left where it is and
+ * is simply still honoured.
+ *
+ * @since 1.1.1
+ *
+ * @param string $template Current template filename.
+ * @return array Saved lines, or an empty array when there are none.
+ */
+function adzworld_template_saved_lines( $template ) {
+	$template = adzworld_template_current_name( (string) $template );
+	$settings = adzworld_template_settings( get_option( 'template_' . $template ) );
+
+	if ( ! empty( $settings ) ) {
+		return $settings;
+	}
+
+	foreach ( adzworld_template_renames() as $was => $now ) {
+		if ( $now !== $template ) {
+			continue;
+		}
+
+		$settings = adzworld_template_settings( get_option( 'template_' . $was ) );
+
+		if ( ! empty( $settings ) ) {
+			return $settings;
+		}
+	}
+
+	return array();
+}
+
+/**
+ * Template filenames that have been renamed, old name to current name.
+ *
+ * A rotation, a shortcode or a saved option can still name a template by the
+ * filename it carried when it was chosen. Renaming a file on disk would make
+ * every one of those resolve to nothing and the site would print no adz, so
+ * the old names keep working and point at the file that replaced them.
+ *
+ * @since 1.1.1
+ *
+ * @return array<string,string> Old filename to current filename.
+ */
+function adzworld_template_renames() {
+	return array(
+		'template1.php' => 'countdown-layout.php',
+	);
+}
+
+/**
+ * Translate a stored template filename to the one that exists now.
+ *
+ * @since 1.1.1
+ *
+ * @param string $template Stored filename.
+ * @return string Current filename, or the input when it was never renamed.
+ */
+function adzworld_template_current_name( $template ) {
+	$renames = adzworld_template_renames();
+
+	return isset( $renames[ $template ] ) ? $renames[ $template ] : $template;
+}
+
+/**
  * Resolve an adz template filename to a real file inside adz-templates/.
  *
  * SECURITY. 1.0.8 built an include path by concatenating $_POST['adz_template']
@@ -502,7 +571,7 @@ function adzworld_resolve_template( $template ) {
 	if ( ! is_string( $template ) || basename( $template ) !== $template ) {
 		return '';
 	}
-	$template = trim( $template );
+	$template = adzworld_template_current_name( trim( $template ) );
 
 	if ( '' === $template || '.php' !== substr( $template, -4 ) ) {
 		return '';

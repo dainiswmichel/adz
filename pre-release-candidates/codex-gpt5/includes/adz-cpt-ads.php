@@ -484,6 +484,8 @@ function adzworld_save_template_settings() {
 		|| ! in_array( $settings['footer_style'], array( 'left', 'right', 'center' ), true ) ) {
 		return new WP_Error( 'adzworld_template_alignment', __( 'Template alignment must be left, right or center.', 'adz-world' ) );
 	}
+	$template = adzworld_template_current_name( $template );
+
 	if ( get_option( 'template_' . $template ) !== $settings && ! update_option( 'template_' . $template, $settings, false ) ) {
 		return new WP_Error( 'adzworld_template_storage', __( 'The template settings could not be saved.', 'adz-world' ) );
 	}
@@ -513,7 +515,7 @@ function adzworld_template_setting() {
 	if ( $use_post && isset( $_POST['adz_template'] ) && is_string( $_POST['adz_template'] ) && in_array( sanitize_text_field( wp_unslash( $_POST['adz_template'] ) ), $templates, true ) ) {
 		$selected = sanitize_text_field( wp_unslash( $_POST['adz_template'] ) );
 	}
-	$stored   = adzworld_template_settings( '' !== $selected ? get_option( 'template_' . $selected ) : array() );
+	$stored   = '' !== $selected ? adzworld_template_saved_lines( $selected ) : array();
 	$settings = wp_parse_args(
 		is_array( $stored ) ? $stored : array(),
 		array(
@@ -583,7 +585,7 @@ function adzworld_template_setting() {
 			'label' => __( 'Layout file', 'adz-world' ),
 			'value' => $selected,
 			'does'  => sprintf(
-				/* translators: %s: stored option key, such as template_template1.php. */
+				/* translators: %s: stored option key, such as template_countdown-layout.php. */
 				__( 'Stored as %s. This file prints the lines and the countdown.', 'adz-world' ),
 				$option_key
 			),
@@ -709,8 +711,7 @@ function adzworld_get_template_settings() {
 	if ( ! in_array( $template_name, adzworld_available_templates(), true ) ) {
 		wp_send_json_error( array( 'message' => __( 'Unknown ad template.', 'adz-world' ) ), 400 );
 	}
-	$template_data = get_option( 'template_' . $template_name );
-	$settings      = adzworld_template_settings( $template_data );
+	$settings = adzworld_template_saved_lines( $template_name );
 	if ( ! is_array( $settings ) ) {
 		$settings = array();
 	}
