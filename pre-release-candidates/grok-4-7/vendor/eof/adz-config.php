@@ -117,14 +117,64 @@ function adzworld_get_data_from_file( $file ) {
  * Configure the advertisement settings sections.
  */
 function adzworld_settings_setup() {
-	$sections = array();
-	$configs  = array();
+	$adzworld_name    = ADZWORLD_NAME;
+	$adzworld_host    = adzworld_home_host();
+	$adzworld_terms   = esc_url( adzworld_home_url( 'terms/' ) );
+	$adzworld_privacy = esc_url( adzworld_home_url( 'privacy/' ) );
+
+	$sections       = array();
+	$configs        = array();
+	$adz_ad_options = get_option( 'adz_ad_options' );
 	// General Section.
 	$sections['tos'] = array(
-		'title'    => 'Site settings',
+		'title'    => 'Accept TOS and Registration',
 		'id'       => 'tos',
 		'priority' => 1,
 		'fields'   => array(
+			'tos_heading'                 => array(
+				'id'    => 'tos_heading',
+				'type'  => 'heading',
+				'title' => 'Terms of Service',
+				'desc'  => adzworld_get_data_from_file( 'tos.html' ),
+
+			),
+			'accept_tos_checkbox'         => array(
+				'title'   => 'I Accept',
+				'desc'    => '',
+				'type'    => 'checkbox',
+				'default' => '0', // 1 = on | 0 = off
+			),
+			'connect_to_network'          => array(
+				'title'   => sprintf( 'Connect to the %s network', $adzworld_host ),
+				'type'    => 'checkbox',
+				'default' => '0', // 1 = on | 0 = off
+				'desc'    => sprintf( 'Off by default. Your site serves only the adz you create here, and contacts no outside server. Switching this on connects the site to the %1$s network. Registration sends the site URL, site title, and admin email. Requests for adz send the publisher identifier, access token, and referral code. They do not send the audience member\'s IP address. Publishing an adz sends its title, content, and categories. See <a href="%2$s">Terms of Service</a> and <a href="%3$s">Privacy Policy</a>.', esc_html( $adzworld_host ), $adzworld_terms, $adzworld_privacy ),
+			),
+			'adzdotworld_email'           => array(
+				'type'    => 'email',
+				'title'   => sprintf( '%s Email', $adzworld_name ),
+				'default' => '',
+				'sizes'   => 'regular',
+				'desc'    => sprintf( 'Please enter the %s email address.', $adzworld_name ),
+
+			),
+
+			'type_of_adz'                 => array(
+				'id'       => 'type_of_adz',
+				'type'     => 'select',
+				'options'  => adzworld_list_all_ad_types(),
+				'title'    => 'Types of Advertise',
+				'content'  => '',
+				'multiple' => 'yes',
+
+			),
+
+			'referral_code'               => array(
+				'id'    => 'referral_code',
+				'type'  => 'text',
+				'title' => 'Enter Referral Code',
+				'desc'  => 'Please enter if you have a referral code',
+			),
 			'amazon_affiliate_id'         => array(
 				'id'    => 'amazon_affiliate_id',
 				'type'  => 'text',
@@ -139,6 +189,14 @@ function adzworld_settings_setup() {
 
 			),
 
+			'reg_status'                  => array(
+				'id'       => 'reg_status',
+				'type'     => 'dynamic',
+				'title'    => 'Registration Status',
+				'content'  => '',
+				'callback' => 'adzworld_registration_status',
+			),
+
 		),
 	);
 
@@ -148,6 +206,26 @@ function adzworld_settings_setup() {
 		'priority' => 2,
 		'fields'   => adzworld_rotation_setting_array(),
 	);
+
+	add_action( 'updated_option', 'adz_check_registration', 10, 3 );
+	/**
+	 * Synchronize changed settings after an authorized save.
+	 *
+	 * @param mixed $option Option.
+	 * @param mixed $old_value Old value.
+	 * @param mixed $value Current field value.
+	 */
+	function adz_check_registration( $option, $old_value, $value ) {
+
+		if ( 'adz_ad_options' === $option ) {
+
+			$result = Adz_NetworkAuthorization::update_registration( $value );
+			if ( is_wp_error( $result ) ) {
+				adzworld_network_notice( $result );
+			}
+		}
+	}
+	$user = wp_get_current_user();
 
 	$configs = array(
 		// This is where your data is stored in the database and also becomes your global variable name.
@@ -216,6 +294,10 @@ add_action( 'init', 'adzworld_settings_setup' );
  * Define the configured legacy rotation fields.
  */
 function adzworld_rotation_setting_array() {
+	global $adzworld_network_base_url;
+	$adz_publisher_options = get_option( 'adz_publisher_options' );
+	$publisher_user_id     = isset( $adz_publisher_options['adz_registered']['publisher_user_id'] ) ? absint( $adz_publisher_options['adz_registered']['publisher_user_id'] ) : 0;
+
 		$rotation_array = array(
 			'ad_settings_head' => array(
 				'type'  => 'heading',

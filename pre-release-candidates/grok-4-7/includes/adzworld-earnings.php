@@ -1,10 +1,6 @@
 <?php
 /**
- * Where a site owner looks at affiliate and display-network earnings.
- *
- * Those programmes pay the site owner on accounts the site owner already
- * holds. This screen does not connect to an adz-world.com advertising
- * network and it does not fetch a balance.
+ * Direct provider earnings links and voluntary plugin support.
  *
  * @package adz-world
  */
@@ -59,7 +55,7 @@ function adzworld_support_panel() {
 }
 
 /**
- * Render affiliate and display-network earnings, plus voluntary support.
+ * Render direct earning options and voluntary plugin support.
  *
  * @return void
  */
@@ -75,7 +71,7 @@ function adzworld_earnings_page() {
 		echo esc_html(
 			sprintf(
 				/* translators: %s: product name. */
-				__( 'Choose established earning methods that pay the site owner through accounts the site owner already controls. %s does not connect to an advertising network and does not fetch a balance.', 'adz-world' ),
+				__( 'Choose established earning methods that pay the site owner through accounts the site owner already controls. %s does not receive or redistribute those earnings.', 'adz-world' ),
 				ADZWORLD_NAME
 			)
 		);

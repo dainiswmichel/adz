@@ -172,21 +172,44 @@ function adzworld_rotation_slot_choices() {
  * @return array{display:string,controls:string,size:string}
  */
 function adzworld_rotation_presentation( $rotation ) {
-	$rotation = is_array( $rotation ) ? $rotation : array();
-	$formats  = adzworld_rotation_display_formats();
-	$sizes    = adzworld_rotation_size_presets();
-	$display  = isset( $rotation['display'] ) && is_string( $rotation['display'] ) && isset( $formats[ $rotation['display'] ] )
+	$rotation  = is_array( $rotation ) ? $rotation : array();
+	$formats   = adzworld_rotation_display_formats();
+	$sizes     = adzworld_rotation_size_presets();
+	$display   = isset( $rotation['display'] ) && is_string( $rotation['display'] ) && isset( $formats[ $rotation['display'] ] )
 		? $rotation['display'] : 'flat';
-	$controls = isset( $rotation['controls'] ) && is_string( $rotation['controls'] )
+	$controls  = isset( $rotation['controls'] ) && is_string( $rotation['controls'] )
 		&& in_array( $rotation['controls'], array( 'arrows', 'dots', 'both', 'none' ), true )
 		? $rotation['controls'] : 'both';
-	$size     = isset( $rotation['size'] ) && is_string( $rotation['size'] ) && isset( $sizes[ $rotation['size'] ] )
+	$size      = isset( $rotation['size'] ) && is_string( $rotation['size'] ) && isset( $sizes[ $rotation['size'] ] )
 		? $rotation['size'] : '';
+	$countdown = isset( $rotation['countdown'] ) ? absint( $rotation['countdown'] ) : 0;
+	if ( $countdown > 600 ) {
+		$countdown = 600;
+	}
 	return array(
-		'display'  => $display,
-		'controls' => $controls,
-		'size'     => $size,
+		'display'   => $display,
+		'controls'  => $controls,
+		'size'      => $size,
+		'countdown' => $countdown,
 	);
+}
+
+/**
+ * The countdown line for one rotation slot.
+ *
+ * The number is display only. Reaching zero does not remove the slot.
+ *
+ * @param int $seconds Starting seconds.
+ * @return string Markup, or an empty string when no countdown is set.
+ */
+function adzworld_rotation_countdown_markup( $seconds ) {
+	$seconds = absint( $seconds );
+	if ( $seconds < 1 || $seconds > 600 ) {
+		return '';
+	}
+
+	return '<p class="adzworld-countdown" data-adzworld-countdown="' . esc_attr( (string) $seconds ) . '"><span data-adzworld-countdown-num>'
+		. esc_html( (string) $seconds ) . '</span> ' . esc_html__( 'seconds', 'adz-world' ) . '</p>';
 }
 
 /**
@@ -263,24 +286,28 @@ function adzworld_sanitize_named_rotations( $raw ) {
 		if ( '' === $key || ! is_array( $rotation ) || isset( $draft[ $key ] ) ) {
 			continue;
 		}
-		$name  = isset( $rotation['name'] ) ? sanitize_text_field( $rotation['name'] ) : '';
-		$slots = isset( $rotation['slots'] ) && is_array( $rotation['slots'] ) ? $rotation['slots'] : array();
-		$slots = array_slice( $slots, 0, ADZWORLD_ROTATION_MAX_SLOTS );
+		$name      = isset( $rotation['name'] ) ? sanitize_text_field( $rotation['name'] ) : '';
+		$slots     = isset( $rotation['slots'] ) && is_array( $rotation['slots'] ) ? array_values( $rotation['slots'] ) : array();
+		$slots     = array_slice( $slots, 0, ADZWORLD_ROTATION_MAX_SLOTS );
+		$responses = isset( $rotation['responses'] ) && is_array( $rotation['responses'] ) ? array_values( $rotation['responses'] ) : array();
 		if ( '' === $name || empty( $slots ) ) {
 			continue;
 		}
 		$draft[ $key ] = array(
 			'name'         => $name,
 			'slots'        => $slots,
+			'responses'    => $responses,
 			'presentation' => adzworld_rotation_presentation( $rotation ),
 		);
 	}
 	foreach ( $draft as $key => $rotation ) {
-		$clean_slots = array();
-		foreach ( $rotation['slots'] as $slot ) {
+		$clean_slots     = array();
+		$clean_responses = array();
+		foreach ( $rotation['slots'] as $index => $slot ) {
 			$slot = adzworld_accept_rotation_slot( $slot, $choices, $draft, $key );
 			if ( '' !== $slot ) {
-				$clean_slots[] = $slot;
+				$clean_slots[]     = $slot;
+				$clean_responses[] = adzworld_sanitize_slot_response( isset( $rotation['responses'][ $index ] ) ? $rotation['responses'][ $index ] : array() );
 			}
 		}
 		if ( empty( $clean_slots ) ) {
@@ -288,15 +315,17 @@ function adzworld_sanitize_named_rotations( $raw ) {
 		}
 		$clean[ $key ] = array_merge(
 			array(
-				'name'  => $rotation['name'],
-				'slots' => $clean_slots,
+				'name'      => $rotation['name'],
+				'slots'     => $clean_slots,
+				'responses' => $clean_responses,
 			),
 			$rotation['presentation']
 		);
 	}
 	foreach ( $clean as $key => $rotation ) {
-		$slots = array();
-		foreach ( $rotation['slots'] as $slot ) {
+		$slots     = array();
+		$responses = array();
+		foreach ( $rotation['slots'] as $index => $slot ) {
 			if ( is_string( $slot ) && 0 === strpos( $slot, 'r:' ) ) {
 				$target = substr( $slot, 2 );
 				if ( ! isset( $clean[ $target ] ) ) {
@@ -312,13 +341,15 @@ function adzworld_sanitize_named_rotations( $raw ) {
 					continue;
 				}
 			}
-			$slots[] = $slot;
+			$slots[]     = $slot;
+			$responses[] = $rotation['responses'][ $index ];
 		}
 		if ( empty( $slots ) ) {
 			unset( $clean[ $key ] );
 			continue;
 		}
-		$clean[ $key ]['slots'] = $slots;
+		$clean[ $key ]['slots']     = $slots;
+		$clean[ $key ]['responses'] = $responses;
 	}
 	return $clean;
 }
@@ -374,10 +405,13 @@ function adzworld_save_named_rotation() {
 	$original = isset( $_POST['original_rotation_key'] ) && is_string( $_POST['original_rotation_key'] ) ? sanitize_key( wp_unslash( $_POST['original_rotation_key'] ) ) : '';
 	$name     = isset( $_POST['rotation_name'] ) && is_string( $_POST['rotation_name'] ) ? sanitize_text_field( wp_unslash( $_POST['rotation_name'] ) ) : '';
 	$slots    = isset( $_POST['rotation_slots'] ) && is_array( $_POST['rotation_slots'] ) ? map_deep( wp_unslash( $_POST['rotation_slots'] ), 'sanitize_text_field' ) : array();
+	$modes    = isset( $_POST['rotation_response_mode'] ) && is_array( $_POST['rotation_response_mode'] ) ? array_values( map_deep( wp_unslash( $_POST['rotation_response_mode'] ), 'sanitize_key' ) ) : array();
+	$texts    = isset( $_POST['rotation_response_text'] ) && is_array( $_POST['rotation_response_text'] ) ? array_values( map_deep( wp_unslash( $_POST['rotation_response_text'] ), 'sanitize_text_field' ) ) : array();
 	$posted   = array(
-		'display'  => isset( $_POST['rotation_display'] ) && is_string( $_POST['rotation_display'] ) ? sanitize_key( wp_unslash( $_POST['rotation_display'] ) ) : '',
-		'controls' => isset( $_POST['rotation_controls'] ) && is_string( $_POST['rotation_controls'] ) ? sanitize_key( wp_unslash( $_POST['rotation_controls'] ) ) : '',
-		'size'     => isset( $_POST['rotation_size'] ) && is_string( $_POST['rotation_size'] ) ? sanitize_text_field( wp_unslash( $_POST['rotation_size'] ) ) : '',
+		'display'   => isset( $_POST['rotation_display'] ) && is_string( $_POST['rotation_display'] ) ? sanitize_key( wp_unslash( $_POST['rotation_display'] ) ) : '',
+		'controls'  => isset( $_POST['rotation_controls'] ) && is_string( $_POST['rotation_controls'] ) ? sanitize_key( wp_unslash( $_POST['rotation_controls'] ) ) : '',
+		'size'      => isset( $_POST['rotation_size'] ) && is_string( $_POST['rotation_size'] ) ? sanitize_text_field( wp_unslash( $_POST['rotation_size'] ) ) : '',
+		'countdown' => isset( $_POST['rotation_countdown'] ) && is_string( $_POST['rotation_countdown'] ) ? sanitize_text_field( wp_unslash( $_POST['rotation_countdown'] ) ) : '0',
 	);
 	$stored   = adzworld_named_rotations();
 	$error    = '';
@@ -401,12 +435,19 @@ function adzworld_save_named_rotation() {
 			ADZWORLD_ROTATION_MAX_SLOTS
 		);
 	} else {
-		$choices     = adzworld_rotation_editor_choices( $key, $stored );
-		$clean_slots = array();
-		foreach ( $slots as $slot ) {
+		$choices         = adzworld_rotation_editor_choices( $key, $stored );
+		$clean_slots     = array();
+		$clean_responses = array();
+		foreach ( array_values( $slots ) as $index => $slot ) {
 			$slot = adzworld_accept_rotation_slot( $slot, $choices, $stored, $key );
 			if ( '' !== $slot ) {
-				$clean_slots[] = $slot;
+				$clean_slots[]     = $slot;
+				$clean_responses[] = adzworld_sanitize_slot_response(
+					array(
+						'mode' => isset( $modes[ $index ] ) ? $modes[ $index ] : 'default',
+						'text' => isset( $texts[ $index ] ) ? $texts[ $index ] : '',
+					)
+				);
 			}
 		}
 		if ( empty( $clean_slots ) || count( $clean_slots ) !== count( $slots ) ) {
@@ -423,8 +464,9 @@ function adzworld_save_named_rotation() {
 	}
 	$stored[ $key ] = array_merge(
 		array(
-			'name'  => $name,
-			'slots' => $clean_slots,
+			'name'      => $name,
+			'slots'     => $clean_slots,
+			'responses' => $clean_responses,
 		),
 		adzworld_rotation_presentation( $posted )
 	);
@@ -502,13 +544,15 @@ add_action( 'wp_ajax_adzworld_refresh_rotation_slot', 'adzworld_refresh_admin_ro
 /**
  * Render one editable vertical rotation slot.
  *
- * @param int                  $index   Zero-based position.
- * @param string               $slot    Slot reference.
- * @param array<string,string> $choices Available choices.
- * @param string               $form_id Save form id.
+ * @param int                  $index    Zero-based position.
+ * @param string               $slot     Slot reference.
+ * @param array<string,string> $choices  Available choices.
+ * @param string               $form_id  Save form id.
+ * @param array                $response Slot response setting.
  * @return void
  */
-function adzworld_admin_rotation_slot_row( $index, $slot, $choices, $form_id ) {
+function adzworld_admin_rotation_slot_row( $index, $slot, $choices, $form_id, $response = array() ) {
+	$response = adzworld_sanitize_slot_response( $response );
 	echo '<article class="adzworld-admin-slot" data-adzworld-admin-slot><header><strong data-adzworld-slot-number>';
 	printf(
 		/* translators: %d: rotation slot number. */
@@ -522,9 +566,16 @@ function adzworld_admin_rotation_slot_row( $index, $slot, $choices, $form_id ) {
 	foreach ( $choices as $value => $label ) {
 		echo '<option value="' . esc_attr( $value ) . '"' . selected( $slot, $value, false ) . '>' . esc_html( $label ) . '</option>';
 	}
-	echo '</select></label><div class="adzworld-admin-slot__preview" data-adzworld-slot-preview><div data-adzworld-slot-preview-body>';
+	echo '</select></label>';
+	echo '<div class="adzworld-admin-slot__response"><label>' . esc_html__( 'After a reader responds', 'adz-world' ) . '<select name="rotation_response_mode[]" form="' . esc_attr( $form_id ) . '">';
+	foreach ( adzworld_slot_response_modes() as $mode => $mode_label ) {
+		echo '<option value="' . esc_attr( $mode ) . '"' . selected( $response['mode'], $mode, false ) . '>' . esc_html( $mode_label ) . '</option>';
+	}
+	echo '</select></label><label>' . esc_html__( 'This slot’s own message', 'adz-world' ) . '<input type="text" maxlength="300" name="rotation_response_text[]" form="' . esc_attr( $form_id )
+		. '" value="' . esc_attr( $response['text'] ) . '" placeholder="' . esc_attr( adzworld_default_response_message() ) . '"></label></div>';
+	echo '<div class="adzworld-admin-slot__preview" data-adzworld-slot-preview><div data-adzworld-slot-preview-body>';
 	echo wp_kses_post( adzworld_admin_rotation_slot_preview( $slot ) );
-	echo '</div><button type="button" class="button" data-adzworld-refresh-slot>' . esc_html__( 'Refresh preview', 'adz-world' ) . '</button><span class="spinner" data-adzworld-slot-spinner></span></div></article>';
+	echo '</div><button type="button" class="button" data-adzworld-refresh-slot>' . esc_html__( 'Refresh this adzad preview', 'adz-world' ) . '</button><span class="spinner" data-adzworld-slot-spinner></span></div></article>';
 }
 
 /**
@@ -677,12 +728,17 @@ function adzworld_rotation_admin_page() {
 		echo '<option value="' . esc_attr( $size ) . '"' . selected( $rotation['size'], $size, false ) . '>' . esc_html( $meta['label'] . ' (' . $size . ')' ) . '</option>';
 	}
 	echo '</select></p>';
+	echo '<p><label for="adzworld-rotation-countdown">' . esc_html__( 'Countdown seconds', 'adz-world' ) . '</label><br>';
+	echo '<input id="adzworld-rotation-countdown" name="rotation_countdown" form="' . esc_attr( $form_id ) . '" inputmode="numeric" maxlength="3" value="'
+		. esc_attr( (string) adzworld_rotation_presentation( $rotation )['countdown'] ) . '"></p>';
+	echo '<p>' . esc_html__( 'Parameter rotation_countdown. 0 shows no countdown. A number from 1 to 600 shows that countdown at the top of each slot on the page. At zero the slot stays. This does not open the countdown popup and does not remove the adzad.', 'adz-world' ) . '</p>';
 	if ( '' !== $key && isset( $rotations[ $key ] ) ) {
 		echo '<p class="adzworld-rotation-shortcode"><span>' . esc_html__( 'Widget shortcode', 'adz-world' ) . '</span><br><code>[adz_rotation name=&quot;' . esc_html( $key ) . '&quot;]</code></p>';
 	}
 	echo '</section><div class="adzworld-admin-slots" data-adzworld-admin-slots>';
 	foreach ( $rotation['slots'] as $index => $slot ) {
-		adzworld_admin_rotation_slot_row( $index, $slot, $choices, $form_id );
+		$response = isset( $rotation['responses'][ $index ] ) ? $rotation['responses'][ $index ] : array();
+		adzworld_admin_rotation_slot_row( $index, $slot, $choices, $form_id, $response );
 	}
 	echo '</div><template id="adzworld-slot-template">';
 	adzworld_admin_rotation_slot_row( 0, array_key_first( $choices ), $choices, $form_id );
@@ -812,6 +868,7 @@ function adzworld_parse_rotation( $specification ) {
 			'value'       => $value,
 			'weight'      => $weight,
 			'placeholder' => $placeholder,
+			'position'    => count( $slots ),
 		);
 		$total  += $weight;
 	}
@@ -841,11 +898,25 @@ function adzworld_parse_rotation( $specification ) {
 function adzworld_enqueue_rotation_assets() {
 	$style_path  = dirname( __DIR__ ) . '/assets/rotation.css';
 	$script_path = dirname( __DIR__ ) . '/assets/rotation.js';
+	$tide_path   = dirname( __DIR__ ) . '/assets/ratings-slider-tide.css';
+	$ember_path  = dirname( __DIR__ ) . '/assets/ratings-slider-ember.css';
 	wp_enqueue_style(
 		'adzworld-rotation',
 		plugins_url( 'assets/rotation.css', dirname( __DIR__ ) . '/adz-world.php' ),
 		array(),
 		(string) filemtime( $style_path )
+	);
+	wp_enqueue_style(
+		'adzworld-ratings-slider-tide',
+		plugins_url( 'assets/ratings-slider-tide.css', dirname( __DIR__ ) . '/adz-world.php' ),
+		array( 'adzworld-rotation' ),
+		(string) filemtime( $tide_path )
+	);
+	wp_enqueue_style(
+		'adzworld-ratings-slider-ember',
+		plugins_url( 'assets/ratings-slider-ember.css', dirname( __DIR__ ) . '/adz-world.php' ),
+		array( 'adzworld-rotation' ),
+		(string) filemtime( $ember_path )
 	);
 	wp_enqueue_script(
 		'adzworld-rotation',
@@ -862,13 +933,7 @@ function adzworld_enqueue_rotation_assets() {
 			'taboolaBase'     => 'https://cdn.taboola.com/libtrc/',
 			'preferenceNonce' => wp_create_nonce( 'adzworld_preference' ),
 			'feedbackNonce'   => wp_create_nonce( 'adzworld_feedback' ),
-			'labels'          => array(
-				'strongDislike' => __( 'Strongly dislike', 'adz-world' ),
-				'dislike'       => __( 'Dislike', 'adz-world' ),
-				'neutral'       => __( 'Neutral', 'adz-world' ),
-				'like'          => __( 'Like', 'adz-world' ),
-				'strongLike'    => __( 'Strongly like', 'adz-world' ),
-			),
+			'bands'           => adzworld_rating_bands(),
 		)
 	);
 }
@@ -900,7 +965,7 @@ function adzworld_rotation_admin_assets() {
 			'maxSlots' => ADZWORLD_ROTATION_MAX_SLOTS,
 			'labels'   => array(
 				'loading' => __( 'Refreshing…', 'adz-world' ),
-				'refresh' => __( 'Refresh preview', 'adz-world' ),
+				'refresh' => __( 'Refresh this adzad preview', 'adz-world' ),
 				'failed'  => __( 'The preview could not be refreshed.', 'adz-world' ),
 			),
 		)
@@ -928,6 +993,38 @@ function adzworld_rotation_weighted_slot( $slots, $draw ) {
 }
 
 /**
+ * Render one local adz creative or an honest empty-result state.
+ *
+ * The editor content and featured image are the advertisement itself. The
+ * excerpt is matching information and is never displayed as an advertisement.
+ *
+ * @param WP_Post $ad   adz post.
+ * @param string  $link Click target. Empty uses the destination saved on the adz.
+ * @return string adz slide content.
+ */
+function adzworld_local_ad_slide( $ad, $link = '' ) {
+	if ( ! $ad instanceof WP_Post ) {
+		return '';
+	}
+
+	$content   = wp_kses_post( $ad->post_content );
+	$thumbnail = get_the_post_thumbnail( $ad, 'large', array( 'class' => 'adzworld-creative__image' ) );
+	$creative  = trim( $thumbnail . $content );
+	if ( '' !== $link && function_exists( 'adzworld_internal_link_markup' ) ) {
+		$creative = adzworld_internal_link_markup( $creative, $link );
+	} elseif ( function_exists( 'adzworld_internal_link_creative' ) ) {
+		$creative = adzworld_internal_link_creative( $creative, $ad->ID );
+	}
+
+	if ( '' === $creative ) {
+		return '<div class="adzworld-creative adzworld-creative--empty" role="status"><p>'
+			. esc_html__( 'No matching adz is available yet.', 'adz-world' ) . '</p></div>';
+	}
+
+	return '<div class="adzworld-creative">' . $creative . '</div>';
+}
+
+/**
  * Whether one local adz contains an advertisement creative.
  *
  * @param WP_Post|null $ad Advertisement post.
@@ -938,48 +1035,6 @@ function adzworld_local_ad_has_creative( $ad ) {
 		&& ( '' !== trim( wp_strip_all_tags( $ad->post_content ) )
 			|| has_post_thumbnail( $ad )
 			|| (bool) preg_match( '/<(?:img|picture|video|audio|iframe|svg)\b/i', $ad->post_content ) );
-}
-
-/**
- * Render one local adz as creative followed by one caption.
- *
- * Text-only adz are the caption. Media adz retain their creative and use the
- * post title as the caption. Long text can be expanded without duplication.
- *
- * @param WP_Post $ad adz post.
- * @return string adz slide content.
- */
-function adzworld_local_ad_slide( $ad ) {
-	$content   = wp_kses_post( $ad->post_content );
-	$plain     = trim( wp_strip_all_tags( $ad->post_content ) );
-	$has_media = (bool) preg_match( '/<(?:img|picture|video|audio|iframe|svg)\b/i', $ad->post_content );
-
-	/*
-	 * The adzad goes where the adzadmin said it should. Without this the
-	 * destination was stored and shown in the editor while the adzad itself
-	 * was not clickable.
-	 */
-	$content = adzworld_internal_link_creative( $content, $ad->ID );
-
-	if ( $has_media ) {
-		return '<div class="adzworld-creative">' . $content . '</div>'
-			. '<p class="adzworld-caption">' . esc_html( $ad->post_title ) . '</p>';
-	}
-
-	if ( mb_strlen( $plain ) <= 180 ) {
-		/*
-		 * A short adzad is its own words, so it carries the destination the
-		 * same way a picture does. esc_html() first, then the link, so the
-		 * reader's text is escaped and the anchor is not.
-		 */
-		$caption = adzworld_internal_link_creative( esc_html( $plain ), $ad->ID );
-
-		return '<p class="adzworld-caption">' . $caption . '</p>';
-	}
-
-	return '<details class="adzworld-caption adzworld-caption--expandable"><summary>'
-		. esc_html( mb_substr( $plain, 0, 177 ) . '…' ) . '</summary><div class="adzworld-caption__full">'
-		. $content . '</div></details>';
 }
 
 /**
@@ -1050,23 +1105,26 @@ function adzworld_category_slot_control( $category, $count, $current_slot ) {
 				__( 'Add another %s adz slot', 'adz-world' ),
 				$category
 			)
-		) . '"><span aria-hidden="true">+</span></button></div>'
-		. '<div class="adzworld-category-slots__positions" aria-label="' . esc_attr( $label ) . '">';
+		) . '"><span aria-hidden="true">+</span></button></div>';
 
-	for ( $index = 0; $index < $count; ++$index ) {
-		$markup .= '<button type="button" data-adzworld-category-slot-category="' . esc_attr( $category ) . '" data-adzworld-category-slot="'
-			. esc_attr( (string) $index ) . '" aria-pressed="' . ( $index === $current_slot ? 'true' : 'false' ) . '" aria-label="'
-			. esc_attr(
-				sprintf(
-					/* translators: 1: category name, 2: slot number. */
-					__( 'Show %1$s adz %2$d', 'adz-world' ),
-					$category,
-					$index + 1
-				)
-			) . '"><span class="screen-reader-text">' . esc_html( (string) ( $index + 1 ) ) . '</span></button>';
+	if ( $count > 1 ) {
+		$markup .= '<div class="adzworld-category-slots__positions" aria-label="' . esc_attr( $label ) . '">';
+		for ( $index = 0; $index < $count; ++$index ) {
+			$markup .= '<button type="button" data-adzworld-category-slot-category="' . esc_attr( $category ) . '" data-adzworld-category-slot="'
+				. esc_attr( (string) $index ) . '" aria-pressed="' . ( $index === $current_slot ? 'true' : 'false' ) . '" aria-label="'
+				. esc_attr(
+					sprintf(
+						/* translators: 1: category name, 2: slot number. */
+						__( 'Show %1$s adz %2$d', 'adz-world' ),
+						$category,
+						$index + 1
+					)
+				) . '"><span class="screen-reader-text">' . esc_html( (string) ( $index + 1 ) ) . '</span></button>';
+		}
+		$markup .= '</div>';
 	}
 
-	return $markup . '</div><span class="adzworld-category-slots__status" data-adzworld-category-slot-status role="status" aria-live="polite"></span></div>';
+	return $markup . '<span class="adzworld-category-slots__status" data-adzworld-category-slot-status role="status" aria-live="polite"></span></div>';
 }
 
 /**
@@ -1285,6 +1343,9 @@ function adzworld_rotation_cycle_index( $key, $count ) {
 	if ( $count < 1 ) {
 		return 0;
 	}
+	if ( '' === adzworld_view_identity() ) {
+		return wp_rand( 0, $count - 1 );
+	}
 	$name  = 'adzworld_pos_' . substr( hash( 'sha256', $key ), 0, 16 );
 	$raw   = isset( $_COOKIE[ $name ] ) ? sanitize_text_field( wp_unslash( $_COOKIE[ $name ] ) ) : '0';
 	$index = absint( $raw ) % $count;
@@ -1338,16 +1399,7 @@ function adzworld_render_rotation( $attributes ) {
 function adzworld_render_rotation_level( $attributes ) {
 	$attributes = shortcode_atts(
 		array(
-			'name'           => '',
-
-			/*
-			 * Where this rotation sits when it is itself a slot of another
-			 * rotation. AdzLogs reads it so a nested rotation's rows say which
-			 * outer slot they came from. Both are sanitised again before they
-			 * are stored or printed.
-			 */
-			'outer_rotation' => '',
-			'outer_slot'     => 0,
+			'name' => '',
 		),
 		$attributes,
 		'adz_rotation'
@@ -1357,15 +1409,16 @@ function adzworld_render_rotation_level( $attributes ) {
 	if ( '' === $name || ! isset( $rotations[ $name ] ) ) {
 		return '<p class="adzworld-rotation-error" role="alert">' . esc_html__( 'The named rotation is not available.', 'adz-world' ) . '</p>';
 	}
-	$rotation               = $rotations[ $name ];
-	$presentation           = adzworld_rotation_presentation( $rotation );
-	$attributes['slots']    = implode( ',', $rotation['slots'] );
-	$attributes['display']  = $presentation['display'];
-	$attributes['controls'] = $presentation['controls'];
-	$attributes['size']     = $presentation['size'];
-	$attributes['label']    = $rotation['name'];
-	$attributes['name']     = $name;
-	$slots                  = adzworld_parse_rotation( $attributes['slots'] );
+	$rotation                = $rotations[ $name ];
+	$presentation            = adzworld_rotation_presentation( $rotation );
+	$attributes['slots']     = implode( ',', $rotation['slots'] );
+	$attributes['display']   = $presentation['display'];
+	$attributes['controls']  = $presentation['controls'];
+	$attributes['size']      = $presentation['size'];
+	$attributes['countdown'] = $presentation['countdown'];
+	$attributes['label']     = $rotation['name'];
+	$attributes['name']      = $name;
+	$slots                   = adzworld_parse_rotation( $attributes['slots'] );
 	if ( is_wp_error( $slots ) ) {
 		return '<p class="adzworld-rotation-error" role="alert">' . esc_html( $slots->get_error_message() ) . '</p>';
 	}
@@ -1376,36 +1429,29 @@ function adzworld_render_rotation_level( $attributes ) {
 		|| ( '' !== $attributes['size'] && ! isset( $sizes[ $attributes['size'] ] ) ) ) {
 		return '<p class="adzworld-rotation-error" role="alert">' . esc_html__( 'The rotation display, size or controls setting is not supported.', 'adz-world' ) . '</p>';
 	}
-	$display  = $attributes['display'];
-	$controls = $attributes['controls'];
-	$size     = $attributes['size'];
-	$pref     = adzworld_preference_with_catalog( adzworld_current_preference() );
+	$display   = $attributes['display'];
+	$controls  = $attributes['controls'];
+	$size      = $attributes['size'];
+	$countdown = isset( $attributes['countdown'] ) ? absint( $attributes['countdown'] ) : 0;
+	$pref      = adzworld_preference_with_catalog( adzworld_current_preference() );
 	if ( adzworld_has_preference( $pref ) ) {
-		$unranked = array(
-			'in_category' => 0,
-			'matched'     => 0,
-			'rating'      => 0,
-			'engaged'     => 0,
-		);
-
 		foreach ( $slots as $index => $candidate ) {
 			$slots[ $index ]['order'] = $index;
-			$rank                     = 'ad' === $candidate['type']
-				? adzworld_rank_ad( (int) $candidate['value'], $pref )
-				: null;
-			$slots[ $index ]['rank']  = null === $rank ? $unranked : $rank;
+			$slots[ $index ]['score'] = 'ad' === $candidate['type']
+				? adzworld_score_ad( (int) $candidate['value'], $pref )
+				: 0;
 		}
-
 		usort(
 			$slots,
 			static function ( $first, $second ) {
 				if ( 'intro' === $first['type'] || 'intro' === $second['type'] ) {
 					return 'intro' === $first['type'] ? -1 : 1;
 				}
+				if ( $first['score'] === $second['score'] ) {
+					return $first['order'] <=> $second['order'];
+				}
 
-				$compared = adzworld_compare_rank( $first['rank'], $second['rank'] );
-
-				return 0 === $compared ? $first['order'] <=> $second['order'] : $compared;
+				return $second['score'] <=> $first['score'];
 			}
 		);
 	}
@@ -1427,17 +1473,6 @@ function adzworld_render_rotation_level( $attributes ) {
 		$category      = isset( $slot['category'] ) ? (string) $slot['category'] : '';
 		$category_slot = isset( $slot['category_slot'] ) ? (int) $slot['category_slot'] : 0;
 		$slot_count    = isset( $slot['category_slot_count'] ) ? (int) $slot['category_slot_count'] : 1;
-
-		/*
-		 * $served is the feedback key the slide's own control posts back, and
-		 * $configured is what the administrator put in this slot. They differ:
-		 * a slot configured as source:ebay serves whichever adzad eBay
-		 * returned. Both are empty for a slide that serves no adzad, such as
-		 * the reader's own hub, and nothing is logged for those.
-		 */
-		$served     = '';
-		$configured = '';
-
 		if ( 'intro' === $slot['type'] ) {
 			$html = adzworld_rotation_introduction( $slide_id );
 		} elseif ( 'ad' === $slot['type'] ) {
@@ -1445,88 +1480,44 @@ function adzworld_render_rotation_level( $attributes ) {
 			if ( '' === $category ) {
 				$category = adzworld_ad_category( $ad, $pref );
 			}
-
-			/*
-			 * A title row the adzadmin saved, and a provider their showcase
-			 * draws from. Both are optional: with neither, the adzad is
-			 * rendered as it always was.
-			 */
-			$title_row = adzworld_internal_title_row( $ad );
-			$provider  = adzworld_internal_sanitize_provider(
-				get_post_meta( $ad->ID, ADZWORLD_INTERNAL_PROVIDER_KEY, true )
-			);
-
-			/*
-			 * A provider slot searches the reader's own category once they
-			 * have named one. Until then an Amazon showcase, which has no
-			 * category of its own, uses the active category so the frame is
-			 * not empty. An internal adz keeps the creative it was given.
-			 */
-			$own_category    = $category;
-			$search_category = function_exists( 'adzworld_slot_search_category' )
-				? adzworld_slot_search_category( $category, $provider, $pref )
-				: $category;
-
-			$html = '';
-			if ( '' === $provider || adzworld_local_ad_has_creative( $ad ) ) {
-				$html = adzworld_local_ad_slide( $ad );
+			$has_creative = adzworld_local_ad_has_creative( $ad );
+			$title_row    = function_exists( 'adzworld_internal_title_row' ) ? adzworld_internal_title_row( $ad ) : '';
+			$provider     = defined( 'ADZWORLD_INTERNAL_PROVIDER_KEY' )
+				? adzworld_internal_sanitize_provider( get_post_meta( $ad->ID, ADZWORLD_INTERNAL_PROVIDER_KEY, true ) )
+				: '';
+			$category_url = function_exists( 'adzworld_affiliate_category_url' ) ? adzworld_affiliate_category_url( $pref, $category ) : '';
+			$creative_url = defined( 'ADZWORLD_INTERNAL_URL_KEY' ) ? get_post_meta( $ad->ID, ADZWORLD_INTERNAL_URL_KEY, true ) : '';
+			if ( '' === $creative_url ) {
+				$creative_url = $category_url;
 			}
-
-			/*
-			 * The showcase is a carousel of real products answering the
-			 * reader's own words, each one its own slide carrying its own
-			 * rating. It is what makes an adzad a storefront rather than a
-			 * picture, so it sits directly beneath the creative.
-			 */
 			$showcase = '';
-
-			if ( '' !== $provider && '' !== $search_category ) {
-				$showcase = adzworld_affiliate_showcase( $pref, $search_category, $title_row, $provider );
-			} elseif ( in_array( $category, $pref['categories'], true ) ) {
+			if ( in_array( $category, $pref['categories'], true ) && function_exists( 'adzworld_affiliate_showcase' ) ) {
 				$showcase = adzworld_affiliate_showcase( $pref, $category, $title_row, $provider );
 			}
-
+			if ( $has_creative ) {
+				$html = adzworld_local_ad_slide( $ad, $creative_url );
+			} else {
+				$html = '';
+			}
 			if ( '' !== $showcase ) {
-				$html .= $showcase;
+				$html        .= $showcase;
+				$has_creative = true;
+			} elseif ( ! $has_creative ) {
+				$html = adzworld_local_ad_slide( $ad );
 			} elseif ( '' !== $title_row ) {
 				$html = '<div class="adzworld-results__title">' . esc_html( $title_row ) . '</div>' . $html;
 			}
-
-			$feedback_category = '' !== $provider && '' !== $search_category ? $search_category : $category;
-			$html             .= adzworld_feedback_control( 'ad-' . $ad->ID, $feedback_category );
-			$served            = 'ad-' . $ad->ID;
-			$configured        = 'ad:' . $ad->ID;
-			$category          = $feedback_category;
-
-			/*
-			 * The readout: the exact words that went to the provider, the
-			 * tracking id they were sent under, and the link they built. It
-			 * is how an adzadmin can see what their adz actually asked for.
-			 * A slot tied to one provider has its own search and does not
-			 * show the category-wide one.
-			 */
-			if ( '' === $provider ) {
-				$html .= adzworld_affiliate_category_search_link( $pref, $category );
+			if ( in_array( $category, $pref['categories'], true ) ) {
+				$html .= adzworld_category_slot_control( $category, $slot_count, $category_slot );
 			}
-
-			if ( in_array( $own_category, $pref['categories'], true ) ) {
-				$html .= adzworld_category_slot_control( $own_category, $slot_count, $category_slot );
-
-				if ( 0 === $category_slot && '' === $showcase ) {
-					/*
-					 * Only when the showcase found nothing: otherwise the
-					 * reader would see the same products twice, once as a
-					 * carousel and once as a flat list.
-					 */
-					$html .= adzworld_affiliate_markup( $pref, $own_category );
-				}
+			$html .= adzworld_feedback_control( 'ad-' . $ad->ID, $category, $has_creative, false, $provider );
+			if ( '' === $provider && function_exists( 'adzworld_affiliate_category_search_link' ) ) {
+				$html .= adzworld_affiliate_category_search_link( $pref, $category );
 			}
 		} elseif ( 'r' === $slot['type'] ) {
 			$inner = adzworld_render_rotation(
 				array(
-					'name'           => $slot['value'],
-					'outer_rotation' => $name,
-					'outer_slot'     => $index + 1,
+					'name' => $slot['value'],
 				)
 			);
 			$html  = '<div class="adzworld-nested-rotation">' . $inner . '</div>'
@@ -1535,70 +1526,23 @@ function adzworld_render_rotation_level( $attributes ) {
 			$html = '<div class="adzworld-provider-placeholder"><p>' . esc_html( (string) $slot['value'] ) . '</p><p>'
 				. esc_html__( 'This provider unit is not connected yet. The shortcode already names it.', 'adz-world' ) . '</p></div>';
 		} else {
-			$category   = isset( $pref['active_category'] ) ? (string) $pref['active_category'] : '';
-			$html       = '<div class="adzworld-provider" aria-label="' . esc_attr( $sources[ $slot['value'] ]['label'] ) . '">'
+			$category = isset( $pref['active_category'] ) ? (string) $pref['active_category'] : '';
+			$html     = '<div class="adzworld-provider" aria-label="' . esc_attr( $sources[ $slot['value'] ]['label'] ) . '">'
 				. do_shortcode( $sources[ $slot['value'] ]['shortcode'] ) . '</div>'
 				. '<p class="adzworld-match-label">' . esc_html( $sources[ $slot['value'] ]['label'] ) . '</p>'
 				. adzworld_feedback_control( 'source-' . $slot['value'], $category );
-			$served     = 'source-' . $slot['value'];
-			$configured = 'source:' . $slot['value'];
 		}
-
-		/*
-		 * The slide is on its way out, so this is the moment AdzLogs can
-		 * record what was actually served in this slot, together with the
-		 * rating and the refinement phrases that were in force as it went.
-		 */
-		if ( '' !== $served && function_exists( 'adzworld_logs_remember_ad' ) ) {
-			$shown_rating   = null;
-			$shown_feedback = function_exists( 'adzworld_current_feedback' ) ? adzworld_current_feedback() : array();
-
-			if ( isset( $shown_feedback[ $served ]['score'] ) ) {
-				$shown_rating = adzworld_slot_journey_rating( $shown_feedback[ $served ]['score'] );
-			}
-
-			adzworld_logs_remember_ad(
-				adzworld_logs_place( $name, $index + 1, $attributes['outer_rotation'], (int) $attributes['outer_slot'] ),
-				$served,
-				$configured,
-				$category,
-				adzworld_logs_phrases( $pref, $category ),
-				$shown_rating
-			);
-		}
-
 		$category_attribute = '' !== $category ? ' data-adzworld-category="' . esc_attr( $category ) . '"' : '';
 		$slot_attribute     = '' !== $category ? ' data-adzworld-category-slot="' . esc_attr( (string) $category_slot ) . '"' : '';
-
-		/*
-		 * Slots are numbered from 1 wherever a person reads them, which is
-		 * everywhere: the log row, the export, the tab and this attribute.
-		 * The number is made 1-based here, at the one point it is produced,
-		 * so nothing downstream has to add or subtract to display it.
-		 */
-		$log_attribute = ' data-adzworld-slot="' . esc_attr( (string) ( $index + 1 ) ) . '"';
-
-		if ( '' !== $served ) {
-			/*
-			 * What this slide is serving, so a category or refinement change
-			 * made while it was on screen is filed against it rather than
-			 * against whichever slide happens to be first.
-			 */
-			$log_attribute .= ' data-adzworld-ad="' . esc_attr( $served ) . '"';
-		}
-
-		$slides .= '<section class="adzworld-slide" id="' . esc_attr( $slide_id ) . '"' . $category_attribute . $slot_attribute . $log_attribute . ' role="group" aria-roledescription="'
-			. esc_attr__( 'slide', 'adz-world' ) . '" aria-label="' . esc_attr( ( $index + 1 ) . ' / ' . count( $slots ) ) . '">' . $html . '</section>';
+		$journey_attribute  = ' data-adzworld-rotation="' . esc_attr( $name ) . '" data-adzworld-slot="' . esc_attr( (string) ( $index + 1 ) )
+			. '" data-adzworld-slot-position="' . esc_attr( (string) $slot['position'] ) . '" data-adzworld-ad="' . esc_attr( adzworld_rotation_slot_ad( $slot ) ) . '"';
+		$notice             = 'r' === $slot['type'] ? '' : '<p class="adzworld-response" role="status" aria-live="polite" hidden></p>' . adzworld_rotation_notice();
+		$slides            .= '<section class="adzworld-slide" id="' . esc_attr( $slide_id ) . '"' . $category_attribute . $slot_attribute . $journey_attribute . ' role="group" aria-roledescription="'
+			. esc_attr__( 'slide', 'adz-world' ) . '" aria-label="' . esc_attr( ( $index + 1 ) . ' / ' . count( $slots ) ) . '">' . adzworld_rotation_countdown_markup( $countdown ) . $html . $notice . '</section>';
 		if ( 'intro' === $slot['type'] ) {
 			$dot_class = ' class="adzworld-hub-position"';
 			$dot_label = __( 'Show your adz hub', 'adz-world' );
 		} elseif ( 'r' === $slot['type'] ) {
-			/*
-			 * A position holding a rotation answers a refinement; a position
-			 * holding one fixed adzad does not. The reader can see which is
-			 * which before choosing, so the refine control does not appear
-			 * and disappear as the wheel turns.
-			 */
 			++$adz_index;
 			$dot_class = ' class="adzworld-live-position"';
 			/* translators: %d: adz position, excluding the user hub. */
@@ -1646,22 +1590,63 @@ function adzworld_render_rotation_level( $attributes ) {
 			. esc_html__( 'Dismiss this advertising', 'adz-world' ) . '</span></button>';
 	}
 
-	/*
-	 * The rotation names itself in the markup so that a response posted from
-	 * one of its slides can be placed back in the same rotation and slot.
-	 */
-	$rotation_attribute = ' data-adzworld-rotation="' . esc_attr( $name ) . '"';
-	$outer_attribute    = '';
-	$outer_rotation     = adzworld_logs_key( $attributes['outer_rotation'] );
+	return '<div class="' . esc_attr( $classes ) . '" id="' . esc_attr( $id )
+		. '"' . $multiple . ' role="region" aria-label="' . esc_attr( $attributes['label'] ) . '"><div class="adzworld-carousel"><div class="adzworld-slides">' . $slides
+		. '</div><div class="adzworld-navigation" hidden>' . $navigation . '</div>' . $dismiss . '</div></div>';
+}
 
-	if ( '' !== $outer_rotation ) {
-		$outer_attribute = ' data-adzworld-outer-rotation="' . esc_attr( $outer_rotation )
-			. '" data-adzworld-outer-slot="' . esc_attr( (string) (int) $attributes['outer_slot'] ) . '"';
+/**
+ * The adz identifier a slide shows before any product carousel moves.
+ *
+ * Product carousels name each product on its own slide, and the script sends
+ * the product on screen instead of this identifier.
+ *
+ * @param array $slot Parsed slot.
+ * @return string hub, ad-ID, source-key, or an empty string.
+ */
+function adzworld_rotation_slot_ad( $slot ) {
+	if ( 'intro' === $slot['type'] ) {
+		return 'hub';
+	}
+	if ( 'ad' === $slot['type'] ) {
+		return 'ad-' . absint( $slot['value'] );
+	}
+	if ( 'source' === $slot['type'] ) {
+		return sanitize_key( 'source-' . $slot['value'] );
 	}
 
-	return '<div class="' . esc_attr( $classes ) . '" id="' . esc_attr( $id )
-		. '"' . $rotation_attribute . $outer_attribute . $multiple . ' role="region" aria-label="' . esc_attr( $attributes['label'] ) . '"><div class="adzworld-carousel"><div class="adzworld-slides">' . $slides
-		. '</div><div class="adzworld-navigation" hidden>' . $navigation . '</div>' . $dismiss . '</div></div>';
+	return '';
+}
+
+/**
+ * The (i) note on one adz panel.
+ *
+ * The same note is on every slide. It states what this install stores, and
+ * which placed services collect on their own.
+ *
+ * @return string
+ */
+function adzworld_rotation_notice() {
+	$id      = wp_unique_id( 'adzworld-notice-' );
+	$content = '';
+	$em_dash = ' — ';
+	$pilcrow = '¶ ';
+
+	foreach ( adzworld_notice_paragraphs() as $paragraph ) {
+		$separator = strpos( $paragraph, $em_dash );
+		if ( 0 === strpos( $paragraph, $pilcrow ) && false !== $separator ) {
+			$heading  = substr( $paragraph, 0, $separator );
+			$body     = substr( $paragraph, $separator + strlen( $em_dash ) );
+			$content .= '<p><strong>' . esc_html( $heading ) . '</strong> — ' . esc_html( $body ) . '</p>';
+			continue;
+		}
+		$content .= '<p>' . esc_html( $paragraph ) . '</p>';
+	}
+
+	return '<div class="adzworld-notice"><button type="button" class="adzworld-notice__mark" aria-label="'
+		. esc_attr__( 'How adz are served here', 'adz-world' ) . '" aria-describedby="' . esc_attr( $id ) . '">'
+		. '<span aria-hidden="true">i</span></button><div class="adzworld-notice__text" id="' . esc_attr( $id ) . '" role="note">'
+		. $content . '</div></div>';
 }
 
 /**
