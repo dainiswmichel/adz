@@ -67,7 +67,7 @@ function adzworld_shortcode( $atts, $content = null ) {
 			'adz_interval_sec' => 20,
 			'adz_display'      => 'popup',
 			'adz_sequence'     => '',
-			'adz_template'     => 'template1.php',
+			'adz_template'     => 'countdown-layout.php',
 		),
 		$atts
 	);
@@ -133,7 +133,7 @@ function adzworld_shortcode( $atts, $content = null ) {
  * @param string $adz_template Template filename.
  * @param mixed  $adz_to_serve Selected ad identifier.
  */
-function adzworld_in_page( $adz_interval_min, $adz_duration, $adz_sequence = '', $adz_template = 'template1.php', $adz_to_serve = '' ) {
+function adzworld_in_page( $adz_interval_min, $adz_duration, $adz_sequence = '', $adz_template = 'countdown-layout.php', $adz_to_serve = '' ) {
 	adzworld_legacy_request(
 		array(
 			'mode'     => 'gate',

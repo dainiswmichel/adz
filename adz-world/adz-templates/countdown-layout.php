@@ -1,6 +1,9 @@
 <?php
 /**
- * Legacy full-page and AJAX advertising template.
+ * Sticky header, advertisement, sticky footer, each with a countdown.
+ *
+ * Renders full page in thru_page mode and inline otherwise. Was template1.php
+ * until 1.1.1; adzworld_template_renames() keeps the old name resolving.
  *
  * @package adz-world
  */
@@ -9,8 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 $adzworld_template_name = basename( __FILE__ );
-$adzworld_setting_data  = get_option( 'template_' . $adzworld_template_name );
-$adzworld_setting_array = adzworld_template_settings( $adzworld_setting_data );
+$adzworld_setting_array = adzworld_template_saved_lines( $adzworld_template_name );
 $adzworld_setting_array = wp_parse_args(
 	is_array( $adzworld_setting_array ) ? $adzworld_setting_array : array(),
 	array(
