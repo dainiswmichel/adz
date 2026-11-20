@@ -1707,14 +1707,92 @@ body.wp-admin .adzworld-paid-card .adzworld-connection-card select {
 }
 
 /* Ratings bands editor on the Templates tab. */
-.adzworld-bands__table {
-	max-width: 640px;
+.adzworld-bands__themes {
+	border: 0;
+	margin: 0 0 16px;
+	padding: 0;
 }
 
-.adzworld-bands__from {
-	color: #50575e;
+.adzworld-bands__themes legend {
+	font-weight: 600;
+	margin-bottom: 4px;
+}
+
+.adzworld-bands__theme {
+	align-items: center;
+	display: inline-flex;
+	gap: 8px;
+	margin: 0 18px 8px 0;
+}
+
+.adzworld-bands__swatch {
+	border-radius: 999px;
+	display: inline-block;
+	height: 0.55rem;
+	width: 7rem;
+}
+
+.adzworld-bands__swatch--standard {
+	background: linear-gradient(
+		90deg,
+		#c92a2a 0%,
+		#de6012 20%,
+		hsl(46 97% 51%) 38%,
+		hsl(46 97% 51%) 62%,
+		#bbcd13 80%,
+		#16803a 100%
+	);
+}
+
+.adzworld-bands__swatch--ember {
+	background: linear-gradient(
+		90deg,
+		hsl(6 72% 36%) 0%,
+		hsl(18 88% 46%) 20%,
+		hsl(34 96% 50%) 38%,
+		hsl(34 96% 50%) 62%,
+		hsl(72 72% 42%) 80%,
+		hsl(116 62% 30%) 100%
+	);
+}
+
+.adzworld-bands__swatch--tide {
+	background: linear-gradient(
+		90deg,
+		hsl(222 62% 40%) 0%,
+		hsl(200 70% 46%) 20%,
+		hsl(188 35% 72%) 38%,
+		hsl(188 35% 72%) 62%,
+		hsl(168 50% 42%) 80%,
+		hsl(152 58% 32%) 100%
+	);
+}
+
+.adzworld-bands__table {
+	max-width: 36rem;
+}
+
+.adzworld-bands__table th,
+.adzworld-bands__table td {
+	vertical-align: middle;
+}
+
+.adzworld-bands__table th:nth-child(1),
+.adzworld-bands__table th:nth-child(2),
+.adzworld-bands__table td:nth-child(1),
+.adzworld-bands__table td:nth-child(2) {
+	width: 6rem;
+}
+
+.adzworld-bands__table input.adzworld-bands__number {
 	font-variant-numeric: tabular-nums;
-	width: 60px;
+	text-align: right;
+	width: 5rem;
+}
+
+.adzworld-bands__table input.adzworld-bands__words {
+	max-width: 16rem;
+	width: 100%;
 }
 
 /* Response setting inside each rotation slot. */

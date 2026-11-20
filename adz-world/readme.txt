@@ -5,7 +5,7 @@ Tags: advertising, consent, privacy, ads, ad management
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -43,7 +43,8 @@ site allows it.
 Visible, editable controls show the categories and refinements supplied by the
 audience member. Ratings from -100 to 100 add positive or negative weight;
 untouched adz remain distinct from explicitly rated adz. adzAdmins can customize
-the words used for rating ranges and the response shown after feedback.
+the words and ends of rating ranges, the slider colour theme, and the response
+shown after feedback.
 
 AdzLogs records the journey only after the first action: the rotation, slot,
 exact adzad, rating, and words entered. It does not record adz that were merely
@@ -277,6 +278,11 @@ controlled by adzAdmins.
 
 == Changelog ==
 
+= 1.1.1 =
+* Rating bands now store a start and an end, and both are editable.
+* Added the Standard, Ember, and Tide slider colour themes. Standard keeps the
+  existing red, gold, and green curve.
+
 = 1.1.0 =
 * Renamed the Manual tab to Interactive Documentation and moved it to the final
   tab position.
@@ -299,6 +305,9 @@ controlled by adzAdmins.
 
 
 == Upgrade Notice ==
+= 1.1.1 =
+Adds editable rating-band ranges and two additional slider colour themes.
+
 = 1.1.0 =
 Renames and repositions the documentation tab and improves the public readme.
 

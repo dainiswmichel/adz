@@ -2,7 +2,7 @@
 /**
  * Plugin Name: adz-world
  * Description: Run your website like a TV station by requiring adz views in exchange for access to content.
- * Version: 1.1.0
+ * Version: 1.1.1
  * Author: dainismichel
  * Author URI: http://www.dainiswmichel.com
  * License: GPLv3
@@ -17,7 +17,7 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
-define( 'ADZWORLD_VERSION', '1.1.0' );
+define( 'ADZWORLD_VERSION', '1.1.1' );
 
 /**
  * Product name and public site.

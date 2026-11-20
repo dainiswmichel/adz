@@ -1012,7 +1012,7 @@
 		var index;
 
 		for ( index = 0; index < bands.length; index++ ) {
-			if ( score <= Number( bands[ index ].to ) ) {
+			if ( score >= Number( bands[ index ].from ) && score <= Number( bands[ index ].to ) ) {
 				return bands[ index ].label;
 			}
 		}

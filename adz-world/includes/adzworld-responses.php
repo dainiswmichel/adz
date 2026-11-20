@@ -3,11 +3,13 @@
  * Rating bands and slot response messages.
  *
  * A reader rates an adz on a slider from -100 to 100. Ratings bands turn that
- * number into words. An adzadmin sets how many bands there are, where each one
- * ends, and the words it shows. Bands are stored by their upper end only: the
- * first band starts at -100 and every later band starts one above the end of
- * the band before it. Stored that way, two bands can never overlap and there
- * can never be a gap between them.
+ * number into words. An adzadmin sets where each band starts, where it ends,
+ * and the words it shows. The bands must cover -100 through 100 with no gap
+ * and no overlap, so every score has words.
+ *
+ * The slider colour theme is saved with the bands. Standard is the curve in
+ * assets/rotation.css. Ember and Tide are the other two themes, in
+ * assets/ratings-slider-themes.css.
  *
  * A response message is the short line an adz panel shows after a reader
  * responds to it: a rating, a refinement, or a category change. Each rotation
@@ -20,6 +22,9 @@ defined( 'ABSPATH' ) || exit;
 
 /** Option holding the ratings bands, lowest band first. */
 const ADZWORLD_RATING_BANDS_OPTION = 'adzworld_rating_bands';
+
+/** Option holding the slider theme slug: standard, ember, or tide. */
+const ADZWORLD_RATINGS_SLIDER_OPTION = 'adzworld_ratings_slider_theme';
 
 /** Option holding the site default response message. */
 const ADZWORLD_RESPONSE_OPTION = 'adzworld_response_message';
@@ -34,34 +39,39 @@ const ADZWORLD_RATING_MAX = 100;
 const ADZWORLD_RESPONSE_TEXT_MAX = 300;
 
 /** Blank band rows offered in the editor for adding bands. */
-const ADZWORLD_RATING_BAND_SPARE_ROWS = 3;
+const ADZWORLD_RATING_BAND_SPARE_ROWS = 2;
 
 /**
  * The bands a fresh install starts with.
  *
  * These are the five bands the slider has always used.
  *
- * @return array<int,array{to:int,label:string}>
+ * @return array<int,array{from:int,to:int,label:string}>
  */
 function adzworld_rating_bands_default() {
 	return array(
 		array(
+			'from'  => ADZWORLD_RATING_MIN,
 			'to'    => -75,
 			'label' => __( 'Strongly dislike', 'adz-world' ),
 		),
 		array(
+			'from'  => -74,
 			'to'    => -25,
 			'label' => __( 'Dislike', 'adz-world' ),
 		),
 		array(
+			'from'  => -24,
 			'to'    => 24,
 			'label' => __( 'Neutral', 'adz-world' ),
 		),
 		array(
+			'from'  => 25,
 			'to'    => 74,
 			'label' => __( 'Like', 'adz-world' ),
 		),
 		array(
+			'from'  => 75,
 			'to'    => ADZWORLD_RATING_MAX,
 			'label' => __( 'Strongly like', 'adz-world' ),
 		),
@@ -69,13 +79,52 @@ function adzworld_rating_bands_default() {
 }
 
 /**
+ * Slider colour themes an adzadmin can choose.
+ *
+ * Standard is the live curve. Ember and Tide are the other two.
+ *
+ * @return array<string,array{label:string}>
+ */
+function adzworld_ratings_slider_themes() {
+	return array(
+		'standard' => array(
+			'label' => __( 'Standard', 'adz-world' ),
+		),
+		'ember'    => array(
+			'label' => __( 'Ember', 'adz-world' ),
+		),
+		'tide'     => array(
+			'label' => __( 'Tide', 'adz-world' ),
+		),
+	);
+}
+
+/**
+ * The slider theme in use.
+ *
+ * The stored value is the slug. The stylesheet class is
+ * adzworld-ratings-slider- plus that slug, so Standard is
+ * adzworld-ratings-slider-standard.
+ *
+ * @return string Theme slug.
+ */
+function adzworld_ratings_slider_theme() {
+	$stored = get_option( ADZWORLD_RATINGS_SLIDER_OPTION, 'standard' );
+	$stored = is_string( $stored ) ? sanitize_key( $stored ) : 'standard';
+
+	return isset( adzworld_ratings_slider_themes()[ $stored ] ) ? $stored : 'standard';
+}
+
+/**
  * Check a list of bands and return it in stored form.
  *
- * Rows whose end and wording are both empty are ignored, which is how an
- * adzadmin removes a band. Every other row needs both.
+ * A row with an empty start, end, and wording is ignored, which is how an
+ * adzadmin removes a band. Every other row needs all three. A stored band
+ * from before starts were saved has no start key; that start is the end of
+ * the previous band plus one.
  *
- * @param mixed $rows Rows of array{to:mixed,label:mixed}.
- * @return array<int,array{to:int,label:string}>|WP_Error Bands, or the first problem found.
+ * @param mixed $rows Rows of array{from?:mixed,to:mixed,label:mixed}.
+ * @return array<int,array{from:int,to:int,label:string}>|WP_Error Bands, or the first problem found.
  */
 function adzworld_validate_rating_bands( $rows ) {
 	if ( ! is_array( $rows ) ) {
@@ -85,15 +134,37 @@ function adzworld_validate_rating_bands( $rows ) {
 	$bands    = array();
 	$previous = ADZWORLD_RATING_MIN - 1;
 	foreach ( $rows as $row ) {
-		$to    = isset( $row['to'] ) && is_scalar( $row['to'] ) ? trim( (string) $row['to'] ) : '';
-		$label = isset( $row['label'] ) && is_scalar( $row['label'] ) ? sanitize_text_field( (string) $row['label'] ) : '';
-		if ( '' === $to && '' === $label ) {
+		if ( ! is_array( $row ) ) {
+			continue;
+		}
+		$has_from = array_key_exists( 'from', $row );
+		$from_raw = $has_from && is_scalar( $row['from'] ) ? trim( (string) $row['from'] ) : '';
+		$to_raw   = isset( $row['to'] ) && is_scalar( $row['to'] ) ? trim( (string) $row['to'] ) : '';
+		$label    = isset( $row['label'] ) && is_scalar( $row['label'] ) ? sanitize_text_field( (string) $row['label'] ) : '';
+		if ( '' === $from_raw && '' === $to_raw && '' === $label ) {
 			continue;
 		}
 		if ( '' === $label ) {
 			return new WP_Error( 'adzworld_bands_label', __( 'Every ratings band needs words.', 'adz-world' ) );
 		}
-		if ( ! preg_match( '/^-?[0-9]{1,3}$/D', $to ) ) {
+		$label = mb_substr( $label, 0, ADZWORLD_RESPONSE_TEXT_MAX );
+		if ( ! $has_from ) {
+			$from = $previous + 1;
+		} else {
+			$from = adzworld_rating_band_score( $from_raw );
+			if ( null === $from ) {
+				return new WP_Error(
+					'adzworld_bands_number',
+					sprintf(
+						/* translators: %s: words of the ratings band. */
+						__( 'The band “%s” needs a whole number from -100 to 100 where it starts.', 'adz-world' ),
+						$label
+					)
+				);
+			}
+		}
+		$to = adzworld_rating_band_score( $to_raw );
+		if ( null === $to ) {
 			return new WP_Error(
 				'adzworld_bands_number',
 				sprintf(
@@ -103,23 +174,44 @@ function adzworld_validate_rating_bands( $rows ) {
 				)
 			);
 		}
-		$to = (int) $to;
-		if ( $to < ADZWORLD_RATING_MIN || $to > ADZWORLD_RATING_MAX ) {
-			return new WP_Error( 'adzworld_bands_range', __( 'Ratings bands must end between -100 and 100.', 'adz-world' ) );
-		}
-		if ( $to <= $previous ) {
+		if ( $from > $to ) {
 			return new WP_Error(
 				'adzworld_bands_order',
 				sprintf(
 					/* translators: %s: words of the ratings band. */
-					__( 'The band “%s” must end higher than the band before it. Bands are listed from -100 upward and cannot overlap.', 'adz-world' ),
+					__( 'The band “%s” must end at or after where it starts.', 'adz-world' ),
 					$label
 				)
 			);
 		}
+		if ( ADZWORLD_RATING_MIN === $previous + 1 && ADZWORLD_RATING_MIN !== $from ) {
+			return new WP_Error( 'adzworld_bands_start', __( 'The first ratings band must start at -100.', 'adz-world' ) );
+		}
+		if ( $from <= $previous ) {
+			return new WP_Error(
+				'adzworld_bands_order',
+				sprintf(
+					/* translators: %s: words of the ratings band. */
+					__( 'The band “%s” overlaps the band before it. Bands are listed from -100 upward.', 'adz-world' ),
+					$label
+				)
+			);
+		}
+		if ( $from !== $previous + 1 ) {
+			return new WP_Error(
+				'adzworld_bands_gap',
+				sprintf(
+					/* translators: 1: words of the ratings band, 2: score where the band has to start. */
+					__( 'The band “%1$s” must start at %2$d, so no score is left without words.', 'adz-world' ),
+					$label,
+					$previous + 1
+				)
+			);
+		}
 		$bands[]  = array(
+			'from'  => $from,
 			'to'    => $to,
-			'label' => mb_substr( $label, 0, ADZWORLD_RESPONSE_TEXT_MAX ),
+			'label' => $label,
 		);
 		$previous = $to;
 	}
@@ -135,9 +227,27 @@ function adzworld_validate_rating_bands( $rows ) {
 }
 
 /**
+ * A whole score from -100 to 100, or null when the text is not one.
+ *
+ * @param string $raw Candidate text.
+ * @return int|null
+ */
+function adzworld_rating_band_score( $raw ) {
+	if ( ! preg_match( '/^-?[0-9]{1,3}$/D', $raw ) ) {
+		return null;
+	}
+	$score = (int) $raw;
+	if ( $score < ADZWORLD_RATING_MIN || $score > ADZWORLD_RATING_MAX ) {
+		return null;
+	}
+
+	return $score;
+}
+
+/**
  * The ratings bands in use, lowest first.
  *
- * @return array<int,array{to:int,label:string}>
+ * @return array<int,array{from:int,to:int,label:string}>
  */
 function adzworld_rating_bands() {
 	$stored = get_option( ADZWORLD_RATING_BANDS_OPTION, null );
@@ -150,23 +260,14 @@ function adzworld_rating_bands() {
 }
 
 /**
- * The bands with their computed start, for display and for the script.
+ * The bands with their starts, for display and for the script.
+ *
+ * Starts are stored. This remains so earlier callers keep one function.
  *
  * @return array<int,array{from:int,to:int,label:string}>
  */
 function adzworld_rating_bands_with_start() {
-	$from  = ADZWORLD_RATING_MIN;
-	$bands = array();
-	foreach ( adzworld_rating_bands() as $band ) {
-		$bands[] = array(
-			'from'  => $from,
-			'to'    => $band['to'],
-			'label' => $band['label'],
-		);
-		$from    = $band['to'] + 1;
-	}
-
-	return $bands;
+	return adzworld_rating_bands();
 }
 
 /**
@@ -178,7 +279,7 @@ function adzworld_rating_bands_with_start() {
 function adzworld_rating_label( $score ) {
 	$score = (int) $score;
 	foreach ( adzworld_rating_bands() as $band ) {
-		if ( $score <= $band['to'] ) {
+		if ( $score >= $band['from'] && $score <= $band['to'] ) {
 			return $band['label'];
 		}
 	}
@@ -278,6 +379,12 @@ function adzworld_save_response_settings() {
 		return $bands;
 	}
 
+	$theme = isset( $_POST['adzworld_ratings_slider_theme'] ) && is_string( $_POST['adzworld_ratings_slider_theme'] )
+		? sanitize_key( wp_unslash( $_POST['adzworld_ratings_slider_theme'] ) ) : '';
+	if ( ! isset( adzworld_ratings_slider_themes()[ $theme ] ) ) {
+		return new WP_Error( 'adzworld_ratings_slider_theme', __( 'Choose Standard, Ember, or Tide for the slider colours.', 'adz-world' ) );
+	}
+
 	$message = isset( $_POST['adzworld_response_message'] ) && is_string( $_POST['adzworld_response_message'] )
 		? sanitize_text_field( wp_unslash( $_POST['adzworld_response_message'] ) ) : '';
 	if ( '' === $message ) {
@@ -285,6 +392,7 @@ function adzworld_save_response_settings() {
 	}
 
 	update_option( ADZWORLD_RATING_BANDS_OPTION, $bands, false );
+	update_option( ADZWORLD_RATINGS_SLIDER_OPTION, $theme, false );
 	update_option( ADZWORLD_RESPONSE_OPTION, mb_substr( $message, 0, ADZWORLD_RESPONSE_TEXT_MAX ), false );
 
 	return true;
@@ -302,26 +410,37 @@ function adzworld_response_settings() {
 	}
 	if ( true === $result || is_wp_error( $result ) ) {
 		$class   = is_wp_error( $result ) ? 'notice notice-error' : 'notice notice-success';
-		$message = is_wp_error( $result ) ? $result->get_error_message() : __( 'Ratings bands and response message saved.', 'adz-world' );
+		$message = is_wp_error( $result ) ? $result->get_error_message() : __( 'Ratings bands, slider colours, and response message saved.', 'adz-world' );
 		echo '<div class="' . esc_attr( $class ) . '"><p>' . esc_html( $message ) . '</p></div>';
 	}
 
 	$bands = adzworld_rating_bands_with_start();
+	$theme = adzworld_ratings_slider_theme();
 	echo '<section class="adzworld-desk-intro adzworld-bands"><h2>' . esc_html__( 'Ratings bands', 'adz-world' ) . '</h2>';
-	echo '<p>' . esc_html__( 'Readers rate an adzad from -100 to 100. Each band gives a range of scores its own words. The first band starts at -100, each band starts one above the end of the band before it, and the last band ends at 100, so bands never overlap and every score has words. To remove a band, clear its end and its words. To add one, fill in a blank row.', 'adz-world' ) . '</p>';
+	echo '<p>' . esc_html__( 'Readers rate an adzad from -100 to 100. Each row is one band: where it starts, where it ends, and the words for that range. Together the bands cover every score from -100 to 100, with no gap and no overlap. Clear a row to remove it. Fill an empty row to add one.', 'adz-world' ) . '</p>';
 	echo '<form method="post" action="">';
 	wp_nonce_field( 'adzworld_responses_save', 'adzworld_responses_nonce' );
+	echo '<fieldset class="adzworld-bands__themes"><legend>' . esc_html__( 'Slider colours', 'adz-world' ) . '</legend>';
+	echo '<p>' . esc_html__( 'Standard is the red, gold, and green slider. Ember and Tide are the other two themes.', 'adz-world' ) . '</p>';
+	foreach ( adzworld_ratings_slider_themes() as $slug => $slider_theme ) {
+		echo '<label class="adzworld-bands__theme"><input type="radio" name="adzworld_ratings_slider_theme" value="' . esc_attr( $slug ) . '" ' . checked( $theme, $slug, false ) . '>';
+		echo '<span class="adzworld-bands__swatch adzworld-bands__swatch--' . esc_attr( $slug ) . '" aria-hidden="true"></span>';
+		echo '<span>' . esc_html( $slider_theme['label'] ) . '</span></label>';
+	}
+	echo '</fieldset>';
 	echo '<table class="widefat striped adzworld-bands__table"><thead><tr><th scope="col">' . esc_html__( 'From', 'adz-world' ) . '</th><th scope="col">'
 		. esc_html__( 'To', 'adz-world' ) . '</th><th scope="col">' . esc_html__( 'Words', 'adz-world' ) . '</th></tr></thead><tbody>';
 	$total = count( $bands ) + ADZWORLD_RATING_BAND_SPARE_ROWS;
 	for ( $index = 0; $index < $total; ++$index ) {
 		$band = isset( $bands[ $index ] ) ? $bands[ $index ] : null;
-		echo '<tr><td class="adzworld-bands__from">' . ( $band ? esc_html( (string) $band['from'] ) : '&mdash;' ) . '</td>';
+		echo '<tr><td><label class="screen-reader-text" for="adzworld-band-from-' . esc_attr( (string) $index ) . '">' . esc_html__( 'Band starts at', 'adz-world' ) . '</label>'
+			. '<input class="adzworld-bands__number" type="number" inputmode="numeric" min="-100" max="100" step="1" id="adzworld-band-from-' . esc_attr( (string) $index ) . '" name="adzworld_bands[' . esc_attr( (string) $index ) . '][from]" value="'
+			. esc_attr( $band ? (string) $band['from'] : '' ) . '"></td>';
 		echo '<td><label class="screen-reader-text" for="adzworld-band-to-' . esc_attr( (string) $index ) . '">' . esc_html__( 'Band ends at', 'adz-world' ) . '</label>'
-			. '<input class="small-text" type="number" min="-100" max="100" step="1" id="adzworld-band-to-' . esc_attr( (string) $index ) . '" name="adzworld_bands[' . esc_attr( (string) $index ) . '][to]" value="'
+			. '<input class="adzworld-bands__number" type="number" inputmode="numeric" min="-100" max="100" step="1" id="adzworld-band-to-' . esc_attr( (string) $index ) . '" name="adzworld_bands[' . esc_attr( (string) $index ) . '][to]" value="'
 			. esc_attr( $band ? (string) $band['to'] : '' ) . '"></td>';
 		echo '<td><label class="screen-reader-text" for="adzworld-band-label-' . esc_attr( (string) $index ) . '">' . esc_html__( 'Band words', 'adz-world' ) . '</label>'
-			. '<input class="regular-text" type="text" maxlength="300" id="adzworld-band-label-' . esc_attr( (string) $index ) . '" name="adzworld_bands[' . esc_attr( (string) $index ) . '][label]" value="'
+			. '<input class="adzworld-bands__words" type="text" maxlength="300" id="adzworld-band-label-' . esc_attr( (string) $index ) . '" name="adzworld_bands[' . esc_attr( (string) $index ) . '][label]" value="'
 			. esc_attr( $band ? $band['label'] : '' ) . '"></td></tr>';
 	}
 	echo '</tbody></table>';
@@ -331,6 +450,6 @@ function adzworld_response_settings() {
 	echo '<p><label for="adzworld-response-message">' . esc_html__( 'Default response message', 'adz-world' ) . '</label><br>'
 		. '<input class="large-text" type="text" maxlength="300" id="adzworld-response-message" name="adzworld_response_message" value="' . esc_attr( adzworld_default_response_message() ) . '"></p>';
 	echo '<p class="submit">';
-	submit_button( __( 'Save ratings bands and response message', 'adz-world' ), 'secondary', 'adzworld_responses_submit', false );
+	submit_button( __( 'Save ratings bands and slider colours', 'adz-world' ), 'secondary', 'adzworld_responses_submit', false );
 	echo '</p></form></section>';
 }

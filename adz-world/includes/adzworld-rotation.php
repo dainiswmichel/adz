@@ -870,11 +870,18 @@ function adzworld_parse_rotation( $specification ) {
 function adzworld_enqueue_rotation_assets() {
 	$style_path  = dirname( __DIR__ ) . '/assets/rotation.css';
 	$script_path = dirname( __DIR__ ) . '/assets/rotation.js';
+	$theme_path  = dirname( __DIR__ ) . '/assets/ratings-slider-themes.css';
 	wp_enqueue_style(
 		'adzworld-rotation',
 		plugins_url( 'assets/rotation.css', dirname( __DIR__ ) . '/adz-world.php' ),
 		array(),
 		(string) filemtime( $style_path )
+	);
+	wp_enqueue_style(
+		'adzworld-ratings-slider-themes',
+		plugins_url( 'assets/ratings-slider-themes.css', dirname( __DIR__ ) . '/adz-world.php' ),
+		array( 'adzworld-rotation' ),
+		(string) filemtime( $theme_path )
 	);
 	wp_enqueue_script(
 		'adzworld-rotation',
