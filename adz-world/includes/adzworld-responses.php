@@ -102,8 +102,9 @@ function adzworld_ratings_slider_hex( $raw ) {
 /**
  * Built-in slider themes.
  *
- * Standard is the curve in assets/rotation.css. Ember is ashy grey, black,
- * and glowing ember orange. Its gradient is drawn by this file.
+ * Standard is the curve in assets/rotation.css. Tide is the blue curve in
+ * assets/ratings-slider-tide.css. Ember is ashy grey, black, and glowing
+ * ember orange. Its gradient is drawn by this file.
  *
  * @return array<string,array{name:string,colors:array<int,string>}>
  */
@@ -116,6 +117,10 @@ function adzworld_ratings_slider_builtin_themes() {
 		'ember'    => array(
 			'name'   => __( 'Ember', 'adz-world' ),
 			'colors' => array( '#A3A7AD', '#000000', '#FF6A00' ),
+		),
+		'tide'     => array(
+			'name'   => __( 'Tide', 'adz-world' ),
+			'colors' => array(),
 		),
 	);
 }
@@ -181,7 +186,8 @@ function adzworld_ratings_slider_theme() {
 /**
  * Stylesheet class for the active slider theme.
  *
- * Standard uses the curve in assets/rotation.css. Every hex theme uses
+ * Standard uses the curve in assets/rotation.css. Tide uses
+ * assets/ratings-slider-tide.css. Every hex theme uses
  * adzworld-ratings-slider-custom, whose rules are built from that theme.
  *
  * @return string
@@ -189,6 +195,9 @@ function adzworld_ratings_slider_theme() {
 function adzworld_ratings_slider_theme_class() {
 	$themes = adzworld_ratings_slider_themes();
 	$theme  = adzworld_ratings_slider_theme();
+	if ( 'tide' === $theme ) {
+		return 'adzworld-ratings-slider-tide';
+	}
 	$colors = isset( $themes[ $theme ]['colors'] ) ? $themes[ $theme ]['colors'] : array();
 
 	return 3 === count( $colors ) ? 'adzworld-ratings-slider-custom' : 'adzworld-ratings-slider-standard';
@@ -707,7 +716,7 @@ function adzworld_response_settings() {
 		$active_colors = adzworld_ratings_slider_builtin_themes()['ember']['colors'];
 	}
 	echo '<fieldset class="adzworld-bands__themes"><legend>' . esc_html__( 'Slider colours', 'adz-world' ) . '</legend>';
-	echo '<p>' . esc_html__( 'Standard keeps its gradient. Ember is ashy grey, black, and glowing ember orange. A named theme uses three hex colours, and the plugin draws the gradient.', 'adz-world' ) . '</p>';
+	echo '<p>' . esc_html__( 'Standard keeps its gradient. Tide is the blue theme. Ember is ashy grey, black, and glowing ember orange. A named theme uses three hex colours, and the plugin draws the gradient.', 'adz-world' ) . '</p>';
 	foreach ( adzworld_ratings_slider_themes() as $slug => $slider_theme ) {
 		echo '<label class="adzworld-bands__theme"><input type="radio" name="adzworld_ratings_slider_theme" value="' . esc_attr( $slug ) . '" ' . checked( $theme, $slug, false ) . '>';
 		echo '<span class="adzworld-bands__swatch adzworld-bands__swatch--' . esc_attr( sanitize_html_class( $slug ) ) . '" aria-hidden="true"></span>';
@@ -717,7 +726,7 @@ function adzworld_response_settings() {
 	echo '<input class="regular-text" type="text" maxlength="40" id="adzworld-theme-name" name="adzworld_theme_name" value=""></p>';
 	$hex_labels = array(
 		__( 'Dislike', 'adz-world' ),
-		__( 'Middle', 'adz-world' ),
+		__( 'Neutral', 'adz-world' ),
 		__( 'Like', 'adz-world' ),
 	);
 	foreach ( $hex_labels as $index => $hex_label ) {

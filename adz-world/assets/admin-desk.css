@@ -1744,6 +1744,18 @@ body.wp-admin .adzworld-paid-card .adzworld-connection-card select {
 	);
 }
 
+.adzworld-bands__swatch--tide {
+	background: linear-gradient(
+		90deg,
+		hsl(222 62% 40%) 0%,
+		hsl(200 70% 46%) 20%,
+		hsl(188 35% 72%) 38%,
+		hsl(188 35% 72%) 62%,
+		hsl(168 50% 42%) 80%,
+		hsl(152 58% 32%) 100%
+	);
+}
+
 .adzworld-bands__hex {
 	align-items: center;
 	display: inline-flex;
