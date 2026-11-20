@@ -109,6 +109,14 @@ function adzworld_ebay_token( $account ) {
 	if ( is_string( $cached ) && '' !== $cached ) {
 		return $cached;
 	}
+	if ( ! function_exists( 'sodium_bin2base64' ) ) {
+		return '';
+	}
+
+	$credentials = sodium_bin2base64(
+		$account['clientid'] . ':' . $account['clientsecret'],
+		SODIUM_BASE64_VARIANT_ORIGINAL
+	);
 
 	$response = wp_remote_post(
 		$host . '/identity/v1/oauth2/token',
@@ -116,7 +124,7 @@ function adzworld_ebay_token( $account ) {
 			'timeout' => 8,
 			'headers' => array(
 				'Content-Type'  => 'application/x-www-form-urlencoded',
-				'Authorization' => 'Basic ' . base64_encode( $account['clientid'] . ':' . $account['clientsecret'] ),
+				'Authorization' => 'Basic ' . $credentials,
 			),
 			'body'    => array(
 				'grant_type' => 'client_credentials',
@@ -252,16 +260,7 @@ function adzworld_ebay_search( $request, $limit = ADZWORLD_EBAY_LIMIT ) {
 			$price = $item['price']['currency'] . ' ' . $item['price']['value'];
 		}
 
-		/*
-		 * The provider's own identifier for this product. It is what a
-		 * rating attaches to: without it a reader can reject a listing and
-		 * the same listing comes back, because nothing recorded which one
-		 * they saw.
-		 */
-		$item_id = ! empty( $item['itemId'] ) && is_string( $item['itemId'] ) ? $item['itemId'] : '';
-
 		$results[] = array(
-			'id'    => $item_id,
 			'title' => $title,
 			'image' => $image,
 			'price' => $price,

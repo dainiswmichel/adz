@@ -136,6 +136,7 @@
 }
 
 .adzworld-rotation .adzworld-slide {
+	position: relative;
 	min-width: 0;
 	padding: 0;
 	background: var(--adz-surface);
@@ -147,6 +148,36 @@
 .adzworld-rotation .adzworld-slide > .adzworld-creative,
 .adzworld-rotation .adzworld-slide > .adz-panel {
 	min-height: 48px;
+}
+
+/*
+ * Local adz content needs breathing room inside its frame. Provider units are
+ * deliberately excluded so their fixed dimensions remain exactly as supplied.
+ */
+.adzworld-rotation .adzworld-creative,
+.adzworld-rotation .adzworld-caption,
+.adzworld-rotation .adzworld-match-label {
+	padding-inline: var(--adz-gap);
+}
+
+.adzworld-rotation .adzworld-slide > .adzworld-creative:first-child {
+	padding-block-start: var(--adz-gap);
+}
+
+.adzworld-rotation .adzworld-creative--empty {
+	display: grid;
+	place-items: center;
+	min-height: 140px;
+	padding: calc(var(--adz-gap) * 2);
+	color: var(--adz-muted);
+	text-align: center;
+	background: var(--adz-surface-sunken);
+	border: 1px dashed var(--adz-line-strong);
+}
+
+.adzworld-rotation .adzworld-creative--empty p {
+	max-width: 30rem;
+	margin: 0;
 }
 
 .adzworld-rotation--3d.adzworld-enhanced .adzworld-slides {
@@ -216,6 +247,14 @@
 .adzworld-creative iframe {
 	max-width: 100%;
 	height: auto;
+}
+
+.adzworld-creative__destination {
+	display: block;
+	width: 100%;
+	height: 100%;
+	color: inherit;
+	text-decoration: none;
 }
 
 .adzworld-match-label,
@@ -302,12 +341,6 @@
 	place-items: center;
 }
 
-/*
- * The centre mark. A selected position lengthens into a bar and carries a
- * mark in the middle of it, so the eye reads a detent on a knob rather than
- * something thrown to one side. Unselected positions have no mark: a fixed
- * one is a solid dot, a live one a bullseye.
- */
 .adzworld-rotation .adzworld-dots button::before {
 	display: block;
 	width: 0;
@@ -316,18 +349,12 @@
 	content: "";
 }
 
-/* Selected: the bar. */
 .adzworld-rotation .adzworld-dots button[aria-pressed="true"] {
 	width: 24px;
 	background: color-mix(in oklab, var(--adz-accent-solid) 28%, transparent);
 	border-radius: 5px;
 }
 
-/*
- * Selected: the mark in the middle of that bar. The home square is excluded,
- * because it already reads correctly as a lengthening square and a mark
- * inside it is noise rather than a detent.
- */
 .adzworld-rotation .adzworld-dots button[aria-pressed="true"]:not(.adzworld-hub-position)::before {
 	width: 7px;
 	height: 7px;
@@ -350,16 +377,6 @@
 	border-radius: 2px;
 }
 
-/*
- * A position holding a rotation is drawn as a ring rather than a filled dot,
- * so a reader can see which positions answer a refinement before turning to
- * them. Fixed adz are solid.
- */
-/*
- * A position holding a rotation is a bullseye, a position holding one fixed
- * adzad a solid dot, so a reader can see which positions answer a refinement
- * before turning to them.
- */
 .adzworld-rotation .adzworld-dots .adzworld-live-position {
 	background: transparent;
 	box-shadow: inset 0 0 0 2px var(--adz-accent);
@@ -371,12 +388,6 @@
 	background: var(--adz-accent);
 }
 
-/*
- * Selected, a live position keeps its bullseye: the centre mark becomes a
- * ring instead of a disc. Filling it solid would make it identical to a
- * selected fixed position and lose the one cue that says this slot answers a
- * refinement, exactly when the reader is looking at it.
- */
 .adzworld-rotation .adzworld-dots .adzworld-live-position[aria-pressed="true"] {
 	box-shadow: none;
 }
@@ -554,62 +565,10 @@
 	color: var(--adz-ink);
 }
 
-/*
- * Category tone.
- *
- * A tone exists to tell one category from another at a glance. It is derived
- * from the category's own name, not from its position in the list, so a
- * category keeps its tone when the reader adds, renames or removes another
- * one. Position-based tones moved every chip whenever the list changed.
- *
- * The hues live in a cool band that deliberately excludes green, yellow and
- * red. Those three are the scoring colours (--adzworld-good, --adzworld-neutral,
- * --adzworld-bad): a green category chip reads as "liked" when it means
- * nothing of the kind.
- *
- * A browser without oklch() gets the plain --adz-panel__chip--categories chip
- * above and the accent for the active state: one tone instead of several,
- * which is a loss of distinction and not a loss of function.
- */
-/*
- * The whole creative is the click target, so the anchor fills its box and
- * carries no underline or link colour of its own: the adzad is the thing a
- * reader sees, not a styled link wrapped around it.
- */
-.adzworld-creative__destination {
-	display: block;
-	width: 100%;
-	height: 100%;
-	color: inherit;
-	text-decoration: none;
-}
-
 .adzworld-rotation .adz-panel__chip--categories.is-active {
-	background: linear-gradient(135deg, #30586d 0%, #3e6d86 100%);
-	border-color: #30586d;
-	color: var(--adz-on-accent);
-}
-
-@supports (color: oklch(0.5 0.09 200)) {
-	.adzworld-rotation .adz-panel__chip--categories[style*="--adz-tone"] {
-		background: color-mix(in oklab, oklch(0.5 0.09 var(--adz-tone)) 14%, var(--adz-surface));
-		border-color: color-mix(in oklab, oklch(0.5 0.09 var(--adz-tone)) 48%, transparent);
-		color: inherit;
-	}
-
-	/*
-	 * Lightness is held at or under 0.50 so that --adz-on-accent clears
-	 * 4.5:1 across the whole gradient, not only at its dark end.
-	 */
-	.adzworld-rotation .adz-panel__chip--categories[style*="--adz-tone"].is-active {
-		background: linear-gradient(
-			135deg,
-			oklch(0.42 0.09 var(--adz-tone)) 0%,
-			oklch(0.5 0.09 var(--adz-tone)) 100%
-		);
-		border-color: oklch(0.42 0.09 var(--adz-tone));
-		color: var(--adz-on-accent);
-	}
+	background: color-mix(in oklab, var(--adz-accent) 12%, var(--adz-surface));
+	border-color: var(--adz-accent);
+	color: var(--adz-ink);
 }
 
 .adzworld-rotation .adz-panel__category-row {
@@ -682,6 +641,65 @@
 	background: var(--adz-surface-sunken);
 }
 
+.adzworld-rotation .adz-panel__refinement-editor[hidden] {
+	display: none;
+}
+
+.adzworld-rotation .adz-panel__refinement-editor {
+	display: flex;
+	flex: 1 1 15rem;
+	flex-direction: column;
+	gap: 5px;
+	min-width: min(15rem, 70vw);
+	padding: 3px 4px 4px;
+}
+
+.adzworld-rotation .adz-panel__refinement-editor .adz-panel__refinement-name {
+	width: 100%;
+	max-width: none;
+	padding: 5px 7px;
+	border: 1px solid var(--adz-line);
+	border-radius: 4px;
+}
+
+.adzworld-rotation .adz-panel__refinement-actions {
+	display: flex;
+	gap: 12px;
+	align-items: center;
+	justify-content: flex-end;
+	padding-inline: 2px;
+}
+
+.adzworld-rotation .adz-panel__refinement-action {
+	min-width: 0;
+	min-height: 0;
+	padding: 1px 0;
+	color: var(--adz-muted);
+	font: inherit;
+	font-size: 12px;
+	line-height: 1.4;
+	text-decoration: underline;
+	text-underline-offset: 2px;
+	background: transparent;
+	border: 0;
+	border-radius: 0;
+	cursor: pointer;
+}
+
+.adzworld-rotation .adz-panel__refinement-action--delete {
+	color: var(--adzworld-bad);
+}
+
+.adzworld-rotation .adz-panel__refinement-action--save {
+	color: var(--adz-accent);
+	font-weight: 600;
+}
+
+.adzworld-rotation .adz-panel__refinement-action:hover,
+.adzworld-rotation .adz-panel__refinement-action:focus-visible {
+	text-decoration-thickness: 2px;
+}
+
 .adzworld-rotation .adz-panel__chip--categories.is-active .adz-panel__chipedit {
 	color: var(--adz-on-accent);
 }
@@ -740,14 +758,6 @@
 	margin-top: 12px;
 }
 
-/*
- * One slot has nothing to choose. The pressed mark would sit under the
- * category name as a stray dot.
- */
-.adzworld-rotation .adzworld-category-slots__positions:has(> button:only-child) {
-	display: none;
-}
-
 .adzworld-category-slots__heading {
 	display: inline-flex;
 	max-width: 100%;
@@ -786,6 +796,40 @@
 	font-size: 12px;
 }
 
+.adzworld-category-search {
+	margin: 12px 0 0;
+	padding-top: 10px;
+	border-top: 1px solid var(--adz-line);
+	font-size: 13px;
+}
+
+.adzworld-category-search__line {
+	margin: 0 0 8px;
+}
+
+.adzworld-category-search__label {
+	display: block;
+	margin-bottom: 2px;
+	color: var(--adz-muted);
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+.adzworld-category-search__value {
+	display: block;
+	overflow-wrap: anywhere;
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 13px;
+}
+
+.adzworld-category-search a {
+	color: var(--adz-accent);
+	text-decoration-thickness: 1px;
+	text-underline-offset: 3px;
+}
+
 .adzworld-rotation .adzworld-affiliate-offers {
 	margin: 12px 0 0;
 	padding: 0;
@@ -797,8 +841,6 @@
 	font-size: 13px;
 	text-decoration: underline;
 }
-
-/* Product cards returned for the reader's own request, above the link list. */
 
 .adzworld-rotation .adzworld-products {
 	margin: var(--adz-gap) 0 0;
@@ -824,29 +866,29 @@
 .adzworld-rotation .adzworld-product__link {
 	display: grid;
 	gap: 6px;
+	align-content: start;
 	height: 100%;
 	padding: 8px;
+	color: inherit;
+	background: var(--adz-surface-raised);
 	border: 1px solid var(--adz-line);
 	border-radius: var(--adz-radius);
-	background: var(--adz-surface-raised);
-	color: inherit;
 	text-decoration: none;
-	align-content: start;
 }
 
 .adzworld-rotation .adzworld-product__link:hover,
 .adzworld-rotation .adzworld-product__link:focus-visible {
-	border-color: var(--adz-line-strong);
 	background: var(--adz-surface-sunken);
+	border-color: var(--adz-line-strong);
 }
 
 .adzworld-rotation .adzworld-product__media {
 	display: block;
 	overflow: hidden;
 	max-height: 170px;
-	aspect-ratio: 4 / 3;
-	border-radius: calc(var(--adz-radius) - 4px);
 	background: var(--adz-surface-sunken);
+	border-radius: calc(var(--adz-radius) - 4px);
+	aspect-ratio: 4 / 3;
 }
 
 .adzworld-rotation .adzworld-product__img {
@@ -871,7 +913,6 @@
 	font-variant-numeric: tabular-nums;
 }
 
-/* Which marketplace the offer came from. A reader is told, not left guessing. */
 .adzworld-rotation .adzworld-product__source {
 	color: var(--adz-muted);
 	font-size: 11px;
@@ -879,14 +920,12 @@
 	text-transform: uppercase;
 }
 
-/* The request as assembled: where it started, what the reader added, the result. */
-
 .adzworld-rotation .adzworld-request {
 	margin: var(--adz-gap) 0 0;
 	padding: 10px 12px;
+	background: var(--adz-surface-sunken);
 	border: 1px solid var(--adz-line);
 	border-radius: var(--adz-radius);
-	background: var(--adz-surface-sunken);
 }
 
 .adzworld-rotation .adzworld-request__head {
@@ -897,7 +936,8 @@
 	text-transform: uppercase;
 }
 
-.adzworld-rotation .adzworld-request__parts {
+.adzworld-rotation .adzworld-request__parts,
+.adzworld-rotation .adzworld-request__sent {
 	margin: 0;
 	padding: 0;
 	list-style: none;
@@ -918,26 +958,21 @@
 	letter-spacing: 0.02em;
 }
 
-.adzworld-rotation .adzworld-request__text {
+.adzworld-rotation .adzworld-request__text,
+.adzworld-rotation .adzworld-request__result {
 	font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 	font-size: 13px;
 	overflow-wrap: anywhere;
 }
 
-/* The one string the parts above add up to. */
 .adzworld-rotation .adzworld-request__result {
 	margin: 8px 0 0;
 	padding-top: 8px;
 	border-top: 1px solid var(--adz-line);
-	font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-	font-size: 13px;
-	overflow-wrap: anywhere;
 }
 
 .adzworld-rotation .adzworld-request__sent {
-	margin: 8px 0 0;
-	padding: 0;
-	list-style: none;
+	margin-top: 8px;
 	font-size: 12px;
 }
 
@@ -947,6 +982,134 @@
 
 .adzworld-rotation .adzworld-request__sent--none {
 	color: var(--adz-muted);
+}
+
+/*
+ * The title row is the ad's saved title. The creative under it is the
+ * tagged search for that request.
+ */
+.adzworld-results {
+	position: relative;
+	margin-top: 0;
+}
+
+.adzworld-results__title {
+	margin: 0;
+	padding: 8px 12px;
+	font-weight: 600;
+	background: var(--adz-surface);
+	border: 1px solid var(--adz-line);
+	border-radius: var(--adz-radius) var(--adz-radius) 0 0;
+}
+
+.adzworld-results__slides {
+	margin: 0;
+	padding: 0;
+}
+
+.adzworld-results__slide[hidden] {
+	display: none;
+}
+
+.adzworld-results__slide {
+	background: var(--adz-surface);
+	border-radius: 0 0 var(--adz-radius) var(--adz-radius);
+}
+
+.adzworld-results__offer {
+	display: grid;
+	grid-template-columns: minmax(96px, 180px) minmax(0, 1fr);
+	gap: 16px;
+	align-items: center;
+	padding: 16px;
+	color: var(--adz-ink);
+	background: var(--adz-surface);
+	border: 1px solid var(--adz-line);
+	border-top: 0;
+	border-radius: 0 0 var(--adz-radius) var(--adz-radius);
+	text-decoration: none;
+}
+
+.adzworld-results__offer--text {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.adzworld-results__media {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 0;
+	background: var(--adz-surface);
+}
+
+.adzworld-results__image {
+	display: block;
+	width: 100%;
+	height: auto;
+	max-height: 180px;
+	object-fit: contain;
+}
+
+.adzworld-results__body {
+	display: grid;
+	gap: 8px;
+	min-width: 0;
+}
+
+.adzworld-results__product-title {
+	color: var(--adz-ink);
+	font-weight: 600;
+	line-height: 1.35;
+}
+
+.adzworld-results__price {
+	color: var(--adz-accent);
+	font-weight: 700;
+}
+
+.adzworld-results__source {
+	display: block;
+	width: max-content;
+	max-width: 120px;
+	margin: 8px 16px 12px auto;
+}
+
+.adzworld-results__source-image {
+	display: block;
+	width: auto;
+	height: auto;
+	max-width: 120px;
+	max-height: 40px;
+}
+
+@media (max-width: 520px) {
+	.adzworld-results__offer {
+		grid-template-columns: 96px minmax(0, 1fr);
+		gap: 12px;
+		padding: 12px;
+	}
+
+	.adzworld-results__image {
+		max-height: 110px;
+	}
+}
+
+.adzworld-results__navigation {
+	display: flex;
+	justify-content: space-between;
+	margin-top: 8px;
+}
+
+.adzworld-rotation .adzworld-results__previous,
+.adzworld-rotation .adzworld-results__next {
+	min-width: 36px;
+	min-height: 36px;
+	padding: 0 10px;
+	color: var(--adz-ink);
+	background: var(--adz-surface);
+	border: 1px solid var(--adz-line);
+	border-radius: 999px;
+	cursor: pointer;
 }
 
 .adzworld-rotation :focus-visible {
@@ -982,21 +1145,10 @@
 		align-items: center;
 	}
 
-	.adzworld-rotation .adzworld-product__media {
-		grid-area: media;
-	}
-
-	.adzworld-rotation .adzworld-product__title {
-		grid-area: title;
-	}
-
-	.adzworld-rotation .adzworld-product__price {
-		grid-area: price;
-	}
-
-	.adzworld-rotation .adzworld-product__source {
-		grid-area: source;
-	}
+	.adzworld-rotation .adzworld-product__media { grid-area: media; }
+	.adzworld-rotation .adzworld-product__title { grid-area: title; }
+	.adzworld-rotation .adzworld-product__price { grid-area: price; }
+	.adzworld-rotation .adzworld-product__source { grid-area: source; }
 }
 
 @container adzworld (max-width: 600px) {
@@ -1341,6 +1493,10 @@
 	margin-block-start: 1rem;
 	padding-block-start: 1rem;
 	border-block-start: 1px solid var(--adz-line);
+}
+
+.adzworld-improve__category {
+	margin: 0 0 0.5rem;
 }
 
 .adzworld-improve__heading {
@@ -2093,280 +2249,119 @@
 	min-height: 0;
 }
 
-/*
- * The showcase: real products answering the reader's own words, one per
- * slide, each carrying its own rating. Taken from the running version so a
- * site that upgrades sees the same thing it saw before.
- */
-/*
- * The title row is the ad's saved title. The creative under it is the
- * tagged search for that request.
- */
-.adzworld-results {
-	position: relative;
-	margin-top: 0;
-}
-
-.adzworld-results__title {
-	margin: 0;
-	padding: 8px 12px;
-	font-weight: 600;
-	background: var(--adz-surface);
-	border: 1px solid var(--adz-line);
-	border-radius: var(--adz-radius) var(--adz-radius) 0 0;
-}
-
-.adzworld-results__slides {
-	margin: 0;
-	padding: 0;
-}
-
-.adzworld-results__slide[hidden] {
-	display: none;
-}
-
-.adzworld-results__slide {
-	background: var(--adz-surface);
-	border-radius: 0 0 var(--adz-radius) var(--adz-radius);
-}
-
-.adzworld-results__offer {
-	display: grid;
-	grid-template-columns: minmax(96px, 180px) minmax(0, 1fr);
-	gap: 16px;
-	align-items: center;
-	padding: 16px;
-	color: var(--adz-ink);
-	background: var(--adz-surface);
-	border: 1px solid var(--adz-line);
-	border-top: 0;
-	border-radius: 0 0 var(--adz-radius) var(--adz-radius);
-	text-decoration: none;
-}
-
-.adzworld-results__offer--text {
-	grid-template-columns: minmax(0, 1fr);
-}
-
-.adzworld-results__media {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	min-width: 0;
-	background: var(--adz-surface);
-}
-
-.adzworld-results__image {
-	display: block;
-	width: 100%;
-	height: auto;
-	max-height: 180px;
-	object-fit: contain;
-}
-
-.adzworld-results__body {
-	display: grid;
-	gap: 8px;
-	min-width: 0;
-}
-
-.adzworld-results__product-title {
-	color: var(--adz-ink);
-	font-weight: 600;
-	line-height: 1.35;
-}
-
-.adzworld-results__price {
-	color: var(--adz-accent);
-	font-weight: 700;
-}
-
-.adzworld-results__source {
-	display: block;
-	width: max-content;
-	max-width: 120px;
-	margin: 8px 16px 12px auto;
-}
-
-.adzworld-results__source-image {
-	display: block;
-	width: auto;
-	height: auto;
-	max-width: 120px;
-	max-height: 40px;
-}
-
-.adzworld-results__offer {
-		grid-template-columns: 96px minmax(0, 1fr);
-		gap: 12px;
-		padding: 12px;
-	}
-
-.adzworld-results__image {
-		max-height: 110px;
-	}
-
-.adzworld-results__navigation {
-	display: flex;
-	justify-content: space-between;
-	margin-top: 8px;
-}
-
-.adzworld-rotation .adzworld-results__previous,
-.adzworld-rotation .adzworld-results__next {
-	min-width: 36px;
-	min-height: 36px;
-	padding: 0 10px;
-	color: var(--adz-ink);
-	background: var(--adz-surface);
-	border: 1px solid var(--adz-line);
-	border-radius: 999px;
-	cursor: pointer;
-}
-
-.adzworld-category-search {
-	margin: 12px 0 0;
-	padding-top: 10px;
-	border-top: 1px solid var(--adz-line);
-	font-size: 13px;
-}
-
-.adzworld-category-search__line {
-	margin: 0 0 8px;
-}
-
-.adzworld-category-search__label {
-	display: block;
-	margin-bottom: 2px;
-	color: var(--adz-muted);
-	font-size: 11px;
-	font-weight: 600;
-	letter-spacing: 0.04em;
-	text-transform: uppercase;
-}
-
-.adzworld-category-search__value {
-	display: block;
-	overflow-wrap: anywhere;
-	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-	font-size: 13px;
-}
-
-.adzworld-category-search a {
-	color: var(--adz-accent);
-	text-decoration-thickness: 1px;
-	text-underline-offset: 3px;
-}
-
-/*
- * The standing explanation. A small (i) at the right of the rotation footer,
- * opening a readable block rather than a tooltip: a tooltip cannot be reached
- * by a keyboard and does not exist on a phone, and this is the one thing on
- * the page a reader is most entitled to read.
- */
-/*
- * The circle is the bottom-right corner of the hub slide. The slide keeps a
- * band under the card, and the circle sits in that band.
- */
-.adzworld-rotation .adzworld-slide:has(> .adzworld-note) {
-	padding-bottom: 2.4rem;
-}
-
-.adzworld-note {
+.adzworld-rotation .adzworld-notice {
 	position: absolute;
 	right: 8px;
 	bottom: 8px;
-	z-index: 3;
-	width: 1.5rem;
-	height: 1.5rem;
-	margin: 0;
+	z-index: 6;
 }
 
-.adzworld-band__line {
-	position: absolute;
-	left: 8px;
-	right: 2.4rem;
-	bottom: 8px;
-	z-index: 3;
-	margin: 0;
-	overflow: hidden;
-	color: var(--adz-muted);
-	font-size: 12px;
-	line-height: 1.5rem;
-	text-align: left;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.adzworld-note__open {
+.adzworld-rotation .adzworld-notice__mark {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 1.5rem;
-	height: 1.5rem;
-	color: var(--adz-accent-solid);
-	font-family: Georgia, serif;
-	font-size: 0.95rem;
-	font-weight: 700;
-	background: color-mix(in oklab, var(--adz-accent-solid) 10%, var(--adz-surface));
-	border: 1px solid color-mix(in oklab, var(--adz-accent-solid) 45%, transparent);
-	border-radius: 50%;
-	cursor: pointer;
-	list-style: none;
-}
-
-.adzworld-note__open::-webkit-details-marker {
-	display: none;
-}
-
-.adzworld-note[open] .adzworld-note__body {
-	position: absolute;
-	right: 0;
-	bottom: 2rem;
-	/*
-	 * Never wider than the slide it belongs to. A rotation can be a 300px
-	 * sidebar, and a fixed width would hang off the side of it.
-	 */
-	width: min(26rem, calc(100cqi - 7.5rem));
-	max-width: calc(100vw - 2rem);
-	max-height: 60vh;
-	padding: 0.9rem 1rem;
-	overflow-y: auto;
+	width: 22px;
+	height: 22px;
+	padding: 0;
 	color: var(--adz-ink);
+	font-family: Georgia, serif;
 	font-size: 13px;
-	line-height: 1.55;
-	text-align: start;
+	font-style: italic;
+	line-height: 1;
 	background: var(--adz-surface);
 	border: 1px solid var(--adz-line);
-	border-radius: 10px;
-	box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
+	border-radius: 50%;
+	cursor: pointer;
 }
 
-.adzworld-note__stage {
-	margin: 0 0 0.7rem;
+.adzworld-rotation .adzworld-notice__mark:hover,
+.adzworld-rotation .adzworld-notice__mark:focus-visible {
+	border-color: var(--adz-accent);
 }
 
-.adzworld-note__stage p {
-	margin: 0 0 0.55rem;
+.adzworld-rotation .adzworld-notice__text {
+	position: absolute;
+	right: 0;
+	bottom: 28px;
+	display: none;
+	width: min(22rem, 70vw);
+	max-height: 16rem;
+	padding: 10px 12px;
+	overflow: auto;
+	color: var(--adz-ink);
+	font-size: 13px;
+	line-height: 1.45;
+	text-align: left;
+	background: var(--adz-surface);
+	border: 1px solid var(--adz-line);
+	border-radius: 8px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.adzworld-note__stage p:last-child {
+.adzworld-rotation .adzworld-notice:hover .adzworld-notice__text,
+.adzworld-rotation .adzworld-notice:focus-within .adzworld-notice__text {
+	display: block;
+}
+
+.adzworld-rotation .adzworld-notice__text p {
+	margin: 0 0 8px;
+}
+
+.adzworld-rotation .adzworld-notice__text p:last-child {
 	margin-bottom: 0;
 }
 
-.adzworld-note__heading {
-	display: block;
-	font-weight: 600;
+/*
+ * Response message: the short line a slot shows after a reader rates, refines
+ * or changes the category of an adz. It sits in the panel's own flow, above
+ * the information control, and fades in so it reads as a reply rather than an
+ * alert.
+ */
+.adzworld-rotation .adzworld-countdown {
+	font-size: 0.85em;
+	font-variant-numeric: tabular-nums;
+	margin: 0.35rem 0.75rem 0;
 }
 
-.adzworld-note__close {
-	margin: 0;
-	padding-top: 0.5rem;
-	border-top: 1px solid var(--adz-line);
+.adzworld-rotation .adzworld-response {
+	margin: 0.5rem 2.25rem 0.5rem 0.75rem;
+	padding: 0.35rem 0.6rem;
+	border-left: 3px solid var(--adzworld-neutral);
+	border-radius: 0 4px 4px 0;
+	background: color-mix(in srgb, var(--adzworld-neutral) 12%, transparent);
+	font-size: 0.85em;
 	font-style: italic;
+	line-height: 1.4;
+	animation: adzworld-response-in 0.35s ease-out;
 }
 
-.adzworld-rotation .adz-panel,
-.adzworld-rotation .adzworld-slide {
-	position: relative;
+.adzworld-rotation .adzworld-response[hidden] {
+	display: none;
+}
+
+@keyframes adzworld-response-in {
+
+	from {
+		opacity: 0;
+		transform: translateY(4px);
+	}
+
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.adzworld-rotation .adzworld-response {
+		animation: none;
+	}
+}
+
+/* Where a signed-in reader's adz requests are kept, and the link to change it. */
+.adz-panel__profile {
+	margin: 0.4rem 0;
+	font-size: 0.85em;
+	opacity: 0.85;
 }

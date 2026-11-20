@@ -1,50 +1,39 @@
 <?php
 /**
- * Remove what this plugin stored, when the site owner deletes it.
+ * Remove what readers left behind when the plugin is deleted.
  *
- * Deleting a plugin is a clear instruction. Everything below was written by
- * this plugin and is of no use to anything else, so none of it is left
- * behind: not the publisher's settings, and not one word a reader typed.
- *
- * The reader data matters most. Advertising logs and saved preferences are
- * what people told this site, and a plugin that has been deleted has no
- * business keeping them on the site owner's server.
- *
- * Affiliate credentials go too. They are the publisher's keys to other
- * people's networks and must not sit in the database after the plugin that
- * used them is gone.
+ * Deletes every adz journey, the AdzLogs, ratings-band and response settings,
+ * and each reader's profile choice, saved adz requests and ratings. The plugin
+ * files are not loaded during uninstall, so keys are written out here.
  *
  * @package adz-world
  */
 
+defined( 'ABSPATH' ) || exit;
 defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 
-/* Settings, connections and credentials the publisher configured. */
-$adzworld_options = array(
-	'adz_ad_options',
-	'adz_publisher_options',
-	'adz_session_option',
-	'adzworld_affiliate_accounts',
-	'adzworld_earnings_connection',
-	'adzworld_named_rotations',
-	'adzworld_network_rows',
-	'adzworld_networks',
-	'adzworld_rotation_sources',
-	'next_adz_pool',
+wp_clear_scheduled_hook( 'adzworld_logs_cleanup' );
 
-	/* What readers told this site. */
-	'adzworld_logs',
-);
+do {
+	$adzworld_journeys = get_posts(
+		array(
+			'post_type'        => 'adzworld_journey',
+			'post_status'      => 'private',
+			'numberposts'      => 100,
+			'fields'           => 'ids',
+			'suppress_filters' => false,
+		)
+	);
+	foreach ( $adzworld_journeys as $adzworld_journey ) {
+		wp_delete_post( (int) $adzworld_journey, true );
+	}
+	$adzworld_more = 100 === count( $adzworld_journeys );
+} while ( $adzworld_more );
 
-foreach ( $adzworld_options as $adzworld_option ) {
+foreach ( array( 'adzworld_logs_settings', 'adzworld_rating_bands', 'adzworld_ratings_slider_theme', 'adzworld_response_message', 'adzworld_profile_saving' ) as $adzworld_option ) {
 	delete_option( $adzworld_option );
-	delete_site_option( $adzworld_option );
 }
 
-/*
- * Every reader's saved advertising preferences and ratings. delete_metadata()
- * with $delete_all removes the key for every user in one statement rather
- * than loading the user list.
- */
-delete_metadata( 'user', 0, 'adzworld_preference', '', true );
-delete_metadata( 'user', 0, 'adzworld_feedback', '', true );
+foreach ( array( 'adzworld_save_with_profile', 'adzworld_preference', 'adzworld_feedback' ) as $adzworld_meta_key ) {
+	delete_metadata( 'user', 0, $adzworld_meta_key, '', true );
+}

@@ -49,6 +49,13 @@ Upcoming Tasks:
 == Current Release ==
 The top version is the latest, most up-to-date software release.
 
+= 1.1.0 =
+
+1.1.0 | 2026-11m-19d-01 | Free
+-------------------------------------
+- renamed the Manual tab to Interactive Documentation and moved it to the final tab position
+- reorganized and shortened the WordPress.org readme while preserving external-service disclosures
+
 = 1.0.9 =
 
 1.0.9 | 2026-11m-06d-01 | Free
@@ -60,6 +67,9 @@ The top version is the latest, most up-to-date software release.
 - scoped administrator assets to adz-world screens and removed the iframe shortcode's external default URL
 - made the permission-based invitation the first carousel position and attached looping controls to the carousel
 - added session and account preference storage, removable refinement pills, local adz matching, and explicit weighted evaluation
+- added named mixed-source rotations, administrator slot previews, network and affiliate connections, earnings guidance, and starter packs
+- accepted detailed invitation input with scoped refinements, editable category navigation, collision-safe storage, and a 24-hour anonymous preference lifetime
+- separated local advertisement creative from matching refinements so excerpts are never presented as advertisements
 - completed a zero-error, zero-warning repository PHPCS gate
 
 = 1.0.1 =

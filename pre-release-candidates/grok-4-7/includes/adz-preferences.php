@@ -20,16 +20,14 @@
 
 defined( 'ABSPATH' ) || exit; // Exit if accessed directly.
 
-/*
- * A category is cut by length, not by word count. The limit exists so a pill
- * stays a pill; it says nothing about how many words name a thing. "dinner in
- * atlanta" and "second hand mountain bike" are each one category.
- *
- * Words are never cut in half: the category takes whole words up to this
- * length and everything after them becomes a refinement of it, so a reader
- * types one sentence and it lands in two places by itself.
- */
-const ADZWORLD_CATEGORY_MAX_LENGTH = 24;
+/** Maximum number of words shown in a generated adz category label. */
+const ADZWORLD_CATEGORY_MAX_WORDS = 3;
+
+/** Maximum number of characters shown in a generated adz category label. */
+const ADZWORLD_CATEGORY_MAX_LENGTH = 48;
+
+/** Maximum stored length for one free-form visitor refinement. */
+const ADZWORLD_REFINEMENT_MAX_LENGTH = 10000;
 
 /** Maximum number of visible result slots a category can request. */
 const ADZWORLD_CATEGORY_MAX_SLOTS = 8;
@@ -47,58 +45,6 @@ function adzworld_normalize_category( $category ) {
 }
 
 /**
- * Split what the reader typed into the thing and its description.
- *
- * @since 1.0.0
- *
- * @param string $text Everything the reader typed.
- * @return array{category:string,refinement:string}
- */
-function adzworld_split_category_input( $text ) {
-	$text  = adzworld_normalize_category( $text );
-	$words = preg_split( '/\s+/u', $text, -1, PREG_SPLIT_NO_EMPTY );
-
-	if ( ! $words ) {
-		return array(
-			'category'   => '',
-			'refinement' => '',
-		);
-	}
-
-	/*
-	 * The opening words name the thing. Everything after them describes it.
-	 * "couch brown leather no arms" is a couch, refined by brown leather no
-	 * arms. The reader is not asked to put the two in separate boxes and is
-	 * not told off for typing a sentence: they say what they want and the
-	 * split happens here.
-	 */
-	$taken = array();
-
-	foreach ( $words as $word ) {
-		$next = implode( ' ', array_merge( $taken, array( $word ) ) );
-
-		if ( mb_strlen( $next ) > ADZWORLD_CATEGORY_MAX_LENGTH ) {
-			break;
-		}
-
-		$taken[] = $word;
-	}
-
-	/* A single word longer than the limit still has to name something. */
-	if ( ! $taken ) {
-		$taken[] = mb_substr( $words[0], 0, ADZWORLD_CATEGORY_MAX_LENGTH );
-		$rest    = array_slice( $words, 1 );
-	} else {
-		$rest = array_slice( $words, count( $taken ) );
-	}
-
-	return array(
-		'category'   => implode( ' ', $taken ),
-		'refinement' => implode( ' ', $rest ),
-	);
-}
-
-/**
  * Whether a category fits the short search-prefix contract.
  *
  * @param string $category Normalized category.
@@ -109,7 +55,132 @@ function adzworld_valid_category( $category ) {
 
 	return '' !== $category
 		&& mb_strlen( $category ) <= ADZWORLD_CATEGORY_MAX_LENGTH
-		&& ! empty( $words );
+		&& count( $words ) <= ADZWORLD_CATEGORY_MAX_WORDS;
+}
+
+/**
+ * Encode one half of a stored category pair.
+ *
+ * A literal double hyphen separates the two encoded halves. The x-prefixed
+ * hexadecimal representation contains no hyphen, so the separator cannot
+ * occur inside either value and survives sanitize_text_field() unchanged.
+ *
+ * @param string $value Category or refinement value.
+ * @return string Encoded value.
+ */
+function adzworld_pair_encode( $value ) {
+	return 'x' . bin2hex( (string) $value );
+}
+
+/**
+ * Decode one half of a stored category pair.
+ *
+ * @param string $value Encoded category or refinement value.
+ * @return string Decoded value.
+ */
+function adzworld_pair_decode( $value ) {
+	$value = (string) $value;
+
+	if ( preg_match( '/^x(?:[0-9a-f]{2})*$/D', $value ) ) {
+		$decoded = hex2bin( substr( $value, 1 ) );
+
+		return false === $decoded ? '' : $decoded;
+	}
+
+	return $value;
+}
+
+/**
+ * Join a category and its value without allowing separator collisions.
+ *
+ * @param string $category Category.
+ * @param string $value    Refinement or slot count.
+ * @return string Stored pair.
+ */
+function adzworld_pair_join( $category, $value ) {
+	return adzworld_pair_encode( $category ) . '--' . adzworld_pair_encode( $value );
+}
+
+/**
+ * Split a stored category pair.
+ *
+ * Plain legacy pairs remain readable. Newly stored pairs encode every hyphen,
+ * so the first literal double hyphen is always the separator.
+ *
+ * @param string $stored Stored pair.
+ * @return string[] Decoded pair, or an empty array for invalid input.
+ */
+function adzworld_pair_split( $stored ) {
+	$parts = explode( '--', (string) $stored, 2 );
+
+	if ( 2 !== count( $parts ) ) {
+		return array();
+	}
+
+	return array(
+		adzworld_pair_decode( $parts[0] ),
+		adzworld_pair_decode( $parts[1] ),
+	);
+}
+
+/**
+ * Parse one category entry and its optional comma-separated refinements.
+ *
+ * A pipe is the explicit separator when the category itself contains a colon.
+ * Otherwise the first colon separates the category from its refinements.
+ *
+ * @param string $input Visitor-entered category string.
+ * @return array{category:string,refinements:string[]}
+ */
+function adzworld_parse_category_input( $input ) {
+	$input       = trim( sanitize_text_field( (string) $input ) );
+	$separator   = false;
+	$category    = $input;
+	$refinements = '';
+	$parsed      = array();
+
+	if ( false !== strpos( $input, '|' ) ) {
+		$separator = strpos( $input, '|' );
+	} elseif ( false !== strpos( $input, ':' ) ) {
+		$separator = strpos( $input, ':' );
+	}
+
+	if ( false !== $separator ) {
+		$category    = substr( $input, 0, $separator );
+		$refinements = substr( $input, $separator + 1 );
+	}
+
+	$category = adzworld_normalize_category( $category );
+	$words    = preg_split( '/\s+/u', $category, -1, PREG_SPLIT_NO_EMPTY );
+	$overflow = '';
+
+	if ( count( $words ) > ADZWORLD_CATEGORY_MAX_WORDS ) {
+		$overflow = implode( ' ', array_slice( $words, ADZWORLD_CATEGORY_MAX_WORDS ) );
+		$category = implode( ' ', array_slice( $words, 0, ADZWORLD_CATEGORY_MAX_WORDS ) );
+	}
+
+	if ( mb_strlen( $category ) > ADZWORLD_CATEGORY_MAX_LENGTH - 1 ) {
+		$overflow = trim( $input );
+		$category = mb_substr( $category, 0, ADZWORLD_CATEGORY_MAX_LENGTH - 1 );
+	}
+
+	if ( '' !== $overflow ) {
+		$category = rtrim( $category ) . '…';
+		$parsed[] = mb_substr( $overflow, 0, ADZWORLD_REFINEMENT_MAX_LENGTH );
+	}
+
+	foreach ( explode( ',', $refinements ) as $refinement ) {
+		$refinement = trim( mb_substr( sanitize_text_field( $refinement ), 0, ADZWORLD_REFINEMENT_MAX_LENGTH ) );
+
+		if ( '' !== $refinement && ! in_array( $refinement, $parsed, true ) ) {
+			$parsed[] = $refinement;
+		}
+	}
+
+	return array(
+		'category'    => $category,
+		'refinements' => $parsed,
+	);
 }
 
 /**
@@ -150,7 +221,7 @@ function adzworld_empty_preference() {
 function adzworld_category_slot_count( $pref, $category ) {
 	foreach ( $pref['category_slots'] as $stored ) {
 		$parts = adzworld_pair_split( $stored );
-		if ( '' !== $parts[1] && $category === $parts[0] ) {
+		if ( 2 === count( $parts ) && $category === $parts[0] ) {
 			return max( 1, min( ADZWORLD_CATEGORY_MAX_SLOTS, (int) $parts[1] ) );
 		}
 	}
@@ -173,7 +244,9 @@ function adzworld_set_category_slot_count( $pref, $category, $count ) {
 		array_filter(
 			$pref['category_slots'],
 			static function ( $stored ) use ( $category ) {
-				return 0 !== strpos( $stored, adzworld_pair_prefix( $category ) );
+				$parts = adzworld_pair_split( $stored );
+
+				return 2 !== count( $parts ) || $category !== $parts[0];
 			}
 		)
 	);
@@ -430,76 +503,10 @@ function adzworld_parse_refinement( $text, $onto = null ) {
 }
 
 /**
- * The words that separate the two halves of a stored pair.
- *
- * They are words rather than punctuation because punctuation is typeable. A
- * reader writing "brown -- no arms" collided with a "--" delimiter, and the
- * fix was to percent-encode both halves, which left the database holding
- * things like dinner%20in%20Atlanta--vegetarian%20outdoor. Labels keep the
- * stored value readable and need no encoding at all.
- */
-const ADZWORLD_PAIR_CATEGORY   = 'Category: ';
-const ADZWORLD_PAIR_REFINEMENT = ' Refinements: ';
-
-/**
- * Join a category and a refinement into one stored value.
- *
- * Neither half is altered. "brown -- no arms" is stored exactly as typed.
- *
- * @param string $category   Category.
- * @param string $refinement Refinement.
- * @return string Stored pair.
- */
-function adzworld_pair_join( $category, $refinement ) {
-	return ADZWORLD_PAIR_CATEGORY . trim( (string) $category ) . ADZWORLD_PAIR_REFINEMENT . trim( (string) $refinement );
-}
-
-/**
- * Split a stored pair back into its two halves.
- *
- * The split is on the FIRST label only, so a refinement that itself contains
- * the word "Refinements:" survives whole in the second half.
- *
- * @param string $pair Stored pair.
- * @return array{0:string,1:string} Category and refinement.
- */
-function adzworld_pair_split( $pair ) {
-	$pair = (string) $pair;
-
-	$rest = 0 === strpos( $pair, ADZWORLD_PAIR_CATEGORY )
-		? substr( $pair, strlen( ADZWORLD_PAIR_CATEGORY ) )
-		: $pair;
-
-	$at = strpos( $rest, ADZWORLD_PAIR_REFINEMENT );
-
-	if ( false === $at ) {
-		return array( trim( $rest ), '' );
-	}
-
-	return array(
-		trim( substr( $rest, 0, $at ) ),
-		trim( substr( $rest, $at + strlen( ADZWORLD_PAIR_REFINEMENT ) ) ),
-	);
-}
-
-/**
- * The opening of every pair stored for one category.
- *
- * Used to find a category's own refinements among all of them.
- *
- * @param string $category Category.
- * @return string Prefix.
- */
-function adzworld_pair_prefix( $category ) {
-	return ADZWORLD_PAIR_CATEGORY . trim( (string) $category ) . ADZWORLD_PAIR_REFINEMENT;
-}
-
-/**
  * Describe a preference as chips the visitor can read and remove.
  *
  * Each chip carries the facet and value so the form can drop exactly one
- * without the visitor retyping everything. A category_refinements chip also
- * carries the category it belongs to.
+ * without the visitor retyping everything.
  *
  * @param array $pref Preference.
  * @return array<int,array{facet:string,value:string,label:string}>
@@ -524,22 +531,12 @@ function adzworld_preference_chips( $pref ) {
 	}
 
 	foreach ( $pref['category_refinements'] as $category_refinement ) {
-		list( $pair_category, $pair_refinement ) = adzworld_pair_split( $category_refinement );
-
-		/*
-		 * A pair whose refinement is empty rendered as a chip with no text.
-		 * Two of them were visible on the live site after a single category
-		 * was submitted.
-		 */
-		if ( '' === trim( $pair_refinement ) ) {
-			continue;
-		}
-
+		$parts   = adzworld_pair_split( $category_refinement );
+		$label   = isset( $parts[1] ) ? $parts[1] : $parts[0];
 		$chips[] = array(
-			'facet'    => 'category_refinements',
-			'value'    => $category_refinement,
-			'label'    => $pair_refinement,
-			'category' => $pair_category,
+			'facet' => 'category_refinements',
+			'value' => $category_refinement,
+			'label' => $label,
 		);
 	}
 
@@ -656,20 +653,23 @@ function adzworld_remove_facet( $pref, $facet, $value ) {
 	if ( in_array( $facet, array( 'categories', 'category_refinements', 'include', 'exclude', 'attributes' ), true ) ) {
 		$pref[ $facet ] = array_values( array_diff( $pref[ $facet ], array( (string) $value ) ) );
 		if ( 'categories' === $facet ) {
-			$prefix                       = adzworld_pair_prefix( (string) $value );
 			$pref['category_refinements'] = array_values(
 				array_filter(
 					$pref['category_refinements'],
-					static function ( $refinement ) use ( $prefix ) {
-						return 0 !== strpos( $refinement, $prefix );
+					static function ( $refinement ) use ( $value ) {
+						$parts = adzworld_pair_split( $refinement );
+
+						return 2 !== count( $parts ) || (string) $value !== $parts[0];
 					}
 				)
 			);
 			$pref['category_slots']       = array_values(
 				array_filter(
 					$pref['category_slots'],
-					static function ( $stored ) use ( $prefix ) {
-						return 0 !== strpos( $stored, $prefix );
+					static function ( $stored ) use ( $value ) {
+						$parts = adzworld_pair_split( $stored );
+
+						return 2 !== count( $parts ) || (string) $value !== $parts[0];
 					}
 				)
 			);
@@ -722,16 +722,17 @@ function adzworld_rename_category( $pref, $old, $replacement ) {
 	}
 	$pref['categories'] = array_values( array_unique( $pref['categories'] ) );
 
-	$old_prefix = adzworld_pair_prefix( $old );
 	foreach ( $pref['category_refinements'] as $index => $refinement ) {
-		if ( 0 === strpos( $refinement, $old_prefix ) ) {
-			$pref['category_refinements'][ $index ] = adzworld_pair_prefix( $replacement ) . substr( $refinement, strlen( $old_prefix ) );
+		$parts = adzworld_pair_split( $refinement );
+		if ( 2 === count( $parts ) && $old === $parts[0] ) {
+			$pref['category_refinements'][ $index ] = adzworld_pair_join( $replacement, $parts[1] );
 		}
 	}
 	$pref['category_refinements'] = array_values( array_unique( $pref['category_refinements'] ) );
 	foreach ( $pref['category_slots'] as $index => $stored ) {
-		if ( 0 === strpos( $stored, $old_prefix ) ) {
-			$pref['category_slots'][ $index ] = adzworld_pair_prefix( $replacement ) . substr( $stored, strlen( $old_prefix ) );
+		$parts = adzworld_pair_split( $stored );
+		if ( 2 === count( $parts ) && $old === $parts[0] ) {
+			$pref['category_slots'][ $index ] = adzworld_pair_join( $replacement, $parts[1] );
 		}
 	}
 
@@ -806,7 +807,7 @@ function adzworld_category_matches_text( $category, $text ) {
  * Resolve the category represented by a local advertisement.
  *
  * A category the visitor typed takes precedence when its words are in the ad.
- * Otherwise the ad is its own category: one published ad, one thing.
+ * Otherwise the category assigned by the adzadmin is used.
  *
  * @param WP_Post $post Advertisement post.
  * @param array   $pref Current preference hierarchy.
@@ -820,7 +821,8 @@ function adzworld_ad_category( $post, $pref ) {
 	$pref     = wp_parse_args( (array) $pref, adzworld_empty_preference() );
 	$terms    = wp_get_post_terms( $post->ID, 'ad_taxonomy', array( 'fields' => 'names' ) );
 	$terms    = is_wp_error( $terms ) ? array() : $terms;
-	$text     = $post->post_title . ' ' . wp_strip_all_tags( $post->post_content ) . ' ' . implode( ' ', $terms );
+	$text     = $post->post_title . ' ' . wp_strip_all_tags( $post->post_content ) . ' '
+		. wp_strip_all_tags( $post->post_excerpt ) . ' ' . implode( ' ', $terms );
 	$authored = isset( $pref['authored_categories'] ) && is_array( $pref['authored_categories'] ) ? $pref['authored_categories'] : array();
 
 	foreach ( $authored as $category ) {
@@ -829,16 +831,6 @@ function adzworld_ad_category( $post, $pref ) {
 		}
 	}
 
-	/*
-	 * A category the visitor stated outranks one this plugin guessed.
-	 *
-	 * A guess used to be checked first and win, so an adzad could be filed
-	 * under "ages" while the visitor's refinements were filed under "bicycle".
-	 * adzworld_category_refinement_preference() then looked for an "ages--"
-	 * prefix, found none, and every refinement scored nothing: the slot
-	 * ignored what the visitor had asked for. Below the visitor sits the
-	 * category the adzadmin assigned, which is stated data, not a guess.
-	 */
 	foreach ( $pref['categories'] as $category ) {
 		if ( adzworld_category_matches_text( $category, $text ) ) {
 			return $category;
@@ -851,13 +843,8 @@ function adzworld_ad_category( $post, $pref ) {
 /**
  * The category an adzadmin assigned to one adzad.
  *
- * This reads the adzad's ad_taxonomy term and nothing else. It used to be
- * called adzworld_ad_thing(), and when no term was assigned it guessed: it
- * parsed the post title as though it were a refinement and took end() of the
- * surviving words, on the assumption that a title's last noun is its subject.
- * On "Kids bicycle, 20 inch, suits ages 8 to 11" that produced "ages". The
- * guess is gone. An adzad with no term assigned has no category, which is the
- * truth, and the adzadmin can assign one.
+ * This reads the adzad's ad_taxonomy term and nothing else. An adzad without
+ * an assigned term has no category; its title is not guessed into one.
  *
  * @param WP_Post $post Adzad post.
  * @return string Assigned category, or an empty string.
@@ -953,14 +940,11 @@ function adzworld_preference_with_catalog( $pref ) {
  */
 function adzworld_category_refinement_preference( $pref, $category ) {
 	$scoped = adzworld_empty_preference();
-	$prefix = adzworld_pair_prefix( (string) $category );
 
 	foreach ( $pref['category_refinements'] as $stored ) {
-		if ( 0 === strpos( $stored, $prefix ) ) {
-			$scoped = adzworld_parse_refinement(
-				substr( $stored, strlen( $prefix ) ),
-				$scoped
-			);
+		$parts = adzworld_pair_split( $stored );
+		if ( 2 === count( $parts ) && (string) $category === $parts[0] ) {
+			$scoped = adzworld_parse_refinement( $parts[1], $scoped );
 		}
 	}
 
@@ -968,160 +952,82 @@ function adzworld_category_refinement_preference( $pref, $category ) {
 }
 
 /**
- * Whether a term the reader stated appears in an adzad's text.
+ * Score an adz post against a preference.
  *
- * Matched on word boundaries, so an exclusion of "cat" no longer rules out
- * an adzad about a catalogue.
+ * Exclusions are absolute: one excluded term present and the adz is never
+ * shown, whatever else matches. Everything else accumulates.
  *
- * What this does NOT fix, said plainly because an earlier version of this
- * comment claimed it did: an adzad whose own copy reads "no pedals" is still
- * ruled out by a reader excluding "pedals". The word is genuinely in the
- * text. Reading the negation in an adzad's own copy means interpreting it,
- * which is not done here.
- *
- * @param string $haystack The adzad's text, lowercased.
- * @param string $term     The term the reader stated.
- * @return bool Whether the term appears.
- */
-function adzworld_term_appears( $haystack, $term ) {
-	$term = trim( strtolower( (string) $term ) );
-
-	if ( '' === $term ) {
-		return false;
-	}
-
-	return 1 === preg_match( '/\b' . preg_quote( $term, '/' ) . '\b/u', (string) $haystack );
-}
-
-/**
- * How one adzad ranks against what the reader has said.
- *
- * No weights and no invented constants. Each key is a quantity someone
- * actually produced, and they are compared in order of what matters:
- *
- *   1  the adzad is in a category the reader stated
- *   2  how many of the reader's terms appear in it
- *   3  the reader's own rating of it, on their -100 to 100 scale, as given
- *
- * There is no sum, so nothing has to be made commensurate with anything else
- * and the reader's scale is never compressed to fit a constant. Ordering is
- * by the first key that differs.
- *
- * Returns null when the reader has ruled the adzad out, which is absolute.
- *
- * @param int   $ad_id Adzad post id.
+ * @param int   $ad_id adz post ID.
  * @param array $pref  Preference.
- * @return array<string,int>|null Ranking keys, or null when excluded.
+ * @return int Score, or -1 when the adz is excluded outright.
  */
-function adzworld_rank_ad( $ad_id, $pref ) {
+function adzworld_score_ad( $ad_id, $pref ) {
 	$pref = wp_parse_args( (array) $pref, adzworld_empty_preference() );
 	$post = get_post( (int) $ad_id );
 
 	if ( ! $post instanceof WP_Post ) {
-		return null;
+		return -1;
 	}
 
 	$terms    = wp_get_post_terms( $post->ID, 'ad_taxonomy', array( 'fields' => 'names' ) );
 	$terms    = is_wp_error( $terms ) ? array() : $terms;
-	$haystack = strtolower( $post->post_title . ' ' . wp_strip_all_tags( $post->post_content ) . ' ' . implode( ' ', $terms ) );
+	$haystack = strtolower(
+		$post->post_title . ' ' . wp_strip_all_tags( $post->post_content ) . ' '
+		. wp_strip_all_tags( $post->post_excerpt ) . ' ' . implode( ' ', $terms )
+	);
 	$category = adzworld_ad_category( $post, $pref );
 	$scoped   = adzworld_category_refinement_preference( $pref, $category );
 
-	/* A term the reader ruled out is absolute: the adzad is never shown. */
 	foreach ( array_merge( $pref['exclude'], $scoped['exclude'] ) as $term ) {
-		if ( adzworld_term_appears( $haystack, $term ) ) {
-			return null;
+		if ( false !== strpos( $haystack, strtolower( $term ) ) ) {
+			return -1;
 		}
 	}
 
 	/*
-	 * The reader's refinements, exactly as they wrote them. Nothing is parsed
-	 * into price bands, ages, capacities or stop words first. A phrase either
-	 * appears in this adzad or it does not.
+	 * A baseline keeps an explicit dislike as a demotion rather than turning it
+	 * into the absolute exclusion reserved for words the visitor ruled out.
 	 */
-	$matched = 0;
+	$score = 10;
+	if ( in_array( $category, $pref['categories'], true ) ) {
+		$score += 12;
+	}
 
-	foreach ( adzworld_category_refinement_phrases( $pref, $category ) as $phrase ) {
-		if ( adzworld_term_appears( $haystack, $phrase ) ) {
-			++$matched;
+	foreach ( array_merge( $pref['include'], $scoped['include'] ) as $term ) {
+		if ( false !== strpos( $haystack, strtolower( $term ) ) ) {
+			$score += 10;
 		}
+	}
+
+	foreach ( array_merge( $pref['attributes'], $scoped['attributes'] ) as $term ) {
+		if ( false !== strpos( $haystack, strtolower( $term ) ) ) {
+			$score += 4;
+		}
+	}
+
+	if ( '' !== $pref['intent'] && false !== strpos( $haystack, $pref['intent'] ) ) {
+		$score += 3;
 	}
 
 	$feedback = function_exists( 'adzworld_current_feedback' ) ? adzworld_current_feedback() : array();
 	$key      = sanitize_key( 'ad-' . $post->ID );
-	$rated    = isset( $feedback[ $key ]['score'] );
-
-	/*
-	 * A reader who moved the control to the middle engaged with this adzad. A
-	 * reader who never touched it did not. Both used to rank as 0 and that
-	 * difference was lost, so engagement is its own key.
-	 *
-	 * It sits below the rating, not above it. Above it, an adzad rated -4
-	 * outranked one never rated, purely for having been touched, which is the
-	 * opposite of what the reader said.
-	 */
-	return array(
-		'in_category' => in_array( $category, $pref['categories'], true ) ? 1 : 0,
-		'matched'     => $matched,
-		'rating'      => $rated ? (int) $feedback[ $key ]['score'] : 0,
-		'engaged'     => $rated ? 1 : 0,
-	);
-}
-
-/**
- * One category's refinement phrases, as the reader typed them.
- *
- * @param array  $pref     Preference.
- * @param string $category Category.
- * @return array<int,string> Phrases, in the order they were added.
- */
-function adzworld_category_refinement_phrases( $pref, $category ) {
-	$pref     = wp_parse_args( (array) $pref, adzworld_empty_preference() );
-	$category = trim( (string) $category );
-	$phrases  = array();
-
-	if ( '' === $category ) {
-		return $phrases;
+	if ( isset( $feedback[ $key ]['score'] ) ) {
+		$score += (int) $feedback[ $key ]['score'];
 	}
 
-	foreach ( $pref['category_refinements'] as $stored ) {
-		$split = adzworld_pair_split( (string) $stored );
-
-		if ( $category === $split[0] && '' !== trim( $split[1] ) ) {
-			$phrases[] = trim( $split[1] );
-		}
-	}
-
-	return $phrases;
-}
-
-/**
- * Compare two ranked adz, by the first key that differs.
- *
- * @param array<string,int> $first  Ranking keys.
- * @param array<string,int> $second Ranking keys.
- * @return int Comparison result.
- */
-function adzworld_compare_rank( $first, $second ) {
-	foreach ( array( 'in_category', 'matched', 'rating', 'engaged' ) as $key ) {
-		if ( $first[ $key ] !== $second[ $key ] ) {
-			return $second[ $key ] <=> $first[ $key ];
-		}
-	}
-
-	return 0;
+	return $score;
 }
 
 /**
  * Published adz, newest first, as post IDs.
  *
  * Nothing defined this while adzworld_match_adz() called it, so matching
- * fatalled the moment a rotation tried to pick an adzad. It was missed because the
+ * fatalled the moment a rotation tried to pick an adz. It was missed because the
  * test harness stubbed the name, which meant the tests passed against a function
  * the plugin did not have.
  *
  * get_posts() is asked for post objects rather than ids on purpose: that primes
- * the post cache, so the get_post() call adzworld_rank_ad() makes for each
+ * the post cache, so the get_post() call adzworld_score_ad() makes for each
  * candidate is served from memory instead of becoming one query per adz. The
  * pool is capped and filterable, because scoring every adz on a site with tens
  * of thousands of them is not work to do during a page render.
@@ -1169,7 +1075,7 @@ add_action( 'untrashed_post', 'adzworld_flush_ad_pool' );
 /**
  * Drop the cached pool when the set of published adz can have changed.
  *
- * Bound to the trash transitions and deletion as well as save, because an adzad
+ * Bound to the trash transitions and deletion as well as save, because an adz
  * leaving the pool matters as much as one joining it.
  *
  * @return void
@@ -1186,66 +1092,45 @@ function adzworld_flush_ad_pool() {
  * @return int[] adz post IDs.
  */
 function adzworld_match_adz( $pref, $limit = 5 ) {
-	$ranked  = array();
+	$scored  = array();
 	$ordinal = 0;
 
 	foreach ( adzworld_get_all_ad_ids() as $ad_id ) {
-		$rank = adzworld_rank_ad( $ad_id, $pref );
+		$score = adzworld_score_ad( $ad_id, $pref );
 
-		/* A reader's exclusion is absolute; everything else is an ordering. */
-		if ( null === $rank ) {
+		/*
+		 * A negative score is an exclusion the visitor stated, and that is
+		 * absolute. A zero score only means nothing matched, which is the
+		 * normal case for a visitor who has not filled in the panel. Dropping
+		 * those would leave the rotation empty whenever nobody has typed
+		 * anything, so what a preference changes is which adz come first, not
+		 * whether any adz appear at all.
+		 */
+		if ( $score < 0 ) {
 			continue;
 		}
 
-		$rank['id']      = $ad_id;
-		$rank['ordinal'] = $ordinal;
-		$ranked[]        = $rank;
+		$scored[] = array(
+			'id'      => $ad_id,
+			'score'   => $score,
+			'ordinal' => $ordinal,
+		);
 
 		++$ordinal;
 	}
 
-	// usort is only stable from PHP 8.0, so the ordinal breaks ties explicitly.
+	// Highest score first, original order preserved within a tie. usort is only
+	// stable from PHP 8.0, so the ordinal does the tie-breaking explicitly.
 	usort(
-		$ranked,
-		static function ( $first, $second ) {
-			$compared = adzworld_compare_rank( $first, $second );
+		$scored,
+		static function ( $a, $b ) {
+			if ( $a['score'] === $b['score'] ) {
+				return $a['ordinal'] <=> $b['ordinal'];
+			}
 
-			return 0 === $compared ? $first['ordinal'] <=> $second['ordinal'] : $compared;
+			return $b['score'] <=> $a['score'];
 		}
 	);
 
-	return array_slice( wp_list_pluck( $ranked, 'id' ), 0, max( 1, (int) $limit ) );
-}
-
-/**
- * The hue a category's chip is tinted with.
- *
- * Derived from the category's own name, so "couch" is the same tone in every
- * rotation and stays that tone when the reader adds or removes a different
- * category. The earlier version used the category's position in the list,
- * which repainted every chip whenever the list changed, and handed position
- * two a green chip for no reason at all.
- *
- * The band is 200 to 305 degrees: blues, indigos and violets. It stops short
- * of green, yellow and red on purpose. Those are the scoring colours, and a
- * category tinted with one of them states a rating it does not have.
- *
- * @since 1.0.0
- *
- * @param string $category Category name as the reader wrote it.
- * @return int Hue angle in degrees.
- */
-function adzworld_category_tone( $category ) {
-	$category = trim( strtolower( (string) $category ) );
-
-	if ( '' === $category ) {
-		return 237;
-	}
-
-	/*
-	 * crc32() returns a signed int on a 32-bit build, where a negative
-	 * remainder would walk the hue down out of the band and into yellow.
-	 * abs() keeps every install inside 200 to 305.
-	 */
-	return 200 + ( ( abs( crc32( $category ) ) % 8 ) * 15 );
+	return array_slice( wp_list_pluck( $scored, 'id' ), 0, max( 1, (int) $limit ) );
 }

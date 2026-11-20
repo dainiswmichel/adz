@@ -17,14 +17,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 function adzworld_desk_tabs() {
 	return array(
 		'dashboard'  => __( 'Dashboard', 'adz-world' ),
-		'manual'     => __( 'Manual', 'adz-world' ),
 		'affiliates' => __( 'Get Paid', 'adz-world' ),
 		'internal'   => __( 'Internal Adz', 'adz-world' ),
 		'rotation'   => __( 'Rotation', 'adz-world' ),
-		'earnings'   => __( 'Earnings', 'adz-world' ),
 		'logs'       => __( 'AdzLogs', 'adz-world' ),
+		'earnings'   => __( 'Earnings', 'adz-world' ),
 		'templates'  => __( 'Templates', 'adz-world' ),
 		'starter'    => __( 'Starter packs', 'adz-world' ),
+		'manual'     => __( 'Interactive Documentation', 'adz-world' ),
 	);
 }
 
@@ -57,8 +57,8 @@ function adzworld_desk_submenu_slugs() {
 		'affiliates' => 'adzworld-affiliates',
 		'internal'   => 'adzworld-internal',
 		'rotation'   => 'adzworld-rotation',
-		'earnings'   => 'adzworld-earnings',
 		'logs'       => 'adzworld-logs',
+		'earnings'   => 'adzworld-earnings',
 		'templates'  => 'adzworld-templates',
 		'starter'    => 'adzworld-starter',
 	);
@@ -174,9 +174,9 @@ function adzworld_desk_dashboard() {
 	$local_adz   = isset( $post_counts->publish ) ? (int) $post_counts->publish : 0;
 	$cards       = array(
 		array(
-			'label' => __( 'Setup manual', 'adz-world' ),
+			'label' => __( 'Interactive Documentation', 'adz-world' ),
 			'value' => (string) adzworld_enabled_network_count(),
-			'text'  => __( 'Direct network accounts enabled. A network section of the manual fills in after that account is saved.', 'adz-world' ),
+			'text'  => __( 'Direct network accounts enabled. Provider instructions appear after an account is saved.', 'adz-world' ),
 			'tab'   => 'manual',
 		),
 		array(
@@ -198,14 +198,24 @@ function adzworld_desk_dashboard() {
 			'tab'   => 'networks',
 		),
 		array(
+			'label' => sprintf(
+				/* translators: %s: product name. */
+				__( '%s API', 'adz-world' ),
+				ADZWORLD_NAME
+			),
+			'value' => adzworld_network_enabled() ? __( 'Connected', 'adz-world' ) : __( 'Off', 'adz-world' ),
+			'text'  => __( 'Optional shared adz service. Local adz continue to work while it is off.', 'adz-world' ),
+			'tab'   => 'networks',
+		),
+		array(
 			'label' => __( 'Earnings', 'adz-world' ),
-			'value' => (string) adzworld_affiliate_connected_count(),
-			'text'  => __( 'Affiliate programmes and display networks pay the site owner on their own accounts.', 'adz-world' ),
+			'value' => __( 'Direct', 'adz-world' ),
+			'text'  => __( 'Affiliate and ad-network providers report and pay the site owner directly.', 'adz-world' ),
 			'tab'   => 'earnings',
 		),
 	);
 
-	echo '<div class="adzworld-desk-intro"><h2>' . esc_html__( 'Monetization and delivery', 'adz-world' ) . '</h2>';
+	echo '<div class="adzworld-desk-intro"><h2>' . esc_html__( 'Earnings and delivery', 'adz-world' ) . '</h2>';
 	echo '<p>' . esc_html__( 'Direct affiliate and ad-network connections use the site owner’s own account identifiers. Those providers attribute revenue and pay the site owner under their existing agreements.', 'adz-world' ) . '</p></div>';
 	echo '<div class="adzworld-desk-grid">';
 	foreach ( $cards as $card ) {
@@ -238,12 +248,6 @@ function adzworld_desk_page() {
 		echo '<a class="' . esc_attr( $class ) . '" href="' . esc_url( $url ) . '">' . esc_html( $label ) . '</a>';
 	}
 	echo '</nav></div>';
-	if ( 'logs' === $current ) {
-		adzworld_logs_page();
-
-		return;
-	}
-
 	if ( 'dashboard' === $current ) {
 		echo '<div class="wrap adzworld-desk">';
 		adzworld_desk_dashboard();
@@ -270,6 +274,12 @@ function adzworld_desk_page() {
 	}
 	if ( 'rotation' === $current ) {
 		adzworld_rotation_admin_page();
+		return;
+	}
+	if ( 'logs' === $current ) {
+		echo '<div class="wrap adzworld-desk">';
+		adzworld_logs_page();
+		echo '</div>';
 		return;
 	}
 	if ( 'networks' === $current ) {

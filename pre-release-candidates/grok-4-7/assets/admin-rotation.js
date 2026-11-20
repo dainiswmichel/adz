@@ -84,7 +84,7 @@
 		).finally(
 			function () {
 				button.disabled = false;
-				button.textContent = settings.labels.refresh || 'Refresh this adz preview';
+				button.textContent = settings.labels.refresh || 'Refresh this adzad preview';
 				if ( spinner ) {
 					spinner.classList.remove( 'is-active' );
 				}

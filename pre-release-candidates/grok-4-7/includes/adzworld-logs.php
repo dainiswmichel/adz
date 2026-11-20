@@ -1,1212 +1,736 @@
 <?php
 /**
- * AdzLogs.
+ * AdzLogs: what readers did with adz, one journey at a time.
  *
- * The page lists rotations as accordion bands, then the slots inside them.
- * When a slot is configured as another rotation, the slot says which rotation
- * it showed, and the turns under it are what was served there. Each turn
- * carries the full Michel Time Stamp. A from/to pair of those stamps exports
- * or archives that range. The rotations stay on the page.
+ * Nothing is recorded for a reader who only looks. A journey begins with the
+ * reader's first action: a rating, a refinement, or a category change. It is
+ * named by the reader's session identifier, which is the Michel Time Stamp of
+ * that first action plus five random characters.
  *
- * A turn is a chat line. The served ad is on the left. The right side is how
- * the slot is configured, the request, and the refinements. A user response
- * is optional and sits on that same side when one was received.
+ * A journey is a chronological list of events, like a chat:
  *
- * A rotation that sits in a slot is written twice, at the same Michel Time
- * Stamp: once under the outer rotation, and once under the inner rotation.
+ *     adz     Rotation main · Slot 2 · ebay:110588014268
+ *     reader  Category: "couch" → "brown leather couch"
+ *     reader  Rating: 62, Like
+ *     adz     Thank you. These adz now follow what you told us.
+ *     adz     Rotation main · Slot 4 · ad:31
+ *     reader  Rating: -40, Dislike
  *
- * The stamp is YYYYy-MMm-DDd-UTCHHh-MMm-SSs, for example
- * 2026y-11m-14d-UTC22h-05m-09s.
+ * The adz side names the exact adz the reader acted on. It is recorded only
+ * when the reader acts on an adz that differs from the one before. An adz the
+ * reader ignores is never recorded. Reader text is recorded exactly as it was
+ * saved.
  *
- * This file records the display and the response. It does not call a provider
- * and it does not choose the next ad.
+ * Storage: one private post per journey, one post meta row per event. Rows are
+ * only ever added, so the history cannot be rewritten, and deleting a journey
+ * deletes its post. A journey is attached to a WordPress account only when the
+ * adzadmin allows profile saving and that reader chose it.
  *
  * @package adz-world
  */
 
 defined( 'ABSPATH' ) || exit;
 
+/** Post type holding one journey per post. */
+const ADZWORLD_JOURNEY_POST_TYPE = 'adzworld_journey';
+
+/** Post meta key holding one event per row. */
+const ADZWORLD_JOURNEY_EVENT_META = '_adzworld_event';
+
+/** Option holding retention settings. */
+const ADZWORLD_LOGS_OPTION = 'adzworld_logs_settings';
+
+/** Daily cleanup hook. */
+const ADZWORLD_LOGS_CLEANUP_HOOK = 'adzworld_logs_cleanup';
+
+/** Journeys per AdzLogs page. */
+const ADZWORLD_LOGS_PER_PAGE = 20;
+
+/** Journeys removed per cleanup query. */
+const ADZWORLD_LOGS_CLEANUP_BATCH = 100;
+
+/** Session key naming the current journey of a reader saving to their profile. */
+const ADZWORLD_JOURNEY_PROFILE_SESSION = 'adzworld_profile_journey';
+
+/** Session key holding the adz the reader last acted on in this journey. */
+const ADZWORLD_JOURNEY_LAST_AD_SESSION = 'adzworld_journey_last_ad';
+
+/** Nonce action for the reader's profile choice. */
+const ADZWORLD_PROFILE_CONSENT_NONCE = 'adzworld_profile_consent';
+
 /**
- * Michel Time Stamp in UTC.
+ * Register the private journey post type.
  *
- * @param int|null $unix Unix time. Null uses the current time.
- * @return string
+ * @return void
  */
-function adzworld_michel_timestamp( $unix = null ) {
-	if ( null === $unix ) {
-		$unix = time();
-	}
+function adzworld_register_journey_post_type() {
+	register_post_type(
+		ADZWORLD_JOURNEY_POST_TYPE,
+		array(
+			'label'               => __( 'Adz journeys', 'adz-world' ),
+			'public'              => false,
+			'publicly_queryable'  => false,
+			'exclude_from_search' => true,
+			'show_ui'             => false,
+			'show_in_rest'        => false,
+			'rewrite'             => false,
+			'query_var'           => false,
+			'can_export'          => false,
+			'delete_with_user'    => true,
+			'supports'            => array( 'title', 'author' ),
+		)
+	);
+}
+add_action( 'init', 'adzworld_register_journey_post_type' );
 
-	$unix = (int) $unix;
+/*
+ * ---------------------------------------------------------------------------
+ * Settings
+ * ---------------------------------------------------------------------------
+ */
 
-	return gmdate( 'Y', $unix ) . 'y-' . gmdate( 'm', $unix ) . 'm-' . gmdate( 'd', $unix ) . 'd-UTC' . gmdate( 'H', $unix ) . 'h-' . gmdate( 'i', $unix ) . 'm-' . gmdate( 's', $unix ) . 's';
+/**
+ * Retention settings.
+ *
+ * Zero days keeps journeys until an adzadmin deletes them. Zero journeys means
+ * no limit on how many are kept.
+ *
+ * @return array{days:int,max:int}
+ */
+function adzworld_logs_settings() {
+	$stored = get_option( ADZWORLD_LOGS_OPTION, array() );
+	$stored = is_array( $stored ) ? $stored : array();
+
+	return array(
+		'days' => isset( $stored['days'] ) ? absint( $stored['days'] ) : 30,
+		'max'  => isset( $stored['max'] ) ? absint( $stored['max'] ) : 0,
+	);
 }
 
-/**
- * Rotation and slot names used as log keys.
- *
- * @param mixed $value Raw value.
- * @return string
+/*
+ * ---------------------------------------------------------------------------
+ * Journey identity
+ * ---------------------------------------------------------------------------
  */
-function adzworld_logs_key( $value ) {
-	$value = strtolower( adzworld_slot_journey_text( $value ) );
-	$value = preg_replace( '/[^a-z0-9_-]/', '', $value );
 
-	if ( ! is_string( $value ) ) {
+/**
+ * Identifier of the current reader's journey, created on first use.
+ *
+ * Call this only when the reader has acted. An anonymous reader, or a signed-in
+ * reader who keeps nothing on their profile, uses the same session identifier
+ * as their preferences. A reader saving to their profile gets one journey per
+ * browser session.
+ *
+ * @return string Session identifier, or an empty string when no session can start.
+ */
+function adzworld_journey_key() {
+	if ( ! adzworld_preference_uses_profile() ) {
+		return adzworld_preference_ensure_session_id();
+	}
+
+	if ( PHP_SESSION_ACTIVE !== session_status() && ! headers_sent() ) {
+		session_start();
+	}
+	if ( PHP_SESSION_ACTIVE !== session_status() ) {
 		return '';
 	}
 
-	return substr( $value, 0, 50 );
+	$current = isset( $_SESSION[ ADZWORLD_JOURNEY_PROFILE_SESSION ] ) && is_string( $_SESSION[ ADZWORLD_JOURNEY_PROFILE_SESSION ] )
+		? sanitize_text_field( wp_unslash( $_SESSION[ ADZWORLD_JOURNEY_PROFILE_SESSION ] ) )
+		: '';
+	if ( ! adzworld_preference_valid_session_id( $current ) ) {
+		$current                                      = adzworld_preference_new_session_id();
+		$_SESSION[ ADZWORLD_JOURNEY_PROFILE_SESSION ] = $current;
+	}
+
+	return $current;
 }
 
 /**
- * Ad id that a slot can serve.
+ * Post ID of the journey with this identifier, created when asked.
  *
- * @param mixed $value Raw id.
- * @return string `ad-11` or `source-ebay`, or empty.
+ * @param string $key    Session identifier.
+ * @param bool   $create Whether to create the journey when it does not exist.
+ * @return int Post ID, or 0.
  */
-function adzworld_logs_ad_id( $value ) {
-	$value = adzworld_slot_journey_text( $value );
-
-	if ( preg_match( '/^(ad-[1-9][0-9]*|source-[a-z0-9_-]{1,50})$/D', $value ) ) {
-		return $value;
+function adzworld_journey_post_id( $key, $create ) {
+	if ( ! adzworld_preference_valid_session_id( $key ) ) {
+		return 0;
 	}
 
-	return '';
-}
-
-/**
- * The product identifiers a provider actually served in this round.
- *
- * Each is the provider's own identifier namespaced by the provider, such as
- * ebay:110588014268. Without these, every round a provider answered logs as
- * the same row: the provider is named, the product is not.
- *
- * @since 1.0.0
- *
- * @param mixed $value Raw identifiers.
- * @return string Space separated identifiers, or empty.
- */
-function adzworld_logs_items( $value ) {
-	$clean = array();
-
-	foreach ( (array) $value as $id ) {
-		$id = adzworld_slot_journey_text( $id );
-
-		if ( preg_match( '/^[a-z0-9_-]{1,50}:[A-Za-z0-9._-]{1,100}$/D', $id ) && ! in_array( $id, $clean, true ) ) {
-			$clean[] = $id;
-		}
+	$slug  = strtolower( $key );
+	$found = get_posts(
+		array(
+			'post_type'        => ADZWORLD_JOURNEY_POST_TYPE,
+			'post_status'      => 'private',
+			'name'             => $slug,
+			'numberposts'      => 1,
+			'fields'           => 'ids',
+			'suppress_filters' => false,
+		)
+	);
+	if ( ! empty( $found ) ) {
+		return (int) $found[0];
+	}
+	if ( ! $create ) {
+		return 0;
 	}
 
-	return implode( ' ', $clean );
-}
-
-/**
- * What was actually on the screen, as the log should name it.
- *
- * A provider slot is configured as source:ebay and its feedback is keyed on
- * source-ebay, but neither of those is the adzad. The adzad is the listing
- * the reader was looking at. When the provider's cards are known, they are
- * the identity; otherwise the slot key stands, because something was shown
- * and the log should not pretend nothing was.
- *
- * @since 1.0.0
- *
- * @param array<string,mixed> $row Log row.
- * @return string
- */
-function adzworld_logs_ad_shown( $row ) {
-	$items = isset( $row['items'] ) ? adzworld_logs_items( explode( ' ', (string) $row['items'] ) ) : '';
-
-	if ( '' !== $items ) {
-		return $items;
-	}
-
-	return isset( $row['ad'] ) ? adzworld_logs_ad_id( $row['ad'] ) : '';
-}
-
-/**
- * Slot configuration token.
- *
- * @param mixed $value Raw token.
- * @return string `ad:11`, `source:ebay`, or `r:bikes`, or empty.
- */
-function adzworld_logs_configured( $value ) {
-	$value = adzworld_slot_journey_text( $value );
-
-	if ( preg_match( '/^(ad:[1-9][0-9]*|source:[a-z0-9_-]{1,50}|r:[a-z0-9_-]{1,50})$/D', $value ) ) {
-		return $value;
-	}
-
-	return '';
-}
-
-/**
- * Like/dislike word for a rating number.
- *
- * The bands are the existing evaluation labels. An empty rating has no word.
- *
- * @param int|null $rating Rating number, or null.
- * @return string
- */
-function adzworld_logs_rating_word( $rating ) {
-	if ( ! is_int( $rating ) || ! function_exists( 'adzworld_feedback_label' ) ) {
-		return '';
-	}
-
-	return adzworld_slot_journey_text( adzworld_feedback_label( $rating ) );
-}
-
-/**
- * Category after a change.
- *
- * @param string $displayed Category on the served ad.
- * @param string $change    Category the reader set, or empty.
- * @return string
- */
-function adzworld_logs_current_category( $displayed, $change ) {
-	$change = adzworld_slot_journey_text( $change );
-
-	if ( '' !== $change ) {
-		return $change;
-	}
-
-	return adzworld_slot_journey_text( $displayed );
-}
-
-/**
- * Rating number after a change.
- *
- * @param int|null $displayed Rating on the served ad, or null.
- * @param int|null $change    Rating the reader set, or null.
- * @return int|null
- */
-function adzworld_logs_current_rating( $displayed, $change ) {
-	if ( is_int( $change ) ) {
-		return $change;
-	}
-
-	if ( is_int( $displayed ) ) {
-		return $displayed;
-	}
-
-	return null;
-}
-
-/**
- * Refinement string after a change.
- *
- * The typed change is kept whole and appended to the refinements that were
- * already on the ad.
- *
- * @param mixed  $displayed Refinements on the served ad.
- * @param string $change    Refinement the reader set, or empty.
- * @return string
- */
-function adzworld_logs_current_refinements( $displayed, $change ) {
-	$displayed = adzworld_slot_journey_refinements( $displayed );
-	$change    = adzworld_slot_journey_text( $change );
-
-	if ( '' === $change || $displayed === $change ) {
-		return $displayed;
-	}
-
-	if ( '' === $displayed ) {
-		return $change;
-	}
-
-	return $displayed . ' ' . $change;
-}
-
-/**
- * String sent to an API for one response.
- *
- * The parts are the ad id, the most up to date category, the Like/dislike
- * word, and the most up to date refinement string. The rating number stays
- * off this string.
- *
- * @param string   $ad          Ad id.
- * @param string   $category    Most up to date category.
- * @param int|null $rating      Most up to date rating number, or null.
- * @param string   $refinements Most up to date refinement string.
- * @return string
- */
-function adzworld_logs_sent_string( $ad, $category, $rating, $refinements ) {
-	$parts = array();
-
-	/*
-	 * Either shape is valid here: the slot key for an adzad this site owns,
-	 * or the provider's own listing identifier when the cards are known.
-	 * Validating only the first silently dropped the listing, which is the
-	 * more useful of the two.
-	 */
-	$ad = '' !== adzworld_logs_ad_id( $ad )
-		? adzworld_logs_ad_id( $ad )
-		: adzworld_logs_items( explode( ' ', (string) $ad ) );
-
-	if ( '' !== $ad ) {
-		$parts[] = $ad;
-	}
-
-	$category = adzworld_slot_journey_text( $category );
-	if ( '' !== $category ) {
-		$parts[] = $category;
-	}
-
-	$word = adzworld_logs_rating_word( is_int( $rating ) ? $rating : null );
-	if ( '' !== $word ) {
-		$parts[] = $word;
-	}
-
-	$refinements = adzworld_slot_journey_refinements( $refinements );
-	if ( '' !== $refinements ) {
-		$parts[] = $refinements;
-	}
-
-	return implode( ' ', $parts );
-}
-
-/**
- * The log rows for one appearance.
- *
- * A plain slot returns one row. A slot that holds a rotation returns two
- * rows with the same stamp: the outer rotation, then the inner rotation.
- * The outer row's configuration is the rotation slot. The inner row keeps
- * the configuration of the slot that served the ad.
- *
- * @param array<string,mixed> $place        Rotation, slot, and the inner rotation when the slot holds one.
- * @param string              $ad           Ad id.
- * @param string              $configured   Slot configuration of the serving slot.
- * @param string              $category     Category displayed with the ad.
- * @param mixed               $refinements  Refinements displayed with the ad.
- * @param string              $mts          Michel Time Stamp.
- * @param int|null            $rating       Rating displayed with the ad, or null.
- * @param string[]            $items        Product identifiers the provider served.
- * @return array<int,array<string,mixed>>
- */
-function adzworld_logs_entries( $place, $ad, $configured, $category, $refinements, $mts, $rating = null, $items = array() ) {
-	if ( ! is_array( $place ) ) {
-		return array();
-	}
-
-	$ad          = adzworld_logs_ad_id( $ad );
-	$category    = adzworld_slot_journey_text( $category );
-	$refinements = adzworld_slot_journey_refinements( $refinements );
-	$configured  = adzworld_logs_configured( $configured );
-	$rotation    = isset( $place['rotation'] ) ? adzworld_logs_key( $place['rotation'] ) : '';
-	$slot        = isset( $place['slot'] ) ? (int) $place['slot'] : 0;
-	$inner       = isset( $place['inner_rotation'] ) ? adzworld_logs_key( $place['inner_rotation'] ) : '';
-	$inner_slot  = isset( $place['inner_slot'] ) ? (int) $place['inner_slot'] : 0;
-
-	/* Slots count from 1. A zero or a negative is not a slot, it is a bug. */
-	if ( '' === $ad || '' === $rotation || $slot < 1 ) {
-		return array();
-	}
-
-	$row = array(
-		'mts'         => adzworld_slot_journey_text( $mts ),
-		'items'       => adzworld_logs_items( $items ),
-		'rotation'    => $rotation,
-		'slot'        => $slot,
-		'holds'       => '',
-		'inner_slot'  => 0,
-		'configured'  => $configured,
-		'category'    => $category,
-		'rating'      => adzworld_slot_journey_rating( $rating ),
-		'refinements' => $refinements,
-		'ad'          => $ad,
+	$post_id = wp_insert_post(
+		array(
+			'post_type'   => ADZWORLD_JOURNEY_POST_TYPE,
+			'post_status' => 'private',
+			'post_title'  => $key,
+			'post_name'   => $slug,
+			'post_author' => adzworld_preference_uses_profile() ? get_current_user_id() : 0,
+		),
+		true
 	);
 
-	if ( '' === $inner ) {
-		return array( $row );
-	}
-
-	if ( $inner_slot < 1 ) {
-		return array();
-	}
-
-	$outer                 = $row;
-	$outer['holds']        = $inner;
-	$outer['inner_slot']   = $inner_slot;
-	$outer['configured']   = adzworld_logs_configured( 'r:' . $inner );
-	$inner_row             = $row;
-	$inner_row['rotation'] = $inner;
-	$inner_row['slot']     = $inner_slot;
-
-	return array( $outer, $inner_row );
+	return is_wp_error( $post_id ) ? 0 : (int) $post_id;
 }
 
-/**
- * Apply one received response to a displayed row.
- *
- * Displayed category, rating, and refinements stay as they were. The change
- * fields record what the reader set. An external slot stores the sent string.
- * An internal slot is logged to the site and stores no string.
- *
- * @param array<string,mixed> $row      Displayed row.
- * @param array<string,mixed> $changes  Keys category, rating, refinement. Absent keys stay as they are.
- * @param bool                $external True when a string is sent to an API.
- * @return array<string,mixed>
+/*
+ * ---------------------------------------------------------------------------
+ * Recording
+ * ---------------------------------------------------------------------------
  */
-function adzworld_logs_apply_response( $row, $changes, $external ) {
-	$row = adzworld_logs_sanitize_row( $row );
-
-	if ( ! is_array( $changes ) ) {
-		return $row;
-	}
-
-	if ( array_key_exists( 'category', $changes ) ) {
-		$next = adzworld_slot_journey_text( $changes['category'] );
-		if ( '' !== $next && $row['category'] !== $next ) {
-			$row['category_change'] = $next;
-		} elseif ( $row['category'] === $next ) {
-			$row['category_change'] = '';
-		}
-	}
-
-	if ( array_key_exists( 'rating', $changes ) ) {
-		$next = adzworld_slot_journey_rating( $changes['rating'] );
-		if ( is_int( $next ) && $row['rating'] !== $next ) {
-			$row['rating_change'] = $next;
-		} elseif ( is_int( $next ) && $row['rating'] === $next ) {
-			$row['rating_change'] = null;
-		}
-	}
-
-	if ( array_key_exists( 'refinement', $changes ) ) {
-		$next = adzworld_slot_journey_text( $changes['refinement'] );
-		if ( '' !== $next && $next !== $row['refinements'] ) {
-			$row['refinement_change'] = $next;
-		}
-	}
-
-	$has_change = '' !== $row['category_change'] || is_int( $row['rating_change'] ) || '' !== $row['refinement_change'];
-
-	if ( ! $has_change ) {
-		$row['responded']   = 0;
-		$row['logged']      = 0;
-		$row['sent_string'] = '';
-		return $row;
-	}
-
-	$row['responded'] = 1;
-
-	if ( $external ) {
-		$row['logged']      = 0;
-		$row['sent_string'] = adzworld_logs_sent_string(
-			adzworld_logs_ad_shown( $row ),
-			adzworld_logs_current_category( $row['category'], $row['category_change'] ),
-			adzworld_logs_current_rating( $row['rating'], $row['rating_change'] ),
-			adzworld_logs_current_refinements( $row['refinements'], $row['refinement_change'] )
-		);
-		return $row;
-	}
-
-	$row['logged']      = 1;
-	$row['sent_string'] = '';
-
-	return $row;
-}
 
 /**
- * Compare two log rows by Michel Time Stamp, then by write order.
+ * Validate where an action happened, as reported by the reader's browser.
  *
- * @param array<string,mixed> $first  First row.
- * @param array<string,mixed> $second Second row.
- * @return int
+ * Request handlers read these values after verifying their nonce and pass
+ * them here. Anything that does not name a saved rotation or a well-formed
+ * adz identifier is dropped rather than recorded.
+ *
+ * @param mixed $rotation Rotation key.
+ * @param mixed $slot     Visible slot number, starting at 1.
+ * @param mixed $position Zero-based position of the slot in the saved rotation.
+ * @param mixed $ad       Adz identifier: hub, ad-31, source-key or provider-key-item.
+ * @return array{rotation:string,slot:int,position:int,ad:string}
  */
-function adzworld_logs_compare( $first, $second ) {
-	$mts = strcmp( (string) $first['mts'], (string) $second['mts'] );
-
-	if ( 0 !== $mts ) {
-		return $mts;
+function adzworld_journey_context( $rotation, $slot, $position, $ad ) {
+	$rotation  = is_string( $rotation ) ? sanitize_key( $rotation ) : '';
+	$rotations = adzworld_named_rotations();
+	if ( ! isset( $rotations[ $rotation ] ) ) {
+		$rotation = '';
 	}
 
-	$first_n  = isset( $first['n'] ) ? (int) $first['n'] : 0;
-	$second_n = isset( $second['n'] ) ? (int) $second['n'] : 0;
-
-	return $first_n - $second_n;
-}
-
-/**
- * Group log rows by rotation, then by slot.
- *
- * @param array<int,array<string,mixed>> $rows Log rows.
- * @return array<string,array{rotation:string,slots:array<int,array{slot:int,holds:string,rows:array<int,array<string,mixed>>}>}>
- */
-function adzworld_logs_by_rotation( $rows ) {
-	$groups = array();
-
-	foreach ( $rows as $row ) {
-		if ( ! is_array( $row ) || empty( $row['rotation'] ) ) {
-			continue;
-		}
-
-		$name = (string) $row['rotation'];
-		$slot = isset( $row['slot'] ) ? (int) $row['slot'] : 0;
-
-		if ( ! isset( $groups[ $name ] ) ) {
-			$groups[ $name ] = array(
-				'rotation' => $name,
-				'slots'    => array(),
-			);
-		}
-
-		if ( ! isset( $groups[ $name ]['slots'][ $slot ] ) ) {
-			$groups[ $name ]['slots'][ $slot ] = array(
-				'slot'  => $slot,
-				'holds' => isset( $row['holds'] ) ? (string) $row['holds'] : '',
-				'rows'  => array(),
-			);
-		}
-
-		if ( '' === $groups[ $name ]['slots'][ $slot ]['holds'] && ! empty( $row['holds'] ) ) {
-			$groups[ $name ]['slots'][ $slot ]['holds'] = (string) $row['holds'];
-		}
-
-		$groups[ $name ]['slots'][ $slot ]['rows'][] = $row;
+	$slot     = is_scalar( $slot ) ? absint( $slot ) : 0;
+	$position = is_scalar( $position ) && '' !== (string) $position ? absint( $position ) : -1;
+	if ( '' === $rotation || $position >= count( $rotations[ $rotation ]['slots'] ) ) {
+		$position = -1;
 	}
 
-	ksort( $groups );
-
-	foreach ( $groups as $name => $group ) {
-		ksort( $groups[ $name ]['slots'] );
-		foreach ( $groups[ $name ]['slots'] as $slot => $pack ) {
-			usort( $groups[ $name ]['slots'][ $slot ]['rows'], 'adzworld_logs_compare' );
-		}
-	}
-
-	return $groups;
-}
-
-/**
- * Full Michel Time Stamp, or empty when the text is not one.
- *
- * @param mixed $value Raw stamp.
- * @return string
- */
-function adzworld_logs_stamp( $value ) {
-	$value = adzworld_slot_journey_text( $value );
-
-	if ( preg_match( '/^\d{4}y-\d{2}m-\d{2}d-UTC\d{2}h-\d{2}m-\d{2}s$/', $value ) ) {
-		return $value;
-	}
-
-	return '';
-}
-
-/**
- * Whether a stamp sits inside a from/to pair.
- *
- * An empty bound is open. Comparison is the stamp text, which sorts in time order.
- *
- * @param string $mts  Stamp on the row.
- * @param string $from Full stamp, or empty.
- * @param string $to   Full stamp, or empty.
- * @return bool
- */
-function adzworld_logs_in_range( $mts, $from, $to ) {
-	$mts = (string) $mts;
-
-	if ( '' !== $from && 0 > strcmp( $mts, $from ) ) {
-		return false;
-	}
-
-	if ( '' !== $to && 0 < strcmp( $mts, $to ) ) {
-		return false;
-	}
-
-	return true;
-}
-
-/**
- * Read a from/to pair.
- *
- * @param string $from_raw     Posted from text.
- * @param string $to_raw       Posted to text.
- * @param bool   $require_both Archive requires both stamps.
- * @return array{from:string,to:string,error:string}
- */
-function adzworld_logs_bounds( $from_raw, $to_raw, $require_both ) {
-	$from_raw = adzworld_slot_journey_text( $from_raw );
-	$to_raw   = adzworld_slot_journey_text( $to_raw );
-	$from     = adzworld_logs_stamp( $from_raw );
-	$to       = adzworld_logs_stamp( $to_raw );
-	$error    = '';
-
-	if ( ( '' !== $from_raw && '' === $from ) || ( '' !== $to_raw && '' === $to ) ) {
-		$error = 'stamp';
-	} elseif ( $require_both && ( '' === $from || '' === $to ) ) {
-		$error = 'both';
-	} elseif ( '' !== $from && '' !== $to && 0 < strcmp( $from, $to ) ) {
-		$error = 'order';
+	$ad = is_string( $ad ) ? sanitize_key( $ad ) : '';
+	if ( ! preg_match( '/^(?:hub|ad-[1-9][0-9]*|source-[a-z0-9_-]{1,50}|provider-[a-z0-9_]{1,40}-[a-z0-9_-]{1,120})$/D', $ad ) ) {
+		$ad = '';
 	}
 
 	return array(
-		'from'  => $from,
-		'to'    => $to,
-		'error' => $error,
+		'rotation' => $rotation,
+		'slot'     => $slot,
+		'position' => $position,
+		'ad'       => $ad,
 	);
 }
 
 /**
- * Rows whose stamp sits in the range.
+ * Append one reader event to the current journey.
  *
- * @param array<int,array<string,mixed>> $rows Log rows.
- * @param string                         $from Full stamp, or empty.
- * @param string                         $to   Full stamp, or empty.
- * @return array<int,array<string,mixed>>
- */
-function adzworld_logs_range( $rows, $from, $to ) {
-	$kept = array();
-
-	foreach ( $rows as $row ) {
-		if ( ! is_array( $row ) ) {
-			continue;
-		}
-
-		$mts = isset( $row['mts'] ) ? (string) $row['mts'] : '';
-		if ( adzworld_logs_in_range( $mts, $from, $to ) ) {
-			$kept[] = $row;
-		}
-	}
-
-	return $kept;
-}
-
-/**
- * Plain-text archive of log rows. Values are complete.
+ * When the reader acts on a different adz than last time, the adz is recorded
+ * first so the journey shows what the reader was responding to.
  *
- * @param array<int,array<string,mixed>> $rows Log rows.
- * @return string
- */
-function adzworld_logs_export_text( $rows ) {
-	$blocks = array();
-
-	foreach ( $rows as $row ) {
-		$clean = adzworld_logs_sanitize_row( $row );
-		$lines = array( $clean['mts'], 'rotation ' . $clean['rotation'], 'slot ' . (string) $clean['slot'] );
-
-		if ( '' !== $clean['holds'] ) {
-			$lines[] = 'showed ' . $clean['holds'];
-			$lines[] = 'slot in ' . $clean['holds'] . ' ' . (string) (int) $clean['inner_slot'];
-		}
-		if ( '' !== $clean['configured'] ) {
-			$lines[] = 'configured ' . $clean['configured'];
-		}
-
-		$lines[] = 'ad ' . adzworld_logs_ad_shown( $clean );
-
-		if ( '' !== $clean['items'] && 0 === strpos( $clean['ad'], 'source-' ) ) {
-			$lines[] = 'served by ' . substr( $clean['ad'], strlen( 'source-' ) );
-		}
-
-		if ( '' !== $clean['category'] ) {
-			$lines[] = 'category ' . $clean['category'];
-		}
-		if ( is_int( $clean['rating'] ) ) {
-			$lines[] = 'rating ' . (string) $clean['rating'];
-		}
-		if ( '' !== $clean['refinements'] ) {
-			$lines[] = 'refinements ' . $clean['refinements'];
-		}
-		if ( ! empty( $clean['responded'] ) ) {
-			if ( '' !== $clean['category_change'] ) {
-				$lines[] = 'change to category ' . $clean['category_change'];
-			}
-			if ( is_int( $clean['rating_change'] ) ) {
-				$lines[] = 'change to rating ' . (string) $clean['rating_change'];
-			}
-			if ( '' !== $clean['refinement_change'] ) {
-				$lines[] = 'change to refinement ' . $clean['refinement_change'];
-			}
-			if ( ! empty( $clean['logged'] ) ) {
-				$lines[] = 'logged to the site';
-			} elseif ( '' !== $clean['sent_string'] ) {
-				$lines[] = 'sent ' . $clean['sent_string'];
-			}
-		}
-
-		$blocks[] = implode( "\n", $lines );
-	}
-
-	return implode( "\n\n", $blocks );
-}
-
-/**
- * Stored log rows.
- *
- * @return array<int,array<string,mixed>>
- */
-function adzworld_logs_rows() {
-	$stored = get_option( 'adzworld_logs', array() );
-
-	if ( ! is_array( $stored ) ) {
-		return array();
-	}
-
-	$rows = array();
-	foreach ( $stored as $row ) {
-		$clean = adzworld_logs_sanitize_row( $row );
-		if ( '' !== $clean['ad'] && '' !== $clean['rotation'] ) {
-			$rows[] = $clean;
-		}
-	}
-
-	return $rows;
-}
-
-/**
- * One stored row reduced to the log shape.
- *
- * @param mixed $row Raw row.
- * @return array<string,mixed>
- */
-function adzworld_logs_sanitize_row( $row ) {
-	$clean = array(
-		'mts'               => '',
-		'n'                 => 0,
-		'visit'             => '',
-		'items'             => '',
-		'rotation'          => '',
-		'slot'              => 0,
-		'holds'             => '',
-		'inner_slot'        => 0,
-		'configured'        => '',
-		'category'          => '',
-		'rating'            => null,
-		'refinements'       => '',
-		'ad'                => '',
-		'responded'         => 0,
-		'category_change'   => '',
-		'rating_change'     => null,
-		'refinement_change' => '',
-		'logged'            => 0,
-		'sent_string'       => '',
-	);
-
-	if ( ! is_array( $row ) ) {
-		return $clean;
-	}
-
-	$clean['mts']         = isset( $row['mts'] ) ? adzworld_slot_journey_text( $row['mts'] ) : '';
-	$clean['n']           = isset( $row['n'] ) ? (int) $row['n'] : 0;
-	$clean['visit']       = isset( $row['visit'] ) ? adzworld_logs_key( $row['visit'] ) : '';
-	$clean['items']       = isset( $row['items'] ) ? adzworld_logs_items( explode( ' ', (string) $row['items'] ) ) : '';
-	$clean['rotation']    = isset( $row['rotation'] ) ? adzworld_logs_key( $row['rotation'] ) : '';
-	$clean['slot']        = isset( $row['slot'] ) ? (int) $row['slot'] : 0;
-	$clean['holds']       = isset( $row['holds'] ) ? adzworld_logs_key( $row['holds'] ) : '';
-	$clean['inner_slot']  = isset( $row['inner_slot'] ) ? (int) $row['inner_slot'] : 0;
-	$clean['configured']  = isset( $row['configured'] ) ? adzworld_logs_configured( $row['configured'] ) : '';
-	$clean['category']    = isset( $row['category'] ) ? adzworld_slot_journey_text( $row['category'] ) : '';
-	$clean['rating']      = array_key_exists( 'rating', $row ) ? adzworld_slot_journey_rating( $row['rating'] ) : null;
-	$clean['refinements'] = isset( $row['refinements'] ) ? adzworld_slot_journey_refinements( $row['refinements'] ) : '';
-	$clean['ad']          = isset( $row['ad'] ) ? adzworld_logs_ad_id( $row['ad'] ) : '';
-	$clean['responded']   = empty( $row['responded'] ) ? 0 : 1;
-
-	if ( $clean['responded'] ) {
-		$clean['category_change']   = isset( $row['category_change'] ) ? adzworld_slot_journey_text( $row['category_change'] ) : '';
-		$clean['rating_change']     = array_key_exists( 'rating_change', $row ) ? adzworld_slot_journey_rating( $row['rating_change'] ) : null;
-		$clean['refinement_change'] = isset( $row['refinement_change'] ) ? adzworld_slot_journey_text( $row['refinement_change'] ) : '';
-		$clean['logged']            = empty( $row['logged'] ) ? 0 : 1;
-		$clean['sent_string']       = isset( $row['sent_string'] ) ? adzworld_slot_journey_text( $row['sent_string'] ) : '';
-	}
-
-	return $clean;
-}
-
-/**
- * Save the log.
- *
- * @param array<int,array<string,mixed>> $rows Rows.
+ * @param array $context Validated context from adzworld_journey_context().
+ * @param array $event   Event fields. `type` is required.
  * @return void
  */
-function adzworld_logs_save( $rows ) {
-	$clean = array();
-
-	foreach ( $rows as $row ) {
-		$item = adzworld_logs_sanitize_row( $row );
-		if ( '' !== $item['ad'] && '' !== $item['rotation'] ) {
-			$clean[] = $item;
-		}
-	}
-
-	if ( false === get_option( 'adzworld_logs', false ) ) {
-		add_option( 'adzworld_logs', $clean, '', false );
+function adzworld_journey_record( $context, $event ) {
+	$post_id = adzworld_journey_post_id( adzworld_journey_key(), true );
+	if ( 0 === $post_id ) {
 		return;
 	}
 
-	update_option( 'adzworld_logs', $clean, false );
+	$where = array(
+		'rotation' => isset( $context['rotation'] ) ? (string) $context['rotation'] : '',
+		'slot'     => isset( $context['slot'] ) ? (int) $context['slot'] : 0,
+		'ad'       => isset( $context['ad'] ) ? (string) $context['ad'] : '',
+	);
+	$last  = isset( $_SESSION[ ADZWORLD_JOURNEY_LAST_AD_SESSION ] ) && is_array( $_SESSION[ ADZWORLD_JOURNEY_LAST_AD_SESSION ] )
+		? map_deep( wp_unslash( $_SESSION[ ADZWORLD_JOURNEY_LAST_AD_SESSION ] ), 'sanitize_text_field' )
+		: array();
+	$known = isset( $last['post'] ) && (int) $last['post'] === $post_id;
+	$same  = $known && isset( $last['rotation'], $last['slot'], $last['ad'] )
+		&& $last['rotation'] === $where['rotation'] && (int) $last['slot'] === $where['slot'] && $last['ad'] === $where['ad'];
+
+	if ( '' !== $where['ad'] && ! $same ) {
+		add_post_meta( $post_id, ADZWORLD_JOURNEY_EVENT_META, array_merge( array( 'type' => 'ad' ), $where, array( 'time' => time() ) ) );
+		$_SESSION[ ADZWORLD_JOURNEY_LAST_AD_SESSION ] = array_merge( array( 'post' => $post_id ), $where );
+	}
+
+	add_post_meta( $post_id, ADZWORLD_JOURNEY_EVENT_META, array_merge( $event, $where, array( 'time' => time() ) ) );
 }
 
 /**
- * Whether the reader has told this plugin anything.
+ * Record and return the slot's response message after a reader responded.
  *
- * Nothing about a reader is recorded, and no session is opened for them,
- * until they give input of their own accord: a category, a refinement, a
- * rating, or a profile. Being shown an advertisement is not input, and is
- * not a reason to start recording someone.
- *
- * @since 1.0.0
- *
- * @return bool True once the reader has given input.
+ * @param array $context Validated context from adzworld_journey_context().
+ * @return string Message to show, or an empty string.
  */
-function adzworld_logs_consented() {
-	/* A reader who made a profile told us on purpose. */
-	if ( function_exists( 'adzworld_preference_uses_profile' ) && adzworld_preference_uses_profile() ) {
-		return true;
-	}
-
-	/*
-	 * A reader who typed a category or a refinement told us what they want.
-	 * That act is the consent: nothing is recorded, and no session is opened,
-	 * until they make it.
-	 */
-	if ( function_exists( 'adzworld_current_preference' ) && function_exists( 'adzworld_has_preference' )
-		&& adzworld_has_preference( adzworld_current_preference() ) ) {
-		return true;
-	}
-
-	/* A rating is the same act by a different control. */
-	if ( function_exists( 'adzworld_current_feedback' ) ) {
-		$feedback = adzworld_current_feedback();
-
-		if ( is_array( $feedback ) && ! empty( $feedback ) ) {
-			return true;
-		}
-	}
-
-	return false;
-}
-
-/**
- * Visit key for this browser.
- *
- * The preference session holds the key when that session is open. A cookie
- * of the same key covers an account that does not use that session, so a
- * display and the later response stay on the same rows. Both expire with
- * the browser.
- *
- * @since 1.0.0
- *
- * @param bool $establish True when the reader has just given input, which
- *                        both consents to the session and creates it. False
- *                        while merely serving, when an identifier is used
- *                        only if one already exists.
- * @return string Visit identifier, or empty when there is nothing to file.
- */
-function adzworld_logs_visit( $establish = false ) {
-	/*
-	 * A visitor who has told us nothing gets no session, no cookie and no
-	 * identifier. Serving an adzad to someone is not a reason to start
-	 * recording them.
-	 */
-	if ( ! $establish && ! adzworld_logs_consented() ) {
+function adzworld_journey_response( $context ) {
+	if ( '' === $context['rotation'] || $context['position'] < 0 ) {
 		return '';
 	}
 
-	$profile = function_exists( 'adzworld_preference_uses_profile' ) && adzworld_preference_uses_profile();
-
-	if ( ! $profile && PHP_SESSION_ACTIVE !== session_status() && ! headers_sent() && function_exists( 'adzworld_preference_open_session' ) ) {
-		adzworld_preference_open_session();
-	}
-
-	$session = '';
-	if ( PHP_SESSION_ACTIVE === session_status() && isset( $_SESSION['adzworld_log_visit'] ) ) {
-		$session = adzworld_logs_key( sanitize_text_field( wp_unslash( $_SESSION['adzworld_log_visit'] ) ) );
-	}
-
-	$cookie = '';
-	if ( isset( $_COOKIE['adzworld_log_visit'] ) && is_string( $_COOKIE['adzworld_log_visit'] ) ) {
-		$cookie_raw = sanitize_text_field( wp_unslash( $_COOKIE['adzworld_log_visit'] ) );
-		$cookie     = adzworld_logs_key( $cookie_raw );
-	}
-
-	if ( '' !== $session ) {
-		$visit = $session;
-	} elseif ( '' !== $cookie ) {
-		$visit = $cookie;
-	} elseif ( function_exists( 'wp_generate_password' ) ) {
-		$visit = adzworld_logs_key( wp_generate_password( 12, false, false ) );
-	} else {
-		$visit = '';
-	}
-
-	if ( '' === $visit ) {
-		return '';
-	}
-
-	if ( PHP_SESSION_ACTIVE === session_status() ) {
-		$_SESSION['adzworld_log_visit'] = $visit;
-	}
-
-	if ( $cookie !== $visit && ! headers_sent() && defined( 'COOKIEPATH' ) ) {
-		setcookie(
-			'adzworld_log_visit',
-			$visit,
+	$message = adzworld_slot_response_message( $context['rotation'], $context['position'] );
+	if ( '' !== $message ) {
+		adzworld_journey_record(
+			$context,
 			array(
-
-				/*
-				 * Expires with the browser, like every other cookie this
-				 * plugin sets. It was 30 days, which is not a session: it
-				 * joined one visit to the next for a month, and the readme
-				 * said "browser-session cookie" while the code did otherwise.
-				 * A visit is a visit.
-				 */
-				'expires'  => 0,
-				'path'     => COOKIEPATH ? COOKIEPATH : '/',
-				'domain'   => defined( 'COOKIE_DOMAIN' ) ? COOKIE_DOMAIN : '',
-				'secure'   => function_exists( 'is_ssl' ) && is_ssl(),
-				'httponly' => true,
-				'samesite' => 'Lax',
+				'type' => 'response',
+				'text' => $message,
 			)
 		);
-		$_COOKIE['adzworld_log_visit'] = $visit;
 	}
 
-	return $visit;
+	return $message;
 }
 
+/*
+ * ---------------------------------------------------------------------------
+ * Cleanup
+ * ---------------------------------------------------------------------------
+ */
+
 /**
- * Make the visit key available before the rotation prints.
+ * Delete journeys past the retention settings.
  *
  * @return void
  */
-function adzworld_logs_open_visit() {
-	adzworld_logs_visit();
-}
+function adzworld_logs_cleanup() {
+	$settings = adzworld_logs_settings();
 
-if ( function_exists( 'add_action' ) ) {
-	add_action( 'init', 'adzworld_logs_open_visit', 2 );
-}
-
-/**
- * Build the place array from the rotation that rendered the ad.
- *
- * @param string $rotation       Rotation that contains the slide. The inner rotation when this slide is nested.
- * @param int    $slot           Slot index of that slide.
- * @param string $outer_rotation Outer rotation when this rotation sits in a slot.
- * @param int    $outer_slot     Slot of the outer rotation.
- * @return array<string,mixed>
- */
-function adzworld_logs_place( $rotation, $slot, $outer_rotation = '', $outer_slot = 0 ) {
-	$outer = adzworld_logs_key( $outer_rotation );
-
-	if ( '' !== $outer ) {
-		return array(
-			'rotation'       => $outer,
-			'slot'           => (int) $outer_slot,
-			'inner_rotation' => adzworld_logs_key( $rotation ),
-			'inner_slot'     => (int) $slot,
-		);
-	}
-
-	return array(
-		'rotation' => adzworld_logs_key( $rotation ),
-		'slot'     => (int) $slot,
-	);
-}
-
-/**
- * Refinement phrases already stored for one category.
- *
- * @param array<string,mixed> $pref     Preference.
- * @param string              $category Category.
- * @return string[]
- */
-function adzworld_logs_phrases( $pref, $category ) {
-	$phrases = array();
-
-	if ( ! is_array( $pref ) || empty( $pref['category_refinements'] ) || ! is_array( $pref['category_refinements'] ) || ! function_exists( 'adzworld_pair_split' ) ) {
-		return $phrases;
-	}
-
-	foreach ( $pref['category_refinements'] as $stored ) {
-		$split = adzworld_pair_split( $stored );
-		if ( 2 === count( $split ) && (string) $category === $split[0] && '' !== $split[1] ) {
-			$phrases[] = $split[1];
-		}
-	}
-
-	return $phrases;
-}
-
-/**
- * Record an ad that was displayed.
- *
- * @param array<string,mixed> $place       Place.
- * @param string              $ad          Ad id.
- * @param string              $configured  Slot configuration of the serving slot.
- * @param string              $category    Category displayed with the ad.
- * @param mixed               $refinements Refinements displayed with the ad.
- * @param mixed               $rating      Rating displayed with the ad, or empty.
- * @return void
- */
-function adzworld_logs_remember_ad( $place, $ad, $configured, $category, $refinements, $rating = null ) {
-	/*
-	 * Taken whether or not this round is recorded, so identifiers left by an
-	 * unrecorded round cannot leak into the next one.
-	 */
-	$items = function_exists( 'adzworld_products_remember_served' ) ? adzworld_products_remember_served() : array();
-
-	/*
-	 * They belong to a provider slot and to nothing else. An adzad this site
-	 * owns is named by its own post and must never be labelled with a
-	 * listing a provider rendered elsewhere on the page.
-	 */
-	if ( 0 !== strpos( adzworld_logs_ad_id( $ad ), 'source-' ) ) {
-		$items = array();
-	}
-
-	$visit = adzworld_logs_visit();
-
-	/* Nothing was consented, so there is nothing to record. */
-	if ( '' === $visit ) {
-		return;
-	}
-
-	$rows    = adzworld_logs_rows();
-	$entries = adzworld_logs_entries( $place, $ad, $configured, $category, $refinements, adzworld_michel_timestamp(), $rating, $items );
-
-	foreach ( $entries as $entry ) {
-		$entry['visit']             = $visit;
-		$entry['n']                 = count( $rows );
-		$entry['responded']         = 0;
-		$entry['category_change']   = '';
-		$entry['rating_change']     = null;
-		$entry['refinement_change'] = '';
-		$entry['logged']            = 0;
-		$entry['sent_string']       = '';
-		$rows[]                     = $entry;
-	}
-
-	if ( ! empty( $entries ) ) {
-		adzworld_logs_save( $rows );
-	}
-}
-
-/**
- * Record a response on the latest display of this ad in each logged place.
- *
- * @param array<string,mixed> $place    Place.
- * @param string              $ad       Ad id.
- * @param array<string,mixed> $changes  Category, rating, or refinement keys that arrived.
- * @param bool                $external True when a string is sent to an API.
- * @param string[]            $items    Product identifiers the slide was showing.
- * @return void
- */
-function adzworld_logs_remember_response( $place, $ad, $changes, $external, $items = array() ) {
-	/*
-	 * Giving input is the act that consents, so this call establishes the
-	 * session rather than requiring one to exist already.
-	 */
-	$visit = adzworld_logs_visit( true );
-	$rows  = adzworld_logs_rows();
-	$ad_id = adzworld_logs_ad_id( $ad );
-
-	/* Same rule on the response path: a provider's listings, nowhere else. */
-	if ( 0 !== strpos( $ad_id, 'source-' ) ) {
-		$items = array();
-	}
-
-	$entries = adzworld_logs_entries( $place, $ad, '', '', '', adzworld_michel_timestamp(), null, $items );
-	$items   = adzworld_logs_items( $items );
-
-	if ( '' === $visit ) {
-		return;
-	}
-
-	if ( empty( $entries ) || '' === $ad_id || ! is_array( $changes ) ) {
-		return;
-	}
-
-	$found_one = false;
-
-	foreach ( $entries as $entry ) {
-		$found = -1;
-		$index = count( $rows );
-
-		while ( $index > 0 ) {
-			--$index;
-			$row = $rows[ $index ];
-			if ( $row['visit'] === $visit && $row['rotation'] === $entry['rotation'] && (int) $row['slot'] === (int) $entry['slot'] && $row['holds'] === $entry['holds'] && (int) $row['inner_slot'] === (int) $entry['inner_slot'] && $row['ad'] === $ad_id ) {
-				$found = $index;
-				break;
+	if ( $settings['days'] > 0 ) {
+		do {
+			$expired = get_posts(
+				array(
+					'post_type'        => ADZWORLD_JOURNEY_POST_TYPE,
+					'post_status'      => 'private',
+					'numberposts'      => ADZWORLD_LOGS_CLEANUP_BATCH,
+					'fields'           => 'ids',
+					'date_query'       => array(
+						array(
+							'column' => 'post_date_gmt',
+							'before' => gmdate( 'Y-m-d H:i:s', time() - $settings['days'] * DAY_IN_SECONDS ),
+						),
+					),
+					'suppress_filters' => false,
+				)
+			);
+			foreach ( $expired as $post_id ) {
+				wp_delete_post( (int) $post_id, true );
 			}
-		}
-
-		if ( $found < 0 ) {
-			/*
-			 * The adzad that prompted this was served before the reader had
-			 * said anything, so it was not recorded. Their input is the
-			 * consent, so the round it answers is created now rather than
-			 * dropped: the first thing a reader says is the most telling.
-			 */
-			$entry['visit']     = $visit;
-			$entry['n']         = count( $rows );
-			$entry['responded'] = 0;
-			$rows[]             = adzworld_logs_apply_response( $entry, $changes, $external );
-			$found_one          = true;
-
-			continue;
-		}
-
-		/*
-		 * A round recorded before the provider's cards were identified, or
-		 * recorded by an older version, is completed rather than left
-		 * nameless. An identifier already on the row is never overwritten.
-		 */
-		if ( '' === $rows[ $found ]['items'] && '' !== $items ) {
-			$rows[ $found ]['items'] = $items;
-		}
-
-		$rows[ $found ] = adzworld_logs_apply_response( $rows[ $found ], $changes, $external );
-		$found_one      = true;
+			$more = ADZWORLD_LOGS_CLEANUP_BATCH === count( $expired );
+		} while ( $more );
 	}
 
-	if ( $found_one ) {
-		adzworld_logs_save( $rows );
+	if ( $settings['max'] > 0 ) {
+		do {
+			$surplus = get_posts(
+				array(
+					'post_type'        => ADZWORLD_JOURNEY_POST_TYPE,
+					'post_status'      => 'private',
+					'numberposts'      => ADZWORLD_LOGS_CLEANUP_BATCH,
+					'offset'           => $settings['max'],
+					'orderby'          => 'date',
+					'order'            => 'DESC',
+					'fields'           => 'ids',
+					'suppress_filters' => false,
+				)
+			);
+			foreach ( $surplus as $post_id ) {
+				wp_delete_post( (int) $post_id, true );
+			}
+			$more = ADZWORLD_LOGS_CLEANUP_BATCH === count( $surplus );
+		} while ( $more );
 	}
 }
+add_action( ADZWORLD_LOGS_CLEANUP_HOOK, 'adzworld_logs_cleanup' );
 
 /**
- * Record a response posted with the rotation and slot of the displayed ad.
+ * Schedule the daily cleanup once.
  *
- * @param string              $rotation       Rotation that contains the slide.
- * @param mixed               $slot           Slot index.
- * @param string              $outer_rotation Outer rotation when this rotation sits in a slot.
- * @param mixed               $outer_slot     Slot of the outer rotation.
- * @param string              $ad             Ad id.
- * @param array<string,mixed> $changes        Received changes.
- * @param bool                $external       True when a string is sent to an API.
- * @param string[]            $items          Product identifiers the slide was showing.
  * @return void
  */
-function adzworld_logs_record_response( $rotation, $slot, $outer_rotation, $outer_slot, $ad, $changes, $external, $items = array() ) {
-	$ad = adzworld_logs_ad_id( $ad );
-
-	if ( '' === $ad || ! is_array( $changes ) ) {
-		return;
+function adzworld_logs_schedule_cleanup() {
+	if ( ! wp_next_scheduled( ADZWORLD_LOGS_CLEANUP_HOOK ) ) {
+		wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', ADZWORLD_LOGS_CLEANUP_HOOK );
 	}
-
-	$place = adzworld_logs_place( $rotation, $slot, $outer_rotation, $outer_slot );
-
-	if ( '' === $place['rotation'] || (int) $place['slot'] < 1 ) {
-		return;
-	}
-
-	if ( isset( $place['inner_slot'] ) && (int) $place['inner_slot'] < 1 ) {
-		return;
-	}
-
-	adzworld_logs_remember_response( $place, $ad, $changes, (bool) $external, $items );
 }
+add_action( 'init', 'adzworld_logs_schedule_cleanup' );
 
 /**
- * Print one labeled value.
+ * Stop the daily cleanup when the plugin is deactivated.
  *
- * @param string $label Label.
- * @param string $value Value.
  * @return void
  */
-function adzworld_logs_echo_pair( $label, $value ) {
-	if ( '' === (string) $value ) {
-		return;
-	}
-
-	echo '<p class="adzworld-log-k">' . esc_html( $label ) . '</p>';
-	echo '<p class="adzworld-log-v">' . esc_html( (string) $value ) . '</p>';
+function adzworld_logs_unschedule_cleanup() {
+	wp_clear_scheduled_hook( ADZWORLD_LOGS_CLEANUP_HOOK );
 }
+register_deactivation_hook( dirname( __DIR__ ) . '/adz-world.php', 'adzworld_logs_unschedule_cleanup' );
+
+/*
+ * ---------------------------------------------------------------------------
+ * Administrator actions
+ * ---------------------------------------------------------------------------
+ */
 
 /**
- * Print one chat turn.
+ * Save AdzLogs settings.
  *
- * @param array<string,mixed> $row Sanitized row.
  * @return void
  */
-function adzworld_logs_echo_turn( $row ) {
-	$rating = is_int( $row['rating'] ) ? (string) $row['rating'] : '';
-
-	echo '<div class="adzworld-log-turn">';
-	echo '<div class="adzworld-log-served">';
-	echo '<p class="adzworld-log-ad">' . esc_html( adzworld_logs_ad_shown( $row ) ) . '</p>';
-	if ( '' !== (string) $row['holds'] ) {
-		adzworld_logs_echo_pair(
-			sprintf(
-				/* translators: %s: rotation shown in this slot. */
-				__( 'Slot in %s', 'adz-world' ),
-				(string) $row['holds']
-			),
-			(string) (int) $row['inner_slot']
-		);
-	}
-	echo '<p class="adzworld-log-mts">' . esc_html( (string) $row['mts'] ) . '</p>';
-	echo '</div>';
-
-	echo '<div class="adzworld-log-request">';
-	adzworld_logs_echo_pair( __( 'Configured', 'adz-world' ), (string) $row['configured'] );
-	if ( '' !== (string) $row['items'] && 0 === strpos( (string) $row['ad'], 'source-' ) ) {
-		adzworld_logs_echo_pair( __( 'Served by', 'adz-world' ), substr( (string) $row['ad'], strlen( 'source-' ) ) );
-	}
-	adzworld_logs_echo_pair( __( 'Category', 'adz-world' ), (string) $row['category'] );
-	adzworld_logs_echo_pair( __( 'Rating', 'adz-world' ), $rating );
-	adzworld_logs_echo_pair( __( 'Refinements', 'adz-world' ), (string) $row['refinements'] );
-
-	if ( ! empty( $row['responded'] ) ) {
-		$rating_change = is_int( $row['rating_change'] ) ? (string) $row['rating_change'] : '';
-		echo '<div class="adzworld-log-response">';
-		echo '<p class="adzworld-log-k">' . esc_html__( 'Response', 'adz-world' ) . '</p>';
-		adzworld_logs_echo_pair( __( 'Change to category', 'adz-world' ), (string) $row['category_change'] );
-		adzworld_logs_echo_pair( __( 'Change to rating', 'adz-world' ), $rating_change );
-		adzworld_logs_echo_pair( __( 'Change to refinement', 'adz-world' ), (string) $row['refinement_change'] );
-		if ( ! empty( $row['logged'] ) ) {
-			echo '<p class="adzworld-log-v">' . esc_html__( 'Logged to the site.', 'adz-world' ) . '</p>';
-		} elseif ( '' !== (string) $row['sent_string'] ) {
-			adzworld_logs_echo_pair( __( 'Sent', 'adz-world' ), (string) $row['sent_string'] );
-		}
-		echo '</div>';
+function adzworld_logs_save_settings() {
+	check_admin_referer( 'adzworld_logs_settings', 'adzworld_logs_nonce' );
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( esc_html__( 'Administrator permission is required.', 'adz-world' ), '', array( 'response' => 403 ) );
 	}
 
-	echo '</div></div>';
-}
+	$days = isset( $_POST['adzworld_logs_days'] ) && is_scalar( $_POST['adzworld_logs_days'] ) ? absint( wp_unslash( $_POST['adzworld_logs_days'] ) ) : 0;
+	$max  = isset( $_POST['adzworld_logs_max'] ) && is_scalar( $_POST['adzworld_logs_max'] ) ? absint( wp_unslash( $_POST['adzworld_logs_max'] ) ) : 0;
+	update_option(
+		ADZWORLD_LOGS_OPTION,
+		array(
+			'days' => $days,
+			'max'  => $max,
+		),
+		false
+	);
+	update_option( ADZWORLD_PROFILE_SAVING_OPTION, isset( $_POST['adzworld_profile_saving'] ) ? '1' : '0', false );
+	adzworld_logs_cleanup();
 
-/**
- * Sentence for a rejected from/to pair.
- *
- * @param string $error Bound error key.
- * @return string
- */
-function adzworld_logs_bounds_message( $error ) {
-	if ( 'order' === $error ) {
-		return __( 'The first Michel Time Stamp is later than the second.', 'adz-world' );
-	}
-
-	if ( 'both' === $error ) {
-		return __( 'Archive uses two full Michel Time Stamps.', 'adz-world' );
-	}
-
-	return __( 'Use the full Michel Time Stamp through seconds.', 'adz-world' );
-}
-
-/**
- * Send the range as a text file. An empty bound exports the whole log.
- *
- * @param string $from Full stamp, or empty.
- * @param string $to   Full stamp, or empty.
- * @return void
- */
-function adzworld_logs_send_export( $from, $to ) {
-	$text = adzworld_logs_export_text( adzworld_logs_range( adzworld_logs_rows(), $from, $to ) );
-
-	nocache_headers();
-	header( 'Content-Type: text/plain; charset=utf-8' );
-	header( 'Content-Disposition: attachment; filename="adzlogs.txt"' );
-	file_put_contents( 'php://output', $text );
+	set_transient( 'adzworld_logs_notice_' . get_current_user_id(), __( 'AdzLogs settings saved.', 'adz-world' ), MINUTE_IN_SECONDS );
+	wp_safe_redirect( adzworld_desk_url( 'logs' ) );
 	exit;
 }
+add_action( 'admin_post_adzworld_logs_settings', 'adzworld_logs_save_settings' );
 
 /**
- * AdzLogs screen. Rotations are the accordion bands.
+ * Delete selected journeys, or every journey.
+ *
+ * @return void
+ */
+function adzworld_logs_delete() {
+	check_admin_referer( 'adzworld_logs_delete', 'adzworld_logs_delete_nonce' );
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( esc_html__( 'Administrator permission is required.', 'adz-world' ), '', array( 'response' => 403 ) );
+	}
+
+	$deleted = 0;
+	if ( isset( $_POST['adzworld_logs_delete_all'] ) ) {
+		do {
+			$batch = get_posts(
+				array(
+					'post_type'        => ADZWORLD_JOURNEY_POST_TYPE,
+					'post_status'      => 'private',
+					'numberposts'      => ADZWORLD_LOGS_CLEANUP_BATCH,
+					'fields'           => 'ids',
+					'suppress_filters' => false,
+				)
+			);
+			foreach ( $batch as $post_id ) {
+				$deleted += wp_delete_post( (int) $post_id, true ) ? 1 : 0;
+			}
+			$more = ADZWORLD_LOGS_CLEANUP_BATCH === count( $batch );
+		} while ( $more );
+	} else {
+		$ids = isset( $_POST['adzworld_journeys'] ) && is_array( $_POST['adzworld_journeys'] )
+			? array_map( 'absint', wp_unslash( $_POST['adzworld_journeys'] ) )
+			: array();
+		foreach ( $ids as $post_id ) {
+			if ( ADZWORLD_JOURNEY_POST_TYPE === get_post_type( $post_id ) ) {
+				$deleted += wp_delete_post( $post_id, true ) ? 1 : 0;
+			}
+		}
+	}
+
+	set_transient(
+		'adzworld_logs_notice_' . get_current_user_id(),
+		sprintf(
+			/* translators: %d: number of journeys deleted. */
+			_n( '%d journey deleted.', '%d journeys deleted.', $deleted, 'adz-world' ),
+			$deleted
+		),
+		MINUTE_IN_SECONDS
+	);
+	wp_safe_redirect( adzworld_desk_url( 'logs' ) );
+	exit;
+}
+add_action( 'admin_post_adzworld_logs_delete', 'adzworld_logs_delete' );
+
+/**
+ * Load the confirmation script on AdzLogs and on profile screens.
+ *
+ * @param string $hook_suffix Current administrator screen.
+ * @return void
+ */
+function adzworld_logs_admin_assets( $hook_suffix ) {
+	$on_logs    = function_exists( 'adzworld_desk_tab' ) && 'logs' === adzworld_desk_tab();
+	$on_profile = in_array( $hook_suffix, array( 'profile.php', 'user-edit.php' ), true );
+	if ( ! $on_logs && ! $on_profile ) {
+		return;
+	}
+
+	$path = dirname( __DIR__ ) . '/assets/admin-confirm.js';
+	wp_enqueue_script(
+		'adzworld-admin-confirm',
+		plugins_url( 'assets/admin-confirm.js', dirname( __DIR__ ) . '/adz-world.php' ),
+		array(),
+		(string) filemtime( $path ),
+		true
+	);
+}
+add_action( 'admin_enqueue_scripts', 'adzworld_logs_admin_assets' );
+
+/*
+ * ---------------------------------------------------------------------------
+ * The AdzLogs tab
+ * ---------------------------------------------------------------------------
+ */
+
+/**
+ * The Michel Time Stamp at the start of a session identifier.
+ *
+ * @param string $key Session identifier.
+ * @return string
+ */
+function adzworld_journey_started( $key ) {
+	return (string) preg_replace( '/-[a-z0-9]{5}$/D', '', $key );
+}
+
+/**
+ * The time of day of one event, in the Michel Time Stamp style.
+ *
+ * @param int $time Unix time.
+ * @return string For example UTC13h-37m-12s.
+ */
+function adzworld_journey_time( $time ) {
+	return 'UTC' . gmdate( 'H', $time ) . 'h-' . gmdate( 'i', $time ) . 'm-' . gmdate( 's', $time ) . 's';
+}
+
+/**
+ * A readable name for one adz identifier.
+ *
+ * @param string $ad Adz identifier.
+ * @return string
+ */
+function adzworld_journey_ad_label( $ad ) {
+	if ( 'hub' === $ad ) {
+		return __( 'adz hub', 'adz-world' );
+	}
+	if ( preg_match( '/^ad-([1-9][0-9]*)$/D', $ad, $match ) ) {
+		$title = get_the_title( (int) $match[1] );
+		return '' !== $title ? 'ad:' . $match[1] . ' · ' . $title : 'ad:' . $match[1];
+	}
+	if ( preg_match( '/^source-(.+)$/D', $ad, $match ) ) {
+		return 'source:' . $match[1];
+	}
+	if ( preg_match( '/^provider-([a-z0-9_]+)-(.+)$/D', $ad, $match ) ) {
+		return $match[1] . ':' . $match[2];
+	}
+
+	return $ad;
+}
+
+/**
+ * Where an event happened, as one line.
+ *
+ * @param array $event Stored event.
+ * @return string
+ */
+function adzworld_journey_where( $event ) {
+	$parts = array();
+	if ( ! empty( $event['rotation'] ) ) {
+		$rotations = adzworld_named_rotations();
+		$parts[]   = isset( $rotations[ $event['rotation'] ] ) ? $rotations[ $event['rotation'] ]['name'] : $event['rotation'];
+	}
+	if ( ! empty( $event['slot'] ) ) {
+		$parts[] = sprintf(
+			/* translators: %d: slot number, starting at 1. */
+			__( 'Slot %d', 'adz-world' ),
+			(int) $event['slot']
+		);
+	}
+
+	return implode( ' · ', $parts );
+}
+
+/**
+ * Text of one reader event.
+ *
+ * @param array $event Stored event.
+ * @return string
+ */
+function adzworld_journey_event_text( $event ) {
+	$from     = isset( $event['from'] ) ? (string) $event['from'] : '';
+	$to       = isset( $event['to'] ) ? (string) $event['to'] : '';
+	$category = isset( $event['category'] ) ? (string) $event['category'] : '';
+	$action   = isset( $event['action'] ) ? (string) $event['action'] : '';
+	$type     = isset( $event['type'] ) ? (string) $event['type'] : '';
+
+	if ( 'rating' === $type ) {
+		$text = sprintf(
+			/* translators: 1: score from -100 to 100, 2: words of the ratings band. */
+			__( 'Rating: %1$d · %2$s', 'adz-world' ),
+			isset( $event['score'] ) ? (int) $event['score'] : 0,
+			isset( $event['label'] ) ? (string) $event['label'] : ''
+		);
+		if ( isset( $event['previous'] ) && '' !== (string) $event['previous'] ) {
+			$text .= ' ' . sprintf(
+				/* translators: %d: previous score. */
+				__( '(was %d)', 'adz-world' ),
+				(int) $event['previous']
+			);
+		}
+		return $text;
+	}
+
+	if ( 'category' === $type ) {
+		$texts = array(
+			/* translators: 1: earlier category, 2: new category. */
+			'renamed'    => sprintf( __( 'Category changed: “%1$s” → “%2$s”', 'adz-world' ), $from, $to ),
+			/* translators: %s: category. */
+			'selected'   => sprintf( __( 'Category selected: “%s”', 'adz-world' ), $to ),
+			/* translators: %s: category. */
+			'removed'    => sprintf( __( 'Category removed: “%s”', 'adz-world' ), $from ),
+			/* translators: %s: category. */
+			'slot_added' => sprintf( __( 'Asked for another adz slot for “%s”', 'adz-world' ), $to ),
+			/* translators: %s: category. */
+			'added'      => sprintf( __( 'Category added: “%s”', 'adz-world' ), $to ),
+		);
+		return isset( $texts[ $action ] ) ? $texts[ $action ] : $texts['added'];
+	}
+
+	if ( 'refinement' === $type ) {
+		$texts = array(
+			/* translators: 1: category, 2: earlier refinement, 3: new refinement. */
+			'edited'  => sprintf( __( 'Refinement changed in “%1$s”: “%2$s” → “%3$s”', 'adz-world' ), $category, $from, $to ),
+			/* translators: 1: category, 2: refinement. */
+			'removed' => sprintf( __( 'Refinement removed from “%1$s”: “%2$s”', 'adz-world' ), $category, $from ),
+			/* translators: 1: category, 2: refinement. */
+			'added'   => sprintf( __( 'Refinement added to “%1$s”: “%2$s”', 'adz-world' ), $category, $to ),
+		);
+		return isset( $texts[ $action ] ) ? $texts[ $action ] : $texts['added'];
+	}
+
+	if ( 'removed' === $type ) {
+		/* translators: %s: removed preference. */
+		return sprintf( __( 'Removed: “%s”', 'adz-world' ), $from );
+	}
+
+	if ( 'forget' === $type ) {
+		return __( 'Asked to forget every preference', 'adz-world' );
+	}
+
+	return '';
+}
+
+/**
+ * Render one event as a chat line.
+ *
+ * Adz speak on the left; the reader speaks on the right.
+ *
+ * @param array $event Stored event.
+ * @return void
+ */
+function adzworld_journey_render_event( $event ) {
+	$type = isset( $event['type'] ) ? (string) $event['type'] : '';
+	$time = isset( $event['time'] ) ? adzworld_journey_time( (int) $event['time'] ) : '';
+
+	if ( 'ad' === $type ) {
+		echo '<div class="adzworld-msg adzworld-msg--adz"><div class="adzworld-msg__meta"><span class="adzworld-msg__who">' . esc_html__( 'adz', 'adz-world' ) . '</span> · '
+			. esc_html( $time ) . '</div><div class="adzworld-msg__body"><span class="adzworld-msg__label">' . esc_html__( 'Adz engaged with', 'adz-world' ) . '</span> '
+			. '<code class="adzworld-msg__id">' . esc_html( adzworld_journey_ad_label( isset( $event['ad'] ) ? (string) $event['ad'] : '' ) ) . '</code></div></div>';
+		return;
+	}
+	if ( 'response' === $type ) {
+		echo '<div class="adzworld-msg adzworld-msg--adz adzworld-msg--response"><div class="adzworld-msg__meta"><span class="adzworld-msg__who">' . esc_html__( 'adz', 'adz-world' ) . '</span> · '
+			. esc_html( $time ) . '</div><div class="adzworld-msg__body">' . esc_html( isset( $event['text'] ) ? (string) $event['text'] : '' ) . '</div></div>';
+		return;
+	}
+
+	echo '<div class="adzworld-msg adzworld-msg--reader"><div class="adzworld-msg__meta">' . esc_html( $time ) . ' · <span class="adzworld-msg__who">'
+		. esc_html__( 'reader', 'adz-world' ) . '</span></div><div class="adzworld-msg__body">' . esc_html( adzworld_journey_event_text( $event ) ) . '</div></div>';
+}
+
+/**
+ * Whether an event is something the reader did.
+ *
+ * @param mixed $event Stored event.
+ * @return bool
+ */
+function adzworld_journey_is_reader_event( $event ) {
+	return is_array( $event ) && isset( $event['type'] ) && ! in_array( $event['type'], array( 'ad', 'response' ), true );
+}
+
+/**
+ * Render one journey as an expandable card.
+ *
+ * @param WP_Post $journey Journey post.
+ * @return void
+ */
+function adzworld_journey_render( $journey ) {
+	$events  = array_values( array_filter( get_post_meta( $journey->ID, ADZWORLD_JOURNEY_EVENT_META, false ), 'is_array' ) );
+	$actions = array_values( array_filter( $events, 'adzworld_journey_is_reader_event' ) );
+	$latest  = empty( $actions ) ? '' : adzworld_journey_event_text( $actions[ count( $actions ) - 1 ] );
+	$key     = $journey->post_title;
+	$reader  = __( 'Session', 'adz-world' );
+	if ( (int) $journey->post_author > 0 ) {
+		$user   = get_userdata( (int) $journey->post_author );
+		$reader = $user
+			? sprintf(
+				/* translators: %s: reader's display name. */
+				__( 'Profile: %s', 'adz-world' ),
+				$user->display_name
+			)
+			: __( 'Profile', 'adz-world' );
+	}
+
+	echo '<div class="adzworld-journey-row"><input type="checkbox" class="adzworld-journey-row__select" form="adzworld-logs-delete" name="adzworld_journeys[]" value="' . esc_attr( (string) $journey->ID ) . '" aria-label="'
+		. esc_attr(
+			sprintf(
+				/* translators: %s: session identifier. */
+				__( 'Select journey %s', 'adz-world' ),
+				$key
+			)
+		) . '">';
+	echo '<details class="adzworld-journey"><summary class="adzworld-journey__head"><span class="adzworld-journey__chevron" aria-hidden="true">&#9656;</span>'
+		. '<span class="adzworld-journey__title">' . esc_html( adzworld_journey_started( $key ) ) . '</span>'
+		. '<code class="adzworld-journey__id">' . esc_html( (string) substr( $key, -5 ) ) . '</code>'
+		. '<span class="adzworld-journey__meta">' . esc_html( $reader ) . ' · ' . esc_html(
+			sprintf(
+				/* translators: %d: number of reader actions. */
+				_n( '%d action', '%d actions', count( $actions ), 'adz-world' ),
+				count( $actions )
+			)
+		) . '</span>'
+		. '<span class="adzworld-journey__preview">' . esc_html( $latest ) . '</span></summary>';
+	echo '<div class="adzworld-journey__body">';
+
+	$where = '';
+	foreach ( $events as $event ) {
+		$here = adzworld_journey_where( $event );
+		if ( isset( $event['type'] ) && 'ad' === $event['type'] && '' !== $here && $here !== $where ) {
+			echo '<div class="adzworld-msg-state"><span class="adzworld-msg-state__rule"></span><span class="adzworld-msg-state__label">' . esc_html( $here ) . '</span><span class="adzworld-msg-state__rule"></span></div>';
+			$where = $here;
+		}
+		adzworld_journey_render_event( $event );
+	}
+	echo '</div></details></div>';
+}
+
+/**
+ * Render the AdzLogs tab.
  *
  * @return void
  */
@@ -1215,110 +739,299 @@ function adzworld_logs_page() {
 		wp_die( esc_html__( 'Administrator permission is required.', 'adz-world' ), '', array( 'response' => 403 ) );
 	}
 
-	$notice = '';
+	$notice = 'adzworld_logs_notice_' . get_current_user_id();
+	if ( get_transient( $notice ) ) {
+		echo '<div class="notice notice-success"><p>' . esc_html( get_transient( $notice ) ) . '</p></div>';
+		delete_transient( $notice );
+	}
 
-	if ( isset( $_POST['adzworld_logs_action'] ) ) {
-		check_admin_referer( 'adzworld_logs' );
+	$page  = filter_input( INPUT_GET, 'paged', FILTER_VALIDATE_INT );
+	$page  = is_int( $page ) && $page > 0 ? $page : 1;
+	$query = new WP_Query(
+		array(
+			'post_type'      => ADZWORLD_JOURNEY_POST_TYPE,
+			'post_status'    => 'private',
+			'posts_per_page' => ADZWORLD_LOGS_PER_PAGE,
+			'paged'          => $page,
+			'orderby'        => 'date',
+			'order'          => 'DESC',
+		)
+	);
 
-		$action   = sanitize_key( wp_unslash( $_POST['adzworld_logs_action'] ) );
-		$from_raw = isset( $_POST['adzworld_logs_from'] ) && is_string( $_POST['adzworld_logs_from'] ) ? sanitize_text_field( wp_unslash( $_POST['adzworld_logs_from'] ) ) : '';
-		$to_raw   = isset( $_POST['adzworld_logs_to'] ) && is_string( $_POST['adzworld_logs_to'] ) ? sanitize_text_field( wp_unslash( $_POST['adzworld_logs_to'] ) ) : '';
-		$archive  = ( 'archive' === $action );
-		$bounds   = adzworld_logs_bounds( $from_raw, $to_raw, $archive );
+	echo '<div class="adzworld-logs">';
+	echo '<div class="adzworld-logs__toolbar"><h2>' . esc_html__( 'AdzLogs', 'adz-world' ) . '</h2><span class="adzworld-logs__count">' . esc_html(
+		sprintf(
+			/* translators: %d: number of journeys. */
+			_n( '%d journey', '%d journeys', (int) $query->found_posts, 'adz-world' ),
+			(int) $query->found_posts
+		)
+	) . '</span></div>';
+	echo '<p class="description">' . esc_html__( 'Each journey begins at the Michel Time Stamp of a reader’s first action. Adz are on the left, the reader on the right. Adz that readers only look at are never recorded.', 'adz-world' ) . '</p>';
 
-		if ( '' !== $bounds['error'] ) {
-			$notice = adzworld_logs_bounds_message( $bounds['error'] );
-		} elseif ( 'export' === $action ) {
-			adzworld_logs_send_export( $bounds['from'], $bounds['to'] );
-		} elseif ( $archive ) {
-			$keep  = array();
-			$count = 0;
-
-			foreach ( adzworld_logs_rows() as $row ) {
-				$mts = isset( $row['mts'] ) ? (string) $row['mts'] : '';
-				if ( adzworld_logs_in_range( $mts, $bounds['from'], $bounds['to'] ) ) {
-					++$count;
-					continue;
-				}
-				$keep[] = $row;
-			}
-
-			adzworld_logs_save( $keep );
-			wp_safe_redirect( add_query_arg( 'archived', (string) $count, admin_url( 'admin.php?page=adzworld-logs' ) ) );
-			exit;
+	if ( ! $query->have_posts() ) {
+		echo '<p class="adzworld-logs__empty">' . esc_html__( 'No journeys yet. A journey appears after a reader rates an adzad, refines it, or chooses a category.', 'adz-world' ) . '</p>';
+	} else {
+		echo '<form id="adzworld-logs-delete" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="adzworld_logs_delete">';
+		wp_nonce_field( 'adzworld_logs_delete', 'adzworld_logs_delete_nonce' );
+		echo '</form><div class="adzworld-logs__list">';
+		foreach ( $query->posts as $journey ) {
+			adzworld_journey_render( $journey );
+		}
+		echo '</div><p class="adzworld-logs__actions"><button type="submit" class="button" form="adzworld-logs-delete">' . esc_html__( 'Delete selected journeys', 'adz-world' ) . '</button> '
+			. '<button type="submit" class="button button-link-delete" form="adzworld-logs-delete" name="adzworld_logs_delete_all" value="1" data-adzworld-confirm="'
+			. esc_attr__( 'Delete every journey? This cannot be undone.', 'adz-world' ) . '">' . esc_html__( 'Delete all journeys', 'adz-world' ) . '</button></p>';
+		$links = paginate_links(
+			array(
+				'base'    => add_query_arg( 'paged', '%#%', adzworld_desk_url( 'logs' ) ),
+				'format'  => '',
+				'current' => $page,
+				'total'   => (int) $query->max_num_pages,
+			)
+		);
+		if ( $links ) {
+			echo '<nav class="adzworld-logs__pages" aria-label="' . esc_attr__( 'Journey pages', 'adz-world' ) . '">' . wp_kses_post( $links ) . '</nav>';
 		}
 	}
 
-	$groups  = adzworld_logs_by_rotation( adzworld_logs_rows() );
-	$example = '2026y-11m-14d-UTC22h-05m-09s';
+	adzworld_logs_settings_form();
+	echo '</div>';
+}
 
-	echo '<div class="wrap">';
-	echo '<h1>' . esc_html__( 'AdzLogs', 'adz-world' ) . '</h1>';
+/**
+ * Render the AdzLogs settings form.
+ *
+ * @return void
+ */
+function adzworld_logs_settings_form() {
+	$settings = adzworld_logs_settings();
+	$enabled  = adzworld_profile_saving_enabled();
+	$confirm  = __( 'Readers who chose to keep adz requests on their profile will have that choice overridden. Are you sure?', 'adz-world' );
 
-	if ( isset( $_GET['archived'] ) ) {
-		echo '<div class="notice notice-success"><p>' . esc_html(
-			sprintf(
-				/* translators: %d: number of archived events. */
-				__( 'Archived %d events.', 'adz-world' ),
-				absint( wp_unslash( $_GET['archived'] ) )
-			)
-		) . '</p></div>';
-	}
+	echo '<section class="adzworld-logs__settings"><h2>' . esc_html__( 'AdzLogs settings', 'adz-world' ) . '</h2>';
+	echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="adzworld_logs_settings">';
+	wp_nonce_field( 'adzworld_logs_settings', 'adzworld_logs_nonce' );
+	echo '<table class="form-table" role="presentation"><tbody>';
+	echo '<tr><th scope="row"><label for="adzworld-logs-days">' . esc_html__( 'Keep journeys for', 'adz-world' ) . '</label></th><td>'
+		. '<input class="small-text" type="number" min="0" step="1" id="adzworld-logs-days" name="adzworld_logs_days" value="' . esc_attr( (string) $settings['days'] ) . '"> '
+		. esc_html__( 'days', 'adz-world' ) . '<p class="description">' . esc_html__( '0 keeps journeys until you delete them. Older journeys are deleted once a day.', 'adz-world' ) . '</p></td></tr>';
+	echo '<tr><th scope="row"><label for="adzworld-logs-max">' . esc_html__( 'Keep at most', 'adz-world' ) . '</label></th><td>'
+		. '<input class="small-text" type="number" min="0" step="1" id="adzworld-logs-max" name="adzworld_logs_max" value="' . esc_attr( (string) $settings['max'] ) . '"> '
+		. esc_html__( 'journeys', 'adz-world' ) . '<p class="description">' . esc_html__( '0 means no limit. When there are more, the oldest are deleted first. This keeps the database from growing on busy sites.', 'adz-world' ) . '</p></td></tr>';
+	echo '<tr><th scope="row">' . esc_html__( 'Profiles', 'adz-world' ) . '</th><td><label><input type="checkbox" name="adzworld_profile_saving" value="1"' . checked( $enabled, true, false )
+		. ( $enabled ? ' data-adzworld-confirm-unchecked="' . esc_attr( $confirm ) . '"' : '' ) . '> '
+		. esc_html__( 'When a reader has a profile, let them save adz requests with it', 'adz-world' ) . '</label><p class="description">'
+		. esc_html__( 'Each reader still decides for themselves on their profile page. Readers who do not choose it keep adz requests only for their browser session.', 'adz-world' ) . '</p></td></tr>';
+	echo '</tbody></table>';
+	submit_button( __( 'Save AdzLogs settings', 'adz-world' ), 'secondary', 'submit', false );
+	echo '</form></section>';
+}
 
-	if ( '' !== $notice ) {
-		echo '<div class="notice notice-error"><p>' . esc_html( $notice ) . '</p></div>';
-	}
+/*
+ * ---------------------------------------------------------------------------
+ * The reader's own choice, on their profile page
+ * ---------------------------------------------------------------------------
+ */
 
-	echo '<form method="post" class="adzworld-log-range">';
-	wp_nonce_field( 'adzworld_logs' );
-	echo '<p>';
-	echo '<label for="adzworld-logs-from">' . esc_html__( 'From', 'adz-world' ) . '</label> ';
-	echo '<input type="text" class="regular-text" id="adzworld-logs-from" name="adzworld_logs_from" value="" placeholder="' . esc_attr( $example ) . '" /> ';
-	echo '<label for="adzworld-logs-to">' . esc_html__( 'To', 'adz-world' ) . '</label> ';
-	echo '<input type="text" class="regular-text" id="adzworld-logs-to" name="adzworld_logs_to" value="" placeholder="' . esc_attr( $example ) . '" /> ';
-	echo '<button type="submit" class="button" name="adzworld_logs_action" value="export">' . esc_html__( 'Export', 'adz-world' ) . '</button> ';
-	echo '<button type="submit" class="button" name="adzworld_logs_action" value="archive">' . esc_html__( 'Archive', 'adz-world' ) . '</button>';
-	echo '</p></form>';
-
-	if ( empty( $groups ) ) {
-		echo '<p>' . esc_html__( 'No adz have been logged.', 'adz-world' ) . '</p></div>';
+/**
+ * Render the profile-saving choice on a profile page.
+ *
+ * When an adzadmin edits another reader's profile, changing the choice asks
+ * for confirmation, because the choice belongs to that reader.
+ *
+ * @param WP_User $user Profile being edited.
+ * @return void
+ */
+function adzworld_profile_consent_field( $user ) {
+	if ( ! adzworld_profile_saving_enabled() ) {
 		return;
 	}
 
-	foreach ( $groups as $group ) {
-		echo '<details class="adzworld-log-rotation">';
-		echo '<summary>' . esc_html( $group['rotation'] ) . '</summary>';
+	$own     = get_current_user_id() === (int) $user->ID;
+	$confirm = $own ? '' : __( 'This reader made this choice for themselves. Change it anyway?', 'adz-world' );
 
-		foreach ( $group['slots'] as $pack ) {
-			echo '<details class="adzworld-log-slot">';
-			if ( '' !== $pack['holds'] ) {
-				echo '<summary>' . esc_html(
-					sprintf(
-						/* translators: 1: slot number, 2: rotation shown in that slot. */
-						__( 'Slot %1$d, showed %2$s', 'adz-world' ),
-						(int) $pack['slot'],
-						$pack['holds']
-					)
-				) . '</summary>';
-			} else {
-				echo '<summary>' . esc_html(
-					sprintf(
-						/* translators: %d: slot number in the rotation. */
-						__( 'Slot %d', 'adz-world' ),
-						(int) $pack['slot']
-					)
-				) . '</summary>';
-			}
+	echo '<h2 id="adzworld-profile">' . esc_html( ADZWORLD_NAME ) . '</h2><table class="form-table" role="presentation"><tbody><tr><th scope="row">'
+		. esc_html__( 'Adz requests', 'adz-world' ) . '</th><td>';
+	wp_nonce_field( ADZWORLD_PROFILE_CONSENT_NONCE, 'adzworld_profile_consent_nonce' );
+	echo '<label><input type="checkbox" name="adzworld_save_with_profile" value="1"' . checked( adzworld_profile_consent( (int) $user->ID ), true, false )
+		. ( '' !== $confirm ? ' data-adzworld-confirm-change="' . esc_attr( $confirm ) . '"' : '' ) . '> '
+		. esc_html__( 'Save my adz requests with my profile', 'adz-world' ) . '</label><p class="description">'
+		. esc_html__( 'When this is on, the categories, refinements and ratings you give adz are kept with your profile on this site, and your adz journeys are attached to it. When it is off, they last only for your browser session. Turning it off deletes what was kept on your profile.', 'adz-world' )
+		. '</p></td></tr></tbody></table>';
+}
+add_action( 'show_user_profile', 'adzworld_profile_consent_field' );
+add_action( 'edit_user_profile', 'adzworld_profile_consent_field' );
 
-			echo '<div class="adzworld-log-chat">';
-			foreach ( $pack['rows'] as $row ) {
-				adzworld_logs_echo_turn( $row );
-			}
-			echo '</div></details>';
-		}
-
-		echo '</details>';
+/**
+ * Save the profile-saving choice.
+ *
+ * @param int $user_id Profile being saved.
+ * @return void
+ */
+function adzworld_profile_consent_save( $user_id ) {
+	$nonce = isset( $_POST['adzworld_profile_consent_nonce'] ) && is_string( $_POST['adzworld_profile_consent_nonce'] )
+		? sanitize_text_field( wp_unslash( $_POST['adzworld_profile_consent_nonce'] ) ) : '';
+	if ( ! wp_verify_nonce( $nonce, ADZWORLD_PROFILE_CONSENT_NONCE ) || ! current_user_can( 'edit_user', $user_id ) ) {
+		return;
 	}
 
-	echo '</div>';
+	if ( isset( $_POST['adzworld_save_with_profile'] ) ) {
+		update_user_meta( $user_id, ADZWORLD_PROFILE_CONSENT_META, '1' );
+		return;
+	}
+
+	delete_user_meta( $user_id, ADZWORLD_PROFILE_CONSENT_META );
+	delete_user_meta( $user_id, ADZWORLD_PREFERENCE_META );
+	delete_user_meta( $user_id, ADZWORLD_FEEDBACK_META );
+}
+add_action( 'personal_options_update', 'adzworld_profile_consent_save' );
+add_action( 'edit_user_profile_update', 'adzworld_profile_consent_save' );
+
+/*
+ * ---------------------------------------------------------------------------
+ * Privacy
+ * ---------------------------------------------------------------------------
+ */
+
+/**
+ * Suggest privacy-policy text describing what AdzLogs keep.
+ *
+ * @return void
+ */
+function adzworld_logs_privacy_policy() {
+	if ( ! function_exists( 'wp_add_privacy_policy_content' ) ) {
+		return;
+	}
+
+	$content = '<p>' . esc_html__( 'Adz on this site record nothing about a reader who only looks at them. When a reader rates an adzad, refines it, or chooses a category, the site starts a browser session named by the time of that first action and five random characters. It keeps a journey of those actions: which rotation and slot, which adzad, the rating, and the words the reader entered. No IP address, name or email address is kept in it.', 'adz-world' ) . '</p>'
+		. '<p>' . esc_html__( 'A signed-in reader may choose on their profile page to keep adz requests with their profile. Only then are their preferences and journeys attached to their account. Journeys are deleted after the number of days the site owner sets.', 'adz-world' ) . '</p>';
+	wp_add_privacy_policy_content( ADZWORLD_NAME, wp_kses_post( $content ) );
+}
+add_action( 'admin_init', 'adzworld_logs_privacy_policy' );
+
+/**
+ * Journeys attached to one account.
+ *
+ * @param int $user_id WordPress user ID.
+ * @return int[] Post IDs.
+ */
+function adzworld_profile_journeys( $user_id ) {
+	return array_map(
+		'intval',
+		get_posts(
+			array(
+				'post_type'        => ADZWORLD_JOURNEY_POST_TYPE,
+				'post_status'      => 'private',
+				'author'           => $user_id,
+				'numberposts'      => ADZWORLD_LOGS_CLEANUP_BATCH,
+				'fields'           => 'ids',
+				'suppress_filters' => false,
+			)
+		)
+	);
+}
+
+/**
+ * Register the AdzLogs personal-data exporter.
+ *
+ * @param array $exporters Registered exporters.
+ * @return array
+ */
+function adzworld_register_privacy_exporter( $exporters ) {
+	$exporters['adz-world'] = array(
+		'exporter_friendly_name' => ADZWORLD_NAME,
+		'callback'               => 'adzworld_privacy_export',
+	);
+
+	return $exporters;
+}
+add_filter( 'wp_privacy_personal_data_exporters', 'adzworld_register_privacy_exporter' );
+
+/**
+ * Export one account's adz journeys.
+ *
+ * @param string $email Account email address.
+ * @return array{data:array,done:bool}
+ */
+function adzworld_privacy_export( $email ) {
+	$user = get_user_by( 'email', $email );
+	$data = array();
+	if ( $user ) {
+		foreach ( adzworld_profile_journeys( (int) $user->ID ) as $post_id ) {
+			$lines = array();
+			foreach ( get_post_meta( $post_id, ADZWORLD_JOURNEY_EVENT_META, false ) as $event ) {
+				if ( ! is_array( $event ) || ! isset( $event['type'] ) ) {
+					continue;
+				}
+				$time    = isset( $event['time'] ) ? adzworld_journey_time( (int) $event['time'] ) : '';
+				$text    = 'ad' === $event['type'] && isset( $event['ad'] ) ? adzworld_journey_ad_label( (string) $event['ad'] ) : adzworld_journey_event_text( $event );
+				$lines[] = $time . ' ' . $text;
+			}
+			$data[] = array(
+				'group_id'    => 'adz-world-journeys',
+				'group_label' => __( 'Adz journeys', 'adz-world' ),
+				'item_id'     => 'adz-world-journey-' . $post_id,
+				'data'        => array(
+					array(
+						'name'  => __( 'Journey', 'adz-world' ),
+						'value' => get_the_title( $post_id ),
+					),
+					array(
+						'name'  => __( 'Actions', 'adz-world' ),
+						'value' => implode( "\n", $lines ),
+					),
+				),
+			);
+		}
+	}
+
+	return array(
+		'data' => $data,
+		'done' => true,
+	);
+}
+
+/**
+ * Register the AdzLogs personal-data eraser.
+ *
+ * @param array $erasers Registered erasers.
+ * @return array
+ */
+function adzworld_register_privacy_eraser( $erasers ) {
+	$erasers['adz-world'] = array(
+		'eraser_friendly_name' => ADZWORLD_NAME,
+		'callback'             => 'adzworld_privacy_erase',
+	);
+
+	return $erasers;
+}
+add_filter( 'wp_privacy_personal_data_erasers', 'adzworld_register_privacy_eraser' );
+
+/**
+ * Erase one account's adz journeys and saved adz requests.
+ *
+ * @param string $email Account email address.
+ * @return array{items_removed:bool,items_retained:bool,messages:array,done:bool}
+ */
+function adzworld_privacy_erase( $email ) {
+	$user    = get_user_by( 'email', $email );
+	$removed = false;
+	$done    = true;
+	if ( $user ) {
+		$journeys = adzworld_profile_journeys( (int) $user->ID );
+		foreach ( $journeys as $post_id ) {
+			$removed = wp_delete_post( $post_id, true ) ? true : $removed;
+		}
+		$done = count( $journeys ) < ADZWORLD_LOGS_CLEANUP_BATCH;
+		if ( $done ) {
+			$removed = delete_user_meta( (int) $user->ID, ADZWORLD_PREFERENCE_META ) || $removed;
+			$removed = delete_user_meta( (int) $user->ID, ADZWORLD_FEEDBACK_META ) || $removed;
+		}
+	}
+
+	return array(
+		'items_removed'  => $removed,
+		'items_retained' => false,
+		'messages'       => array(),
+		'done'           => $done,
+	);
 }

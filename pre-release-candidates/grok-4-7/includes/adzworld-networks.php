@@ -828,7 +828,7 @@ add_filter( 'script_loader_tag', 'adzworld_network_script_tag', 10, 2 );
 function adzworld_network_register_script( $handle, $src, $footer, $deps = array(), $before = '' ) {
 	static $sent = array();
 	if ( ! wp_script_is( $handle, 'enqueued' ) ) {
-		wp_enqueue_script( $handle, $src, $deps, '1.0.9', $footer );
+		wp_enqueue_script( $handle, $src, $deps, ADZWORLD_VERSION, $footer );
 	}
 	if ( '' === $before ) {
 		return;
@@ -1110,7 +1110,12 @@ function adzworld_save_networks() {
 	$rows   = adzworld_sanitize_network_rows( $posted );
 	$flag   = '1';
 	if ( isset( $_POST['adzworld_add_network'] ) ) {
-		$preset = isset( $_POST['adzworld_add_preset'] ) ? sanitize_key( wp_unslash( $_POST['adzworld_add_preset'] ) ) : '';
+		$add_value = is_string( $_POST['adzworld_add_network'] )
+			? sanitize_key( wp_unslash( $_POST['adzworld_add_network'] ) )
+			: '';
+		$preset    = isset( $_POST['adzworld_add_preset'] ) && is_string( $_POST['adzworld_add_preset'] )
+			? sanitize_key( wp_unslash( $_POST['adzworld_add_preset'] ) )
+			: $add_value;
 		if ( '' === $preset ) {
 			$flag = 'choose';
 		} elseif ( count( $rows ) >= ADZWORLD_NETWORK_ROW_MAX ) {

@@ -31,16 +31,19 @@ function adzworld_products_provider_labels() {
 	return apply_filters(
 		'adzworld_products_provider_labels',
 		array(
-			'amazon'       => 'Amazon',
-			'ebay'         => 'eBay',
+			'amazon'        => 'Amazon',
+			'ebay'          => 'eBay',
 
 			/*
 			 * Labelled as a test, always. Sandbox inventory is invented, and a
 			 * reader shown it as a real offer would be misled.
 			 */
-			'ebay-sandbox' => 'eBay sandbox (test data)',
-			'etsy'         => 'Etsy',
-			'bestbuy'      => 'Best Buy',
+			'ebay-sandbox'  => 'eBay sandbox (test data)',
+			'etsy'          => 'Etsy',
+			'bestbuy'       => 'Best Buy',
+			'avantlink'     => 'AvantLink',
+			'itunes'        => 'Apple',
+			'travelpayouts' => 'Travelpayouts',
 		)
 	);
 }
@@ -90,34 +93,14 @@ function adzworld_products_normalise_row( $row, $provider_id = '' ) {
 	$provider = isset( $row['provider'] ) ? (string) $row['provider'] : (string) $provider_id;
 	$labels   = adzworld_products_provider_labels();
 
-	/*
-	 * Every provider's own identifier for the product, which is what a
-	 * rating attaches to. A provider that has none gets a slug of its title,
-	 * so a reader's verdict still has somewhere to land.
-	 */
-	$id = isset( $row['id'] ) ? trim( (string) $row['id'] ) : '';
-
-	if ( '' === $id ) {
-		$id = substr( preg_replace( '/[^a-z0-9]+/', '-', strtolower( $title ) ), 0, 60 );
-		$id = trim( $id, '-' );
-	}
-
 	return array(
-		/* provider:id, which is what AdzLogs records as the adzad served. */
-		'id'       => $provider . ':' . $id,
 		'title'    => $title,
 		'url'      => $url,
 		'image'    => $image,
 		'price'    => isset( $row['price'] ) ? trim( wp_strip_all_tags( (string) $row['price'] ) ) : '',
 		'provider' => $provider,
 		'source'   => isset( $labels[ $provider ] ) ? $labels[ $provider ] : '',
-
-		/*
-		 * The bare identifier, without the provider in front of it. A rating
-		 * given to one result is keyed on provider-<provider>-<item_id>, so
-		 * each listing carries its own verdict rather than the slot's.
-		 */
-		'item_id'  => sanitize_key( $id ),
+		'item_id'  => isset( $row['item_id'] ) ? sanitize_key( (string) $row['item_id'] ) : '',
 	);
 }
 
@@ -164,12 +147,13 @@ function adzworld_products_interleave( $rows, $limit = ADZWORLD_PRODUCTS_LIMIT )
 /**
  * Every provider's products for one request, merged and ready to render.
  *
- * @param string $request Reader's request: the category and its refinements.
+ * @param string $request  Reader's request: the category and its refinements.
+ * @param string $provider Optional provider id for a provider-specific slot.
  * @return array<int,array<string,string>> Normalised, interleaved rows.
- * @param string $provider Show only this provider's rows, or empty for all.
  */
 function adzworld_products_collect( $request, $provider = '' ) {
-	$request = trim( wp_strip_all_tags( (string) $request ) );
+	$request  = trim( wp_strip_all_tags( (string) $request ) );
+	$provider = sanitize_key( (string) $provider );
 
 	if ( '' === $request ) {
 		return array();
@@ -191,17 +175,13 @@ function adzworld_products_collect( $request, $provider = '' ) {
 		return array();
 	}
 
-	$provider = sanitize_key( (string) $provider );
-	$clean    = array();
-	$seen     = array();
-
+	$clean = array();
+	$seen  = array();
 	foreach ( $rows as $row ) {
 		$normal = adzworld_products_normalise_row( $row );
 		if ( null === $normal ) {
 			continue;
 		}
-
-		/* A slot configured for one provider shows that provider only. */
 		if ( '' !== $provider && $provider !== $normal['provider'] ) {
 			continue;
 		}
@@ -230,22 +210,6 @@ function adzworld_products_markup( $results, $request ) {
 		return '';
 	}
 
-	/*
-	 * Which products these cards are. The rotation cannot see inside the
-	 * provider shortcode it renders, so the identifiers are left here for
-	 * AdzLogs to collect: without them a log of ten provider rounds reads as
-	 * ten identical rows saying only which provider answered.
-	 */
-	$served = array();
-
-	foreach ( $results as $result ) {
-		if ( isset( $result['id'] ) ) {
-			$served[] = $result['id'];
-		}
-	}
-
-	adzworld_products_remember_served( $served );
-
 	$request = trim( wp_strip_all_tags( (string) $request ) );
 
 	$html = '<div class="adzworld-products">';
@@ -263,7 +227,7 @@ function adzworld_products_markup( $results, $request ) {
 	$html .= '<ul class="adzworld-products__list">';
 
 	foreach ( $results as $result ) {
-		$html .= '<li class="adzworld-product" data-adzworld-item="' . esc_attr( (string) $result['id'] ) . '">';
+		$html .= '<li class="adzworld-product">';
 		$html .= '<a class="adzworld-product__link" href="' . esc_url( $result['url'] ) . '" rel="sponsored nofollow" target="_blank">';
 
 		if ( '' !== $result['image'] ) {
@@ -289,38 +253,4 @@ function adzworld_products_markup( $results, $request ) {
 	}
 
 	return $html . '</ul></div>';
-}
-
-/**
- * Hold, or take, the product identifiers rendered during this request.
- *
- * A provider's cards are built inside a shortcode that the rotation renders
- * without seeing its contents, so the identifiers cannot be returned up the
- * call stack. They are left here instead and collected once, by the slot
- * that is about to be logged.
- *
- * @since 1.0.0
- *
- * @param string[]|null $ids Identifiers to add, or null to take and clear.
- * @return string[] The identifiers held, when taking; otherwise empty.
- */
-function adzworld_products_remember_served( $ids = null ) {
-	static $served = array();
-
-	if ( null === $ids ) {
-		$taken  = $served;
-		$served = array();
-
-		return $taken;
-	}
-
-	foreach ( (array) $ids as $id ) {
-		$id = trim( (string) $id );
-
-		if ( '' !== $id && ! in_array( $id, $served, true ) ) {
-			$served[] = $id;
-		}
-	}
-
-	return array();
 }

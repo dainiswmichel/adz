@@ -236,104 +236,6 @@
 	}
 
 	/**
-	 * Rotation, slot, and outer slot for the slide that holds this node.
-	 *
-	 * A response is only useful in AdzLogs if it says where it was given, so
-	 * every request that records one carries the place it came from.
-	 *
-	 * @param {HTMLElement} node Control inside a rotation.
-	 * @return {Object} Place fields.
-	 */
-	function placeFields( node ) {
-		var rotation = node ? node.closest( '.adzworld-rotation' ) : null;
-		var slide = node ? node.closest( '.adzworld-slide' ) : null;
-		var fields = {};
-
-		if ( ! rotation ) {
-			return fields;
-		}
-
-		fields.rotation = rotation.dataset.adzworldRotation || '';
-
-		if ( slide && slide.dataset.adzworldSlot ) {
-			fields.slot = slide.dataset.adzworldSlot;
-		}
-
-		if ( rotation.dataset.adzworldOuterRotation ) {
-			fields.outer_rotation = rotation.dataset.adzworldOuterRotation;
-			fields.outer_slot = rotation.dataset.adzworldOuterSlot || '0';
-		}
-
-		/*
-		 * Which products this slide is showing. The response arrives in its
-		 * own request, by which time the server no longer holds the list it
-		 * built while rendering, so the page reports what it has on screen.
-		 * Without this the round a reader's first input answers records the
-		 * provider and not the product.
-		 */
-		if ( slide ) {
-			var items = [];
-
-			slide.querySelectorAll( '[data-adzworld-item]' ).forEach(
-				function ( card ) {
-					var id = card.dataset.adzworldItem || '';
-
-					if ( id && -1 === items.indexOf( id ) ) {
-						items.push( id );
-					}
-				}
-			);
-
-			if ( items.length ) {
-				fields.items = items.join( ' ' );
-			}
-		}
-
-		return fields;
-	}
-
-	/**
-	 * Copy place fields onto a request.
-	 *
-	 * @param {Object}      values Request values.
-	 * @param {HTMLElement} node   Control inside a rotation.
-	 * @return {Object} Request values.
-	 */
-	function assignPlace( values, node ) {
-		var place = placeFields( node );
-
-		Object.keys( place ).forEach(
-			function ( key ) {
-				values[ key ] = place[ key ];
-			}
-		);
-
-		return values;
-	}
-
-	/**
-	 * Active slide that is serving an adzad.
-	 *
-	 * A category or refinement change is a response to the adzad the reader
-	 * was looking at when they made it, not to the rotation as a whole.
-	 *
-	 * @param {HTMLElement} rotation Rotation root.
-	 * @return {HTMLElement|null} Slide, or null when none is serving one.
-	 */
-	function showingAd( rotation ) {
-		var slides = rotation ? rotation.querySelectorAll( '.adzworld-slide.adzworld-active' ) : [];
-		var index;
-
-		for ( index = slides.length - 1; index >= 0; index-- ) {
-			if ( slides[ index ].dataset.adzworldAd ) {
-				return slides[ index ];
-			}
-		}
-
-		return null;
-	}
-
-	/**
 	 * Post a small, nonce-protected request to WordPress.
 	 *
 	 * @param {string} action AJAX action.
@@ -341,11 +243,138 @@
 	 * @param {Object} values Request values.
 	 * @return {Promise} Parsed JSON response.
 	 */
+	/*
+	 * The slide the reader last touched. Every request a reader makes is about
+	 * that slide, so its rotation, slot and adz travel with the request and the
+	 * journey records exactly what the reader acted on.
+	 */
+	var journeySlide = null;
+
+	/**
+	 * Remember the slide holding an element the reader is using.
+	 *
+	 * @param {Event} event Pointer or focus event.
+	 */
+	function noteJourneySlide( event ) {
+		var slide = event.target && event.target.closest ? event.target.closest( '.adzworld-slide' ) : null;
+
+		if ( slide ) {
+			journeySlide = slide;
+		}
+	}
+
+	/**
+	 * Rotation, slot and adz of one slide. A product carousel names the product
+	 * on screen; any other slide names its own adz.
+	 *
+	 * @param {HTMLElement|null} slide Slide.
+	 * @return {Object} Request fields.
+	 */
+	function journeyFields( slide ) {
+		var product;
+
+		if ( ! slide ) {
+			return {};
+		}
+		product = slide.querySelector( '.adzworld-results__slide:not([hidden])' );
+		return {
+			journey_rotation: slide.dataset.adzworldRotation || '',
+			journey_slot: slide.dataset.adzworldSlot || '',
+			journey_position: slide.dataset.adzworldSlotPosition || '',
+			journey_ad: product ? product.dataset.adzworldResultTarget || '' : slide.dataset.adzworldAd || ''
+		};
+	}
+
+	/**
+	 * Show a slot's response message for a few seconds.
+	 *
+	 * @param {HTMLElement|null} slide Slide.
+	 * @param {string}           text  Message.
+	 */
+	function showResponse( slide, text ) {
+		var line = slide ? slide.querySelector( ':scope > .adzworld-response' ) : null;
+
+		if ( ! line || ! text ) {
+			return;
+		}
+		line.textContent = text;
+		line.hidden = false;
+		window.clearTimeout( Number( line.dataset.adzworldTimer || 0 ) );
+		line.dataset.adzworldTimer = String(
+			window.setTimeout(
+				function () {
+					line.hidden = true;
+				},
+				8000
+			)
+		);
+	}
+
+	/**
+	 * Keep a response message across the reload that follows some changes.
+	 * Refinements reload the page; ratings do not.
+	 *
+	 * @param {HTMLElement|null} slide Slide.
+	 * @param {string}           text  Message.
+	 */
+	function rememberResponse( slide, text ) {
+		if ( ! slide || ! text ) {
+			return;
+		}
+		try {
+			window.sessionStorage.setItem(
+				'adzworldResponse',
+				JSON.stringify(
+					{
+						rotation: slide.dataset.adzworldRotation || '',
+						slot: slide.dataset.adzworldSlot || '',
+						text: text,
+						at: Date.now()
+					}
+				)
+			);
+		} catch ( error ) {
+			// The message is a courtesy; the change itself is saved.
+		}
+	}
+
+	/**
+	 * Show a response message remembered before a reload.
+	 */
+	function restoreResponse() {
+		var saved;
+		var slide;
+
+		try {
+			saved = JSON.parse( window.sessionStorage.getItem( 'adzworldResponse' ) || 'null' );
+			window.sessionStorage.removeItem( 'adzworldResponse' );
+		} catch ( error ) {
+			saved = null;
+		}
+		// Only the reload that follows a change shows the message again.
+		if ( ! saved || ! saved.rotation || Date.now() - Number( saved.at || 0 ) > 10000 ) {
+			return;
+		}
+		slide = Array.from( document.querySelectorAll( '.adzworld-slide' ) ).find(
+			function ( candidate ) {
+				return candidate.dataset.adzworldRotation === saved.rotation && candidate.dataset.adzworldSlot === saved.slot;
+			}
+		);
+		showResponse( slide || null, saved.text );
+	}
+
 	function post( action, nonce, values ) {
 		var body = new window.FormData();
+		var slide = journeySlide;
+		var fields = journeyFields( slide );
 
 		body.append( 'action', action );
 		body.append( 'nonce', nonce );
+		Object.keys( fields ).forEach(
+			function ( key ) {
+				body.append( key, fields[ key ] );
+			}
+		);
 		Object.keys( values ).forEach(
 			function ( key ) {
 				body.append( key, values[ key ] );
@@ -363,48 +392,33 @@
 			function ( response ) {
 				return response.json();
 			}
+		).then(
+			function ( payload ) {
+				if ( payload && payload.success && payload.data && payload.data.response ) {
+					rememberResponse( slide, payload.data.response );
+					showResponse( slide, payload.data.response );
+				}
+				return payload;
+			}
 		);
 	}
 
 	/**
-	 * Remember that the next render must visibly return to the user hub.
-	 */
-	function rememberHubReturn() {
-		try {
-			window.sessionStorage.setItem( 'adzworldReturnToHub', '1' );
-			window.sessionStorage.removeItem( 'adzworldReturnSlot' );
-		} catch ( error ) {
-			// Navigation still works when browser storage is unavailable.
-		}
-	}
-
-	/**
-	 * After a change made on one slot, reload that slot.
+	 * Remember the slide that is on screen, including across a reload.
 	 *
-	 * A stored invitation flag would otherwise win and open the intro. A
-	 * change made on the invitation itself still returns there.
+	 * An empty category is the hub. A named category is that adz.
 	 *
-	 * @param {HTMLElement} node Control inside the slot.
+	 * @param {string} category Category name.
+	 * @param {number} slot     Zero-based category slot.
 	 */
-	function rememberRefinementReturn( node ) {
-		var slide = node ? node.closest( '.adzworld-slide' ) : null;
-		var rotation = node ? node.closest( '.adzworld-rotation' ) : null;
-
-		if ( ! slide || ! rotation || ! slide.dataset.adzworldAd ) {
-			rememberHubReturn();
-			return;
-		}
-
+	function rememberSlide( category, slot ) {
 		try {
+			window.sessionStorage.setItem( 'adzworldSlideCategory', category || '' );
+			window.sessionStorage.setItem( 'adzworldSlideSlot', String( slot || 0 ) );
 			window.sessionStorage.removeItem( 'adzworldReturnToHub' );
-			window.sessionStorage.removeItem( 'adzworldReturnCategory' );
-			window.sessionStorage.removeItem( 'adzworldReturnCategorySlot' );
-			window.sessionStorage.setItem( 'adzworldReturnSlot', '1' );
 		} catch ( error ) {
-			// The stored slide is still the best record when a flag cannot be set.
+			// The hub remains available when browser storage is unavailable.
 		}
-
-		rememberCurrentSlide( rotation, slide );
 	}
 
 	/**
@@ -420,124 +434,6 @@
 		} catch ( error ) {
 			// The category remains reachable when browser storage is unavailable.
 		}
-	}
-
-	/**
-	 * Storage key for the slide a reader is looking at in one rotation.
-	 *
-	 * @param {HTMLElement} rotation Rotation root.
-	 * @return {string} Session storage key.
-	 */
-	function currentSlideKey( rotation ) {
-		return 'adzworldCurrentSlide:' + ( rotation.dataset.adzworldRotation || rotation.id || 'rotation' );
-	}
-
-	/**
-	 * Keep the slide a reader is on, so a reload renders that slot again.
-	 *
-	 * The invitation is the first slide. Without this record every reload
-	 * starts there, including a reload of the slot already on screen.
-	 *
-	 * @param {HTMLElement} rotation Rotation root.
-	 * @param {HTMLElement} slide    Slide now showing.
-	 */
-	function rememberCurrentSlide( rotation, slide ) {
-		var record;
-
-		if ( ! rotation || ! slide ) {
-			return;
-		}
-
-		record = {
-			ad: slide.dataset.adzworldAd || '',
-			category: slide.dataset.adzworldCategory || '',
-			categorySlot: slide.dataset.adzworldCategorySlot || '',
-			slot: slide.dataset.adzworldSlot || '',
-			hub: slide.querySelector( '.adz-panel' ) ? '1' : ''
-		};
-
-		try {
-			window.sessionStorage.setItem( currentSlideKey( rotation ), JSON.stringify( record ) );
-		} catch ( error ) {
-			// The next load starts at the invitation when storage is unavailable.
-		}
-	}
-
-	/**
-	 * Find the stored slide after a reload.
-	 *
-	 * @param {HTMLElement}   rotation Rotation root.
-	 * @param {HTMLElement[]} slides   Slides in this rotation.
-	 * @return {number} Slide index, or 0 when nothing stored still matches.
-	 */
-	function storedSlideIndex( rotation, slides ) {
-		var raw = '';
-		var record;
-		var index = -1;
-
-		try {
-			raw = window.sessionStorage.getItem( currentSlideKey( rotation ) ) || '';
-		} catch ( error ) {
-			return 0;
-		}
-
-		if ( ! raw ) {
-			return 0;
-		}
-
-		try {
-			record = JSON.parse( raw );
-		} catch ( error ) {
-			return 0;
-		}
-
-		if ( ! record || 'object' !== typeof record ) {
-			return 0;
-		}
-
-		if ( record.ad ) {
-			index = slides.findIndex(
-				function ( slide ) {
-					return slide.dataset.adzworldAd === record.ad &&
-						( ! record.category || slide.dataset.adzworldCategory === record.category ) &&
-						( ! record.categorySlot || String( slide.dataset.adzworldCategorySlot || '0' ) === String( record.categorySlot ) );
-				}
-			);
-			if ( index < 0 ) {
-				index = slides.findIndex(
-					function ( slide ) {
-						return slide.dataset.adzworldAd === record.ad;
-					}
-				);
-			}
-		}
-
-		if ( index < 0 && record.category ) {
-			index = slides.findIndex(
-				function ( slide ) {
-					return slide.dataset.adzworldCategory === record.category &&
-						String( slide.dataset.adzworldCategorySlot || '0' ) === String( record.categorySlot || '0' );
-				}
-			);
-		}
-
-		if ( index < 0 && '1' === record.hub ) {
-			index = slides.findIndex(
-				function ( slide ) {
-					return Boolean( slide.querySelector( '.adz-panel' ) );
-				}
-			);
-		}
-
-		if ( index < 0 && record.slot ) {
-			index = slides.findIndex(
-				function ( slide ) {
-					return String( slide.dataset.adzworldSlot || '' ) === String( record.slot );
-				}
-			);
-		}
-
-		return index >= 0 ? index : 0;
 	}
 
 	/**
@@ -631,6 +527,28 @@
 			return;
 		}
 
+		rotation.querySelectorAll( '[data-adzworld-countdown]' ).forEach(
+			function ( node ) {
+				var remaining = Number( node.getAttribute( 'data-adzworld-countdown' ) ) || 0;
+				var output = node.querySelector( '[data-adzworld-countdown-num]' );
+				var timer;
+
+				if ( ! output || remaining < 1 ) {
+					return;
+				}
+				timer = window.setInterval(
+					function () {
+						remaining -= 1;
+						if ( remaining < 0 ) {
+							window.clearInterval( timer );
+							return;
+						}
+						output.textContent = String( remaining );
+					},
+					1000
+				);
+			}
+		);
 		rotation.querySelectorAll( '.adzworld-results' ).forEach( prepareResults );
 		rotation.classList.add( 'adzworld-enhanced' );
 
@@ -674,7 +592,7 @@
 			} else {
 				mountNetworkUnit( slides[ current ] );
 			}
-			rememberCurrentSlide( rotation, slides[ current ] );
+			rememberSlide( activeCategory, activeSlot );
 			rotation.querySelectorAll( '[data-adzworld-category-slot-category], [data-adz-category-slot-category]' ).forEach(
 				function ( button ) {
 					var category;
@@ -740,12 +658,6 @@
 				var categorySlot;
 				var status;
 
-				/*
-				 * The showcase has its own previous and next buttons inside
-				 * this rotation. They are handled where the showcase is
-				 * prepared, so a click on one must not also move the
-				 * rotation underneath it.
-				 */
 				if ( ! button || button.closest( '.adzworld-results' ) ) {
 					return;
 				}
@@ -864,98 +776,29 @@
 			navigation.hidden = slides.length < 2 || ! navigation.children.length;
 		}
 
-		try {
-			if ( '1' === window.sessionStorage.getItem( 'adzworldReturnSlot' ) ) {
-				window.sessionStorage.removeItem( 'adzworldReturnSlot' );
-				window.sessionStorage.removeItem( 'adzworldReturnToHub' );
-				show( storedSlideIndex( rotation, slides ) );
-				slides[ current ].scrollIntoView( { block: 'center' } );
-			} else if ( '1' === window.sessionStorage.getItem( 'adzworldReturnToHub' ) ) {
-				window.sessionStorage.removeItem( 'adzworldReturnToHub' );
-				show( 0 );
-				window.requestAnimationFrame( showHub );
-			} else if ( window.sessionStorage.getItem( 'adzworldReturnCategory' ) ) {
-				show( storedSlideIndex( rotation, slides ) );
-				window.requestAnimationFrame(
-					function () {
-						var category = window.sessionStorage.getItem( 'adzworldReturnCategory' ) || '';
-						var slot = Number( window.sessionStorage.getItem( 'adzworldReturnCategorySlot' ) || 0 );
+		var startCategory = '';
+		var startSlot = 0;
 
-						window.sessionStorage.removeItem( 'adzworldReturnCategory' );
-						window.sessionStorage.removeItem( 'adzworldReturnCategorySlot' );
-						showCategory( category, slot );
-					}
-				);
+		try {
+			window.sessionStorage.removeItem( 'adzworldReturnToHub' );
+			if ( window.sessionStorage.getItem( 'adzworldReturnCategory' ) ) {
+				startCategory = window.sessionStorage.getItem( 'adzworldReturnCategory' ) || '';
+				startSlot = Number( window.sessionStorage.getItem( 'adzworldReturnCategorySlot' ) || 0 );
+				window.sessionStorage.removeItem( 'adzworldReturnCategory' );
+				window.sessionStorage.removeItem( 'adzworldReturnCategorySlot' );
 			} else {
-				show( storedSlideIndex( rotation, slides ) );
+				startCategory = window.sessionStorage.getItem( 'adzworldSlideCategory' ) || '';
+				startSlot = Number( window.sessionStorage.getItem( 'adzworldSlideSlot' ) || 0 );
 			}
 		} catch ( error ) {
+			startCategory = '';
+		}
+
+		if ( startCategory ) {
+			showCategory( startCategory, startSlot );
+		}
+		if ( ! rotation.querySelector( '.adzworld-slide.adzworld-active' ) ) {
 			show( 0 );
-		}
-
-		paintFeedbackThanks( slides, show );
-	}
-
-	/**
-	 * Show the internal-adz reply on the slot that was refined.
-	 *
-	 * The creative is unchanged. The note is the server's own sentence,
-	 * written as text, and the disclosure is opened so it can be read.
-	 *
-	 * @param {HTMLElement[]} slides    Slides in this rotation.
-	 * @param {Function}      showSlide Moves the rotation to a slide index.
-	 */
-	function paintFeedbackThanks( slides, showSlide ) {
-		var raw = '';
-		var note;
-		var index;
-		var slide = null;
-		var evaluation;
-		var status;
-
-		try {
-			raw = window.sessionStorage.getItem( 'adzworldFeedbackThanks' ) || '';
-			window.sessionStorage.removeItem( 'adzworldFeedbackThanks' );
-		} catch ( error ) {
-			return;
-		}
-
-		if ( ! raw ) {
-			return;
-		}
-
-		try {
-			note = JSON.parse( raw );
-		} catch ( error ) {
-			return;
-		}
-
-		if ( ! note || 'string' !== typeof note.message || '' === note.message ) {
-			return;
-		}
-
-		for ( index = 0; index < slides.length; index++ ) {
-			if ( note.ad && slides[ index ].dataset.adzworldAd === note.ad ) {
-				slide = slides[ index ];
-				showSlide( index );
-				slide.scrollIntoView( { block: 'center' } );
-				break;
-			}
-		}
-
-		if ( ! slide ) {
-			return;
-		}
-
-		evaluation = slide.querySelector( '.adzworld-evaluation' );
-		status = slide.querySelector( '.adzworld-evaluation [data-adz-status]' );
-
-		if ( evaluation ) {
-			evaluation.open = true;
-		}
-
-		if ( status ) {
-			status.textContent = note.message;
 		}
 	}
 
@@ -997,40 +840,15 @@
 				post(
 					'adzworld_refine',
 					settings.preferenceNonce,
-					assignPlace(
-						{
-							mode: mode,
-							refinement: input.value,
-							target: improveTarget
-						},
-						form
-					)
+					{
+						mode: mode,
+						refinement: input.value,
+						target: improveTarget
+					}
 				).then(
 					function ( payload ) {
 						if ( payload && payload.success ) {
-							if ( improveTarget && payload.data && payload.data.dynamic ) {
-								rememberRefinementReturn( form );
-								window.location.reload();
-							} else if ( improveTarget ) {
-								rememberRefinementReturn( form );
-								try {
-									window.sessionStorage.setItem(
-										'adzworldFeedbackThanks',
-										JSON.stringify(
-											{
-												ad: improveTarget,
-												message: payload.data && payload.data.message ? payload.data.message : 'Thank you for your feedback.'
-											}
-										)
-									);
-								} catch ( error ) {
-									// The creative still stays; the sentence is what the reload cannot carry.
-								}
-								window.location.reload();
-							} else {
-								rememberHubReturn();
-								window.location.reload();
-							}
+							window.location.reload();
 						} else if ( status ) {
 							status.textContent = payload && payload.data ? payload.data.message : '';
 						}
@@ -1043,7 +861,6 @@
 			'change',
 			function ( event ) {
 				var categoryName = event.target.closest( '.adz-panel__category-name' );
-				var refinementName = event.target.closest( '.adz-panel__refinement-name' );
 
 				if ( categoryName && categoryName.value.trim() === categoryName.dataset.adzCategoryOriginal ) {
 					closeEditor( categoryName );
@@ -1062,7 +879,6 @@
 					).then(
 						function ( payload ) {
 							if ( payload && payload.success ) {
-								rememberRefinementReturn( form );
 								window.location.reload();
 							} else if ( status ) {
 								status.textContent = payload && payload.data ? payload.data.message : '';
@@ -1074,33 +890,6 @@
 					return;
 				}
 
-				if ( refinementName && refinementName.value.trim() === refinementName.dataset.adzRefinementText ) {
-					closeEditor( refinementName );
-					return;
-				}
-
-				if ( refinementName ) {
-					post(
-						'adzworld_refine',
-						settings.preferenceNonce,
-						{
-							mode: 'rename_refinement',
-							refinement: refinementName.value,
-							value: refinementName.dataset.adzRefinementOriginal || ''
-						}
-					).then(
-						function ( payload ) {
-							if ( payload && payload.success ) {
-								rememberRefinementReturn( form );
-								window.location.reload();
-							} else if ( status ) {
-								status.textContent = payload && payload.data ? payload.data.message : '';
-								refinementName.value = refinementName.dataset.adzRefinementText || '';
-								closeEditor( refinementName );
-							}
-						}
-					);
-				}
 			}
 		);
 
@@ -1110,8 +899,49 @@
 				var category = event.target.closest( '.adz-panel__category' );
 				var categorySlot = event.target.closest( '.adz-panel__category-slot' );
 				var edit = event.target.closest( '.adz-panel__chipedit' );
+				var refinementAction = event.target.closest( '[data-adz-refinement-action]' );
 				var control;
+				var refinementEditor;
+				var refinementName;
 				var rotation = form.closest( '.adzworld-rotation' );
+
+				if ( refinementAction ) {
+					event.preventDefault();
+					refinementEditor = refinementAction.closest( '.adz-panel__refinement-editor' );
+					refinementName = refinementEditor ? refinementEditor.querySelector( '.adz-panel__refinement-name' ) : null;
+					if ( ! refinementEditor || ! refinementName ) {
+						return;
+					}
+					if ( 'cancel' === refinementAction.dataset.adzRefinementAction ) {
+						refinementName.value = refinementName.dataset.adzRefinementText || '';
+						closeEditor( refinementEditor );
+						return;
+					}
+					post(
+						'adzworld_refine',
+						settings.preferenceNonce,
+						'delete' === refinementAction.dataset.adzRefinementAction
+							? {
+								mode: 'drop',
+								facet: 'category_refinements',
+								value: refinementName.dataset.adzRefinementOriginal || ''
+							}
+							: {
+								mode: 'rename_refinement',
+								refinement: refinementName.value,
+								value: refinementName.dataset.adzRefinementOriginal || ''
+							}
+					).then(
+						function ( payload ) {
+							if ( payload && payload.success ) {
+								window.location.reload();
+							} else if ( status ) {
+								status.textContent = payload && payload.data ? payload.data.message : '';
+							}
+						}
+					);
+					return;
+				}
 
 				if ( categorySlot ) {
 					event.preventDefault();
@@ -1130,34 +960,20 @@
 				}
 
 				if ( category ) {
-					var selected = category.dataset.adzCategory || '';
-					var showing = showingAd( rotation );
-					var selectValues = {
-						mode: 'select',
-						value: selected
-					};
-
 					event.preventDefault();
-
-					/*
-					 * Only a change counts as a response. Clicking the
-					 * category an adzad is already in says nothing.
-					 */
-					if ( showing && ( showing.dataset.adzworldCategory || '' ) !== selected ) {
-						assignPlace( selectValues, showing );
-						selectValues.ad = showing.dataset.adzworldAd || '';
-					}
-
 					rotation.dispatchEvent(
 						new window.CustomEvent(
 							'adzworld:show-category',
-							{ detail: { category: selected, slot: 0 } }
+							{ detail: { category: category.dataset.adzCategory || '', slot: 0 } }
 						)
 					);
 					post(
 						'adzworld_refine',
 						settings.preferenceNonce,
-						selectValues
+						{
+							mode: 'select',
+							value: category.dataset.adzCategory || ''
+						}
 					);
 					return;
 				}
@@ -1170,8 +986,9 @@
 						edit.parentElement.querySelector( '.adz-panel__category, .adz-panel__chiptext' ).hidden = true;
 						control.hidden = false;
 						edit.setAttribute( 'aria-expanded', 'true' );
-						control.focus();
-						control.select();
+						refinementName = control.querySelector ? control.querySelector( '.adz-panel__refinement-name' ) : null;
+						( refinementName || control ).focus();
+						( refinementName || control ).select();
 					}
 				}
 			}
@@ -1181,18 +998,26 @@
 			'keydown',
 			function ( event ) {
 				var editor = event.target.closest( '.adz-panel__category-name, .adz-panel__refinement-name' );
+				var refinementEditor;
+				var action;
 
 				if ( ! editor ) {
 					return;
 				}
 				if ( 'Enter' === event.key ) {
 					event.preventDefault();
-					editor.blur();
+					refinementEditor = editor.closest( '.adz-panel__refinement-editor' );
+					if ( refinementEditor ) {
+						action = refinementEditor.querySelector( '[data-adz-refinement-action="save"]' );
+						action.click();
+					} else {
+						editor.blur();
+					}
 				}
 				if ( 'Escape' === event.key ) {
 					event.preventDefault();
 					editor.value = editor.dataset.adzCategoryOriginal || editor.dataset.adzRefinementText || '';
-					closeEditor( editor );
+					closeEditor( editor.closest( '.adz-panel__refinement-editor' ) || editor );
 				}
 			}
 		);
@@ -1205,21 +1030,15 @@
 	 * @return {string} Evaluation label.
 	 */
 	function evaluationLabel( score ) {
-		var labels = settings.labels || {};
+		var bands = Array.isArray( settings.bands ) ? settings.bands : [];
+		var index;
 
-		if ( score <= -75 ) {
-			return labels.strongDislike || 'Strongly dislike';
+		for ( index = 0; index < bands.length; index++ ) {
+			if ( score >= Number( bands[ index ].from ) && score <= Number( bands[ index ].to ) ) {
+				return bands[ index ].label;
+			}
 		}
-		if ( score <= -25 ) {
-			return labels.dislike || 'Dislike';
-		}
-		if ( score < 25 ) {
-			return labels.neutral || 'Neutral';
-		}
-		if ( score < 75 ) {
-			return labels.like || 'Like';
-		}
-		return labels.strongLike || 'Strongly like';
+		return '';
 	}
 
 	/**
@@ -1259,16 +1078,19 @@
 		input.addEventListener(
 			'change',
 			function () {
+				var results = control.closest( '[data-adzworld-results]' );
+				var active = results ? results.querySelector( '.adzworld-results__slide:not([hidden])' ) : null;
+
+				if ( active ) {
+					active.dataset.adzworldResultScore = input.value;
+				}
 				post(
 					'adzworld_evaluate',
 					settings.feedbackNonce,
-					assignPlace(
-						{
-							score: input.value,
-							target: control.dataset.adzworldFeedbackTarget || ''
-						},
-						control
-					)
+					{
+						score: input.value,
+						target: control.dataset.adzworldFeedbackTarget || ''
+					}
 				).then(
 					function ( payload ) {
 						if ( output && payload && payload.success ) {
@@ -1288,9 +1110,12 @@
 		if ( ! window.fetch || ! window.FormData || ! settings.ajaxUrl ) {
 			return;
 		}
+		document.addEventListener( 'pointerdown', noteJourneySlide, true );
+		document.addEventListener( 'focusin', noteJourneySlide, true );
 		document.querySelectorAll( '.adzworld-rotation' ).forEach( prepareRotation );
 		document.querySelectorAll( '[data-adz-panel]' ).forEach( preparePanel );
 		document.querySelectorAll( '[data-adzworld-feedback-target]' ).forEach( prepareEvaluation );
+		restoreResponse();
 		document.addEventListener(
 			'adzworld:mount-network',
 			function ( event ) {
