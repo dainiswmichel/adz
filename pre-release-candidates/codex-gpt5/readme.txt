@@ -5,7 +5,7 @@ Tags: advertising, consent, privacy, ads, ad management
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -34,11 +34,12 @@ request sent to that provider. Current providers and their data handling are
 listed under External services.
 
 Nothing is stored when someone only looks. Entering a category or refinement,
-or rating an adzad, starts a browser session. Its identifier contains the Michel
-Time Stamp of that first action plus five random characters. The session ends
-with the browser and starts fresh after no more than 24 hours. Signed-in audience
-members can choose to save their requests with their WordPress profile when the
-site allows it.
+or rating an adzad, starts an adz-world browser session. A first-party cookie
+contains a random token that identifies temporary state stored on this site for
+up to 24 hours. The session cookie expires when the browser session ends. The
+separate journey identifier contains the Michel Time Stamp of the first action
+plus five random characters. Signed-in audience members can choose to save
+their requests with their WordPress profile when the site allows it.
 
 Visible, editable controls show the categories and refinements supplied by the
 audience member. Ratings from -100 to 100 add positive or negative weight;
@@ -278,6 +279,12 @@ controlled by adzAdmins.
 
 == Changelog ==
 
+= 1.1.2 =
+* Updated the default visitor information text and removed the developer credit.
+  Information text saved by an adzAdmin is preserved.
+* Encoded query arguments in legacy network ad requests.
+* Replaced native PHP sessions with expiring WordPress storage for browser state.
+
 = 1.1.1 =
 * Rating bands now store a start and an end, and both are editable.
 * Added three slider themes. Default keeps the existing gradient. Tide is the
@@ -306,6 +313,9 @@ controlled by adzAdmins.
 
 
 == Upgrade Notice ==
+= 1.1.2 =
+Clarifies the default visitor information and fixes legacy network ad request encoding.
+
 = 1.1.1 =
 Adds editable rating-band ranges and two additional slider colour themes.
 

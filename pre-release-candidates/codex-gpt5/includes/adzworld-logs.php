@@ -49,12 +49,6 @@ const ADZWORLD_LOGS_PER_PAGE = 20;
 /** Journeys removed per cleanup query. */
 const ADZWORLD_LOGS_CLEANUP_BATCH = 100;
 
-/** Session key naming the current journey of a reader saving to their profile. */
-const ADZWORLD_JOURNEY_PROFILE_SESSION = 'adzworld_profile_journey';
-
-/** Session key holding the adz the reader last acted on in this journey. */
-const ADZWORLD_JOURNEY_LAST_AD_SESSION = 'adzworld_journey_last_ad';
-
 /** Nonce action for the reader's profile choice. */
 const ADZWORLD_PROFILE_CONSENT_NONCE = 'adzworld_profile_consent';
 
@@ -128,19 +122,15 @@ function adzworld_journey_key() {
 		return adzworld_preference_ensure_session_id();
 	}
 
-	if ( PHP_SESSION_ACTIVE !== session_status() && ! headers_sent() ) {
-		session_start();
-	}
-	if ( PHP_SESSION_ACTIVE !== session_status() ) {
+	if ( empty( adzworld_browser_session( true ) ) ) {
 		return '';
 	}
 
-	$current = isset( $_SESSION[ ADZWORLD_JOURNEY_PROFILE_SESSION ] ) && is_string( $_SESSION[ ADZWORLD_JOURNEY_PROFILE_SESSION ] )
-		? sanitize_text_field( wp_unslash( $_SESSION[ ADZWORLD_JOURNEY_PROFILE_SESSION ] ) )
-		: '';
+	$field   = 'profile_journey_' . get_current_user_id();
+	$current = adzworld_browser_state_get( $field );
 	if ( ! adzworld_preference_valid_session_id( $current ) ) {
-		$current                                      = adzworld_preference_new_session_id();
-		$_SESSION[ ADZWORLD_JOURNEY_PROFILE_SESSION ] = $current;
+		$current = adzworld_preference_new_session_id();
+		adzworld_browser_state_set( $field, $current );
 	}
 
 	return $current;
@@ -246,7 +236,8 @@ function adzworld_journey_context( $rotation, $slot, $position, $ad ) {
  * @return void
  */
 function adzworld_journey_record( $context, $event ) {
-	$post_id = adzworld_journey_post_id( adzworld_journey_key(), true );
+	$journey = adzworld_journey_key();
+	$post_id = adzworld_journey_post_id( $journey, true );
 	if ( 0 === $post_id ) {
 		return;
 	}
@@ -256,16 +247,10 @@ function adzworld_journey_record( $context, $event ) {
 		'slot'     => isset( $context['slot'] ) ? (int) $context['slot'] : 0,
 		'ad'       => isset( $context['ad'] ) ? (string) $context['ad'] : '',
 	);
-	$last  = isset( $_SESSION[ ADZWORLD_JOURNEY_LAST_AD_SESSION ] ) && is_array( $_SESSION[ ADZWORLD_JOURNEY_LAST_AD_SESSION ] )
-		? map_deep( wp_unslash( $_SESSION[ ADZWORLD_JOURNEY_LAST_AD_SESSION ] ), 'sanitize_text_field' )
-		: array();
-	$known = isset( $last['post'] ) && (int) $last['post'] === $post_id;
-	$same  = $known && isset( $last['rotation'], $last['slot'], $last['ad'] )
-		&& $last['rotation'] === $where['rotation'] && (int) $last['slot'] === $where['slot'] && $last['ad'] === $where['ad'];
-
-	if ( '' !== $where['ad'] && ! $same ) {
+	$field = 'last_ad_' . $post_id;
+	if ( '' !== $where['ad'] && adzworld_browser_state_get( $field ) !== $where ) {
 		add_post_meta( $post_id, ADZWORLD_JOURNEY_EVENT_META, array_merge( array( 'type' => 'ad' ), $where, array( 'time' => time() ) ) );
-		$_SESSION[ ADZWORLD_JOURNEY_LAST_AD_SESSION ] = array_merge( array( 'post' => $post_id ), $where );
+		adzworld_browser_state_set( $field, $where );
 	}
 
 	add_post_meta( $post_id, ADZWORLD_JOURNEY_EVENT_META, array_merge( $event, $where, array( 'time' => time() ) ) );

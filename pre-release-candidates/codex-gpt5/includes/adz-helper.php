@@ -23,15 +23,15 @@ function adzworld_notice_default_text() {
 		__( '¶ 1. Before you say anything — We do not know who you are and we collect nothing. No session is started, no cookie is set, and nothing about you is written down. You are shown adz specified by adzadmins, and that is all that happens.', 'adz-world' ),
 		__( 'Most people using modern technology have, often unknowingly, agreed to terms that permit extensive surveillance and tracking by Big Tech. Governments also engage in digital surveillance, sometimes without people’s knowledge or consent.', 'adz-world' ),
 		__( 'Every visit to this site costs its owner money, whether the visitor is a human being, a bot, an artificial intelligence system, or a web crawler. Advertising helps pay for the content and services that people enjoy without charge. Site owners also need to protect themselves against malicious or abusive consumption of their resources. But neither the cost of providing a website nor the need to protect it justifies surveilling the people who visit.', 'adz-world' ),
-		__( '¶ 2. What we cannot speak for — Much of today’s digital advertising operates through surveillance-based capitalism. Surveillance Tracking Advertising, Logging & Knowledge Systems (S.T.A.L.K.S.) follow people across websites and applications, collecting information about their activities. Surveillance Capitalism Advertising Manipulation Systems (S.C.A.M.S.) turn that information into behavioral profiles and predictions designed to influence purchasing decisions. Slimy Loser Advertising Placement Systems (S.L.A.P.S.) then use those predictions to determine which advertisements people see.', 'adz-world' ),
+		__( '¶ 2. What we cannot speak for — Some advertising systems follow people across websites and apps and collect information about their activity. They use that information to build profiles, predict interests, and decide which ads to show.', 'adz-world' ),
 		__( 'Rather than simply asking people what they want, these systems watch what people do, track and log their behavior, guess what they might want, and attempt to manipulate their decisions.', 'adz-world' ),
 		__( 'A slot on this page may be filled by a third-party advertising network, such as Google AdSense, Google Ad Manager, Taboola, Outbrain, Criteo or Amazon Advertising. These networks may employ Surveillance Advertising Display Systems (S.A.D.S.). They operate under their own terms and arrangements with the site owner, not ours. We cannot control their data collection, but we can tell you when their advertising is present.', 'adz-world' ),
 		__( '¶ 3. When you tell us what you want — Permission-based advertising works differently. Rather than watching your behavior and guessing what you might want, we simply let you tell us.', 'adz-world' ),
 		__( 'Typing what you are looking for, or rating adz, starts a session. The session consists of a timestamped identifier and the words or preferences you chose. These are used to select relevant adz, not to construct a behavioral profile. The session does not require your name, email or address, is not joined to other personal information, and ends when you close your browser.', 'adz-world' ),
 		__( '¶ 4. If you make a profile — Your advertising preferences are kept with your account on this site. Rather than allowing advertisers to build a profile about you through surveillance, you create and control your own profile.', 'adz-world' ),
-		__( 'This plugin can then act for you the way a lawyer acts for a client: representing your expressed interests to advertisers, so that what reaches you reflects what you actually want to buy, rather than what someone has guessed you might buy.', 'adz-world' ),
+		__( 'The plugin uses the preferences you save to serve ads relevant to your stated interests.', 'adz-world' ),
 		__( 'Your preferences belong under your control. You can see them, change them, and delete them.', 'adz-world' ),
-		__( '¶ 5. Summary — With his software, Dainis W. Michel is changing the digital landscape from one of surveillance-based advertising to enjoyable permission-based advertising. Adz are shown because you asked for them. “Old style” surveillance-based advertising brings you annoyance and inconvenience. Newer-style permission-based adz bring you joy and convenience: that is the whole idea.', 'adz-world' ),
+		__( '¶ 5. Summary — You can choose what kinds of ads you’d like to see.', 'adz-world' ),
 	);
 
 	return implode( "\n\n", $paragraphs );
@@ -70,6 +70,33 @@ function adzworld_notice_paragraphs() {
 }
 
 /**
+ * Build a request URL for the legacy network ad endpoint.
+ *
+ * @param array  $registration Saved publisher registration.
+ * @param string $referral_code Saved referral code, or an empty string.
+ * @param mixed  $ad_id         Selected publisher advertisement identifier.
+ * @param string $pool          Publisher or network ad pool.
+ * @return string Request URL.
+ */
+function adzworld_legacy_network_ad_url( $registration, $referral_code, $ad_id, $pool ) {
+	global $adzworld_network_base_url;
+
+	return add_query_arg(
+		urlencode_deep(
+			array(
+				'id'            => (string) $registration['ID'],
+				'token'         => $registration['post_token'],
+				'nettoken'      => $registration['network_token'],
+				'referral_code' => $referral_code,
+				'publisher_ad'  => (string) $ad_id,
+				'ad_from'       => $pool,
+			)
+		),
+		$adzworld_network_base_url . 'wp-json/adz_server/v1/ads'
+	);
+}
+
+/**
  * Render the scheduled page-advertising request controls.
  *
  * @param int    $ad_visibility Countdown seconds.
@@ -85,8 +112,8 @@ function adzworld_notice_paragraphs() {
  */
 function adzworld_get_advertise( $ad_visibility, $ad_visibility_interval, $repeat_times, $target_type, $target, $ad_to_serve, $rotations_id, $sequence, $display_type, $adz_template ) {
 
-	if ( ! isset( $_SESSION['first_time'] ) ) {
-		$_SESSION['first_time'] = time() + $ad_visibility_interval;
+	if ( false === adzworld_browser_state_get( 'legacy_ad_timer' ) ) {
+		adzworld_browser_state_set( 'legacy_ad_timer', time() + (int) $ad_visibility_interval );
 	}
 
 	adzworld_legacy_request(
@@ -115,9 +142,8 @@ function adzworld_get_advertise( $ad_visibility, $ad_visibility_interval, $repea
  */
 function adzworld_get_advertise_popup( $ad_visibility, $ad_visibility_interval, $repeat_times, $target_type, $target, $ad_to_serve, $rotations_id, $sequence, $display_type, $adz_template ) {
 
-	if ( ! isset( $_SESSION['first_time'] ) ) {
-		$_SESSION['first_time'] = time() + $ad_visibility_interval;
-
+	if ( false === adzworld_browser_state_get( 'legacy_ad_timer' ) ) {
+		adzworld_browser_state_set( 'legacy_ad_timer', time() + (int) $ad_visibility_interval );
 	}
 	?>
 	<div id="show_overlay" class="adz_overlay">
