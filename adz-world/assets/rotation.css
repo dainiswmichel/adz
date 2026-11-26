@@ -1236,14 +1236,15 @@
 	transform: rotate(-45deg);
 }
 
-.adzworld-audience-message__collapse:hover {
+.adzworld-audience-message__collapse:hover,
+.adzworld-audience-message__collapse:focus-visible {
 	color: var(--adzworld-audience-accent);
 }
 
-/* Indicate keyboard focus on the cross itself. */
-.adzworld-audience-message .adzworld-audience-message__collapse:focus-visible {
+/* WordPress styles pointer focus too. Keep the cue on the cross itself. */
+.adzworld-audience-message .adzworld-audience-message__collapse:focus {
 	outline: none;
-	color: var(--adzworld-audience-accent);
+	box-shadow: none;
 }
 
 .adzworld-audience-message__collapse:focus-visible::before,

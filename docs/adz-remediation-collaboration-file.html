@@ -163,6 +163,12 @@ keyboard focus also thickens its strokes. Browser checks verified shared
 collapse state and the absence of a circle in every dismiss state. Production
 gate report <code>testing-logs/2026y-11m-26d-UTC-17h-24m-56s/00-summary.txt</code>
 and strict Plugin Check passed.</p>
+<p>A subsequent live click test identified a box from WordPress's general
+<code>:focus</code> style after reopening. The dismiss button now clears the
+outline and shadow in both pointer and keyboard focus. The regression check
+reproduced the box on <code>34289c1</code> and passed with the correction.
+Production gate <code>testing-logs/2026y-11m-26d-UTC-17h-35m-21s/00-summary.txt</code>
+and strict Plugin Check passed.</p>
 </section>
 
 <section id="codex-uninstall-2026-11-26">
