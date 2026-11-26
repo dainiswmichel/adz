@@ -87,6 +87,8 @@ require_once __DIR__ . '/includes/adz-preference-ui.php';
 require_once __DIR__ . '/includes/adzworld-feedback.php';
 require_once __DIR__ . '/includes/adzworld-responses.php';
 require_once __DIR__ . '/includes/adzworld-logs.php';
+require_once __DIR__ . '/includes/adzworld-audience-messages.php';
+require_once __DIR__ . '/includes/adzworld-audience-profile.php';
 require_once __DIR__ . '/includes/adzworld-affiliates.php';
 require_once __DIR__ . '/includes/adzworld-products.php';
 require_once __DIR__ . '/includes/adzworld-ebay.php';
@@ -194,11 +196,8 @@ function adzworld_enqueue_scripts_admin() {
 		'adz_admin_script',
 		'adzworldAdmin',
 		array(
-			'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
-			'nonce'         => wp_create_nonce( 'adzworld_template_settings' ),
 			'iframePrompt'  => __( 'Enter the HTTPS URL to display in this advertisement:', 'adz-world' ),
 			'iframeInvalid' => __( 'Enter a complete HTTP or HTTPS URL.', 'adz-world' ),
-			'settingsError' => __( 'Template settings could not be loaded. Try again.', 'adz-world' ),
 		)
 	);
 }//end adzworld_enqueue_scripts_admin()

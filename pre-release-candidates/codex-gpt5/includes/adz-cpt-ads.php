@@ -386,8 +386,8 @@ add_action( 'media_buttons', 'adzworld_iframe_button', 11 );
 function adzworld_templates_setting_menu() {
 	add_submenu_page(
 		'edit.php?post_type=adz_ad',
-		__( 'adz template settings', 'adz-world' ),
-		__( 'adz template settings', 'adz-world' ),
+		__( 'Display', 'adz-world' ),
+		__( 'Display', 'adz-world' ),
 		'manage_options',
 		'adz-template-setting',
 		'adzworld_template_setting'
@@ -443,7 +443,7 @@ function adzworld_notice_setting() {
 		echo '<div class="' . esc_attr( $class ) . '"><p>' . esc_html( $message ) . '</p></div>';
 	}
 
-	echo '<section class="adzworld-desk-intro"><h2>' . esc_html__( 'Adz information text', 'adz-world' ) . '</h2>';
+	echo '<section class="adzworld-desk-intro">';
 	echo '<p>' . esc_html__( 'This text appears from the information control on every adz panel. Separate paragraphs with a blank line. In a paragraph beginning with ¶, text before the first em dash is emphasized.', 'adz-world' ) . '</p>';
 	echo '<form method="post" action="">';
 	wp_nonce_field( 'adzworld_notice_save', 'adzworld_notice_nonce' );
@@ -493,31 +493,65 @@ function adzworld_save_template_settings() {
 }
 
 /**
- * Render the advertising template settings form and explicit save result.
+ * Open a Display section and keep the edited section expanded after submit.
+ *
+ * @param string $title  Section heading.
+ * @param string $submit Form submit field.
+ * @param bool   $open   Whether to open the section on a fresh GET.
+ * @return void
+ */
+function adzworld_display_section( $title, $submit, $open = false ) {
+	$expanded = null !== filter_input( INPUT_POST, $submit ) || ( $open && 'GET' === filter_input( INPUT_SERVER, 'REQUEST_METHOD' ) );
+	echo '<details class="adzworld-display-section"' . ( $expanded ? ' open' : '' ) . '><summary><h2>'
+		. esc_html( $title ) . '</h2></summary><div class="adzworld-display-section__content">';
+}
+
+/**
+ * Render Display settings with independent controls for each section.
  */
 function adzworld_template_setting() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( esc_html__( 'Administrator permission is required.', 'adz-world' ), '', array( 'response' => 403 ) );
 	}
+	$choosing_layout = null !== filter_input( INPUT_GET, 'countdown_layout' );
+	echo '<div class="wrap adzworld-display">';
+	adzworld_display_section( __( 'Audience messages', 'adz-world' ), 'adzworld_audience_submit', ! $choosing_layout );
+	adzworld_audience_message_editor();
+	echo '</div></details>';
+	adzworld_display_section( __( 'Adz information text (i)', 'adz-world' ), 'adzworld_notice_submit' );
 	adzworld_notice_setting();
+	echo '</div></details>';
+	adzworld_display_section( __( 'Rating slider', 'adz-world' ), 'adzworld_responses_submit' );
 	adzworld_response_settings();
-	if ( isset( $_POST['adz_template'] ) ) {
+	echo '</div></details>';
+	adzworld_display_section( __( 'Response message', 'adz-world' ), 'adzworld_response_message_save' );
+	adzworld_response_message_settings();
+	echo '</div></details>';
+	adzworld_display_section( __( 'Countdown ad text', 'adz-world' ), 'adz_template', $choosing_layout );
+	adzworld_countdown_layout_settings();
+	echo '</div></details></div>';
+}
+
+/**
+ * Edit and preview one shipped countdown layout.
+ *
+ * @return void
+ */
+function adzworld_countdown_layout_settings() {
+	$layouts = adzworld_countdown_layouts();
+	$query   = filter_input( INPUT_GET, 'countdown_layout' );
+	$choice  = is_string( $query ) ? sanitize_file_name( $query ) : '';
+	if ( null !== filter_input( INPUT_POST, 'adz_template' ) ) {
 		check_admin_referer( 'adzworld_template_save', 'adzworld_template_nonce' );
 		$result = adzworld_save_template_settings();
-		echo '<div class="notice ' . ( is_wp_error( $result ) ? 'notice-error' : 'notice-success' ) . '"><p>'
-			. esc_html( is_wp_error( $result ) ? $result->get_error_message() : __( 'Countdown advertisement lines saved.', 'adz-world' ) ) . '</p></div>';
+		$posted = filter_input( INPUT_POST, 'adz_template' );
+		$choice = is_string( $posted ) ? adzworld_template_current_name( sanitize_file_name( $posted ) ) : '';
+		echo '<div class="notice ' . esc_attr( is_wp_error( $result ) ? 'notice-error' : 'notice-success' ) . '"><p>'
+			. esc_html( is_wp_error( $result ) ? $result->get_error_message() : __( 'Countdown ad text saved.', 'adz-world' ) ) . '</p></div>';
 	}
-	$templates = adzworld_available_templates();
-	$selected  = $templates ? $templates[0] : '';
-	$draft     = isset( $_POST['adzworld_template_nonce'] ) && is_string( $_POST['adzworld_template_nonce'] )
-		? sanitize_text_field( wp_unslash( $_POST['adzworld_template_nonce'] ) ) : '';
-	$use_post  = wp_verify_nonce( $draft, 'adzworld_template_save' );
-	if ( $use_post && isset( $_POST['adz_template'] ) && is_string( $_POST['adz_template'] ) && in_array( sanitize_text_field( wp_unslash( $_POST['adz_template'] ) ), $templates, true ) ) {
-		$selected = sanitize_text_field( wp_unslash( $_POST['adz_template'] ) );
-	}
-	$stored   = '' !== $selected ? adzworld_template_saved_lines( $selected ) : array();
+	$selected = isset( $layouts[ $choice ] ) ? $choice : 'countdown-layout.php';
 	$settings = wp_parse_args(
-		is_array( $stored ) ? $stored : array(),
+		adzworld_template_saved_lines( $selected ),
 		array(
 			'header_text'  => '',
 			'footer_text'  => '',
@@ -525,177 +559,77 @@ function adzworld_template_setting() {
 			'footer_style' => 'center',
 		)
 	);
-	foreach ( array( 'header_style', 'footer_style' ) as $style_key ) {
-		$settings[ $style_key ] = in_array( $settings[ $style_key ], array( 'left', 'right', 'center' ), true ) ? $settings[ $style_key ] : 'center';
+	foreach ( array( 'header_style', 'footer_style' ) as $style ) {
+		if ( ! in_array( $settings[ $style ], array( 'left', 'center', 'right' ), true ) ) {
+			$settings[ $style ] = 'center';
+		}
 	}
-	$saved = $settings;
-	if ( $use_post ) {
-		$settings['header_text']  = isset( $_POST['header_text'] ) && is_string( $_POST['header_text'] ) ? sanitize_textarea_field( wp_unslash( $_POST['header_text'] ) ) : $settings['header_text'];
-		$settings['footer_text']  = isset( $_POST['footer_text'] ) && is_string( $_POST['footer_text'] ) ? sanitize_textarea_field( wp_unslash( $_POST['footer_text'] ) ) : $settings['footer_text'];
-		$settings['header_style'] = isset( $_POST['header_style'] ) && is_string( $_POST['header_style'] ) ? sanitize_key( wp_unslash( $_POST['header_style'] ) ) : $settings['header_style'];
-		$settings['footer_style'] = isset( $_POST['footer_style'] ) && is_string( $_POST['footer_style'] ) ? sanitize_key( wp_unslash( $_POST['footer_style'] ) ) : $settings['footer_style'];
-	}
-	foreach ( array( 'header_style', 'footer_style' ) as $style_key ) {
-		$settings[ $style_key ] = in_array( $settings[ $style_key ], array( 'left', 'right', 'center' ), true ) ? $settings[ $style_key ] : 'center';
-	}
-	$align_labels = array(
+	$alignments   = array(
 		'left'   => __( 'Left', 'adz-world' ),
 		'center' => __( 'Center', 'adz-world' ),
 		'right'  => __( 'Right', 'adz-world' ),
 	);
-	$option_key   = '' !== $selected ? 'template_' . $selected : '';
-	$none_header  = __( 'No header words', 'adz-world' );
-	$none_footer  = __( 'No footer words', 'adz-world' );
-	$screen_rows  = array(
-		array(
-			'key'   => 'header_text',
-			'kind'  => 'text',
-			'label' => __( 'Header words', 'adz-world' ),
-			'value' => '' !== $saved['header_text'] ? $saved['header_text'] : $none_header,
-			'does'  => __( 'Words above the advertisement, beside the countdown.', 'adz-world' ),
-			'empty' => $none_header,
-		),
-		array(
-			'key'   => 'header_style',
-			'kind'  => 'align',
-			'label' => __( 'Header alignment', 'adz-world' ),
-			'value' => $align_labels[ $saved['header_style'] ],
-			'does'  => __( 'Left, center, or right for the header words and the countdown.', 'adz-world' ),
-			'empty' => '',
-		),
-		array(
-			'key'   => 'footer_text',
-			'kind'  => 'text',
-			'label' => __( 'Footer words', 'adz-world' ),
-			'value' => '' !== $saved['footer_text'] ? $saved['footer_text'] : $none_footer,
-			'does'  => __( 'Words below the advertisement, beside the countdown.', 'adz-world' ),
-			'empty' => $none_footer,
-		),
-		array(
-			'key'   => 'footer_style',
-			'kind'  => 'align',
-			'label' => __( 'Footer alignment', 'adz-world' ),
-			'value' => $align_labels[ $saved['footer_style'] ],
-			'does'  => __( 'Left, center, or right for the footer words and the countdown.', 'adz-world' ),
-			'empty' => '',
-		),
-		array(
-			'key'   => 'adz_template',
-			'kind'  => 'text',
-			'label' => __( 'Layout file', 'adz-world' ),
-			'value' => $selected,
-			'does'  => sprintf(
-				/* translators: %s: stored option key, such as template_countdown-layout.php. */
-				__( 'Stored as %s. This file prints the lines and the countdown.', 'adz-world' ),
-				$option_key
-			),
-			'empty' => '',
-		),
+	$text_labels  = array(
+		'header' => __( 'Text above the countdown ad', 'adz-world' ),
+		'footer' => __( 'Text below the countdown ad', 'adz-world' ),
 	);
-	$other_rows   = array(
-		array(
-			'key'   => 'ad_seconds',
-			'label' => __( 'Countdown length', 'adz-world' ),
-			'value' => __( 'Old rotation', 'adz-world' ),
-			'does'  => __( 'Seconds of adz on an old rotation. The number counts down on the full page or in the popup. At zero the line becomes Continue and the reader can leave.', 'adz-world' ),
-		),
-		array(
-			'key'   => 'adz_duration',
-			'label' => __( 'Shortcode countdown', 'adz-world' ),
-			'value' => __( '[Adzworld] shortcode', 'adz-world' ),
-			'does'  => __( 'The countdown number when that shortcode asks for the advertisement.', 'adz-world' ),
-		),
-		array(
-			'key'   => 'popup_or_page',
-			'label' => __( 'Placement', 'adz-world' ),
-			'value' => __( 'Old rotation', 'adz-world' ),
-			'does'  => __( 'Popup, within the page, or full page. These lines are used for the popup and the full page.', 'adz-world' ),
-		),
-		array(
-			'key'   => 'rotation_countdown',
-			'label' => __( 'Rotation countdown', 'adz-world' ),
-			'value' => __( 'Rotation tab', 'adz-world' ),
-			'does'  => __( 'Seconds on a named rotation. The number counts down on each slot. At zero the slot stays.', 'adz-world' ),
-		),
-		array(
-			'key'   => 'browse_seconds',
-			'label' => __( 'Browsing gap', 'adz-world' ),
-			'value' => __( 'Old rotation', 'adz-world' ),
-			'does'  => __( 'Seconds of browsing before the next countdown advertisement.', 'adz-world' ),
-		),
-		array(
-			'key'   => '',
-			'label' => __( 'Countdown unit', 'adz-world' ),
-			'value' => __( 'seconds', 'adz-world' ),
-			'does'  => __( 'The word after the countdown number. It is fixed text, not a saved setting.', 'adz-world' ),
-		),
+	$align_labels = array(
+		'header' => __( 'Alignment above the ad', 'adz-world' ),
+		'footer' => __( 'Alignment below the ad', 'adz-world' ),
 	);
-	$header_empty = '' === $settings['header_text'];
-	$footer_empty = '' === $settings['footer_text'];
-
-	echo '<form method="post" action="" class="adzworld-template-lines">';
-	wp_nonce_field( 'adzworld_template_save', 'adzworld_template_nonce' );
-	echo '<h2>' . esc_html__( 'Countdown advertisement lines', 'adz-world' ) . '</h2>';
-	echo '<p>' . esc_html__( 'These are the words and alignment beside the countdown. A visitor sees them on the full-page countdown advertisement and on the popup countdown advertisement. Display formats on the Rotation tab do not use them. This screen does not set the countdown length.', 'adz-world' ) . '</p>';
-	echo '<div class="adzworld-template-lines__panel">';
-	echo '<table class="widefat striped adzworld-template-lines__now"><thead><tr><th scope="col">' . esc_html__( 'Setting', 'adz-world' ) . '</th><th scope="col">' . esc_html__( 'Saved now', 'adz-world' ) . '</th><th scope="col">' . esc_html__( 'What it does', 'adz-world' ) . '</th></tr></thead><tbody>';
-	echo '<tr class="adzworld-template-lines__group"><th colspan="3">' . esc_html__( 'Set on this screen', 'adz-world' ) . '</th></tr>';
-	foreach ( $screen_rows as $now_row ) {
-		echo '<tr><th scope="row">' . esc_html( $now_row['label'] );
-		if ( '' !== $now_row['key'] ) {
-			echo '<code>' . esc_html( $now_row['key'] ) . '</code>';
-		}
-		echo '</th><td data-adzworld-saved="' . esc_attr( $now_row['key'] ) . '" data-kind="' . esc_attr( $now_row['kind'] ) . '" data-empty-label="' . esc_attr( $now_row['empty'] ) . '">' . esc_html( $now_row['value'] ) . '</td>';
-		echo '<td>' . esc_html( $now_row['does'] ) . '</td></tr>';
-	}
-	echo '<tr class="adzworld-template-lines__group"><th colspan="3">' . esc_html__( 'Shown beside the countdown, set elsewhere', 'adz-world' ) . '</th></tr>';
-	foreach ( $other_rows as $now_row ) {
-		echo '<tr><th scope="row">' . esc_html( $now_row['label'] );
-		if ( '' !== $now_row['key'] ) {
-			echo '<code>' . esc_html( $now_row['key'] ) . '</code>';
-		}
-		echo '</th><td>' . esc_html( $now_row['value'] ) . '</td><td>' . esc_html( $now_row['does'] ) . '</td></tr>';
-	}
-	echo '</tbody></table></div>';
-	echo '<h3>' . esc_html__( 'Preview', 'adz-world' ) . '</h3>';
-	echo '<p class="adzworld-template-lines__field-note">' . esc_html__( 'The number 10 is a sample. The countdown length is not saved on this screen.', 'adz-world' ) . '</p>';
-	echo '<div class="adzworld-template-lines__preview">';
-	echo '<p class="adzworld-template-lines__sample adzworld-align-' . esc_attr( $settings['header_style'] ) . '" data-adzworld-template-header-row>';
-	echo '<span class="adzworld-template-lines__words' . ( $header_empty ? ' adzworld-template-lines__empty' : '' ) . '" data-adzworld-template-header data-empty-label="' . esc_attr( $none_header ) . '">' . esc_html( $header_empty ? $none_header : $settings['header_text'] ) . '</span>';
-	echo '<span class="adzworld-template-lines__count"><span class="adzworld-template-lines__count-num">10</span> ' . esc_html__( 'seconds', 'adz-world' ) . '</span></p>';
-	echo '<p class="adzworld-template-lines__ad">' . esc_html__( 'Advertisement', 'adz-world' ) . '</p>';
-	echo '<p class="adzworld-template-lines__sample adzworld-align-' . esc_attr( $settings['footer_style'] ) . '" data-adzworld-template-footer-row>';
-	echo '<span class="adzworld-template-lines__words' . ( $footer_empty ? ' adzworld-template-lines__empty' : '' ) . '" data-adzworld-template-footer data-empty-label="' . esc_attr( $none_footer ) . '">' . esc_html( $footer_empty ? $none_footer : $settings['footer_text'] ) . '</span>';
-	echo '<span class="adzworld-template-lines__count"><span class="adzworld-template-lines__count-num">10</span> ' . esc_html__( 'seconds', 'adz-world' ) . '</span></p>';
-	echo '</div>';
-	echo '<h3>' . esc_html__( 'Change the lines', 'adz-world' ) . '</h3>';
-	echo '<p><label for="adz_template_list">' . esc_html__( 'Layout file', 'adz-world' ) . '</label><br>';
-	echo '<select name="adz_template" id="adz_template_list">';
-	foreach ( $templates as $template ) {
-		echo '<option value="' . esc_attr( $template ) . '" ' . selected( $selected, $template, false ) . '>' . esc_html( $template ) . '</option>';
-	}
-	echo '</select> <span class="loading_data adzworld-is-hidden">' . esc_html__( 'Loading the saved lines.', 'adz-world' ) . '</span></p>';
-	echo '<p class="adzworld-template-lines__field-note">' . esc_html__( 'Parameter adz_template. The file that prints these lines.', 'adz-world' ) . '</p>';
-	echo '<p><label for="header_text">' . esc_html__( 'Header words', 'adz-world' ) . '</label><br>';
-	echo '<textarea name="header_text" id="header_text" rows="3">' . esc_textarea( $settings['header_text'] ) . '</textarea></p>';
-	echo '<p class="adzworld-template-lines__field-note">' . esc_html__( 'Parameter header_text. Words above the advertisement, beside the countdown.', 'adz-world' ) . '</p>';
-	echo '<fieldset class="adzworld-template-lines__align"><legend>' . esc_html__( 'Header alignment', 'adz-world' ) . '</legend>';
-	foreach ( $align_labels as $align => $align_label ) {
-		echo '<label><input type="radio" name="header_style" value="' . esc_attr( $align ) . '" id="header_' . esc_attr( $align ) . '" ' . checked( $settings['header_style'], $align, false ) . '> ' . esc_html( $align_label ) . '</label>';
-	}
-	echo '</fieldset>';
-	echo '<p class="adzworld-template-lines__field-note">' . esc_html__( 'Parameter header_style. Left, center, or right.', 'adz-world' ) . '</p>';
-	echo '<p><label for="footer_text">' . esc_html__( 'Footer words', 'adz-world' ) . '</label><br>';
-	echo '<textarea name="footer_text" id="footer_text" rows="3">' . esc_textarea( $settings['footer_text'] ) . '</textarea></p>';
-	echo '<p class="adzworld-template-lines__field-note">' . esc_html__( 'Parameter footer_text. Words below the advertisement, beside the countdown.', 'adz-world' ) . '</p>';
-	echo '<fieldset class="adzworld-template-lines__align"><legend>' . esc_html__( 'Footer alignment', 'adz-world' ) . '</legend>';
-	foreach ( $align_labels as $align => $align_label ) {
-		echo '<label><input type="radio" name="footer_style" value="' . esc_attr( $align ) . '" id="footer_' . esc_attr( $align ) . '" ' . checked( $settings['footer_style'], $align, false ) . '> ' . esc_html( $align_label ) . '</label>';
-	}
-	echo '</fieldset>';
-	echo '<p class="adzworld-template-lines__field-note">' . esc_html__( 'Parameter footer_style. Left, center, or right.', 'adz-world' ) . '</p>';
-	submit_button( __( 'Save countdown lines', 'adz-world' ) );
-	echo '</form>';
+	?>
+	<p><?php esc_html_e( 'Edit the text and alignment for your legacy countdown ads here. The countdown ad configuration chooses its layout and duration. The countdown in a named rotation is set on the Rotation tab.', 'adz-world' ); ?></p>
+	<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
+		<input type="hidden" name="page" value="adzworld">
+		<input type="hidden" name="tab" value="templates">
+		<p><label for="adzworld-countdown-layout"><?php esc_html_e( 'Countdown ad layout', 'adz-world' ); ?></label>
+			<select id="adzworld-countdown-layout" name="countdown_layout">
+				<?php foreach ( $layouts as $name => $label ) : ?>
+					<option value="<?php echo esc_attr( $name ); ?>" <?php selected( $selected, $name ); ?>><?php echo esc_html( $label ); ?></option>
+				<?php endforeach; ?>
+			</select>
+			<?php submit_button( __( 'Edit layout', 'adz-world' ), 'secondary', '', false ); ?>
+		</p>
+	</form>
+	<form method="post" class="adzworld-template-lines">
+		<?php wp_nonce_field( 'adzworld_template_save', 'adzworld_template_nonce' ); ?>
+		<input type="hidden" name="adz_template" value="<?php echo esc_attr( $selected ); ?>">
+		<div class="adzworld-countdown-editor">
+			<div>
+				<?php foreach ( $text_labels as $position => $label ) : ?>
+					<?php $text_name = $position . '_text'; ?>
+					<p><label for="<?php echo esc_attr( $text_name ); ?>"><?php echo esc_html( $label ); ?></label><br>
+						<textarea class="large-text" name="<?php echo esc_attr( $text_name ); ?>" id="<?php echo esc_attr( $text_name ); ?>" rows="3"><?php echo esc_textarea( $settings[ $text_name ] ); ?></textarea></p>
+					<fieldset class="adzworld-template-lines__align">
+						<legend><?php echo esc_html( $align_labels[ $position ] ); ?></legend>
+						<?php foreach ( $alignments as $alignment => $align_label ) : ?>
+							<label><input type="radio" name="<?php echo esc_attr( $position . '_style' ); ?>" value="<?php echo esc_attr( $alignment ); ?>"
+								<?php checked( $settings[ $position . '_style' ], $alignment ); ?>> <?php echo esc_html( $align_label ); ?></label>
+						<?php endforeach; ?>
+					</fieldset>
+				<?php endforeach; ?>
+				<?php submit_button( __( 'Save countdown ad text', 'adz-world' ) ); ?>
+			</div>
+			<div>
+				<h3><?php esc_html_e( 'Preview', 'adz-world' ); ?></h3>
+				<p class="description"><?php esc_html_e( '10 seconds is a sample countdown.', 'adz-world' ); ?></p>
+				<div class="adzworld-template-lines__preview">
+					<p class="adzworld-template-lines__sample adzworld-align-<?php echo esc_attr( $settings['header_style'] ); ?>" data-adzworld-template-header-row>
+						<span class="adzworld-template-lines__words" data-adzworld-template-header><?php echo esc_html( $settings['header_text'] ); ?></span>
+						<span class="adzworld-template-lines__count"><?php esc_html_e( '10 seconds', 'adz-world' ); ?></span>
+					</p>
+					<p class="adzworld-template-lines__ad"><?php esc_html_e( 'Sample ad', 'adz-world' ); ?></p>
+					<p class="adzworld-template-lines__sample adzworld-align-<?php echo esc_attr( $settings['footer_style'] ); ?>" data-adzworld-template-footer-row>
+						<span class="adzworld-template-lines__words" data-adzworld-template-footer><?php echo esc_html( $settings['footer_text'] ); ?></span>
+						<?php if ( 'countdown-layout.php' === $selected ) : ?>
+							<span class="adzworld-template-lines__count"><?php esc_html_e( '10 seconds', 'adz-world' ); ?></span>
+						<?php endif; ?>
+					</p>
+				</div>
+			</div>
+		</div>
+	</form>
+	<?php
 }
 
 /**

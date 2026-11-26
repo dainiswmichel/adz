@@ -664,6 +664,8 @@ function adzworld_render_preference_panel( $pref, $has_pref, $intro = 'full' ) {
 			</button>
 		</div>
 
+		<?php echo wp_kses_post( adzworld_audience_message( 'hub' ) ); ?>
+
 		<div class="adz-panel__chips" data-adz-chips>
 			<?php adzworld_render_chips( $chips ); ?>
 		</div>

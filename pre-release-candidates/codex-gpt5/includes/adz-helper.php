@@ -607,25 +607,29 @@ function adzworld_resolve_template( $template ) {
 		return '';
 	}
 
-	return ADZ_WORLD . 'adz-templates/' . $template;
+	$file = ADZ_WORLD . 'adz-templates/' . $template;
+	return is_readable( $file ) ? $file : '';
 }
 
 /**
- * The template files shipped in adz-templates/.
+ * The named countdown layouts shipped in adz-templates/.
+ *
+ * @return array<string,string> Template filenames and their labels.
+ */
+function adzworld_countdown_layouts() {
+	return array(
+		'countdown-layout.php'     => __( 'Countdown above and below', 'adz-world' ),
+		'countdown-top-layout.php' => __( 'Countdown above only', 'adz-world' ),
+	);
+}
+
+/**
+ * The available countdown layout filenames.
  *
  * @return string[] Filenames.
  */
 function adzworld_available_templates() {
-	static $templates = null;
-
-	if ( null !== $templates ) {
-		return $templates;
-	}
-
-	$found     = glob( ADZ_WORLD . 'adz-templates/*.php' );
-	$templates = $found ? array_map( 'basename', $found ) : array();
-
-	return $templates;
+	return array_keys( adzworld_countdown_layouts() );
 }
 
 /**

@@ -284,6 +284,8 @@ controlled by adzAdmins.
   Information text saved by an adzAdmin is preserved.
 * Encoded query arguments in legacy network ad requests.
 * Replaced native PHP sessions with expiring WordPress storage for browser state.
+* Renamed the Templates tab to Display and added a second countdown ad layout.
+* Added formatted audience messages with an enable switch and Hub or adz placement.
 
 = 1.1.1 =
 * Rating bands now store a start and an end, and both are editable.

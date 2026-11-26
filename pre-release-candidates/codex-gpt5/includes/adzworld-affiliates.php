@@ -768,7 +768,7 @@ function adzworld_affiliate_result_slide( $result, $index, $count ) {
 		. esc_attr( ( $index + 1 ) . ' / ' . $count ) . '"><a class="' . esc_attr( $offer_class ) . '" href="' . esc_url( $result['url'] ) . '" rel="sponsored nofollow" target="_blank">'
 		. $media
 		. '<span class="adzworld-results__body"><span class="adzworld-results__product-title">' . esc_html( $result['title'] ) . '</span>'
-		. $price . '</span></a>' . $source . '</section>';
+		. $price . '</span></a>' . adzworld_audience_message( 'adz' ) . $source . '</section>';
 }
 
 /**

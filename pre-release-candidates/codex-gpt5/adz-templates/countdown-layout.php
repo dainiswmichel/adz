@@ -11,9 +11,10 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
-$adzworld_template_name = basename( __FILE__ );
-$adzworld_setting_array = adzworld_template_saved_lines( $adzworld_template_name );
-$adzworld_setting_array = wp_parse_args(
+$adzworld_countdown_footer = $adzworld_countdown_footer ?? true;
+$adzworld_template_name    = $adzworld_countdown_footer ? 'countdown-layout.php' : 'countdown-top-layout.php';
+$adzworld_setting_array    = adzworld_template_saved_lines( $adzworld_template_name );
+$adzworld_setting_array    = wp_parse_args(
 	is_array( $adzworld_setting_array ) ? $adzworld_setting_array : array(),
 	array(
 		'header_text'  => '',
@@ -59,6 +60,7 @@ if ( 'thru_page' === $display_type ) {
 			<?php
 
 			echo wp_kses( adzworld_ad_content( $ad_text ), adzworld_ad_allowed_html() );
+			echo wp_kses_post( adzworld_audience_message( 'adz' ) );
 			?>
 		</div>
 	</div>
@@ -67,7 +69,11 @@ if ( 'thru_page' === $display_type ) {
 	<!-- BEGIN: Sticky Footer -->
 	<div id="adz_footer_container">
 		<div id="adz_footer_content" class="adzworld-align-<?php echo esc_attr( $adzworld_setting_array['footer_style'] ); ?>">
-			<a href="#" class="adz_footer_text"><p class="continue_reading"><?php echo esc_html( $adzworld_setting_array['footer_text'] ); ?> <span class="adz_timer"> </span> seconds.</p></a>
+			<a href="#" class="adz_footer_text"><p class="continue_reading"><?php echo esc_html( $adzworld_setting_array['footer_text'] ); ?>
+			<?php
+			if ( $adzworld_countdown_footer ) :
+				?>
+				<span class="adz_timer"> </span> seconds.<?php endif; ?></p></a>
 		</div>
 	</div>
 
@@ -85,7 +91,7 @@ if ( 'thru_page' === $display_type ) {
 		<!-- BEGIN: Page Content -->
 		<div id="adz_container">
 		    <div id="content">
-		        ' . adzworld_ad_content( $ad_text ) . '
+		        ' . adzworld_ad_content( $ad_text ) . adzworld_audience_message( 'adz' ) . '
 		    </div>
 		</div>
 		<!-- END: Page Content -->
@@ -93,10 +99,11 @@ if ( 'thru_page' === $display_type ) {
 		<!-- BEGIN: Sticky Footer -->
 		<div id="adz_footer_container">
 		    <div id="adz_footer_content" class="adzworld-align-' . esc_attr( $adzworld_setting_array['footer_style'] ) . '">
-		        <a href="#" class="adz_footer_text"><p class="continue_reading">' . esc_html( $adzworld_setting_array['footer_text'] ) . ' <span class="adz_timer"> </span> seconds.</p></a>
+		        <a href="#" class="adz_footer_text"><p class="continue_reading">' . esc_html( $adzworld_setting_array['footer_text'] ) . ( $adzworld_countdown_footer ? ' <span class="adz_timer"> </span> seconds.' : '' ) . '</p></a>
 		    </div>
 		</div>
 		';
 
 	echo wp_kses( $adzworld_markup, adzworld_ad_allowed_html() );
 }
+unset( $adzworld_countdown_footer );

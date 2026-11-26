@@ -372,7 +372,7 @@ function adzworld_slot_response_message( $rotation, $position ) {
 }
 
 /**
- * Save the ratings bands and default response message from the Templates tab.
+ * Save the ratings bands and slider theme from the Display tab.
  *
  * @return true|WP_Error
  */
@@ -402,15 +402,8 @@ function adzworld_save_response_settings() {
 		return new WP_Error( 'adzworld_ratings_slider_theme', __( 'Choose a slider theme.', 'adz-world' ) );
 	}
 
-	$message = isset( $_POST['adzworld_response_message'] ) && is_string( $_POST['adzworld_response_message'] )
-		? sanitize_text_field( wp_unslash( $_POST['adzworld_response_message'] ) ) : '';
-	if ( '' === $message ) {
-		return new WP_Error( 'adzworld_responses_message', __( 'The default response message cannot be empty. A slot can still be set to show no message.', 'adz-world' ) );
-	}
-
 	update_option( ADZWORLD_RATING_BANDS_OPTION, $bands, false );
 	update_option( ADZWORLD_RATINGS_SLIDER_OPTION, $theme, false );
-	update_option( ADZWORLD_RESPONSE_OPTION, mb_substr( $message, 0, ADZWORLD_RESPONSE_TEXT_MAX ), false );
 
 	return true;
 }
@@ -424,10 +417,10 @@ function adzworld_save_response_message() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return new WP_Error( 'adzworld_responses_forbidden', __( 'Administrator permission is required.', 'adz-world' ) );
 	}
-	$nonce = isset( $_POST['adzworld_responses_nonce'] ) && is_string( $_POST['adzworld_responses_nonce'] )
-		? sanitize_text_field( wp_unslash( $_POST['adzworld_responses_nonce'] ) ) : '';
-	if ( ! wp_verify_nonce( $nonce, 'adzworld_responses_save' ) ) {
-		return new WP_Error( 'adzworld_responses_nonce', __( 'The ratings save request could not be verified.', 'adz-world' ) );
+	$nonce = isset( $_POST['adzworld_response_message_nonce'] ) && is_string( $_POST['adzworld_response_message_nonce'] )
+		? sanitize_text_field( wp_unslash( $_POST['adzworld_response_message_nonce'] ) ) : '';
+	if ( ! wp_verify_nonce( $nonce, 'adzworld_response_message_save' ) ) {
+		return new WP_Error( 'adzworld_responses_nonce', __( 'The response message save request could not be verified.', 'adz-world' ) );
 	}
 	$message = isset( $_POST['adzworld_response_message'] ) && is_string( $_POST['adzworld_response_message'] )
 		? sanitize_text_field( wp_unslash( $_POST['adzworld_response_message'] ) ) : '';
@@ -440,28 +433,24 @@ function adzworld_save_response_message() {
 }
 
 /**
- * Render the ratings bands and default response message editor.
+ * Render the ratings bands and slider theme editor.
  *
  * @return void
  */
 function adzworld_response_settings() {
-	$result  = null;
-	$success = __( 'Ratings bands, slider colours, and response message saved.', 'adz-world' );
-	if ( null !== filter_input( INPUT_POST, 'adzworld_response_message_save', FILTER_UNSAFE_RAW ) ) {
-		$result  = adzworld_save_response_message();
-		$success = __( 'Response message saved.', 'adz-world' );
-	} elseif ( null !== filter_input( INPUT_POST, 'adzworld_responses_submit', FILTER_UNSAFE_RAW ) ) {
+	$result = null;
+	if ( null !== filter_input( INPUT_POST, 'adzworld_responses_submit', FILTER_UNSAFE_RAW ) ) {
 		$result = adzworld_save_response_settings();
 	}
 	if ( true === $result || is_string( $result ) || is_wp_error( $result ) ) {
 		$class   = is_wp_error( $result ) ? 'notice notice-error' : 'notice notice-success';
-		$message = is_wp_error( $result ) ? $result->get_error_message() : $success;
+		$message = is_wp_error( $result ) ? $result->get_error_message() : __( 'Ratings bands and slider theme saved.', 'adz-world' );
 		echo '<div class="' . esc_attr( $class ) . '"><p>' . esc_html( $message ) . '</p></div>';
 	}
 
 	$bands = adzworld_rating_bands_with_start();
 	$theme = adzworld_ratings_slider_theme();
-	echo '<section class="adzworld-desk-intro adzworld-bands"><h2>' . esc_html__( 'Ratings bands', 'adz-world' ) . '</h2>';
+	echo '<section class="adzworld-desk-intro adzworld-bands">';
 	echo '<p>' . esc_html__( 'Readers rate an adzad from -100 to 100. Each row is one band: where it starts, where it ends, and the words for that range. Together the bands cover every score from -100 to 100, with no gap and no overlap. Clear a row to remove it. Fill an empty row to add one.', 'adz-world' ) . '</p>';
 	echo '<form method="post" action="">';
 	wp_nonce_field( 'adzworld_responses_save', 'adzworld_responses_nonce' );
@@ -491,17 +480,30 @@ function adzworld_response_settings() {
 	echo '</tbody></table>';
 	echo '<p class="submit">';
 	submit_button( __( 'Save ratings bands and slider theme', 'adz-world' ), 'secondary', 'adzworld_responses_submit', false );
-	echo '</p>';
+	echo '</p></form></section>';
+}
 
+/**
+ * Render the independently saved default response message.
+ *
+ * @return void
+ */
+function adzworld_response_message_settings() {
+	$result = null !== filter_input( INPUT_POST, 'adzworld_response_message_save', FILTER_UNSAFE_RAW ) ? adzworld_save_response_message() : null;
+	if ( true === $result || is_wp_error( $result ) ) {
+		echo '<div class="notice ' . esc_attr( is_wp_error( $result ) ? 'notice-error' : 'notice-success' ) . '"><p>'
+			. esc_html( is_wp_error( $result ) ? $result->get_error_message() : __( 'Response message saved.', 'adz-world' ) ) . '</p></div>';
+	}
 	$draft = adzworld_default_response_message();
 	if ( is_wp_error( $result ) ) {
-		$draft_nonce = isset( $_POST['adzworld_responses_nonce'] ) && is_string( $_POST['adzworld_responses_nonce'] )
-			? sanitize_text_field( wp_unslash( $_POST['adzworld_responses_nonce'] ) ) : '';
-		if ( wp_verify_nonce( $draft_nonce, 'adzworld_responses_save' ) && isset( $_POST['adzworld_response_message'] ) && is_string( $_POST['adzworld_response_message'] ) ) {
+		$draft_nonce = isset( $_POST['adzworld_response_message_nonce'] ) && is_string( $_POST['adzworld_response_message_nonce'] )
+			? sanitize_text_field( wp_unslash( $_POST['adzworld_response_message_nonce'] ) ) : '';
+		if ( wp_verify_nonce( $draft_nonce, 'adzworld_response_message_save' ) && isset( $_POST['adzworld_response_message'] ) && is_string( $_POST['adzworld_response_message'] ) ) {
 			$draft = sanitize_text_field( wp_unslash( $_POST['adzworld_response_message'] ) );
 		}
 	}
-	echo '<h2>' . esc_html__( 'Response message', 'adz-world' ) . '</h2>';
+	echo '<section class="adzworld-desk-intro"><form method="post" action="">';
+	wp_nonce_field( 'adzworld_response_message_save', 'adzworld_response_message_nonce' );
 	echo '<p>' . esc_html__( 'After a reader rates an adzad, refines it, or changes its category, the adzad panel shows this message. In the Rotation tab, each slot can use this message, its own message, or none.', 'adz-world' ) . '</p>';
 	echo '<p><label for="adzworld-response-message">' . esc_html__( 'Default response message', 'adz-world' ) . '</label><br>'
 		. '<textarea class="adzworld-bands__message" maxlength="300" rows="3" cols="60" id="adzworld-response-message" name="adzworld_response_message">'

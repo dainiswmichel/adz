@@ -30,10 +30,10 @@ do {
 	$adzworld_more = 100 === count( $adzworld_journeys );
 } while ( $adzworld_more );
 
-foreach ( array( 'adzworld_logs_settings', 'adzworld_rating_bands', 'adzworld_ratings_slider_theme', 'adzworld_response_message', 'adzworld_profile_saving' ) as $adzworld_option ) {
+foreach ( array( 'adzworld_logs_settings', 'adzworld_rating_bands', 'adzworld_ratings_slider_theme', 'adzworld_response_message', 'adzworld_profile_saving', 'adzworld_audience_messages' ) as $adzworld_option ) {
 	delete_option( $adzworld_option );
 }
 
-foreach ( array( 'adzworld_save_with_profile', 'adzworld_preference', 'adzworld_feedback' ) as $adzworld_meta_key ) {
+foreach ( array( 'adzworld_save_with_profile', 'adzworld_preference', 'adzworld_feedback', 'adzworld_audience_member' ) as $adzworld_meta_key ) {
 	delete_metadata( 'user', 0, $adzworld_meta_key, '', true );
 }
