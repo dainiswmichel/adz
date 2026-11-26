@@ -157,6 +157,12 @@ target with an 8-pixel cross and 16-pixel inner focus circle. The collapsed
 bar draws its outline inside its visible edge. The production gate and strict
 Plugin Check passed, Chromium verified keyboard activation and shared state,
 and WebKit painted a continuous circle in the forced focus style.</p>
+<p>At Dainis' request, the next pass removed both dismiss circles. The
+24-pixel click target and 8-pixel cross are kept. Hover brightens the cross and
+keyboard focus also thickens its strokes. Browser checks verified shared
+collapse state and the absence of a circle in every dismiss state. Production
+gate report <code>testing-logs/2026y-11m-26d-UTC-17h-24m-56s/00-summary.txt</code>
+and strict Plugin Check passed.</p>
 </section>
 
 <section id="codex-uninstall-2026-11-26">

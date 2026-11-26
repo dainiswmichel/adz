@@ -1208,10 +1208,6 @@
 	inset-inline-end: 0.45rem;
 	inline-size: var(--adzworld-audience-control-size);
 	block-size: var(--adzworld-audience-control-size);
-	border-radius: 50%;
-	background-position: center;
-	background-repeat: no-repeat;
-	background-size: 1rem 1rem;
 
 	/*
 	 * The glyph in the markup is hidden and the cross is drawn below. A text
@@ -1241,21 +1237,25 @@
 }
 
 .adzworld-audience-message__collapse:hover {
-	background-image: radial-gradient(circle closest-side, var(--adzworld-audience-hover) 90%, transparent);
 	color: var(--adzworld-audience-accent);
 }
 
-/* Keep the circle inside the hit area so the message edge cannot clip it. */
+/* Indicate keyboard focus on the cross itself. */
 .adzworld-audience-message .adzworld-audience-message__collapse:focus-visible {
-	outline: 2px solid transparent;
-	outline-offset: -2px;
-	background-image: radial-gradient(circle closest-side, transparent 75%, var(--adzworld-audience-accent) 82% 92%, transparent);
+	outline: none;
 	color: var(--adzworld-audience-accent);
+}
+
+.adzworld-audience-message__collapse:focus-visible::before,
+.adzworld-audience-message__collapse:focus-visible::after {
+	block-size: 2px;
 }
 
 @media (forced-colors: active) {
-	.adzworld-audience-message .adzworld-audience-message__collapse:focus-visible {
-		outline-color: Highlight;
+	.adzworld-audience-message__collapse::before,
+	.adzworld-audience-message__collapse::after {
+		forced-color-adjust: none;
+		background: ButtonText;
 	}
 }
 
