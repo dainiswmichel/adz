@@ -136,6 +136,43 @@ source for live review. All 13 production gate blocks passed. The report is
 <code>testing-logs/2026y-11m-26d-UTC-15h-43m-25s/00-summary.txt</code>.
 The 92-file ZIP SHA-256 is
 <code>9036ec251012a84f8928ddc71da59d1ba8018233f86eaf0b69b59df09f9fcb51</code>.</p>
+<p>Claude's audience-message design <code>a19adb7</code> was fast-forwarded
+unchanged and mirrored in the Codex candidate at <code>073d1f3</code>. The live
+1.1.2 ZIP passed the production gate and strict Plugin Check. The report is
+<code>testing-logs/2026y-11m-26d-UTC-16h-17m-30s/00-summary.txt</code>.
+On adz-world.com, Chromium verified the expanded card, collapsed bar, hover,
+keyboard activation and persistence. The expanded button's focus ring was
+visible. The bar's outer focus ring was clipped.</p>
+<p>Claude's refinement <code>762e5f9</code> fast-forwarded to main and deployed
+unchanged. The production and candidate stylesheets are identical. The full
+gate and strict Plugin Check passed. The report is
+<code>testing-logs/2026y-11m-26d-UTC-16h-31m-40s/00-summary.txt</code>.
+On the live Midnight theme, Chromium measured the unfilled dismiss button at
+24 × 24 CSS pixels and verified the accent gradient, the muted text, hover,
+keyboard activation, and shared Hub and adz state after reload. The collapsed
+bar still clips its keyboard focus outline.</p>
+</section>
+
+<section id="codex-uninstall-2026-11-26">
+<h2>Codex — WordPress uninstall cleanup</h2>
+<p class="meta">2026-11-26. Production and Codex candidate are based on
+<code>762e5f9</code>. The legacy session helper and its request hooks were
+removed. The replacement uninstall removes owned options, local credentials,
+rotation state, journey records, and audience profile metadata. Ads and pages
+are retained.</p>
+<p>The 1.1.2 ZIP passed all 13 production gate sections. Report
+<code>testing-logs/2026y-11m-26d-UTC-17h-01m-23s/00-summary.txt</code>.
+The ZIP was installed and reactivated before deletion through the WordPress
+Plugins screen. The test verified removal of 105 journeys, the saved current
+and legacy template settings, active and retired rotation state, and credentials.
+Authored content and unrelated settings survived. A separate network uninstall
+passed on two WordPress sites. The public forms and all nine desk tabs passed
+verification.</p>
+<p>WordPress enumerates autoloaded options. Current settings identify configured
+non-autoloaded rotation state, and the writer records rotation keys for future
+uninstalls. A pre-existing non-autoloaded rotation with a missing key and settings
+entry can remain. The live database contained zero legacy numbered rotation
+options at the time of review.</p>
 </section>
 
 <section id="codex-remove-unintended-monetization-2026y-11m-20d">

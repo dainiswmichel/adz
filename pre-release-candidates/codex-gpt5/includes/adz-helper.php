@@ -426,7 +426,7 @@ function adzworld_check_rotation_completed( $rotation ) {
 function adzworld_validate_rotation_id( $rotation_id ) {
 	$rotation_id = is_scalar( $rotation_id ) ? (string) $rotation_id : '';
 
-	return preg_match( '/^adz_rotation_[0-9]+$/', $rotation_id ) ? $rotation_id : '';
+	return preg_match( '/\Aadz_rotation_[0-9]+\z/', $rotation_id ) ? $rotation_id : '';
 }
 
 /**
@@ -468,6 +468,9 @@ function adzworld_update_rotation_state( $rotation_id, $state ) {
 	if ( '' === $rotation_id ) {
 		return false;
 	}
+
+	// Keep the key discoverable after the rotation is removed, even if its state does not autoload.
+	add_option( 'adzworld_rotation_state_key_' . $rotation_id, '1', '', true );
 
 	return update_option( $rotation_id, $state );
 }

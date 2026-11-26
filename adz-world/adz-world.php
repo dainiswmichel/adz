@@ -77,7 +77,6 @@ require_once __DIR__ . '/vendor/eof/adz-config.php';
 require_once __DIR__ . '/classes/class-adz-networkauthorization.php';
 require_once __DIR__ . '/classes/eof_fields/class-eof-field-dynamic.php';
 require_once __DIR__ . '/classes/eof_fields/class-eof-field-select-caps.php';
-require_once __DIR__ . '/session-handling.php';
 require_once __DIR__ . '/includes/adz-helper.php';
 require_once __DIR__ . '/includes/adz-cpt-ads.php';
 require_once __DIR__ . '/includes/adz-shortcode.php';
@@ -733,7 +732,7 @@ function adzworld_show_advertisement( $roatations, $ad_to_serve, $repeat_times )
 						array_shift( $un_serverd );
 						$roatation_stats['served'][]  = $ad_to_serve;
 						$roatation_stats['un_served'] = $un_serverd;
-						update_option( $roatations['rotation_id'], $roatation_stats );
+						adzworld_update_rotation_state( $rotation_id, $roatation_stats );
 
 					} else {
 						array_shift( $rotation_adz_pool['un_served'] );
@@ -742,7 +741,7 @@ function adzworld_show_advertisement( $roatations, $ad_to_serve, $repeat_times )
 							$rotation_adz_pool['un_served'] = array();
 						}
 						$roatation_stats['un_served'] = $rotation_adz_pool['un_served'];
-						update_option( $roatations['rotation_id'], $roatation_stats );
+						adzworld_update_rotation_state( $rotation_id, $roatation_stats );
 
 					}//End of if else.
 					update_option( 'next_adz_pool', 'network' );
@@ -777,7 +776,7 @@ function adzworld_show_advertisement( $roatations, $ad_to_serve, $repeat_times )
 							array_shift( $un_serverd );
 							$roatation_stats['served'][]  = $ad_to_serve;
 							$roatation_stats['un_served'] = $un_serverd;
-							update_option( $roatations['rotation_id'], $roatation_stats );
+							adzworld_update_rotation_state( $rotation_id, $roatation_stats );
 
 						} else {
 							array_shift( $rotation_adz_pool['un_served'] );
@@ -786,7 +785,7 @@ function adzworld_show_advertisement( $roatations, $ad_to_serve, $repeat_times )
 								$rotation_adz_pool['un_served'] = array();
 							}
 							$roatation_stats['un_served'] = $rotation_adz_pool['un_served'];
-							update_option( $roatations['rotation_id'], $roatation_stats );
+							adzworld_update_rotation_state( $rotation_id, $roatation_stats );
 
 						}//End of if else.
 
