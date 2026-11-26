@@ -1090,9 +1090,18 @@
  * that styles its own buttons would otherwise paint this one.
  */
 .adzworld-audience-message {
-	--adzworld-audience-control-size: 1.75rem;
+	--adzworld-audience-control-size: 1.5rem;
 	--adzworld-audience-bar-size: 1.5rem;
 	--adzworld-audience-accent: var(--adz-accent, currentColor);
+
+	/*
+	 * The quiet accents are percentages of the theme's own accent rather than
+	 * second and third colours, so a theme that changes its accent carries
+	 * every one of them with it.
+	 */
+	--adzworld-audience-accent-soft: rgba(128, 128, 128, 0.55);
+	--adzworld-audience-accent-faint: rgba(128, 128, 128, 0.16);
+	--adzworld-audience-text: inherit;
 	--adzworld-audience-surface: rgba(128, 128, 128, 0.1);
 	--adzworld-audience-surface-dim: rgba(128, 128, 128, 0.08);
 	--adzworld-audience-edge: rgba(128, 128, 128, 0.2);
@@ -1109,6 +1118,9 @@
 		--adzworld-audience-surface-dim: color-mix(in oklab, var(--adzworld-audience-surface) 80%, transparent);
 		--adzworld-audience-edge: color-mix(in oklab, currentColor 18%, transparent);
 		--adzworld-audience-hover: color-mix(in oklab, currentColor 14%, transparent);
+		--adzworld-audience-accent-soft: color-mix(in oklab, var(--adzworld-audience-accent) 55%, transparent);
+		--adzworld-audience-accent-faint: color-mix(in oklab, var(--adzworld-audience-accent) 16%, transparent);
+		--adzworld-audience-text: color-mix(in oklab, currentColor 78%, transparent);
 	}
 }
 
@@ -1116,9 +1128,30 @@
 	position: relative;
 	padding: 0.7em 1em;
 	border: 1px solid var(--adzworld-audience-edge);
-	border-inline-start: 3px solid var(--adzworld-audience-accent);
 	border-radius: var(--adz-radius, 10px);
 	background: var(--adzworld-audience-surface);
+	overflow: clip;
+}
+
+/*
+ * The accent edge fades down its own length. A message is an aside, so the
+ * mark that identifies it states itself at the top and lets go.
+ */
+.adzworld-audience-message__body::before {
+	position: absolute;
+	inset-block: 0;
+	inset-inline-start: 0;
+	inline-size: 3px;
+	background: linear-gradient(
+		to bottom,
+		var(--adzworld-audience-accent-soft),
+		var(--adzworld-audience-accent-faint)
+	);
+	content: "";
+}
+
+.adzworld-audience-message__text {
+	color: var(--adzworld-audience-text);
 }
 
 .adzworld-audience-message__text > :first-child {
@@ -1141,7 +1174,7 @@
 	border: 0;
 	border-radius: 0;
 	background: transparent;
-	color: var(--adzworld-audience-accent);
+	color: var(--adzworld-audience-accent-soft);
 	font: inherit;
 	text-align: center;
 	cursor: pointer;
@@ -1177,7 +1210,6 @@
 	inline-size: var(--adzworld-audience-control-size);
 	block-size: var(--adzworld-audience-control-size);
 	border-radius: 50%;
-	background: var(--adzworld-audience-surface-dim);
 
 	/*
 	 * The glyph in the markup is hidden and the cross is drawn below. A text
@@ -1191,8 +1223,8 @@
 .adzworld-audience-message__collapse::before,
 .adzworld-audience-message__collapse::after {
 	position: absolute;
-	inline-size: 0.8rem;
-	block-size: 2px;
+	inline-size: 0.6rem;
+	block-size: 1.5px;
 	border-radius: 1px;
 	background: currentColor;
 	content: "";
@@ -1208,6 +1240,7 @@
 
 .adzworld-audience-message__collapse:hover {
 	background: var(--adzworld-audience-hover);
+	color: var(--adzworld-audience-accent);
 }
 
 /* Collapsed: a bar the height of a touch target, carrying the accent edge so
@@ -1223,7 +1256,7 @@
 	inset: 0;
 	padding: 0;
 	border-color: transparent;
-	border-inline-start-color: var(--adzworld-audience-accent);
+	border-inline-start-color: transparent;
 	border-radius: calc(var(--adz-radius, 10px) * 0.4);
 
 	/*
@@ -1234,6 +1267,11 @@
 	border-start-start-radius: 0;
 	border-end-start-radius: 0;
 	background: var(--adzworld-audience-surface-dim);
+}
+
+/* Collapsed, the edge is a short mark rather than a full fade. */
+[data-adzworld-audience-state="collapsed"] .adzworld-audience-message__body::before {
+	background: var(--adzworld-audience-accent-soft);
 }
 
 [data-adzworld-audience-state="collapsed"] .adzworld-audience-message__text {
@@ -1249,6 +1287,7 @@
 
 .adzworld-audience-message__expand:hover {
 	background: var(--adzworld-audience-hover);
+	color: var(--adzworld-audience-accent);
 }
 
 .adzworld-audience-message__expand::after {
