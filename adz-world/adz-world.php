@@ -77,7 +77,6 @@ require_once __DIR__ . '/vendor/eof/adz-config.php';
 require_once __DIR__ . '/classes/class-adz-networkauthorization.php';
 require_once __DIR__ . '/classes/eof_fields/class-eof-field-dynamic.php';
 require_once __DIR__ . '/classes/eof_fields/class-eof-field-select-caps.php';
-require_once __DIR__ . '/session-handling.php';
 require_once __DIR__ . '/includes/adz-helper.php';
 require_once __DIR__ . '/includes/adz-cpt-ads.php';
 require_once __DIR__ . '/includes/adz-shortcode.php';
