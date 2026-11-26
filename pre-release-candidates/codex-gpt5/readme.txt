@@ -41,6 +41,9 @@ separate journey identifier contains the Michel Time Stamp of the first action
 plus five random characters. Signed-in audience members can choose to save
 their requests with their WordPress profile when the site allows it.
 
+Collapsing audience messages saves one display preference in local browser
+storage. Expanding them clears that preference.
+
 Visible, editable controls show the categories and refinements supplied by the
 audience member. Ratings from -100 to 100 add positive or negative weight;
 untouched adz remain distinct from explicitly rated adz. adzAdmins can customize

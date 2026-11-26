@@ -1106,7 +1106,58 @@
 		reflect();
 	}
 
+	function prepareAudienceMessages() {
+		var storageKey = 'adzworld-audience-messages-collapsed';
+		var root = document.documentElement;
+
+		function restoreState() {
+			try {
+				root.dataset.adzworldAudienceState = '1' === window.localStorage.getItem( storageKey ) ? 'collapsed' : 'expanded';
+			} catch ( error ) {
+				// Keep the current page's setting when browser storage is unavailable.
+			}
+		}
+
+		root.dataset.adzworldAudienceState = 'expanded';
+		restoreState();
+		document.addEventListener(
+			'click',
+			function ( event ) {
+				var button = event.target.closest( '.adzworld-audience-message__collapse, .adzworld-audience-message__expand' );
+				var collapsed;
+				var message;
+
+				if ( ! button ) {
+					return;
+				}
+				collapsed = 'true' === button.getAttribute( 'aria-expanded' );
+				message = button.closest( '.adzworld-audience-message' );
+				root.dataset.adzworldAudienceState = collapsed ? 'collapsed' : 'expanded';
+				message.querySelector( collapsed ? '.adzworld-audience-message__expand' : '.adzworld-audience-message__collapse' ).focus( { preventScroll: true } );
+				try {
+					if ( collapsed ) {
+						window.localStorage.setItem( storageKey, '1' );
+					} else {
+						window.localStorage.removeItem( storageKey );
+					}
+				} catch ( error ) {
+					// All messages still follow the setting for this page.
+				}
+			}
+		);
+		window.addEventListener(
+			'storage',
+			function ( event ) {
+				if ( storageKey === event.key || null === event.key ) {
+					restoreState();
+				}
+			}
+		);
+		window.addEventListener( 'pageshow', restoreState );
+	}
+
 	function init() {
+		prepareAudienceMessages();
 		if ( ! window.fetch || ! window.FormData || ! settings.ajaxUrl ) {
 			return;
 		}

@@ -266,5 +266,11 @@ function adzworld_audience_message( $surface ) {
 		}
 	}
 
-	return '<div class="adzworld-audience-message">' . wp_kses( implode( '', $parts ), adzworld_audience_message_html() ) . '</div>';
+	$message_id = esc_attr( wp_unique_id( 'adzworld-audience-message-' ) );
+
+	return '<div class="adzworld-audience-message"><div class="adzworld-audience-message__body">'
+		. '<div class="adzworld-audience-message__text" id="' . $message_id . '">' . wp_kses( implode( '', $parts ), adzworld_audience_message_html() ) . '</div>'
+		. '<button type="button" class="adzworld-audience-message__collapse" aria-expanded="true" aria-controls="' . $message_id . '" aria-label="' . esc_attr__( 'Collapse audience messages', 'adz-world' ) . '">×</button>'
+		. '<button type="button" class="adzworld-audience-message__expand" aria-expanded="false" aria-controls="' . $message_id . '" aria-label="' . esc_attr__( 'Expand audience messages', 'adz-world' ) . '"></button>'
+		. '</div></div>';
 }

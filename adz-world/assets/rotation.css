@@ -1075,18 +1075,127 @@
 }
 
 .adzworld-audience-message {
-	padding: 0.65em 1em;
+	--adzworld-audience-control-size: 1.75rem;
+	position: relative;
+	container-type: inline-size;
 	margin-block: 0.5em;
-	border-inline-start: 2px solid var(--adz-accent, currentColor);
 	overflow-wrap: anywhere;
 }
 
-.adzworld-audience-message > :first-child {
+.adzworld-audience-message__body {
+	position: relative;
+	padding: 0.65em 1em;
+	border-inline-start: 2px solid var(--adz-accent, currentColor);
+}
+
+.adzworld-audience-message__text > :first-child {
 	margin-block-start: 0;
 }
 
-.adzworld-audience-message > :last-child {
+.adzworld-audience-message__text > :last-child {
 	margin-block-end: 0;
+}
+
+.adzworld-audience-message__collapse,
+.adzworld-audience-message__expand {
+	position: absolute;
+	display: none;
+	box-sizing: border-box;
+	min-inline-size: 0;
+	min-block-size: 0;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: var(--adz-accent, currentColor);
+	cursor: pointer;
+}
+
+[data-adzworld-audience-state] .adzworld-audience-message__body {
+	padding-inline-end: calc(1em + var(--adzworld-audience-control-size));
+}
+
+[data-adzworld-audience-state="expanded"] .adzworld-audience-message__collapse {
+	display: grid;
+	place-items: center;
+	inset-block-start: 0.25rem;
+	inset-inline-end: 0.25rem;
+	inline-size: var(--adzworld-audience-control-size);
+	block-size: var(--adzworld-audience-control-size);
+	border-radius: 50%;
+	font-size: 1.25rem;
+	line-height: 1;
+}
+
+.adzworld-audience-message__collapse:hover {
+	background: var(--adz-surface-sunken, transparent);
+}
+
+.adzworld-audience-message__collapse:focus-visible,
+.adzworld-audience-message__expand:focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
+}
+
+[data-adzworld-audience-state="collapsed"] .adzworld-audience-message {
+	min-block-size: var(--adzworld-audience-control-size);
+	overflow: clip;
+	overflow-clip-margin: 4px;
+}
+
+/* Keep the text at its original width so the turned accent follows its height. */
+[data-adzworld-audience-state="collapsed"] .adzworld-audience-message__body {
+	position: absolute;
+	inset-block-start: 0;
+	inset-inline: 0;
+	border-inline-start-color: transparent;
+}
+
+[data-adzworld-audience-state="collapsed"] .adzworld-audience-message__text {
+	visibility: hidden;
+}
+
+[data-adzworld-audience-state="collapsed"] .adzworld-audience-message__expand {
+	display: block;
+	inset-block-start: 0;
+	inset-inline-start: -2px;
+	inline-size: var(--adzworld-audience-control-size);
+	block-size: 100%;
+	max-block-size: calc(100cqi - 0.75rem);
+	transform: translateY(var(--adzworld-audience-control-size)) rotate(-90deg);
+	transform-origin: top left;
+}
+
+.adzworld-audience-message__expand:dir(rtl) {
+	transform: translateY(var(--adzworld-audience-control-size)) rotate(90deg);
+	transform-origin: top right;
+}
+
+.adzworld-audience-message__expand::before,
+.adzworld-audience-message__expand::after {
+	position: absolute;
+	left: 50%;
+	content: "";
+}
+
+.adzworld-audience-message__expand::before {
+	inset-block: 0;
+	inline-size: 2px;
+	background: currentColor;
+	transform: translateX(-50%);
+}
+
+.adzworld-audience-message__expand::after {
+	inset-block-end: 0;
+	box-sizing: border-box;
+	inline-size: 0.55rem;
+	block-size: 0.55rem;
+	border-bottom: 2px solid;
+	border-right: 2px solid;
+	transform: translate(-50%, 50%) rotate(135deg);
+}
+
+.adzworld-audience-message__expand:dir(rtl)::after {
+	transform: translate(-50%, 50%) rotate(-45deg);
 }
 
 .adzworld-results__source-image {
