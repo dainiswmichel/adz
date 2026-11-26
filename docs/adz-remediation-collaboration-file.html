@@ -151,6 +151,12 @@ On the live Midnight theme, Chromium measured the unfilled dismiss button at
 24 × 24 CSS pixels and verified the accent gradient, the muted text, hover,
 keyboard activation, and shared Hub and adz state after reload. The collapsed
 bar still clips its keyboard focus outline.</p>
+<p>The next pass fixed the focus cascade. The carousel's general focus rule
+had overridden both audience controls. The dismiss button keeps a 24-pixel
+target with an 8-pixel cross and 16-pixel inner focus circle. The collapsed
+bar draws its outline inside its visible edge. The production gate and strict
+Plugin Check passed, Chromium verified keyboard activation and shared state,
+and WebKit painted a continuous circle in the forced focus style.</p>
 </section>
 
 <section id="codex-uninstall-2026-11-26">

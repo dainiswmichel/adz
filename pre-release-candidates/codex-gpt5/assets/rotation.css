@@ -1190,10 +1190,9 @@
 	}
 }
 
-.adzworld-audience-message__collapse:focus-visible,
-.adzworld-audience-message__expand:focus-visible {
+.adzworld-audience-message .adzworld-audience-message__expand:focus-visible {
 	outline: 2px solid var(--adzworld-audience-accent);
-	outline-offset: 2px;
+	outline-offset: -2px;
 }
 
 /* Expanded: the message, with room kept at the end of the first line for the
@@ -1210,6 +1209,9 @@
 	inline-size: var(--adzworld-audience-control-size);
 	block-size: var(--adzworld-audience-control-size);
 	border-radius: 50%;
+	background-position: center;
+	background-repeat: no-repeat;
+	background-size: 1rem 1rem;
 
 	/*
 	 * The glyph in the markup is hidden and the cross is drawn below. A text
@@ -1223,8 +1225,8 @@
 .adzworld-audience-message__collapse::before,
 .adzworld-audience-message__collapse::after {
 	position: absolute;
-	inline-size: 0.6rem;
-	block-size: 1.5px;
+	inline-size: 0.5rem;
+	block-size: 1px;
 	border-radius: 1px;
 	background: currentColor;
 	content: "";
@@ -1239,8 +1241,22 @@
 }
 
 .adzworld-audience-message__collapse:hover {
-	background: var(--adzworld-audience-hover);
+	background-image: radial-gradient(circle closest-side, var(--adzworld-audience-hover) 90%, transparent);
 	color: var(--adzworld-audience-accent);
+}
+
+/* Keep the circle inside the hit area so the message edge cannot clip it. */
+.adzworld-audience-message .adzworld-audience-message__collapse:focus-visible {
+	outline: 2px solid transparent;
+	outline-offset: -2px;
+	background-image: radial-gradient(circle closest-side, transparent 75%, var(--adzworld-audience-accent) 82% 92%, transparent);
+	color: var(--adzworld-audience-accent);
+}
+
+@media (forced-colors: active) {
+	.adzworld-audience-message .adzworld-audience-message__collapse:focus-visible {
+		outline-color: Highlight;
+	}
 }
 
 /* Collapsed: a bar the height of a touch target, carrying the accent edge so
