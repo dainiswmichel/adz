@@ -2,18 +2,9 @@
 /**
  * Where a visitor says what they want, and where it is kept.
  *
- * A visitor has no profile. Refinements are appended to that visitor's PHP
- * session and end when the session ends. A guest and a member have WordPress
- * profiles, so their preferences are user meta on that profile. A member is a
- * guest who has made an adz-world purchase; this plugin does not record that
- * purchase and grants no capability for it.
- *
- * The cookie holds a short restricted-charset string rather than JSON, for three
- * reasons: sanitize_text_field() is lossless and idempotent over that charset,
- * so the untrusted value is genuinely sanitised on the way in rather than
- * excused; no row is written anywhere for an anonymous visitor; and the visitor
- * can open their own cookie and read exactly what is stored, which is only what
- * they typed.
+ * Browser preferences are kept in expiring WordPress transients. The browser
+ * cookie holds an opaque token. A reader who opts in to profile saving keeps
+ * their preferences in user meta instead.
  *
  * @package adz-world
  */
@@ -23,17 +14,11 @@ defined( 'ABSPATH' ) || exit; // Exit if accessed directly.
 /** User meta key holding a guest or member preference. */
 const ADZWORLD_PREFERENCE_META = 'adzworld_preference';
 
-/** Session key holding a visitor's refinements. */
-const ADZWORLD_PREFERENCE_SESSION = 'adzworld_preference';
+/** Browser-session token written only after a reader engages. */
+const ADZWORLD_BROWSER_SESSION_COOKIE = 'adzworld_session';
 
-/** Session key recording when an anonymous preference window began. */
-const ADZWORLD_PREFERENCE_SESSION_STARTED = 'adzworld_preference_started';
-
-/** Browser-session marker written only after an anonymous reader engages. */
-const ADZWORLD_PREFERENCE_SESSION_COOKIE = 'adzworld_session';
-
-/** Anonymous preference windows start fresh after 24 hours. */
-const ADZWORLD_PREFERENCE_SESSION_TTL = 24 * 60 * 60;
+/** Browser state expires no later than 24 hours after the first action. */
+const ADZWORLD_BROWSER_SESSION_TTL = 24 * 60 * 60;
 
 /** User meta key: '1' when the reader chose to keep adz requests on their profile. */
 const ADZWORLD_PROFILE_CONSENT_META = 'adzworld_save_with_profile';
@@ -263,83 +248,46 @@ function adzworld_preference_valid_session_id( $value ) {
 }
 
 /**
- * Whether this request already carries the preference session cookie.
+ * Find this browser's current state, or create it after a visitor action.
  *
- * A page view with no cookie does not start a session.
+ * The cookie is an opaque random token. The displayed journey ID cannot be
+ * used to retrieve browser state.
  *
- * @return bool
+ * @param bool $create Whether the reader has taken an action.
+ * @return array Browser key, journey ID, and expiry, or an empty array.
  */
-function adzworld_preference_session_cookie_present() {
-	$raw = isset( $_COOKIE[ ADZWORLD_PREFERENCE_SESSION_COOKIE ] )
-		? sanitize_text_field( wp_unslash( $_COOKIE[ ADZWORLD_PREFERENCE_SESSION_COOKIE ] ) )
+function adzworld_browser_session( $create = false ) {
+	$token = isset( $_COOKIE[ ADZWORLD_BROWSER_SESSION_COOKIE ] ) && is_string( $_COOKIE[ ADZWORLD_BROWSER_SESSION_COOKIE ] )
+		? sanitize_text_field( wp_unslash( $_COOKIE[ ADZWORLD_BROWSER_SESSION_COOKIE ] ) )
 		: '';
 
-	if ( adzworld_preference_valid_session_id( $raw ) ) {
-		return true;
+	if ( 1 === preg_match( '/^[A-Za-z0-9]{40}$/D', $token ) ) {
+		$key   = 'adzworld_browser_' . hash( 'sha256', $token );
+		$state = get_transient( $key );
+		if ( is_array( $state ) && isset( $state['expires'], $state['id'] ) && $state['expires'] > time() ) {
+			$state['key'] = $key;
+			return $state;
+		}
 	}
 
-	if ( PHP_SESSION_ACTIVE !== session_status() ) {
-		return false;
+	if ( ! $create || headers_sent() ) {
+		return array();
 	}
 
-	$current = isset( $_SESSION['adzworld_session_id'] )
-		? sanitize_text_field( wp_unslash( $_SESSION['adzworld_session_id'] ) )
-		: '';
-
-	return adzworld_preference_valid_session_id( $current );
-}
-
-/**
- * Open the visitor session.
- *
- * Called when a preference is stored, or when a session cookie is already present.
- *
- * @return void
- */
-function adzworld_preference_open_session() {
-	if ( adzworld_preference_uses_profile() || headers_sent() ) {
-		return;
+	$token = wp_generate_password( 40, false, false );
+	$key   = 'adzworld_browser_' . hash( 'sha256', $token );
+	$state = array(
+		'key'     => $key,
+		'id'      => adzworld_preference_new_session_id(),
+		'expires' => time() + ADZWORLD_BROWSER_SESSION_TTL,
+	);
+	if ( ! set_transient( $key, $state, ADZWORLD_BROWSER_SESSION_TTL ) ) {
+		return array();
 	}
 
-	if ( PHP_SESSION_ACTIVE !== session_status() ) {
-		session_start();
-	}
-
-	if ( PHP_SESSION_ACTIVE !== session_status() ) {
-		return;
-	}
-
-	$now     = time();
-	$started = isset( $_SESSION[ ADZWORLD_PREFERENCE_SESSION_STARTED ] )
-		? absint( $_SESSION[ ADZWORLD_PREFERENCE_SESSION_STARTED ] )
-		: 0;
-
-	if ( 0 === $started || $now - $started >= ADZWORLD_PREFERENCE_SESSION_TTL ) {
-		unset( $_SESSION[ ADZWORLD_PREFERENCE_SESSION ] );
-		unset( $_SESSION['adzworld_session_id'] );
-		$_SESSION[ ADZWORLD_PREFERENCE_SESSION_STARTED ] = $now;
-	}
-}
-
-/**
- * Mark the browser as having started an anonymous adz-world session.
- *
- * The marker is a session cookie, so it expires when the browser session ends.
- * It is never written for a passive reader.
- *
- * @param string $session_id Michel Time Stamp session identifier.
- * @return void
- */
-function adzworld_preference_set_session_cookie( $session_id ) {
-	if ( headers_sent() || ! adzworld_preference_valid_session_id( $session_id ) ) {
-		return;
-	}
-
-	$_COOKIE[ ADZWORLD_PREFERENCE_SESSION_COOKIE ] = $session_id;
-
-	setcookie(
-		ADZWORLD_PREFERENCE_SESSION_COOKIE,
-		$session_id,
+	$sent = setcookie(
+		ADZWORLD_BROWSER_SESSION_COOKIE,
+		$token,
 		array(
 			'expires'  => 0,
 			'path'     => COOKIEPATH ? COOKIEPATH : '/',
@@ -349,6 +297,59 @@ function adzworld_preference_set_session_cookie( $session_id ) {
 			'samesite' => 'Lax',
 		)
 	);
+	if ( ! $sent ) {
+		delete_transient( $key );
+		return array();
+	}
+
+	$_COOKIE[ ADZWORLD_BROWSER_SESSION_COOKIE ] = $token;
+	return $state;
+}
+
+/**
+ * Keep personalized page responses out of shared caches.
+ *
+ * @return void
+ */
+function adzworld_browser_nocache_headers() {
+	if ( ! empty( adzworld_browser_session() ) ) {
+		nocache_headers();
+	}
+}
+add_action( 'send_headers', 'adzworld_browser_nocache_headers' );
+
+/**
+ * Read one field without creating browser state.
+ *
+ * @param string $field Internal field name.
+ * @return mixed Stored value, or false when absent.
+ */
+function adzworld_browser_state_get( $field ) {
+	$browser = adzworld_browser_session();
+	return empty( $browser ) ? false : get_transient( $browser['key'] . '_' . $field );
+}
+
+/**
+ * Store one field independently so a journey or timer write cannot overwrite
+ * a preference. Writes use the browser's original expiry.
+ *
+ * @param string $field Internal field name.
+ * @param mixed  $value Value to store, or null to remove it.
+ * @return void
+ */
+function adzworld_browser_state_set( $field, $value ) {
+	$browser = adzworld_browser_session();
+	$ttl     = empty( $browser ) ? 0 : $browser['expires'] - time();
+	if ( $ttl <= 0 ) {
+		return;
+	}
+
+	$key = $browser['key'] . '_' . $field;
+	if ( null === $value ) {
+		delete_transient( $key );
+		return;
+	}
+	set_transient( $key, $value, $ttl );
 }
 
 /**
@@ -365,26 +366,8 @@ function adzworld_preference_ensure_session_id() {
 		return '';
 	}
 
-	adzworld_preference_open_session();
-
-	if ( PHP_SESSION_ACTIVE !== session_status() ) {
-		return '';
-	}
-
-	$current = isset( $_SESSION['adzworld_session_id'] ) && is_string( $_SESSION['adzworld_session_id'] )
-		? sanitize_text_field( wp_unslash( $_SESSION['adzworld_session_id'] ) )
-		: '';
-
-	if ( adzworld_preference_valid_session_id( $current ) ) {
-		adzworld_preference_set_session_cookie( $current );
-		return $current;
-	}
-
-	$current                         = adzworld_preference_new_session_id();
-	$_SESSION['adzworld_session_id'] = $current;
-	adzworld_preference_set_session_cookie( $current );
-
-	return $current;
+	$browser = adzworld_browser_session( true );
+	return $browser['id'] ?? '';
 }
 
 /**
@@ -396,21 +379,12 @@ function adzworld_preference_ensure_session_id() {
  * @return string Michel Time Stamp, or an empty string when none exists.
  */
 function adzworld_preference_session_id() {
-	if ( adzworld_preference_uses_profile() || ! adzworld_preference_session_cookie_present() ) {
+	if ( adzworld_preference_uses_profile() ) {
 		return '';
 	}
 
-	adzworld_preference_open_session();
-
-	if ( PHP_SESSION_ACTIVE !== session_status() ) {
-		return '';
-	}
-
-	$current = isset( $_SESSION['adzworld_session_id'] ) && is_string( $_SESSION['adzworld_session_id'] )
-		? sanitize_text_field( wp_unslash( $_SESSION['adzworld_session_id'] ) )
-		: '';
-
-	return adzworld_preference_valid_session_id( $current ) ? $current : '';
+	$browser = adzworld_browser_session();
+	return $browser['id'] ?? '';
 }
 
 /**
@@ -425,19 +399,8 @@ function adzworld_current_preference() {
 		return is_array( $stored ) ? adzworld_sanitize_preference( $stored ) : adzworld_empty_preference();
 	}
 
-	if ( ! adzworld_preference_session_cookie_present() ) {
-		return adzworld_empty_preference();
-	}
-
-	adzworld_preference_open_session();
-
-	if ( ! isset( $_SESSION[ ADZWORLD_PREFERENCE_SESSION ] ) || ! is_array( $_SESSION[ ADZWORLD_PREFERENCE_SESSION ] ) ) {
-		return adzworld_empty_preference();
-	}
-
-	$session = map_deep( wp_unslash( $_SESSION[ ADZWORLD_PREFERENCE_SESSION ] ), 'sanitize_text_field' );
-
-	return adzworld_sanitize_preference( $session );
+	$stored = adzworld_browser_state_get( 'preference' );
+	return is_array( $stored ) ? adzworld_sanitize_preference( $stored ) : adzworld_empty_preference();
 }
 
 /**
@@ -459,7 +422,7 @@ function adzworld_store_preference( $pref ) {
 	}
 
 	adzworld_preference_ensure_session_id();
-	$_SESSION[ ADZWORLD_PREFERENCE_SESSION ] = $pref;
+	adzworld_browser_state_set( 'preference', $pref );
 }
 
 /**
@@ -474,12 +437,7 @@ function adzworld_clear_preference() {
 		return;
 	}
 
-	if ( ! adzworld_preference_session_cookie_present() ) {
-		return;
-	}
-
-	adzworld_preference_open_session();
-	unset( $_SESSION[ ADZWORLD_PREFERENCE_SESSION ] );
+	adzworld_browser_state_set( 'preference', null );
 }
 
 /**
@@ -705,6 +663,8 @@ function adzworld_render_preference_panel( $pref, $has_pref, $intro = 'full' ) {
 				<?php esc_html_e( 'Search', 'adz-world' ); ?>
 			</button>
 		</div>
+
+		<?php echo wp_kses_post( adzworld_audience_message( 'hub' ) ); ?>
 
 		<div class="adz-panel__chips" data-adz-chips>
 			<?php adzworld_render_chips( $chips ); ?>

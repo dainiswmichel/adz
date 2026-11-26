@@ -1503,9 +1503,12 @@ function adzworld_render_rotation_level( $attributes ) {
 				$html        .= $showcase;
 				$has_creative = true;
 			} elseif ( ! $has_creative ) {
-				$html = adzworld_local_ad_slide( $ad );
-			} elseif ( '' !== $title_row ) {
-				$html = '<div class="adzworld-results__title">' . esc_html( $title_row ) . '</div>' . $html;
+					$html = adzworld_local_ad_slide( $ad );
+			} else {
+				$html .= adzworld_audience_message( 'adz' );
+				if ( '' !== $title_row ) {
+					$html = '<div class="adzworld-results__title">' . esc_html( $title_row ) . '</div>' . $html;
+				}
 			}
 			if ( in_array( $category, $pref['categories'], true ) ) {
 				$html .= adzworld_category_slot_control( $category, $slot_count, $category_slot );
@@ -1529,6 +1532,7 @@ function adzworld_render_rotation_level( $attributes ) {
 			$category = isset( $pref['active_category'] ) ? (string) $pref['active_category'] : '';
 			$html     = '<div class="adzworld-provider" aria-label="' . esc_attr( $sources[ $slot['value'] ]['label'] ) . '">'
 				. do_shortcode( $sources[ $slot['value'] ]['shortcode'] ) . '</div>'
+				. adzworld_audience_message( 'adz' )
 				. '<p class="adzworld-match-label">' . esc_html( $sources[ $slot['value'] ]['label'] ) . '</p>'
 				. adzworld_feedback_control( 'source-' . $slot['value'], $category );
 		}

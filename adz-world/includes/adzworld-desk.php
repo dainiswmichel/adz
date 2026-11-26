@@ -22,7 +22,7 @@ function adzworld_desk_tabs() {
 		'rotation'   => __( 'Rotation', 'adz-world' ),
 		'logs'       => __( 'AdzLogs', 'adz-world' ),
 		'earnings'   => __( 'Earnings', 'adz-world' ),
-		'templates'  => __( 'Templates', 'adz-world' ),
+		'templates'  => __( 'Display', 'adz-world' ),
 		'starter'    => __( 'Starter packs', 'adz-world' ),
 		'manual'     => __( 'Interactive Documentation', 'adz-world' ),
 	);
@@ -156,11 +156,15 @@ add_filter( 'submenu_file', 'adzworld_desk_submenu_file', 10, 2 );
 function adzworld_desk_assets() {
 	$page = filter_input( INPUT_GET, 'page', FILTER_UNSAFE_RAW );
 	$page = is_string( $page ) ? sanitize_key( $page ) : '';
-	if ( ! in_array( $page, adzworld_desk_submenu_slugs(), true ) ) {
+	if ( 'adz-template-setting' !== $page && ! in_array( $page, adzworld_desk_submenu_slugs(), true ) ) {
 		return;
 	}
 	$path = dirname( __DIR__ ) . '/assets/admin-desk.css';
 	wp_enqueue_style( 'adzworld-desk', plugins_url( 'assets/admin-desk.css', dirname( __DIR__ ) . '/adz-world.php' ), array(), (string) filemtime( $path ) );
+	if ( 'templates' === adzworld_desk_tab() || 'adz-template-setting' === $page ) {
+		$script = dirname( __DIR__ ) . '/assets/admin-audience.js';
+		wp_enqueue_script( 'adzworld-admin-audience', plugins_url( 'assets/admin-audience.js', dirname( __DIR__ ) . '/adz-world.php' ), array( 'quicktags' ), (string) filemtime( $script ), true );
+	}
 }
 add_action( 'admin_enqueue_scripts', 'adzworld_desk_assets' );
 
@@ -234,7 +238,8 @@ function adzworld_desk_page() {
 		wp_die( esc_html__( 'Administrator permission is required.', 'adz-world' ), '', array( 'response' => 403 ) );
 	}
 	$current = adzworld_desk_tab();
-	echo '<div class="wrap adzworld-admin"><h1 class="adzworld-settings-title">' . esc_html( ADZWORLD_NAME ) . ' <span class="adzworld-settings-version">v' . esc_html( ADZWORLD_VERSION ) . '</span></h1>';
+	$heading = 'templates' === $current ? __( 'Display', 'adz-world' ) : ADZWORLD_NAME;
+	echo '<div class="wrap adzworld-admin"><h1 class="adzworld-settings-title">' . esc_html( $heading ) . ' <span class="adzworld-settings-version">v' . esc_html( ADZWORLD_VERSION ) . '</span></h1>';
 	echo '<nav class="nav-tab-wrapper adzworld-settings-tabs" aria-label="' . esc_attr(
 		sprintf(
 			/* translators: %s: product name. */

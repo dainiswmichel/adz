@@ -413,7 +413,7 @@ function adzworld_rotation_setting_array() {
 
 					'adz_template'        => array(
 						'type'    => 'select',
-						'title'   => 'adz template',
+						'title'   => __( 'Countdown ad layout', 'adz-world' ),
 						'desc'    => '',
 						'default' => '',
 						'sizes'   => 'small',
@@ -615,16 +615,5 @@ function adzworld_list_all_user_roles() {
  * List shipped advertisement templates.
  */
 function adzworld_get_ad_template() {
-	$adz_template_list = array();
-	$dir               = ADZ_WORLD . 'adz-templates';
-	$templates         = scandir( $dir, 1 );
-	if ( ! empty( $templates ) ) {
-		foreach ( $templates as $template ) {
-			$ext = pathinfo( $template, PATHINFO_EXTENSION );
-			if ( 'php' === $ext ) {
-				$adz_template_list[ $template ] = $template;
-			}
-		}
-	}
-	return $adz_template_list;
+	return adzworld_countdown_layouts();
 }

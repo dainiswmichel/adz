@@ -1768,46 +1768,82 @@ body.wp-admin .adzworld-paid-card .adzworld-connection-card select {
 	);
 }
 
-.adzworld-template-lines {
-	max-width: 52rem;
+.adzworld-display {
+	max-width: 78rem;
+}
+
+.adzworld-display-section {
+	margin: 0 0 1rem;
+	border: 1px solid #c3c4c7;
+	background: #fff;
+}
+
+.adzworld-display-section > summary {
+	cursor: pointer;
+	padding: 1rem;
+}
+
+.adzworld-display-section > summary h2 {
+	display: inline;
+	margin: 0;
+	padding-inline-start: 0.35rem;
+}
+
+.adzworld-display-section[open] > summary {
+	border-bottom: 1px solid #dcdcde;
+}
+
+.adzworld-display-section__content {
+	padding: 1rem;
+}
+
+.adzworld-display-section__content .adzworld-desk-intro {
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.adzworld-audience-list + .adzworld-audience-list {
+	border-top: 1px solid #dcdcde;
+}
+
+.adzworld-audience-row {
+	border: 1px solid #dcdcde;
+	padding: 0.75rem;
+	margin: 0 0 0.75rem;
+}
+
+.adzworld-audience-row .quicktags-toolbar {
+	border: 1px solid #dcdcde;
+	border-bottom: 0;
+}
+
+.adzworld-audience-row textarea {
+	display: block;
+}
+
+.adzworld-audience-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.6rem;
+	margin-top: 0.75rem;
+}
+
+.adzworld-countdown-editor {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 1.5rem;
+}
+
+@media (max-width: 782px) {
+	.adzworld-countdown-editor {
+		grid-template-columns: 1fr;
+	}
 }
 
 .adzworld-template-lines h3 {
 	margin: 1.2em 0 0.4em;
-}
-
-.adzworld-template-lines__panel {
-	background: #fff;
-	border: 1px solid #c3c4c7;
-	border-radius: 4px;
-	box-sizing: border-box;
-	margin: 12px 0 16px;
-	padding: 4px 16px 12px;
-}
-
-.adzworld-template-lines__now th[scope="row"] {
-	width: 11rem;
-}
-
-.adzworld-template-lines__now code {
-	color: #646970;
-	display: block;
-	font-size: 12px;
-	font-weight: 400;
-}
-
-.adzworld-template-lines__group th {
-	background: #f6f7f7;
-}
-
-.adzworld-template-lines__field-note {
-	color: #646970;
-	margin: 0.15em 0 0.8em;
-}
-
-.adzworld-template-lines__empty {
-	color: #646970;
-	font-style: italic;
 }
 
 .adzworld-template-lines textarea {
@@ -1845,7 +1881,7 @@ body.wp-admin .adzworld-paid-card .adzworld-connection-card select {
 	justify-content: flex-end;
 }
 
-.adzworld-template-lines__count-num {
+.adzworld-template-lines__count {
 	font-variant-numeric: tabular-nums;
 	font-weight: 600;
 }
